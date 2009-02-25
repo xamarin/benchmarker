@@ -50,7 +50,7 @@ foreach my $subdir (@rev_dirs) {
 	foreach my $value (@values) {
 	    $sum += $value;
 	    $min = $value if $value < $min;
-	    $max = $value if $value > $min;
+	    $max = $value if $value > $max;
 	}
 
 	my $avg = $sum / @values;
@@ -109,7 +109,7 @@ foreach my $test (keys %test_rev_data) {
 		$avg_min = $avg;
 		$avg_min_rev = $revision;
 	    }
-	    if ($avg < $avg_max) {
+	    if ($avg > $avg_max) {
 		$avg_max = $avg;
 		$avg_max_rev = $revision;
 	    }
@@ -162,4 +162,16 @@ foreach my $revision (sort keys %revisions) {
 
     printf FILE "$revision %.3f %.3f %.3f\n", $avg, $min, $max;
 }
+close FILE;
+
+#write html
+open FILE, ">index.html" or die;
+print FILE "<html><body>\n";
+print FILE "<p><img src=\"combined.png\">\n";
+print FILE "<p><table>\n";
+foreach my $test (sort keys %test_rev_data) {
+    print FILE "<tr><td>$test</td><td><img src=\"$test.png\"></td></tr>\n";
+}
+print FILE "</table>\n";
+print FILE "</body></html>";
 close FILE;
