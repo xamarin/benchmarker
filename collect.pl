@@ -4,7 +4,10 @@ use strict;
 
 my $basedir = ".";
 
-my %data = ();
+my %test_rev_data = ();
+my %test_data = ();
+
+my %revisions = ();
 
 my %inverse_tests = ( "scimark" => 10000 );
 
@@ -52,9 +55,11 @@ foreach my $subdir (@rev_dirs) {
 
 	my $avg = $sum / @values;
 
-	$data{$test}{$revision}{"min"} = $min;
-	$data{$test}{$revision}{"max"} = $max;
-	$data{$test}{$revision}{"avg"} = $avg;
+	$test_rev_data{$test}{$revision}{"min"} = $min;
+	$test_rev_data{$test}{$revision}{"max"} = $max;
+	$test_rev_data{$test}{$revision}{"avg"} = $avg;
+
+	$revisions{$revision} = 1;
 
 	open FILE, "<$dir/$test.size" or die;
 	my $size = <FILE> or die;
@@ -62,11 +67,27 @@ foreach my $subdir (@rev_dirs) {
 
 	chomp $size;
 	$size =~ /^\d+$/ or die "cannot parse size for $dir/$test.size";
-	$data{$test}{$revision}{"size"} = $size;
+	$test_rev_data{$test}{$revision}{"size"} = $size;
     }
 }
 
-foreach my $test (keys %data) {
+#compute test data
+foreach my $test (keys %test_rev_data) {
+    my $sum = 0;
+    my $n = 0;
+
+    foreach my $revision (keys %{$test_rev_data{$test}}) {
+	$sum += $test_rev_data{$test}{$revision}{"avg"};
+	++$n;
+    }
+
+    my $avg = $sum / $n;
+
+    $test_data{$test}{"avg"} = $avg;
+}
+
+#write plot data for single tests
+foreach my $test (keys %test_rev_data) {
     open FILE, ">$test.dat" or die;
 
     print FILE "#revision size avg min max\n";
@@ -76,11 +97,11 @@ foreach my $test (keys %data) {
     my $avg_max;
     my $avg_max_rev;
 
-    foreach my $revision (sort { $a <=> $b } keys %{$data{$test}}) {
-	my $size = $data{$test}{$revision}{"size"};
-	my $min = sprintf "%.2f", $data{$test}{$revision}{"min"};
-	my $max = sprintf "%.2f", $data{$test}{$revision}{"max"};
-	my $avg = sprintf "%.2f", $data{$test}{$revision}{"avg"};
+    foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
+	my $size = $test_rev_data{$test}{$revision}{"size"};
+	my $min = sprintf "%.2f", $test_rev_data{$test}{$revision}{"min"};
+	my $max = sprintf "%.2f", $test_rev_data{$test}{$revision}{"max"};
+	my $avg = sprintf "%.2f", $test_rev_data{$test}{$revision}{"avg"};
 	print FILE "$revision $size $avg $min $max\n";
 
 	if (defined $avg_min) {
@@ -110,3 +131,35 @@ foreach my $test (keys %data) {
     print FILE "$avg_max_rev $avg_max\n";
     close FILE;
 }
+
+#write plot data for combined plot
+open FILE, ">combined.dat" or die;
+print FILE "#revision avg min max\n";
+foreach my $revision (sort keys %revisions) {
+    my $sum = 0;
+    my $n = 0;
+    my $min = undef;
+    my $max = undef;
+
+    foreach my $test (keys %test_rev_data) {
+	if (exists $test_rev_data{$test}{$revision}) {
+	    my $value = $test_rev_data{$test}{$revision}{"avg"} / $test_data{$test}{"avg"};
+
+	    $sum += $value;
+	    ++$n;
+
+	    if (defined($min)) {
+		$min = $value if $value < $min;
+		$max = $value if $value > $max;
+	    } else {
+		$min = $value;
+		$max = $value;
+	    }
+	}
+    }
+
+    my $avg = $sum / $n;
+
+    printf FILE "$revision %.3f %.3f %.3f\n", $avg, $min, $max;
+}
+close FILE;
