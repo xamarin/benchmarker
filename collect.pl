@@ -6,6 +6,8 @@ my $basedir = ".";
 
 my %data = ();
 
+my %inverse_tests = ( "scimark" => 10000 );
+
 opendir DIR, $basedir or die;
 my @rev_dirs = grep /^r\d+$/, readdir DIR;
 closedir DIR;
@@ -33,6 +35,10 @@ foreach my $subdir (@rev_dirs) {
 	close FILE;
 
 	@values > 0 or die;
+
+	if (exists $inverse_tests{$test}) {
+	    @values = map { $inverse_tests{$test} / $_ } @values;
+	}
 
 	my $min = $values[0];
 	my $max = $values[0];
@@ -72,8 +78,8 @@ foreach my $test (keys %data) {
 
     foreach my $revision (sort { $a <=> $b } keys %{$data{$test}}) {
 	my $size = $data{$test}{$revision}{"size"};
-	my $min = $data{$test}{$revision}{"min"};
-	my $max = $data{$test}{$revision}{"max"};
+	my $min = sprintf "%.2f", $data{$test}{$revision}{"min"};
+	my $max = sprintf "%.2f", $data{$test}{$revision}{"max"};
 	my $avg = sprintf "%.2f", $data{$test}{$revision}{"avg"};
 	print FILE "$revision $size $avg $min $max\n";
 
