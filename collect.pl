@@ -167,7 +167,7 @@ close FILE;
 #write html
 open FILE, ">index.html" or die;
 print FILE "<html><body>\n";
-print FILE "<p><img src=\"combined.png\">\n";
+print FILE "<p><img src=\"combined_large.png\">\n";
 print FILE "<p><table>\n";
 foreach my $test (sort keys %test_rev_data) {
     print FILE "<tr><td>$test</td><td><img src=\"$test.png\"></td></tr>\n";

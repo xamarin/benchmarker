@@ -21,6 +21,7 @@ runtest () {
     #the first run is not timed
     $MONO --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
     if [ $? -ne 0 ] ; then
+	popd >/dev/null
 	return
     fi
     grep -a 'Native code size:' "$TMPPREFIX.stats" | awk '{ print $4 }' >"$OUTDIR/$1.size"
