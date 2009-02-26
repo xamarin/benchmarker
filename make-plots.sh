@@ -18,7 +18,7 @@ for fn in "$DIR"/*.min.dat ; do
 	./plot.sh single
 	cd ..
 	cp plot/single.png "$DIR/$bn.png"
-	cp plot/single_large.png "$DIR/$bn_large.png"
+	cp plot/single_large.png "$DIR/$bn"_large.png
     fi
 done
 

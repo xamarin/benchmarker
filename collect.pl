@@ -75,15 +75,28 @@ foreach my $subdir (@rev_dirs) {
 foreach my $test (keys %test_rev_data) {
     my $sum = 0;
     my $n = 0;
+    my $min_rev = undef;
+    my $max_rev = undef;
 
     foreach my $revision (keys %{$test_rev_data{$test}}) {
-	$sum += $test_rev_data{$test}{$revision}{"avg"};
+	my $val = $test_rev_data{$test}{$revision}{"avg"};
+	$sum += $val;
 	++$n;
+
+	if (defined $min_rev) {
+	    $min_rev = $revision if $val < $test_rev_data{$test}{$min_rev}{"avg"};
+	    $max_rev = $revision if $val > $test_rev_data{$test}{$max_rev}{"avg"};
+	} else {
+	    $min_rev = $revision;
+	    $max_rev = $revision;
+	}
     }
 
     my $avg = $sum / $n;
 
     $test_data{$test}{"avg"} = $avg;
+    $test_data{$test}{"avg_min_rev"} = $min_rev;
+    $test_data{$test}{"avg_max_rev"} = $max_rev;
 }
 
 #write plot data for single tests
@@ -92,40 +105,25 @@ foreach my $test (keys %test_rev_data) {
 
     print FILE "#revision size avg min max\n";
 
-    my $avg_min = undef;
-    my $avg_min_rev;
-    my $avg_max;
-    my $avg_max_rev;
-
     foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
 	my $size = $test_rev_data{$test}{$revision}{"size"};
 	my $min = sprintf "%.2f", $test_rev_data{$test}{$revision}{"min"};
 	my $max = sprintf "%.2f", $test_rev_data{$test}{$revision}{"max"};
 	my $avg = sprintf "%.2f", $test_rev_data{$test}{$revision}{"avg"};
 	print FILE "$revision $size $avg $min $max\n";
-
-	if (defined $avg_min) {
-	    if ($avg < $avg_min) {
-		$avg_min = $avg;
-		$avg_min_rev = $revision;
-	    }
-	    if ($avg > $avg_max) {
-		$avg_max = $avg;
-		$avg_max_rev = $revision;
-	    }
-	} else {
-	    $avg_min = $avg;
-	    $avg_min_rev = $revision;
-	    $avg_max = $avg;
-	    $avg_max_rev = $revision;
-	}
     }
 
     close FILE;
 
+    my $avg_min_rev = $test_data{$test}{"avg_min_rev"};
+    my $avg_min = $test_rev_data{$test}{$avg_min_rev}{"avg"};
+
     open FILE, ">$test.min.dat" or die;
     print FILE "$avg_min_rev $avg_min\n";
     close FILE;
+
+    my $avg_max_rev = $test_data{$test}{"avg_max_rev"};;
+    my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
 
     open FILE, ">$test.max.dat" or die;
     print FILE "$avg_max_rev $avg_max\n";
@@ -135,7 +133,7 @@ foreach my $test (keys %test_rev_data) {
 #write plot data for combined plot
 open FILE, ">combined.dat" or die;
 print FILE "#revision avg min max\n";
-foreach my $revision (sort keys %revisions) {
+foreach my $revision (sort { $a <=> $b } keys %revisions) {
     my $sum = 0;
     my $n = 0;
     my $min = undef;
@@ -165,12 +163,42 @@ foreach my $revision (sort keys %revisions) {
 close FILE;
 
 #write html
+my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
+
 open FILE, ">index.html" or die;
 print FILE "<html><body>\n";
 print FILE "<p><img src=\"combined_large.png\">\n";
 print FILE "<p><table>\n";
+
+print FILE "<tr><td>Test</td><td>Best</td><td>Worst</td>";
+foreach my $rev (@last_revs) {
+    print FILE "<td>r$rev</td>";
+}
+print FILE "<td>Graph</td></tr>\n";
+
 foreach my $test (sort keys %test_rev_data) {
-    print FILE "<tr><td>$test</td><td><img src=\"$test.png\"></td></tr>\n";
+    print FILE "<tr><td>$test</td>";
+
+    my $avg_min_rev = $test_data{$test}{"avg_min_rev"};
+    my $avg_min = $test_rev_data{$test}{$avg_min_rev}{"avg"};
+    my $avg_max_rev = $test_data{$test}{"avg_max_rev"};
+    my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
+
+    printf FILE "<td>%.2f (r$avg_min_rev)</td><td>%.2f (r$avg_max_rev)</td>", $avg_min, $avg_max;
+
+    foreach my $rev (@last_revs) {
+	my $val;
+
+	if (exists $test_rev_data{$test}{$rev}) {
+	    $val = sprintf "%.2f", $test_rev_data{$test}{$rev}{"avg"};
+	} else {
+	    $val = "-";
+	}
+
+	print FILE "<td>$val</td>";
+    }
+
+    print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
 print FILE "</body></html>";
