@@ -4,6 +4,8 @@ use strict;
 use Cairo;
 use List::Util qw(min max);
 
+use constant PI => 4 * atan2(1, 1);
+
 sub make_revisions_path {
     my ($cr, $revisions, $data, $key, $moveto) = @_;
     my @revisions = @$revisions;
@@ -20,16 +22,16 @@ sub make_revisions_path {
 }
 
 sub transform_coords {
-    my ($cr, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y) = @_;
+    my ($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y) = @_;
 
-    $cr->scale($img_width / ($max_x - $min_x), - $img_height / ($max_y - $min_y));
+    $cr->translate($window_x, $window_y);
+    $cr->scale($window_width / ($max_x - $min_x), - $window_height / ($max_y - $min_y));
     $cr->translate(0, - ($max_y - $min_y));
     $cr->translate(-$min_x, -$min_y);
 }
 
-sub plot_cairo_combined {
-    my ($combined_data, $filename, $img_width, $img_height, $line_width) = @_;
-    my %combined_data = %$combined_data;
+sub make_surface_context {
+    my ($img_width, $img_height) = @_;
 
     my $surface = Cairo::ImageSurface->create('rgb24', $img_width, $img_height);
     my $cr = Cairo::Context->create($surface);
@@ -38,17 +40,123 @@ sub plot_cairo_combined {
     $cr->rectangle(0, 0, $img_width, $img_height);
     $cr->fill;
 
-    my @revisions = sort { $a <=> $b } keys %combined_data;
+    return ($surface, $cr);
+}
+
+sub compute_min_max {
+    my ($data) = @_;
+    my @revisions = sort { $a <=> $b } keys %$data;
 
     my $min_x = min @revisions;
     my $max_x = max @revisions;
-    my $min_y = min (map { $combined_data{$_}{"min"} } @revisions);
-    my $max_y = max (map { $combined_data{$_}{"max"} } @revisions);
+    my $min_y = min (map { $data->{$_}{"min"} } @revisions);
+    my $max_y = max (map { $data->{$_}{"max"} } @revisions);
+
+    return (\@revisions, $min_x, $max_x, $min_y, $max_y);
+}
+
+sub show_text_above {
+    my ($cr, $text, $x, $y, $img_width, $img_height) = @_;
+
+    my $extents = $cr->text_extents($text);
+    my ($width, $x_bearing) = ($extents->{width}, $extents->{x_bearing});
+
+    $x -= $width / 2;
+    $x -= $x_bearing;
+
+    $x = -$x_bearing if $x < -$x_bearing;
+    $x = $img_width - $x_bearing - $width if $x + $x_bearing + $width > $img_width;
+
+    $cr->move_to($x, $y);
+    $cr->show_text($text);
+}
+
+sub show_text_below {
+    my ($cr, $text, $x, $y, $img_width, $img_height) = @_;
+
+    my $extents = $cr->text_extents($text);
+
+    $y -= $extents->{y_bearing};
+
+    show_text_above($cr, $text, $x, $y, $img_width, $img_height);
+}
+
+sub plot_cairo_single {
+    my ($rev_data, $test_data, $filename, $img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
+
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($rev_data);
+    my ($surface, $cr) = make_surface_context($img_width, $img_height);
+
+    my $text_distance = $marker_radius + $font_size / 5;
+    my $additional_space_x = $marker_radius;
+    my $additional_space_y = $text_distance + $font_size;
+
+    my ($window_x, $window_y, $window_width, $window_height) =
+	($additional_space_x, $additional_space_y,
+	 $img_width - 2 * $additional_space_x, $img_height - 2 * $additional_space_y);
+
+    #min/max
+    $cr->save;
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+    make_revisions_path($cr, $revisions, $rev_data, "min", 1);
+    my @revisions_rev = reverse @$revisions;
+    make_revisions_path($cr, \@revisions_rev, $rev_data, "max", 0);
+    $cr->restore;
+
+    $cr->set_source_rgb(0.7, 0.7, 0.7);
+    $cr->fill;
 
     #avg
     $cr->save;
-    transform_coords($cr, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, \@revisions, \%combined_data, "avg", 1);
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+    make_revisions_path($cr, $revisions, $rev_data, "avg", 1);
+    $cr->restore;
+
+    $cr->set_line_width($line_width);
+    $cr->set_source_rgb(0, 0, 0);
+    $cr->stroke;
+
+    #min/max markers
+    $cr->select_font_face("Sans", "normal", $font_size > 12 ? "bold" : "normal");
+    $cr->set_font_size($font_size);
+
+    $cr->save;
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+    my ($avg_min_rev, $avg_max_rev) = ($test_data->{"avg_min_rev"}, $test_data->{"avg_max_rev"});
+    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($avg_min_rev, $rev_data->{$avg_min_rev}{"avg"});
+    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($avg_max_rev, $rev_data->{$avg_max_rev}{"avg"});
+    $cr->restore;
+
+    $cr->new_path;
+    $cr->arc($avg_min_x, $avg_min_y, $marker_radius, 0, 2 * PI);
+    $cr->set_line_width($line_width);
+    $cr->set_source_rgb(0, 0.6, 0);
+    $cr->stroke;
+
+    show_text_below($cr, $avg_min_rev, $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
+
+    $cr->new_path;
+    $cr->arc($avg_max_x, $avg_max_y, $marker_radius, 0, 2 * PI);
+    $cr->set_line_width($line_width);
+    $cr->set_source_rgb(1, 0, 0);
+    $cr->stroke;
+
+    show_text_above($cr, $avg_max_rev, $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
+
+    $cr->show_page;
+    $surface->write_to_png($filename);
+}
+
+sub plot_cairo_combined {
+    my ($combined_data, $filename, $img_width, $img_height, $line_width) = @_;
+
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data);
+    my ($surface, $cr) = make_surface_context($img_width, $img_height);
+
+    #avg
+    $cr->save;
+    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    make_revisions_path($cr, $revisions, $combined_data, "avg", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -57,8 +165,8 @@ sub plot_cairo_combined {
 
     #min
     $cr->save;
-    transform_coords($cr, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, \@revisions, \%combined_data, "min", 1);
+    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    make_revisions_path($cr, $revisions, $combined_data, "min", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -67,8 +175,8 @@ sub plot_cairo_combined {
 
     #max
     $cr->save;
-    transform_coords($cr, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, \@revisions, \%combined_data, "max", 1);
+    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    make_revisions_path($cr, $revisions, $combined_data, "max", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -76,7 +184,6 @@ sub plot_cairo_combined {
     $cr->stroke;
 
     $cr->show_page;
-
     $surface->write_to_png($filename);
 }
 
@@ -182,35 +289,10 @@ foreach my $config (@configs) {
 	$test_data{$test}{"avg_max_rev"} = $max_rev;
     }
 
-    #write plot data for single tests
+    #single test plots
     foreach my $test (keys %test_rev_data) {
-	open FILE, ">$basedir/$test.dat" or die;
-
-	print FILE "#revision size avg min max\n";
-
-	foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
-	    my $size = $test_rev_data{$test}{$revision}{"size"};
-	    my $min = sprintf "%.2f", $test_rev_data{$test}{$revision}{"min"};
-	    my $max = sprintf "%.2f", $test_rev_data{$test}{$revision}{"max"};
-	    my $avg = sprintf "%.2f", $test_rev_data{$test}{$revision}{"avg"};
-	    print FILE "$revision $size $avg $min $max\n";
-	}
-
-	close FILE;
-
-	my $avg_min_rev = $test_data{$test}{"avg_min_rev"};
-	my $avg_min = $test_rev_data{$test}{$avg_min_rev}{"avg"};
-
-	open FILE, ">$basedir/$test.min.dat" or die;
-	print FILE "$avg_min_rev $avg_min\n";
-	close FILE;
-
-	my $avg_max_rev = $test_data{$test}{"avg_max_rev"};;
-	my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
-
-	open FILE, ">$basedir/$test.max.dat" or die;
-	print FILE "$avg_max_rev $avg_max\n";
-	close FILE;
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, "$basedir/$test.png", 150, 60, 1, 3, 8);
     }
 
     #compute combined plot data
