@@ -368,7 +368,16 @@ foreach my $config (@configs) {
 	foreach my $rev (@last_revs) {
 	    if (exists $test_rev_data{$test}{$rev}) {
 		my $val = $test_rev_data{$test}{$rev}{"avg"};
-		printf FILE "<td>%.2f</td><td>%.2f%%</td>", $val, $val / $avg_min * 100;
+		my $percentage = $val / $avg_min * 100;
+		my $color;
+		if ($percentage <= 102) {
+		    $color = "green";
+		} elsif ($percentage <= 105) {
+		    $color = "black";
+		} else {
+		    $color = "red";
+		}
+		printf FILE "<td>%.2f</td><td><font color=\"$color\">%.2f%%</font></td>", $val, $percentage;
 	    } else {
 		print FILE "<td colspan=\"2\">-</td>";
 	    }
