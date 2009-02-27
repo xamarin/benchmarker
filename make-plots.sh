@@ -26,4 +26,4 @@ cp "$DIR/combined.dat" plot/test.dat
 cd plot
 ./plot.sh combined
 cd ..
-cp plot/combined_large.png "$DIR/combined_large.png"
+cp plot/combined*.png "$DIR/"
