@@ -405,7 +405,7 @@ foreach my $config (@configs) {
 	    my $max = $test_rev_data{$test}{$revision}{"max"};
 	    my $size = $test_rev_data{$test}{$revision}{"size"};
 
-	    printf FILE "<tr><td>r$revision</td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td></tr>\n", $avg, $min, $max;
+	    printf FILE "<tr><td><a href=\"r$revision/$test.times\">r$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td></tr>\n", $avg, $min, $max;
 	}
 	print FILE "</table>\n";
 
