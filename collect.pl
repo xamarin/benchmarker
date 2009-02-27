@@ -2,7 +2,13 @@
 
 use strict;
 
-my $basedir = ".";
+if ($#ARGV != 0) {
+    print STDERR "Usage: collect.pl <config-name>\n";
+    exit 1;
+}
+
+my $config = $ARGV[0];
+my $basedir = "configs/$config";
 
 my %test_rev_data = ();
 my %test_data = ();
@@ -101,7 +107,7 @@ foreach my $test (keys %test_rev_data) {
 
 #write plot data for single tests
 foreach my $test (keys %test_rev_data) {
-    open FILE, ">$test.dat" or die;
+    open FILE, ">$basedir/$test.dat" or die;
 
     print FILE "#revision size avg min max\n";
 
@@ -118,20 +124,20 @@ foreach my $test (keys %test_rev_data) {
     my $avg_min_rev = $test_data{$test}{"avg_min_rev"};
     my $avg_min = $test_rev_data{$test}{$avg_min_rev}{"avg"};
 
-    open FILE, ">$test.min.dat" or die;
+    open FILE, ">$basedir/$test.min.dat" or die;
     print FILE "$avg_min_rev $avg_min\n";
     close FILE;
 
     my $avg_max_rev = $test_data{$test}{"avg_max_rev"};;
     my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
 
-    open FILE, ">$test.max.dat" or die;
+    open FILE, ">$basedir/$test.max.dat" or die;
     print FILE "$avg_max_rev $avg_max\n";
     close FILE;
 }
 
 #write plot data for combined plot
-open FILE, ">combined.dat" or die;
+open FILE, ">$basedir/combined.dat" or die;
 print FILE "#revision avg min max\n";
 foreach my $revision (sort { $a <=> $b } keys %revisions) {
     my $sum = 0;
@@ -162,11 +168,11 @@ foreach my $revision (sort { $a <=> $b } keys %revisions) {
 }
 close FILE;
 
-#write html
+#write html index
 my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
 
-open FILE, ">index.html" or die;
-print FILE "<html><body>\n";
+open FILE, ">$basedir/index.html" or die;
+print FILE "<html><body><h1>$config</h1>\n";
 print FILE "<p><img src=\"combined_large.png\">\n";
 print FILE "<p><table>\n";
 
@@ -177,7 +183,7 @@ foreach my $rev (@last_revs) {
 print FILE "<td>Graph</td></tr>\n";
 
 foreach my $test (sort keys %test_rev_data) {
-    print FILE "<tr><td>$test</td>";
+    print FILE "<tr><td><a href=\"$test.html\">$test</a></td>";
 
     my $avg_min_rev = $test_data{$test}{"avg_min_rev"};
     my $avg_min = $test_rev_data{$test}{$avg_min_rev}{"avg"};
@@ -203,3 +209,25 @@ foreach my $test (sort keys %test_rev_data) {
 print FILE "</table>\n";
 print FILE "</body></html>";
 close FILE;
+
+#write html for tests
+foreach my $test (keys %test_rev_data) {
+    open FILE, ">$basedir/$test.html" or die;
+
+    print FILE "<html><body><h1>$test on $config</h1>\n";
+    print FILE "<p><img src=\"$test\_large.png\">\n";
+
+    print FILE "<p><table><tr><td>Revision</td><td>Average</td><td>Min</td><td>Max</td></tr>\n";
+    foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
+	my $avg = $test_rev_data{$test}{$revision}{"avg"};
+	my $min = $test_rev_data{$test}{$revision}{"min"};
+	my $max = $test_rev_data{$test}{$revision}{"max"};
+
+	printf FILE "<tr><td>r$revision</td><td>%.2f</td><td>%.2f</td><td>%.2f</td></tr>\n", $avg, $min, $max;
+    }
+    print FILE "</table>\n";
+
+    print FILE "</body></html>\n";
+
+    close FILE;
+}
