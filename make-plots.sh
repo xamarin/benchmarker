@@ -21,9 +21,3 @@ for fn in "$DIR"/*.min.dat ; do
 	cp plot/single_large.png "$DIR/$bn"_large.png
     fi
 done
-
-cp "$DIR/combined.dat" plot/test.dat
-cd plot
-./plot.sh combined
-cd ..
-cp plot/combined*.png "$DIR/"
