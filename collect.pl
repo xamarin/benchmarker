@@ -44,13 +44,13 @@ sub make_surface_context {
 }
 
 sub compute_min_max {
-    my ($data) = @_;
+    my ($data, $min_key, $max_key) = @_;
     my @revisions = sort { $a <=> $b } keys %$data;
 
     my $min_x = min @revisions;
     my $max_x = max @revisions;
-    my $min_y = min (map { $data->{$_}{"min"} } @revisions);
-    my $max_y = max (map { $data->{$_}{"max"} } @revisions);
+    my $min_y = min (map { $data->{$_}{$min_key} } @revisions);
+    my $max_y = max (map { $data->{$_}{$max_key} } @revisions);
 
     return (\@revisions, $min_x, $max_x, $min_y, $max_y);
 }
@@ -82,9 +82,12 @@ sub show_text_below {
 }
 
 sub plot_cairo_single {
-    my ($rev_data, $test_data, $filename, $img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
+    my ($rev_data, $test_data, $have_min_max, $avg_key, $filename,
+	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
 
-    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($rev_data);
+    my $min_key = $have_min_max ? "min" : $avg_key;
+    my $max_key = $have_min_max ? "max" : $avg_key;
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($rev_data, $min_key, $max_key);
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     my $text_distance = $marker_radius + $font_size / 5;
@@ -96,20 +99,22 @@ sub plot_cairo_single {
 	 $img_width - 2 * $additional_space_x, $img_height - 2 * $additional_space_y);
 
     #min/max
-    $cr->save;
-    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $rev_data, "min", 1);
-    my @revisions_rev = reverse @$revisions;
-    make_revisions_path($cr, \@revisions_rev, $rev_data, "max", 0);
-    $cr->restore;
+    if ($have_min_max) {
+	$cr->save;
+	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+	make_revisions_path($cr, $revisions, $rev_data, "min", 1);
+	my @revisions_rev = reverse @$revisions;
+	make_revisions_path($cr, \@revisions_rev, $rev_data, "max", 0);
+	$cr->restore;
 
-    $cr->set_source_rgb(0.7, 0.7, 0.7);
-    $cr->fill;
+	$cr->set_source_rgb(0.7, 0.7, 0.7);
+	$cr->fill;
+    }
 
     #avg
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $rev_data, "avg", 1);
+    make_revisions_path($cr, $revisions, $rev_data, $avg_key, 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -122,9 +127,9 @@ sub plot_cairo_single {
 
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    my ($avg_min_rev, $avg_max_rev) = ($test_data->{"avg_min_rev"}, $test_data->{"avg_max_rev"});
-    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($avg_min_rev, $rev_data->{$avg_min_rev}{"avg"});
-    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($avg_max_rev, $rev_data->{$avg_max_rev}{"avg"});
+    my ($avg_min_rev, $avg_max_rev) = ($test_data->{"$avg_key\_min_rev"}, $test_data->{"$avg_key\_max_rev"});
+    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($avg_min_rev, $rev_data->{$avg_min_rev}{$avg_key});
+    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($avg_max_rev, $rev_data->{$avg_max_rev}{$avg_key});
     $cr->restore;
 
     $cr->new_path;
@@ -150,7 +155,7 @@ sub plot_cairo_single {
 sub plot_cairo_combined {
     my ($combined_data, $filename, $img_width, $img_height, $line_width) = @_;
 
-    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data);
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, "min", "max");
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     #avg
@@ -267,18 +272,25 @@ foreach my $config (@configs) {
 	my $n = 0;
 	my $min_rev = undef;
 	my $max_rev = undef;
+	my $min_size_rev = undef;
+	my $max_size_rev = undef;
 
 	foreach my $revision (keys %{$test_rev_data{$test}}) {
 	    my $val = $test_rev_data{$test}{$revision}{"avg"};
+	    my $size = $test_rev_data{$test}{$revision}{"size"};
 	    $sum += $val;
 	    ++$n;
 
 	    if (defined $min_rev) {
 		$min_rev = $revision if $val < $test_rev_data{$test}{$min_rev}{"avg"};
 		$max_rev = $revision if $val > $test_rev_data{$test}{$max_rev}{"avg"};
+		$min_size_rev = $revision if $size < $test_rev_data{$test}{$min_size_rev}{"size"};
+		$max_size_rev = $revision if $size > $test_rev_data{$test}{$max_size_rev}{"size"};
 	    } else {
 		$min_rev = $revision;
 		$max_rev = $revision;
+		$min_size_rev = $revision;
+		$max_size_rev = $revision;
 	    }
 	}
 
@@ -287,12 +299,21 @@ foreach my $config (@configs) {
 	$test_data{$test}{"avg"} = $avg;
 	$test_data{$test}{"avg_min_rev"} = $min_rev;
 	$test_data{$test}{"avg_max_rev"} = $max_rev;
+	$test_data{$test}{"size_min_rev"} = $min_size_rev;
+	$test_data{$test}{"size_max_rev"} = $max_size_rev;
     }
 
     #single test plots
     foreach my $test (keys %test_rev_data) {
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, "$basedir/$test.png", 150, 60, 1, 3, 8);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 1, "avg",
+			  "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 1, "avg",
+			  "$basedir/$test.png", 150, 60, 1, 3, 8);
+
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 0, "size",
+			  "$basedir/$test\_size_large.png", 500, 150, 2, 5, 16);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 0, "size",
+			  "$basedir/$test\_size.png", 150, 60, 1, 3, 8);
     }
 
     #compute combined plot data
@@ -348,12 +369,13 @@ foreach my $config (@configs) {
 	print FILE "<colgroup align=\"left\" span=\"2\">\n";
     }
     print FILE "<colgroup align=\"left\">\n";
+    print FILE "<colgroup align=\"left\">\n";
 
     print FILE "<tr><td><b>Test</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td>";
     foreach my $rev (@last_revs) {
 	print FILE "<td colspan=\"2\"><b>r$rev</b></td>";
     }
-    print FILE "<td><b>Graph</b></td></tr>\n";
+    print FILE "<td><b>Duration</b></td><td><b>Size</b></td></tr>\n";
 
     foreach my $test (sort keys %test_rev_data) {
 	print FILE "<tr><td><a href=\"$test.html\">$test</a></td>";
@@ -383,7 +405,9 @@ foreach my $config (@configs) {
 	    }
 	}
 
-	print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\" border=\"0\"></a></td></tr>\n";
+	print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\" border=\"0\"></a></td>";
+	print FILE "<td><a href=\"$test\_size_large.png\"><img src=\"$test\_size.png\" border=\"0\"></a></td>";
+	print FILE "</tr>\n";
     }
     print FILE "</table>\n";
     print FILE "</body></html>";
@@ -420,7 +444,7 @@ open FILE, ">configs/index.html" or die;
 
 print FILE "<html><body>\n";
 
-print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Graph</b></td></tr>\n";
+print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Duration</b></td></tr>\n";
 foreach my $config (@configs) {
     print FILE "<tr><td><a href=\"$config/index.html\">$config</a></td>";
     print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
