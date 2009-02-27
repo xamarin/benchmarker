@@ -336,15 +336,24 @@ foreach my $config (@configs) {
     my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
 
     open FILE, ">$basedir/index.html" or die;
-    print FILE "<html><body><h1>$config</h1>\n";
+    print FILE "<html><body>\n";
+    print FILE "<p><a href=\"../index.html\">All Configs</a>\n";
+    print FILE "<h1>$config</h1>\n";
     print FILE "<p><img src=\"combined_large.png\">\n";
-    print FILE "<p><table>\n";
-
-    print FILE "<tr><td>Test</td><td>Best</td><td>Worst</td>";
+    print FILE "<p><table cellpadding=\"5\" border=\"1\" rules=\"groups\">\n";
+    print FILE "<colgroup align=\"left\">\n";
+    print FILE "<colgroup align=\"left\" span=\"2\">\n";
+    print FILE "<colgroup align=\"left\" span=\"2\">\n";
     foreach my $rev (@last_revs) {
-	print FILE "<td>r$rev</td>";
+	print FILE "<colgroup align=\"left\" span=\"2\">\n";
     }
-    print FILE "<td>Graph</td></tr>\n";
+    print FILE "<colgroup align=\"left\">\n";
+
+    print FILE "<tr><td><b>Test</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td>";
+    foreach my $rev (@last_revs) {
+	print FILE "<td colspan=\"2\"><b>r$rev</b></td>";
+    }
+    print FILE "<td><b>Graph</b></td></tr>\n";
 
     foreach my $test (sort keys %test_rev_data) {
 	print FILE "<tr><td><a href=\"$test.html\">$test</a></td>";
@@ -354,21 +363,18 @@ foreach my $config (@configs) {
 	my $avg_max_rev = $test_data{$test}{"avg_max_rev"};
 	my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
 
-	printf FILE "<td>%.2f (r$avg_min_rev)</td><td>%.2f (r$avg_max_rev)</td>", $avg_min, $avg_max;
+	printf FILE "<td>%.2f</td><td>r$avg_min_rev</td><td>%.2f</td><td>r$avg_max_rev</td>", $avg_min, $avg_max;
 
 	foreach my $rev (@last_revs) {
-	    my $val;
-
 	    if (exists $test_rev_data{$test}{$rev}) {
-		$val = sprintf "%.2f", $test_rev_data{$test}{$rev}{"avg"};
+		my $val = $test_rev_data{$test}{$rev}{"avg"};
+		printf FILE "<td>%.2f</td><td>%.2f%%</td>", $val, $val / $avg_min * 100;
 	    } else {
-		$val = "-";
+		print FILE "<td colspan=\"2\">-</td>";
 	    }
-
-	    print FILE "<td>$val</td>";
 	}
 
-	print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\"></a></td></tr>\n";
+	print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\" border=\"0\"></a></td></tr>\n";
     }
     print FILE "</table>\n";
     print FILE "</body></html>";
@@ -378,10 +384,12 @@ foreach my $config (@configs) {
     foreach my $test (keys %test_rev_data) {
 	open FILE, ">$basedir/$test.html" or die;
 
-	print FILE "<html><body><h1>$test on $config</h1>\n";
+	print FILE "<html><body>\n";
+	print FILE "<p><a href=\"index.html\">$config</a>\n";
+	print FILE "<h1>$test on $config</h1>\n";
 	print FILE "<p><img src=\"$test\_large.png\">\n";
 
-	print FILE "<p><table><tr><td>Revision</td><td>Average</td><td>Min</td><td>Max</td><td>Size (bytes)</td></tr>\n";
+	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td></tr>\n";
 	foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
 	    my $avg = $test_rev_data{$test}{$revision}{"avg"};
 	    my $min = $test_rev_data{$test}{$revision}{"min"};
@@ -403,10 +411,10 @@ open FILE, ">configs/index.html" or die;
 
 print FILE "<html><body>\n";
 
-print FILE "<table><tr><td>Config</td><td>Graph</td></tr>\n";
+print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Graph</b></td></tr>\n";
 foreach my $config (@configs) {
     print FILE "<tr><td><a href=\"$config/index.html\">$config</a></td>";
-    print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\"></a></td></tr>\n";
+    print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
 
