@@ -196,6 +196,10 @@ opendir DIR, "configs" or die;
 my @configs = grep { !/^\.\.?$/ && (-d "configs/$_") } readdir DIR;
 closedir DIR;
 
+my %all_combined_data = ();
+my %all_test_data = ();
+my %all_test_rev_data = ();
+
 foreach my $config (@configs) {
     my $basedir = "configs/$config";
 
@@ -266,6 +270,8 @@ foreach my $config (@configs) {
 	}
     }
 
+    $all_test_rev_data{$config} = \%test_rev_data;
+
     #compute test data
     foreach my $test (keys %test_rev_data) {
 	my $sum = 0;
@@ -303,6 +309,8 @@ foreach my $config (@configs) {
 	$test_data{$test}{"size_max_rev"} = $max_size_rev;
     }
 
+    $all_test_data{$config} = \%test_data;
+
     #single test plots
     foreach my $test (keys %test_rev_data) {
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 1, "avg",
@@ -322,8 +330,7 @@ foreach my $config (@configs) {
     foreach my $revision (keys %revisions) {
 	my $sum = 0;
 	my $n = 0;
-	my $min = undef;
-	my $max = undef;
+	my ($min, $max, $min_test, $max_test);
 
 	foreach my $test (keys %test_rev_data) {
 	    if (exists $test_rev_data{$test}{$revision}) {
@@ -333,11 +340,19 @@ foreach my $config (@configs) {
 		++$n;
 
 		if (defined($min)) {
-		    $min = $value if $value < $min;
-		    $max = $value if $value > $max;
+		    if ($value < $min) {
+			$min = $value;
+			$min_test = $test;
+		    }
+		    if ($value > $max) {
+			$max = $value;
+			$max_test = $test;
+		    }
 		} else {
 		    $min = $value;
+		    $min_test = $test;
 		    $max = $value;
+		    $max_test = $test;
 		}
 	    }
 	}
@@ -346,8 +361,12 @@ foreach my $config (@configs) {
 
 	$combined_data{$revision}{"avg"} = $avg;
 	$combined_data{$revision}{"min"} = $min;
+	$combined_data{$revision}{"min_test"} = $min_test;
 	$combined_data{$revision}{"max"} = $max;
+	$combined_data{$revision}{"max_test"} = $max_test;
     }
+
+    $all_combined_data{$config} = \%combined_data;
 
     #combined plot
     plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 2);
@@ -444,9 +463,32 @@ open FILE, ">configs/index.html" or die;
 
 print FILE "<html><body>\n";
 
-print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Duration</b></td></tr>\n";
+print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Last Revision</b></td><td><b>Average</b></td><td colspan=\"2\"><b>Worst</b></td><td><b>Duration</b></td></tr>\n";
 foreach my $config (@configs) {
+    my $combined_data = $all_combined_data{$config};
+    my $test_data = $all_test_data{$config};
+    my $test_rev_data = $all_test_rev_data{$config};
+    my @revisions = sort { $a <=> $b } keys %$combined_data;
+    my $last_revision = $revisions[-1];
+    my $best_avg = min (map { $combined_data->{$_}{"avg"} } @revisions);
+    my ($worst_quot, $worst_test);
+
+    foreach my $test (keys %$test_data) {
+	next unless exists $test_rev_data->{$test}{$last_revision};
+
+	my $best = $test_rev_data->{$test}{$test_data->{$test}{"avg_min_rev"}}{"avg"};
+	my $quot = $test_rev_data->{$test}{$last_revision}{"avg"} / $best;
+
+	if (!defined($worst_quot) || $quot > $worst_quot) {
+	    $worst_quot = $quot;
+	    $worst_test = $test;
+	}
+    }
+
     print FILE "<tr><td><a href=\"$config/index.html\">$config</a></td>";
+    print FILE "<td>r$last_revision</td>";
+    printf FILE "<td>%.2f%%</td>", $combined_data->{$last_revision}{"avg"} / $best_avg * 100;
+    printf FILE "<td>%.2f%%</td><td>$worst_test</td>", $worst_quot * 100;
     print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
