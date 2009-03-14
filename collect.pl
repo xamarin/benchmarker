@@ -25,7 +25,8 @@ sub transform_coords {
     my ($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y) = @_;
 
     $cr->translate($window_x, $window_y);
-    $cr->scale($window_width / ($max_x - $min_x), - $window_height / ($max_y - $min_y));
+    $cr->scale($window_width / max(($max_x - $min_x), 0.00001),
+	       - $window_height / max(($max_y - $min_y), 0.00001));
     $cr->translate(0, - ($max_y - $min_y));
     $cr->translate(-$min_x, -$min_y);
 }
