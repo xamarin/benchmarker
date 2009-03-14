@@ -83,12 +83,13 @@ sub show_text_below {
 }
 
 sub plot_cairo_single {
-    my ($rev_data, $test_data, $have_min_max, $avg_key, $filename,
+    my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename,
 	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
 
     my $min_key = $have_min_max ? "min" : $avg_key;
     my $max_key = $have_min_max ? "max" : $avg_key;
-    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($rev_data, $min_key, $max_key);
+    my ($revisions, $dummy_min_x, $dummy_min_y, $min_y, $max_y) =
+	compute_min_max($rev_data, $min_key, $max_key);
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     my $text_distance = $marker_radius + $font_size / 5;
@@ -215,9 +216,19 @@ foreach my $config (@configs) {
     my @rev_dirs = grep /^r\d+$/, readdir DIR;
     closedir DIR;
 
+    my ($first_rev, $last_rev);
+
     foreach my $subdir (@rev_dirs) {
 	$subdir =~ /^r(\d+)$/ or die;
 	my $revision = $1;
+
+	if (!defined($first_rev)) {
+	    $first_rev = $revision;
+	    $last_rev = $revision;
+	} else {
+	    $first_rev = min($first_rev, $revision);
+	    $last_rev = max($last_rev, $revision);
+	}
 
 	my $dir = "$basedir/$subdir";
 	opendir DIR, $dir or die;
@@ -261,13 +272,15 @@ foreach my $config (@configs) {
 
 	    $revisions{$revision} = 1;
 
-	    open FILE, "<$dir/$test.size" or die;
-	    my $size = <FILE> or die;
-	    close FILE;
+	    if (-f "$dir/$test.size") {
+		open FILE, "<$dir/$test.size" or die;
+		my $size = <FILE> or die;
+		close FILE;
 
-	    chomp $size;
-	    $size =~ /^\d+$/ or die "cannot parse size for $dir/$test.size";
-	    $test_rev_data{$test}{$revision}{"size"} = $size;
+		chomp $size;
+		$size =~ /^\d+$/ or die "cannot parse size for $dir/$test.size";
+		$test_rev_data{$test}{$revision}{"size"} = $size;
+	    }
 	}
     }
 
@@ -314,15 +327,15 @@ foreach my $config (@configs) {
 
     #single test plots
     foreach my $test (keys %test_rev_data) {
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 1, "avg",
-			  "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 1, "avg",
-			  "$basedir/$test.png", 150, 60, 1, 3, 8);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+			  1, "avg", "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+			  1, "avg", "$basedir/$test.png", 150, 60, 1, 3, 8);
 
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 0, "size",
-			  "$basedir/$test\_size_large.png", 500, 150, 2, 5, 16);
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, 0, "size",
-			  "$basedir/$test\_size.png", 150, 60, 1, 3, 8);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+			  0, "size", "$basedir/$test\_size_large.png", 500, 150, 2, 5, 16);
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+			  0, "size", "$basedir/$test\_size.png", 150, 60, 1, 3, 8);
     }
 
     #compute combined plot data
