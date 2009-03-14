@@ -1,8 +1,8 @@
 #!/bin/bash
 
-COUNT=3
+. runner.conf
+
 TIME="/usr/bin/time -f %e"
-MONO="/home/schani/Work/novell/trunk/monosvn/mono/mini/mono"
 DIR=`pwd`
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
@@ -14,7 +14,7 @@ grepcomposite () {
 runtest () {
     echo "$1"
 
-    pushd "$2" >/dev/null
+    pushd "tests/$2" >/dev/null
 
     measure="$3"
 
@@ -58,3 +58,4 @@ runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 200000
 runtest binarytree shootout time binarytree.exe 20
 runtest n-body shootout time n-body.exe 50000000
 runtest mandelbrot shootout time mandelbrot.exe 6400
+runtest compileswf compile time --compile-all System.Windows.Forms.dll
