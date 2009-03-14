@@ -7,8 +7,13 @@ DIR=`pwd`
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
 
-grepcomposite () {
-    grep Composite | awk '{ print $3 }'
+grepscimark () {
+    grep Composite "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark.times"
+    grep FFT "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-fft.times"
+    grep SOR "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-sor.times"
+    grep Monte "$TMPPREFIX.out" | awk '{ print $4 }' >"$OUTDIR/scimark-montecarlo.times"
+    grep Sparse "$TMPPREFIX.out" | awk '{ print $4 }' >"$OUTDIR/scimark-matmult.times"
+    grep LU "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-lu.times"
 }
 
 runtest () {
@@ -26,22 +31,25 @@ runtest () {
     fi
     grep -a 'Native code size:' "$TMPPREFIX.stats" | awk '{ print $4 }' >"$OUTDIR/$1.size"
 
-    rm -f "$TMPPREFIX.times"
+    rm -f "$TMPPREFIX.times" "$TMPPREFIX.out"
     i=1
     while [ $i -le $COUNT ] ; do
-	if [ "$measure" == time ] ; then
+	if [ "$measure" = time ] ; then
 	    $TIME --append --output="$TMPPREFIX.times" $MONO $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
 	else
-	    $MONO $4 $5 $6 $7 $8 $9 | $measure >>"$TMPPREFIX.times"
+	    $MONO $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
 	fi
 	i=$(($i + 1))
     done
 
     popd >/dev/null
 
-    cp "$TMPPREFIX.times" "$OUTDIR/$1.times"
-    #awk -f avgdev.awk </tmp/speedtest.out >"$OUTDIR/$1.avgdev"
-    rm "$TMPPREFIX.times"
+    if [ "$measure" = time ] ; then
+	cp "$TMPPREFIX.times" "$OUTDIR/$1.times"
+	rm "$TMPPREFIX.times"
+    else
+	$measure
+    fi
 
     echo "Size"
     cat "$OUTDIR/$1.size"
@@ -51,7 +59,7 @@ runtest () {
 
 runtest myfib small time myfib.exe
 runtest monofib small time fib.exe 42
-runtest scimark scimark grepcomposite scimark.exe
+runtest scimark scimark grepscimark scimark.exe
 #runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
 runtest fsharp f-sharp-2.0 time fsc.exe GeneralTest1.fs
 runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 200000
