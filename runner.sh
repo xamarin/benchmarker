@@ -45,9 +45,8 @@ fi
 cd mono
 ./autogen.sh --prefix="$PREFIX" --with-moonlight=no
 if [ $? -ne 0 ] ; then
-    #FIXME: in this case and in the two following ones, mark the
-    #revision as broken
     cd ..
+    mv "$REVFILE" "$REVISION_DIR/broken/"
     echo "autogen.sh failed."
     exit 1
 fi
@@ -55,6 +54,7 @@ fi
 make -j2
 if [ $? -ne 0 ] ; then
     cd ..
+    mv "$REVFILE" "$REVISION_DIR/broken/"
     echo "make failed."
     exit 1
 fi
@@ -63,6 +63,7 @@ make install
 RESULT=$?
 cd ..
 if [ $RESULT -ne 0 ] ; then
+    mv "$REVFILE" "$REVISION_DIR/broken/"
     echo "make install failed."
     exit 1
 fi
@@ -71,6 +72,7 @@ rm results/*
 
 ./speedtest.sh
 if [ $? -ne 0 ] ; then
+    mv "$REVFILE" "$REVISION_DIR/broken/"
     echo "speedtest failed."
     exit 1
 fi
