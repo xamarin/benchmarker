@@ -4,6 +4,7 @@
 
 TIME="/usr/bin/time -f %e"
 DIR=`pwd`
+MONO="$DIR/installation/bin/mono"
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
 
