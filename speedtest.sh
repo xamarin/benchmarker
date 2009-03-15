@@ -63,7 +63,7 @@ runtest monofib small time fib.exe 42
 runtest scimark scimark grepscimark scimark.exe
 #runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
 runtest fsharp f-sharp-2.0 time fsc.exe GeneralTest1.fs
-runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 200000
+runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 500000
 runtest binarytree shootout time binarytree.exe 20
 runtest n-body shootout time n-body.exe 50000000
 runtest mandelbrot shootout time mandelbrot.exe 6400
