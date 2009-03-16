@@ -92,6 +92,13 @@ sub plot_marker_circle {
     $cr->stroke;
 }
 
+sub set_font {
+    my ($cr, $font_size) = @_;
+
+    $cr->select_font_face("Sans", "normal", $font_size > 12 ? "bold" : "normal");
+    $cr->set_font_size($font_size);
+}
+
 sub plot_cairo_single {
     my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename,
 	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
@@ -134,8 +141,7 @@ sub plot_cairo_single {
     $cr->stroke;
 
     #min/max markers
-    $cr->select_font_face("Sans", "normal", $font_size > 12 ? "bold" : "normal");
-    $cr->set_font_size($font_size);
+    set_font($cr, $font_size);
 
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
@@ -155,14 +161,23 @@ sub plot_cairo_single {
 }
 
 sub plot_cairo_combined {
-    my ($combined_data, $filename, $img_width, $img_height, $line_width) = @_;
+    my ($combined_data, $filename, $img_width, $img_height,
+	$line_width, $marker_radius, $font_size) = @_;
 
     my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, "min", "max");
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
+    my $text_distance = $marker_radius + $font_size / 5;
+    my $additional_space_x = $marker_radius;
+    my $additional_space_y = $text_distance + $font_size;
+
+    my ($window_x, $window_y, $window_width, $window_height) =
+	($additional_space_x, $additional_space_y,
+	 $img_width - 2 * $additional_space_x, $img_height - 2 * $additional_space_y);
+
     #avg
     $cr->save;
-    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
     make_revisions_path($cr, $revisions, $combined_data, "avg", 1);
     $cr->restore;
 
@@ -172,23 +187,57 @@ sub plot_cairo_combined {
 
     #min
     $cr->save;
-    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
     make_revisions_path($cr, $revisions, $combined_data, "min", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
-    $cr->set_source_rgb(0, 0.6, 0);
+    $cr->set_source_rgb(0, 0.3, 0);
     $cr->stroke;
 
     #max
     $cr->save;
-    transform_coords($cr, 0, 0, $img_width, $img_height, $min_x, $max_x, $min_y, $max_y);
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
     make_revisions_path($cr, $revisions, $combined_data, "max", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
-    $cr->set_source_rgb(1, 0, 0);
+    $cr->set_source_rgb(0.5, 0, 0);
     $cr->stroke;
+
+    #min/max markers
+    my ($min_rev, $min_avg, $max_rev, $max_avg);
+
+    foreach my $rev (@$revisions) {
+	my $val = $combined_data->{$rev}{"avg"};
+	if (!defined($min_rev)) {
+	    $min_rev = $max_rev = $rev;
+	    $min_avg = $max_avg = $val;
+	} else {
+	    if ($val < $min_avg) {
+		$min_rev = $rev;
+		$min_avg = $val;
+	    }
+	    if ($val > $max_avg) {
+		$max_rev = $rev;
+		$max_avg = $val;
+	    }
+	}
+    }
+
+    set_font($cr, $font_size);
+
+    $cr->save;
+    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($min_rev, $min_avg);
+    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($max_rev, $max_avg);
+    $cr->restore;
+
+    plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
+    show_text_below($cr, $min_rev, $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
+
+    plot_marker_circle($cr, $avg_max_x, $avg_max_y, $marker_radius, $line_width, 1, 0, 0);
+    show_text_above($cr, $max_rev, $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
 
     $cr->show_page;
     $surface->write_to_png($filename);
@@ -388,8 +437,8 @@ foreach my $config (@configs) {
     $all_combined_data{$config} = \%combined_data;
 
     #combined plot
-    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 2);
-    plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 35, 1);
+    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 2, 5, 16);
+    plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 60, 1, 3, 8);
 
     #write html index
     my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
