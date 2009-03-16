@@ -82,6 +82,16 @@ sub show_text_below {
     show_text_above($cr, $text, $x, $y, $img_width, $img_height);
 }
 
+sub plot_marker_circle {
+    my ($cr, $x, $y, $radius, $line_width, $color_r, $color_g, $color_b) = @_;
+
+    $cr->new_path;
+    $cr->arc($x, $y, $radius, 0, 2 * PI);
+    $cr->set_line_width($line_width);
+    $cr->set_source_rgb($color_r, $color_g, $color_b);
+    $cr->stroke;
+}
+
 sub plot_cairo_single {
     my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename,
 	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
@@ -134,20 +144,10 @@ sub plot_cairo_single {
     my ($avg_max_x, $avg_max_y) = $cr->user_to_device($avg_max_rev, $rev_data->{$avg_max_rev}{$avg_key});
     $cr->restore;
 
-    $cr->new_path;
-    $cr->arc($avg_min_x, $avg_min_y, $marker_radius, 0, 2 * PI);
-    $cr->set_line_width($line_width);
-    $cr->set_source_rgb(0, 0.6, 0);
-    $cr->stroke;
-
+    plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
     show_text_below($cr, $avg_min_rev, $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
 
-    $cr->new_path;
-    $cr->arc($avg_max_x, $avg_max_y, $marker_radius, 0, 2 * PI);
-    $cr->set_line_width($line_width);
-    $cr->set_source_rgb(1, 0, 0);
-    $cr->stroke;
-
+    plot_marker_circle($cr, $avg_max_x, $avg_max_y, $marker_radius, $line_width, 1, 0, 0);
     show_text_above($cr, $avg_max_rev, $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
 
     $cr->show_page;
