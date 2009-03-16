@@ -161,10 +161,12 @@ sub plot_cairo_single {
 }
 
 sub plot_cairo_combined {
-    my ($combined_data, $filename, $img_width, $img_height,
+    my ($combined_data, $filename, $img_width, $img_height, $plot_min_max,
 	$line_width, $marker_radius, $font_size) = @_;
 
-    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, "min", "max");
+    my $min_key = $plot_min_max ? "min" : "avg";
+    my $max_key = $plot_min_max ? "max" : "avg";
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, $min_key, $max_key);
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     my $text_distance = $marker_radius + $font_size / 5;
@@ -185,25 +187,27 @@ sub plot_cairo_combined {
     $cr->set_source_rgb(0, 0, 0);
     $cr->stroke;
 
-    #min
-    $cr->save;
-    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $combined_data, "min", 1);
-    $cr->restore;
+    if ($plot_min_max) {
+	#min
+	$cr->save;
+	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+	make_revisions_path($cr, $revisions, $combined_data, "min", 1);
+	$cr->restore;
 
-    $cr->set_line_width($line_width);
-    $cr->set_source_rgb(0, 0.3, 0);
-    $cr->stroke;
+	$cr->set_line_width($line_width);
+	$cr->set_source_rgb(0, 0.3, 0);
+	$cr->stroke;
 
-    #max
-    $cr->save;
-    transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $combined_data, "max", 1);
-    $cr->restore;
+	#max
+	$cr->save;
+	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
+	make_revisions_path($cr, $revisions, $combined_data, "max", 1);
+	$cr->restore;
 
-    $cr->set_line_width($line_width);
-    $cr->set_source_rgb(0.5, 0, 0);
-    $cr->stroke;
+	$cr->set_line_width($line_width);
+	$cr->set_source_rgb(0.5, 0, 0);
+	$cr->stroke;
+    }
 
     #min/max markers
     my ($min_rev, $min_avg, $max_rev, $max_avg);
@@ -437,8 +441,8 @@ foreach my $config (@configs) {
     $all_combined_data{$config} = \%combined_data;
 
     #combined plot
-    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 2, 5, 16);
-    plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 60, 1, 3, 8);
+    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 1, 2, 5, 16);
+    plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 60, 0, 1, 3, 8);
 
     #write html index
     my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
