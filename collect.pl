@@ -254,17 +254,22 @@ foreach my $config (@configs) {
 		@values = map { $inverse_tests{$test} / $_ } @values;
 	    }
 
-	    my $min = $values[0];
-	    my $max = $values[0];
+	    @values = sort { $a <=> $b } @values;
+	    if (@values >= 10) {
+		@values = @values[2 .. $#values - 2];
+	    } elsif (@values >= 5) {
+		@values = @values[1 .. $#values - 1];
+	    }
+
 	    my $sum = 0;
 
 	    foreach my $value (@values) {
 		$sum += $value;
-		$min = $value if $value < $min;
-		$max = $value if $value > $max;
 	    }
 
 	    my $avg = $sum / @values;
+	    my $min = $values[0];
+	    my $max = $values[$#values];
 
 	    $test_rev_data{$test}{$revision}{"min"} = $min;
 	    $test_rev_data{$test}{$revision}{"max"} = $max;
