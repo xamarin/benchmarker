@@ -296,7 +296,7 @@ foreach my $config (@configs) {
 	    open FILE, "<$dir/$filename" or die;
 	    while (<FILE>) {
 		chomp;
-		$_ =~ /^\d+(\.\d+)?$/ or die;
+		$_ =~ /^\d+(\.\d+)?$/ or die "invalid time data in $dir/$filename";
 		push @values, $_;
 	    }
 	    close FILE;
