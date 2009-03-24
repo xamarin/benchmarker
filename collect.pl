@@ -247,6 +247,13 @@ sub plot_cairo_combined {
     $surface->write_to_png($filename);
 }
 
+sub file_mtime {
+    my ($filename) = @_;
+    my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks) = stat $filename;
+
+    return $mtime;
+}
+
 opendir DIR, "configs" or die;
 my @configs = grep { !/^\.\.?$/ && (-d "configs/$_") } readdir DIR;
 closedir DIR;
@@ -514,14 +521,17 @@ foreach my $config (@configs) {
 	print FILE "<h1>$test on $config</h1>\n";
 	print FILE "<p><img src=\"$test\_large.png\">\n";
 
-	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td></tr>\n";
+	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td><td><b>Benchmarked on</b></td></tr>\n";
 	foreach my $revision (sort { $b <=> $a } keys %{$test_rev_data{$test}}) {
+	    my $html_filename = "r$revision/$test.times";
+	    my $filename = "$basedir/$html_filename";
+	    my $ctime = file_mtime($filename);
 	    my $avg = $test_rev_data{$test}{$revision}{"avg"};
 	    my $min = $test_rev_data{$test}{$revision}{"min"};
 	    my $max = $test_rev_data{$test}{$revision}{"max"};
 	    my $size = $test_rev_data{$test}{$revision}{"size"};
 
-	    printf FILE "<tr><td><a href=\"r$revision/$test.times\">r$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td></tr>\n", $avg, $min, $max;
+	    printf FILE "<tr><td><a href=\"$html_filename\">r$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td><td>%s</td></tr>\n", $avg, $min, $max, (scalar localtime($ctime));
 	}
 	print FILE "</table>\n";
 	print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
