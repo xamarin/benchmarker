@@ -501,6 +501,7 @@ foreach my $config (@configs) {
 	print FILE "</tr>\n";
     }
     print FILE "</table>\n";
+    print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
     print FILE "</body></html>";
     close FILE;
 
@@ -523,7 +524,7 @@ foreach my $config (@configs) {
 	    printf FILE "<tr><td><a href=\"r$revision/$test.times\">r$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td></tr>\n", $avg, $min, $max;
 	}
 	print FILE "</table>\n";
-
+	print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
 	print FILE "</body></html>\n";
 
 	close FILE;
@@ -564,7 +565,7 @@ foreach my $config (@configs) {
     print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
-
+print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
 print FILE "</body></html>\n";
 
 close FILE;
