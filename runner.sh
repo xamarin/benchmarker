@@ -4,6 +4,7 @@
 
 DIR=`pwd`
 PREFIX="$DIR/installation"
+REVNUM_FILE="$1"
 
 highest_rev () {
     pushd "$REVISION_DIR" >/dev/null
@@ -81,3 +82,5 @@ mkdir "$CONFIG_DIR/r$REV"
 mv results/* "$CONFIG_DIR/r$REV/"
 
 rm "$REVFILE"
+
+echo "$REV" >"$REVNUM_FILE"
