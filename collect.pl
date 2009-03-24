@@ -514,7 +514,7 @@ foreach my $config (@configs) {
 	print FILE "<p><img src=\"$test\_large.png\">\n";
 
 	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td></tr>\n";
-	foreach my $revision (sort { $a <=> $b } keys %{$test_rev_data{$test}}) {
+	foreach my $revision (sort { $b <=> $a } keys %{$test_rev_data{$test}}) {
 	    my $avg = $test_rev_data{$test}{$revision}{"avg"};
 	    my $min = $test_rev_data{$test}{$revision}{"min"};
 	    my $max = $test_rev_data{$test}{$revision}{"max"};
