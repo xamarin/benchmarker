@@ -29,6 +29,13 @@ for arg in configs:
             times = times [2 : -2]
         data [arg] [name] = times
 
+# remove benchmarks not in every config
+
+for bench in benchmarks.copy ():
+    if len (filter (lambda c: bench not in data [c], configs)) > 0:
+        print "removing ", bench
+        benchmarks.remove (bench)
+
 benchmarks = list (benchmarks)
 benchmarks.sort ()
 
