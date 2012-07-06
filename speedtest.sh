@@ -2,8 +2,8 @@
 
 . runner.conf
 
-TIME="/Users/schani/Work/unix/mytime/mytime"
 DIR=`pwd`
+TIME="$DIR/mytime/mytime"
 MONO="$DIR/installation/bin/mono-sgen"
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
@@ -57,6 +57,18 @@ runtest () {
     echo "Times"
     cat "$OUTDIR/$1.times"
 }
+
+if [ ! -f "$TIME" ] ; then
+    echo Building mytime
+    pushd mytime >/dev/null
+    make
+    if [ $? -ne 0 ] ; then
+	popd >/dev/null
+	echo "Build failed"
+	exit 1
+    fi
+    popd >/dev/null
+fi
 
 #runtest myfib small time myfib.exe
 #runtest monofib small time fib.exe 42
