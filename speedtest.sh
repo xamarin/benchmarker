@@ -2,9 +2,9 @@
 
 . runner.conf
 
-TIME="/usr/bin/time -f %e"
+TIME="/Users/schani/Work/unix/mytime/mytime"
 DIR=`pwd`
-MONO="$DIR/installation/bin/mono"
+MONO="$DIR/installation/bin/mono-sgen"
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
 
@@ -36,7 +36,7 @@ runtest () {
     i=1
     while [ $i -le $COUNT ] ; do
 	if [ "$measure" = time ] ; then
-	    $TIME --append --output="$TMPPREFIX.times" $MONO $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
+	    $TIME "$TMPPREFIX.times" $MONO $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
 	else
 	    $MONO $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
 	fi
