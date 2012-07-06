@@ -64,7 +64,7 @@ runtest () {
 #runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
 runtest fsharp f-sharp-2.0 time fsc.exe GeneralTest1.fs
 runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 500000
-runtest binarytree shootout time binarytree.exe 20
+runtest binarytree shootout time binarytree.exe 19
 runtest n-body shootout time n-body.exe 50000000
 runtest graph4 graph time graph4.exe
 runtest graph8 graph time graph8.exe
