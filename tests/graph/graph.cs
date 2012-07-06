@@ -49,30 +49,58 @@ public class Node {
 		return s.Count;
 	}
 
+	static void connectNode (Node n, Node[] nodes, Random r) {
+		int size = nodes.Length;
+		n.connect (nodes [r.Next (size)],
+				nodes [r.Next (size)],
+				nodes [r.Next (size)],
+				nodes [r.Next (size)]
+#if EDGE8
+				, nodes [r.Next (size)],
+				nodes [r.Next (size)],
+				nodes [r.Next (size)],
+				nodes [r.Next (size)]
+#endif
+			   );
+	}
+
 	public static Node randomGraph (int size, Random r) {
 		Node[] nodes = new Node [size];
 		for (int i = 0; i < size; ++i)
 			nodes [i] = new Node ();
 		for (int i = 0; i < size; ++i)
-			nodes [i].connect (nodes [r.Next (size)],
-					nodes [r.Next (size)],
-					nodes [r.Next (size)],
-					nodes [r.Next (size)]
-#if EDGE8
-					, nodes [r.Next (size)],
-					nodes [r.Next (size)],
-					nodes [r.Next (size)],
-					nodes [r.Next (size)]
-#endif
-					   );
+			connectNode (nodes [i], nodes, r);
 		return nodes [0];
+	}
+
+	public static Node otherRandomGraph (int size, int bufsize, Random r) {
+		int i;
+		Node[] buffer = new Node [bufsize];
+		Node n = null;
+
+		for (i = 0; i < bufsize; ++i)
+			n = buffer [i] = new Node ();
+		for (i = 0; i < bufsize; ++i)
+			connectNode (buffer [i], buffer, r);
+		for (; i < size; ++i) {
+			n = new Node ();
+			int j = r.Next (bufsize);
+			buffer [j] = n;
+			connectNode (n, buffer, r);
+		}
+		/* in case of pinning */
+		for (i = 0; i < bufsize; ++i)
+			buffer [i] = null;
+		return n;
 	}
 
 	public static int Main () {
 		Random r = new Random (31415);
+		//Node g = otherRandomGraph (8000000, 128, r);
 		Node g = randomGraph (4000000, r);
 		Console.WriteLine ("long graph constructed");
 		for (int i = 0; i < 30; ++i)
+			//otherRandomGraph (1000000, 128, r);
 			randomGraph (500000, r);
 		Console.WriteLine ("done");
 		Console.WriteLine ("nodes: " + g.countNodes ());

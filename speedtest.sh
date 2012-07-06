@@ -68,3 +68,5 @@ runtest binarytree shootout time binarytree.exe 20
 runtest n-body shootout time n-body.exe 50000000
 runtest mandelbrot shootout time mandelbrot.exe 6400
 runtest compileswf compile time --compile-all System.Windows.Forms.dll
+runtest graph4 graph time graph4.exe
+runtest graph8 graph time graph8.exe
