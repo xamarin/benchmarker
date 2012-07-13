@@ -1,10 +1,20 @@
 #!/bin/bash
 
-. runner.conf
+if [ "x$1" = "x" ] ; then
+    echo "Usage: speedtest.sh <conf-file>"
+    exit 1
+fi
+
+if [ ! -f "$1" ] ; then
+    echo "Error: Config file '$1' does not exist."
+    exit 1
+fi
 
 DIR=`pwd`
+
+. "$1"
+
 TIME="$DIR/mytime/mytime"
-MONO="$DIR/installation/bin/mono-sgen"
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
 
