@@ -75,6 +75,11 @@ if [ ! -d "$OUTDIR" ] ; then
     mkdir "$OUTDIR"
 fi
 
+if [ ! -f "$MONO" ] ; then
+    echo "Error: Missing mono.  Expected to be $MONO."
+    exit 1
+fi
+
 #runtest myfib small time myfib.exe
 #runtest monofib small time fib.exe 42
 #runtest scimark scimark grepscimark scimark.exe
