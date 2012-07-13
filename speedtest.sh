@@ -71,6 +71,10 @@ if [ ! -f "$TIME" ] ; then
     popd >/dev/null
 fi
 
+if [ ! -d "$OUTDIR" ] ; then
+    mkdir "$OUTDIR"
+fi
+
 #runtest myfib small time myfib.exe
 #runtest monofib small time fib.exe 42
 #runtest scimark scimark grepscimark scimark.exe
