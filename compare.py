@@ -71,7 +71,7 @@ for i in range (len (benchmarks)):
 # plot
 
 ind = np.arange (len (benchmarks))    # the x locations for the groups
-width = 0.7 / len (benchmarks)        # the width of the bars
+width = 0.7 / len (configs)           # the width of the bars
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
