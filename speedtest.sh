@@ -27,6 +27,7 @@ runtest () {
     #the first run is not timed
     $MONO --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
     if [ $? -ne 0 ] ; then
+	echo "Error"
 	popd >/dev/null
 	return
     fi
