@@ -12,7 +12,13 @@ fi
 
 DIR=`pwd`
 
+mono_env () {
+    true
+}
+
 . "$1"
+
+mono_env
 
 TIME="$DIR/mytime/mytime"
 OUTDIR="$DIR/results"
