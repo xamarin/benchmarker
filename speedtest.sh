@@ -35,7 +35,7 @@ runtest () {
     measure="$3"
 
     #the first run is not timed
-    $MONO --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
+    "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
     if [ $? -ne 0 ] ; then
 	echo "Error"
 	popd >/dev/null
@@ -47,9 +47,9 @@ runtest () {
     i=1
     while [ $i -le $COUNT ] ; do
 	if [ "$measure" = time ] ; then
-	    $TIME "$TMPPREFIX.times" $MONO $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
+	    $TIME "$TMPPREFIX.times" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
 	else
-	    $MONO $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
+	    "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
 	fi
 	i=$(($i + 1))
     done
