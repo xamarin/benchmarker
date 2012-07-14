@@ -41,7 +41,7 @@ runtest () {
 	popd >/dev/null
 	return
     fi
-    grep -a 'Native code size:' "$TMPPREFIX.stats" | awk '{ print $4 }' >"$OUTDIR/$1.size"
+    grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$1.size"
 
     rm -f "$TMPPREFIX.times" "$TMPPREFIX.out"
     i=1
