@@ -70,8 +70,10 @@ for i in range (len (benchmarks)):
 
 # plot
 
-ind = np.arange (len (benchmarks))    # the x locations for the groups
-width = 0.7 / len (configs)           # the width of the bars
+bars_width = 0.8                        # the width of all bars for one benchmark combined
+xoff = (1.0 - bars_width) / 2.0
+ind = np.arange (len (benchmarks))      # the x locations for the groups
+width = bars_width / len (configs)      # the width of the bars
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -83,14 +85,18 @@ i = 0
 for config in configs:
     (means, errs) = processed [config]
 
-    plot = ax.bar (ind + i * width, means, width, yerr = errs, color = colors [i])
+    plot = ax.bar (ind + xoff + i * width, means, width, yerr = errs, color = colors [i])
     rects.append (plot [0])
 
     i = i + 1
 
+ax.set_xlim (-xoff, len (benchmarks) + xoff)
+
 # add some
-ax.set_xticks (ind + i * width)
+ax.set_xticks (ind + xoff + i * width)
 ax.set_xticklabels (benchmarks)
+
+ax.set_ylabel ('relative wall clock time')
 
 ax.legend (rects, configs)
 
