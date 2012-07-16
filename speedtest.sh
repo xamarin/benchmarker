@@ -23,6 +23,7 @@ mono_env
 TIME="$DIR/mytime/mytime"
 OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
+TIMEOUT=200
 
 grepscimark () {
     grep Composite "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark.times"
@@ -41,7 +42,7 @@ runtest () {
     measure="$3"
 
     #the first run is not timed
-    "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
+    $TIME /dev/null "$TIMEOUT" "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
     if [ $? -ne 0 ] ; then
 	echo "Error"
 	popd >/dev/null
@@ -53,9 +54,14 @@ runtest () {
     i=1
     while [ $i -le $COUNT ] ; do
 	if [ "$measure" = time ] ; then
-	    $TIME "$TMPPREFIX.times" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
+	    $TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
 	else
-	    "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
+	    $TIME /dev/null "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
+	fi
+	if [ $? -ne 0 ] ; then
+	    echo "Error"
+	    popd >/dev/null
+	    return
 	fi
 	i=$(($i + 1))
     done
