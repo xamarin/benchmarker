@@ -16,6 +16,10 @@ mono_env () {
     true
 }
 
+benchmark_env () {
+    true
+}
+
 . "$1"
 
 mono_env
@@ -36,6 +40,8 @@ grepscimark () {
 
 runtest () {
     echo "$1"
+
+    benchmark_env "$1"
 
     pushd "tests/$2" >/dev/null
 
