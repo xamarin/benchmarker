@@ -34,7 +34,7 @@ for config in "$@" ; do
 	mkdir "$RESULTS_DIR/$CONFIG_NAME"
     fi
 
-    mkdir "$RESULTS_DIR/$CONFIG_NAME/$REVISION"
+    mkdir "$RESULTS_DIR/$CONFIG_NAME/r$REVISION"
 
-    mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$RESULTS_DIR/$CONFIG_NAME/$REVISION/"
+    mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$RESULTS_DIR/$CONFIG_NAME/r$REVISION/"
 done
