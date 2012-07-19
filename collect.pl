@@ -3,6 +3,7 @@
 use strict;
 use Cairo;
 use List::Util qw(min max);
+use File::Basename;
 
 use constant PI => 4 * atan2(1, 1);
 
@@ -254,16 +255,19 @@ sub file_mtime {
     return $mtime;
 }
 
-opendir DIR, "configs" or die;
-my @configs = grep { !/^\.\.?$/ && (-d "configs/$_") } readdir DIR;
-closedir DIR;
+my @configs = @ARGV;
 
 my %all_combined_data = ();
 my %all_test_data = ();
 my %all_test_rev_data = ();
 
-foreach my $config (@configs) {
-    my $basedir = "configs/$config";
+foreach my $basedir (@configs) {
+    if (! -d $basedir) {
+	printf STDERR "Error: Configuration directory '$basedir' does not exist.";
+	exit 1;
+    }
+
+    my $config = basename ($basedir);
 
     my %test_rev_data = ();
     my %test_data = ();
@@ -548,7 +552,8 @@ print FILE "<html><body>\n";
 print FILE "<h1>Mono Performance Monitoring</h1>\n";
 
 print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Last Revision</b></td><td><b>Average</b></td><td colspan=\"2\"><b>Worst</b></td><td><b>Duration</b></td></tr>\n";
-foreach my $config (@configs) {
+foreach my $basedir (@configs) {
+    my $config = basename ($basedir);
     my $combined_data = $all_combined_data{$config};
     my $test_data = $all_test_data{$config};
     my $test_rev_data = $all_test_rev_data{$config};
