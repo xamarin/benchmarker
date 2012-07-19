@@ -47,7 +47,7 @@ sub make_surface_context {
 
 sub compute_min_max {
     my ($data, $min_key, $max_key) = @_;
-    my @revisions = sort { $a <=> $b } keys %$data;
+    my @revisions = sort { $a cmp $b } keys %$data;
 
     my $min_x = min @revisions;
     my $max_x = max @revisions;
@@ -277,13 +277,13 @@ foreach my $basedir (@configs) {
     my %inverse_tests = ( "scimark" => 10000 );
 
     opendir DIR, $basedir or die;
-    my @rev_dirs = grep /^r\d+$/, readdir DIR;
+    my @rev_dirs = grep {/^r/ and -d "$basedir/$_"} readdir DIR;
     closedir DIR;
 
     my ($first_rev, $last_rev);
 
     foreach my $subdir (@rev_dirs) {
-	$subdir =~ /^r(\d+)$/ or die;
+	$subdir =~ /^r(.+)$/ or die;
 	my $revision = $1;
 
 	if (!defined($first_rev)) {
@@ -456,7 +456,7 @@ foreach my $basedir (@configs) {
     plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 60, 0, 1, 3, 8);
 
     #write html index
-    my @last_revs = (sort { $a <=> $b } keys %revisions) [-3 .. -1];
+    my @last_revs = (sort { $a cmp $b } keys %revisions) [-3 .. -1];
 
     open FILE, ">$basedir/index.html" or die;
     print FILE "<html><body>\n";
@@ -475,7 +475,7 @@ foreach my $basedir (@configs) {
 
     print FILE "<tr><td><b>Test</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td>";
     foreach my $rev (@last_revs) {
-	print FILE "<td colspan=\"2\"><b>r$rev</b></td>";
+	print FILE "<td colspan=\"2\"><b>$rev</b></td>";
     }
     print FILE "<td><b>Duration</b></td><td><b>Size</b></td></tr>\n";
 
@@ -487,7 +487,7 @@ foreach my $basedir (@configs) {
 	my $avg_max_rev = $test_data{$test}{"avg_max_rev"};
 	my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
 
-	printf FILE "<td>%.2f</td><td>r$avg_min_rev</td><td>%.2f</td><td>r$avg_max_rev</td>", $avg_min, $avg_max;
+	printf FILE "<td>%.2f</td><td>$avg_min_rev</td><td>%.2f</td><td>$avg_max_rev</td>", $avg_min, $avg_max;
 
 	foreach my $rev (@last_revs) {
 	    if (exists $test_rev_data{$test}{$rev}) {
@@ -526,7 +526,7 @@ foreach my $basedir (@configs) {
 	print FILE "<p><img src=\"$test\_large.png\">\n";
 
 	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td><td><b>Benchmarked on</b></td></tr>\n";
-	foreach my $revision (sort { $b <=> $a } keys %{$test_rev_data{$test}}) {
+	foreach my $revision (sort { $b cmp $a } keys %{$test_rev_data{$test}}) {
 	    my $html_filename = "r$revision/$test.times";
 	    my $filename = "$basedir/$html_filename";
 	    my $ctime = file_mtime($filename);
@@ -535,7 +535,7 @@ foreach my $basedir (@configs) {
 	    my $max = $test_rev_data{$test}{$revision}{"max"};
 	    my $size = $test_rev_data{$test}{$revision}{"size"};
 
-	    printf FILE "<tr><td><a href=\"$html_filename\">r$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td><td>%s</td></tr>\n", $avg, $min, $max, (scalar localtime($ctime));
+	    printf FILE "<tr><td><a href=\"$html_filename\">$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td><td>%s</td></tr>\n", $avg, $min, $max, (scalar localtime($ctime));
 	}
 	print FILE "</table>\n";
 	print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
@@ -557,7 +557,7 @@ foreach my $basedir (@configs) {
     my $combined_data = $all_combined_data{$config};
     my $test_data = $all_test_data{$config};
     my $test_rev_data = $all_test_rev_data{$config};
-    my @revisions = sort { $a <=> $b } keys %$combined_data;
+    my @revisions = sort { $a cmp $b } keys %$combined_data;
 
     if ($#revisions < 0) {
 	print STDERR "Warning: Configuration '$config' has no revisions - ignoring.\n";
@@ -581,7 +581,7 @@ foreach my $basedir (@configs) {
     }
 
     print FILE "<tr><td><a href=\"$config/index.html\">$config</a></td>";
-    print FILE "<td>r$last_revision</td>";
+    print FILE "<td>$last_revision</td>";
     printf FILE "<td>%.2f%%</td>", $combined_data->{$last_revision}{"avg"} / $best_avg * 100;
     printf FILE "<td>%.2f%%</td><td>$worst_test</td>", $worst_quot * 100;
     print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
