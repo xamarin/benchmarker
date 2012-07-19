@@ -255,15 +255,23 @@ sub file_mtime {
     return $mtime;
 }
 
-my @configs = @ARGV;
+if ($#ARGV < 1) {
+    print STDERR "Usage: collect.pl <config-root> <config-dir> ...\n";
+    exit 1;
+}
+
+my $config_root = $ARGV [0];
+my @configs = @ARGV [1 .. $#ARGV];
 
 my %all_combined_data = ();
 my %all_test_data = ();
 my %all_test_rev_data = ();
 
-foreach my $basedir (@configs) {
+foreach my $confdir (@configs) {
+    my $basedir = "$config_root/$confdir";
+
     if (! -d $basedir) {
-	printf STDERR "Error: Configuration directory '$basedir' does not exist.";
+	print STDERR "Error: Configuration directory '$basedir' does not exist.";
 	exit 1;
     }
 
@@ -460,7 +468,6 @@ foreach my $basedir (@configs) {
 
     open FILE, ">$basedir/index.html" or die;
     print FILE "<html><body>\n";
-    print FILE "<p><a href=\"../index.html\">All Configs</a>\n";
     print FILE "<h1>$config</h1>\n";
     print FILE "<p><img src=\"combined_large.png\">\n";
     print FILE "<p><table cellpadding=\"5\" border=\"1\" rules=\"groups\">\n";
@@ -546,13 +553,14 @@ foreach my $basedir (@configs) {
 }
 
 #write main index
-open FILE, ">configs/index.html" or die;
+open FILE, ">$config_root/index.html" or die;
 
 print FILE "<html><body>\n";
 print FILE "<h1>Mono Performance Monitoring</h1>\n";
 
 print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Last Revision</b></td><td><b>Average</b></td><td colspan=\"2\"><b>Worst</b></td><td><b>Duration</b></td></tr>\n";
-foreach my $basedir (@configs) {
+foreach my $confdir (@configs) {
+    my $basedir = "$config_root/$confdir";
     my $config = basename ($basedir);
     my $combined_data = $all_combined_data{$config};
     my $test_data = $all_test_data{$config};
@@ -580,11 +588,11 @@ foreach my $basedir (@configs) {
 	}
     }
 
-    print FILE "<tr><td><a href=\"$config/index.html\">$config</a></td>";
+    print FILE "<tr><td><a href=\"$confdir/index.html\">$config</a></td>";
     print FILE "<td>$last_revision</td>";
     printf FILE "<td>%.2f%%</td>", $combined_data->{$last_revision}{"avg"} / $best_avg * 100;
     printf FILE "<td>%.2f%%</td><td>$worst_test</td>", $worst_quot * 100;
-    print FILE "<td><a href=\"$config/combined_large.png\"><img src=\"$config/combined.png\" border=\"0\"></a></td></tr>\n";
+    print FILE "<td><a href=\"$confdir/combined_large.png\"><img src=\"$confdir/combined.png\" border=\"0\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
 print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
