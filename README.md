@@ -8,9 +8,9 @@ Each Mono configuration requires a `.conf` file.  The files in the `configs` dir
 
 To run the suite for a specific revision, use the `runner.sh` script. It must be run in the benchmarker root directory:
 
-    ./runner.sh <revision> <config-file> ...
+    ./runner.sh [-c <commit-sha1>] <revision> <config-file> ...
 
-The revision can be an arbitrary string, but revision strings must be string-comparedly ascending.  [This blog post](http://blog.marcingil.com/2011/11/creating-build-numbers-using-git-commits/) describes a method for deriving such a revision string from git commits.  We would have to use more than four digits for the commit counter, of course.
+The revision can be an arbitrary string, but revision strings must be string-comparedly ascending.  [This blog post](http://blog.marcingil.com/2011/11/creating-build-numbers-using-git-commits/) describes a method for deriving such a revision string from git commits.  We would have to use more than four digits for the commit counter, of course.  If the SHA1 is available, pass it on.  It is used by the collect script for user-friendliness.
 
 The script will place the result files in the directories `$RESULTS_DIR/$CONFIG_NAME/r$REVISION`.
 

@@ -1,11 +1,33 @@
 #!/bin/bash
 
+usage () {
+    echo "Usage: runner.sh [-c commit-sha1] <revision> <config-file> ..."
+    exit $1
+}
+
+SHA=""
+
+while getopts hc: OPT; do
+    case "$OPT" in
+	h)
+	    usage 0
+	    ;;
+	c)
+	    SHA="$OPTARG"
+	    ;;
+	\?)
+	    usage 1
+	    ;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
 REVISION="$1"
 shift
 
 if [ "x$REVISION" = "x" ] ; then
-    echo "Usage: runner.sh <revision> <config-file> ..."
-    exit 1
+    usage 1
 fi
 
 DIR=`pwd`
@@ -35,6 +57,9 @@ for config in "$@" ; do
     fi
 
     mkdir "$RESULTS_DIR/$CONFIG_NAME/r$REVISION"
+    if [ "x$SHA" != "x" ] ; then
+	echo "$SHA" >"$RESULTS_DIR/$CONFIG_NAME/r$REVISION/sha1"
+    fi
 
     mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$RESULTS_DIR/$CONFIG_NAME/r$REVISION/"
 done

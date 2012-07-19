@@ -101,7 +101,7 @@ sub set_font {
 }
 
 sub plot_cairo_single {
-    my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename,
+    my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename, $revname,
 	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
 
     my $min_key = $have_min_max ? "min" : $avg_key;
@@ -152,17 +152,17 @@ sub plot_cairo_single {
     $cr->restore;
 
     plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
-    show_text_below($cr, $avg_min_rev, $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
+    show_text_below($cr, $revname->($avg_min_rev), $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
 
     plot_marker_circle($cr, $avg_max_x, $avg_max_y, $marker_radius, $line_width, 1, 0, 0);
-    show_text_above($cr, $avg_max_rev, $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
+    show_text_above($cr, $revname->($avg_max_rev), $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
 
     $cr->show_page;
     $surface->write_to_png($filename);
 }
 
 sub plot_cairo_combined {
-    my ($combined_data, $filename, $img_width, $img_height, $plot_min_max,
+    my ($combined_data, $filename, $revname, $img_width, $img_height, $plot_min_max,
 	$line_width, $marker_radius, $font_size) = @_;
 
     my $min_key = $plot_min_max ? "min" : "avg";
@@ -239,10 +239,10 @@ sub plot_cairo_combined {
     $cr->restore;
 
     plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
-    show_text_below($cr, $min_rev, $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
+    show_text_below($cr, $revname->($min_rev), $avg_min_x, $avg_min_y + $text_distance, $img_width, $img_height);
 
     plot_marker_circle($cr, $avg_max_x, $avg_max_y, $marker_radius, $line_width, 1, 0, 0);
-    show_text_above($cr, $max_rev, $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
+    show_text_above($cr, $revname->($max_rev), $avg_max_x, $avg_max_y - $text_distance, $img_width, $img_height);
 
     $cr->show_page;
     $surface->write_to_png($filename);
@@ -281,6 +281,27 @@ foreach my $confdir (@configs) {
     my %test_data = ();
 
     my %revisions = ();
+    my %shas = ();
+
+    sub revname {
+	my ($revision) = @_;
+	if (exists $shas{$revision}) {
+	    my $sha = $shas{$revision};
+	    return substr $sha, 0, 10;
+	} else {
+	    return $revision;
+	}
+    }
+
+    sub revlink {
+	my ($revision) = @_;
+	if (exists $shas{$revision}) {
+	    my $sha = $shas{$revision};
+	    return sprintf "<a href=\"https://github.com/mono/mono/commit/%s\">%s</a>", $sha, revname ($revision);
+	} else {
+	    return $revision;
+	}
+    }
 
     my %inverse_tests = ( "scimark" => 10000 );
 
@@ -306,6 +327,20 @@ foreach my $confdir (@configs) {
 	opendir DIR, $dir or die;
 	my @filenames = grep /\.times$/, readdir DIR;
 	closedir DIR;
+
+	my $shaname = "$dir/sha1";
+	if (-f $shaname) {
+	    open SHA, $shaname or die;
+	    my $sha = <SHA>;
+	    close SHA;
+	    chomp $sha;
+	    if ($sha =~ /^[0-9a-f]{5,40}$/) {
+		$shas{$revision} = $sha;
+		print "$revision - $sha\n";
+	    } else {
+		print STDERR "Warning: Invalid SHA1 in '$shaname' - ignoring.\n";
+	    }
+	}
 
 	foreach my $filename (@filenames) {
 	    $filename =~ /^(.+)\.times$/ or die;
@@ -405,14 +440,14 @@ foreach my $confdir (@configs) {
     #single test plots
     foreach my $test (keys %test_rev_data) {
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
-			  1, "avg", "$basedir/$test\_large.png", 500, 150, 2, 5, 16);
+			  1, "avg", "$basedir/$test\_large.png", \&revname, 500, 150, 2, 5, 16);
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
-			  1, "avg", "$basedir/$test.png", 150, 60, 1, 3, 8);
+			  1, "avg", "$basedir/$test.png", \&revname, 150, 60, 1, 3, 8);
 
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
-			  0, "size", "$basedir/$test\_size_large.png", 500, 150, 2, 5, 16);
+			  0, "size", "$basedir/$test\_size_large.png", \&revname, 500, 150, 2, 5, 16);
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
-			  0, "size", "$basedir/$test\_size.png", 150, 60, 1, 3, 8);
+			  0, "size", "$basedir/$test\_size.png", \&revname, 150, 60, 1, 3, 8);
     }
 
     #compute combined plot data
@@ -460,8 +495,8 @@ foreach my $confdir (@configs) {
     $all_combined_data{$config} = \%combined_data;
 
     #combined plot
-    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", 500, 150, 1, 2, 5, 16);
-    plot_cairo_combined(\%combined_data, "$basedir/combined.png", 150, 60, 0, 1, 3, 8);
+    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", \&revname, 500, 150, 1, 2, 5, 16);
+    plot_cairo_combined(\%combined_data, "$basedir/combined.png", \&revname, 150, 60, 0, 1, 3, 8);
 
     #write html index
     my @last_revs = (sort { $a cmp $b } keys %revisions) [-3 .. -1];
@@ -482,7 +517,7 @@ foreach my $confdir (@configs) {
 
     print FILE "<tr><td><b>Test</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td>";
     foreach my $rev (@last_revs) {
-	print FILE "<td colspan=\"2\"><b>$rev</b></td>";
+	printf FILE "<td colspan=\"2\"><b>%s</b></td>", revlink ($rev);
     }
     print FILE "<td><b>Duration</b></td><td><b>Size</b></td></tr>\n";
 
@@ -494,7 +529,7 @@ foreach my $confdir (@configs) {
 	my $avg_max_rev = $test_data{$test}{"avg_max_rev"};
 	my $avg_max = $test_rev_data{$test}{$avg_max_rev}{"avg"};
 
-	printf FILE "<td>%.2f</td><td>$avg_min_rev</td><td>%.2f</td><td>$avg_max_rev</td>", $avg_min, $avg_max;
+	printf FILE "<td>%.2f</td><td>%s</td><td>%.2f</td><td>%s</td>", $avg_min, revlink ($avg_min_rev), $avg_max, revlink ($avg_max_rev);
 
 	foreach my $rev (@last_revs) {
 	    if (exists $test_rev_data{$test}{$rev}) {
@@ -532,7 +567,7 @@ foreach my $confdir (@configs) {
 	print FILE "<h1>$test on $config</h1>\n";
 	print FILE "<p><img src=\"$test\_large.png\">\n";
 
-	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td><td><b>Benchmarked on</b></td></tr>\n";
+	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td><td><b>Benchmarked on</b></td><td><b>All times</b></td></tr>\n";
 	foreach my $revision (sort { $b cmp $a } keys %{$test_rev_data{$test}}) {
 	    my $html_filename = "r$revision/$test.times";
 	    my $filename = "$basedir/$html_filename";
@@ -542,7 +577,7 @@ foreach my $confdir (@configs) {
 	    my $max = $test_rev_data{$test}{$revision}{"max"};
 	    my $size = $test_rev_data{$test}{$revision}{"size"};
 
-	    printf FILE "<tr><td><a href=\"$html_filename\">$revision</a></td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td><td>%s</td></tr>\n", $avg, $min, $max, (scalar localtime($ctime));
+	    printf FILE "<tr><td>%s</td><td>%.2f</td><td>%.2f</td><td>%.2f</td><td>$size</td><td>%s</td><td><a href=\"$html_filename\">All times</a></td></tr>\n", revlink ($revision), $avg, $min, $max, (scalar localtime($ctime));
 	}
 	print FILE "</table>\n";
 	print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
@@ -589,7 +624,7 @@ foreach my $confdir (@configs) {
     }
 
     print FILE "<tr><td><a href=\"$confdir/index.html\">$config</a></td>";
-    print FILE "<td>$last_revision</td>";
+    printf FILE "<td>%s</td>", revlink ($last_revision);
     printf FILE "<td>%.2f%%</td>", $combined_data->{$last_revision}{"avg"} / $best_avg * 100;
     printf FILE "<td>%.2f%%</td><td>$worst_test</td>", $worst_quot * 100;
     print FILE "<td><a href=\"$confdir/combined_large.png\"><img src=\"$confdir/combined.png\" border=\"0\"></a></td></tr>\n";
