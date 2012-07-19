@@ -553,6 +553,12 @@ foreach my $config (@configs) {
     my $test_data = $all_test_data{$config};
     my $test_rev_data = $all_test_rev_data{$config};
     my @revisions = sort { $a <=> $b } keys %$combined_data;
+
+    if ($#revisions < 0) {
+	print STDERR "Warning: Configuration '$config' has no revisions - ignoring.\n";
+	next;
+    }
+
     my $last_revision = $revisions[-1];
     my $best_avg = min (map { $combined_data->{$_}{"avg"} } @revisions);
     my ($worst_quot, $worst_test);
