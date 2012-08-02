@@ -42,10 +42,7 @@ for config in "$@" ; do
 
     . "$config"
 
-    if [ ! -d "$RESULTS_DIR" ] ; then
-	echo "Error: results directory '$RESULTS_DIR' does not exist."
-	exit 1
-    fi
+    mkdir -p "$RESULTS_DIR"
 
     ./speedtest.sh "$config"
     if [ $? -ne 0 ] ; then
