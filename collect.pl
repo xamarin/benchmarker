@@ -311,7 +311,7 @@ foreach my $confdir (@configs) {
     my $next_rev_index = 0;
 
     opendir DIR, $basedir or die;
-    my @rev_dirs = grep {/^r/ and -d "$basedir/$_"} readdir DIR;
+    my @rev_dirs = sort { $a cmp $b } grep {/^r/ and -d "$basedir/$_"} readdir DIR;
     closedir DIR;
 
     my ($first_rev, $last_rev);
