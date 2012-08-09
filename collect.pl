@@ -8,17 +8,17 @@ use File::Basename;
 use constant PI => 4 * atan2(1, 1);
 
 sub make_revisions_path {
-    my ($cr, $revisions, $data, $key, $moveto) = @_;
+    my ($cr, $revisions, $rev_indexes, $data, $key, $moveto) = @_;
     my @revisions = @$revisions;
     my %data = %$data;
 
     if ($moveto) {
-	$cr->move_to($revisions[0], $data{$revisions[0]}{$key});
+	$cr->move_to($rev_indexes->{$revisions[0]}, $data{$revisions[0]}{$key});
 	@revisions = @revisions[1 .. $#revisions];
     }
 
     foreach my $revision (@revisions) {
-	$cr->line_to($revision, $data{$revision}{$key});
+	$cr->line_to($rev_indexes->{$revision}, $data{$revision}{$key});
     }
 }
 
@@ -46,11 +46,11 @@ sub make_surface_context {
 }
 
 sub compute_min_max {
-    my ($data, $min_key, $max_key) = @_;
+    my ($data, $rev_indexes, $min_key, $max_key) = @_;
     my @revisions = sort { $a cmp $b } keys %$data;
 
-    my $min_x = min @revisions;
-    my $max_x = max @revisions;
+    my $min_x = min values %$rev_indexes;
+    my $max_x = max values %$rev_indexes;
     my $min_y = min (map { $data->{$_}{$min_key} } @revisions);
     my $max_y = max (map { $data->{$_}{$max_key} } @revisions);
 
@@ -101,13 +101,15 @@ sub set_font {
 }
 
 sub plot_cairo_single {
-    my ($rev_data, $test_data, $min_x, $max_x, $have_min_max, $avg_key, $filename, $revname,
+    my ($rev_data, $test_data, $rev_indexes, $min_x_rev, $max_x_rev, $have_min_max, $avg_key, $filename, $revname,
 	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
 
+    my $min_x = $rev_indexes->{$min_x_rev};
+    my $max_x = $rev_indexes->{$max_x_rev};
     my $min_key = $have_min_max ? "min" : $avg_key;
     my $max_key = $have_min_max ? "max" : $avg_key;
     my ($revisions, $dummy_min_x, $dummy_min_y, $min_y, $max_y) =
-	compute_min_max($rev_data, $min_key, $max_key);
+	compute_min_max($rev_data, $rev_indexes, $min_key, $max_key);
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     my $text_distance = $marker_radius + $font_size / 5;
@@ -122,9 +124,9 @@ sub plot_cairo_single {
     if ($have_min_max) {
 	$cr->save;
 	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-	make_revisions_path($cr, $revisions, $rev_data, "min", 1);
+	make_revisions_path($cr, $revisions, $rev_indexes, $rev_data, "min", 1);
 	my @revisions_rev = reverse @$revisions;
-	make_revisions_path($cr, \@revisions_rev, $rev_data, "max", 0);
+	make_revisions_path($cr, \@revisions_rev, $rev_indexes, $rev_data, "max", 0);
 	$cr->restore;
 
 	$cr->set_source_rgb(0.7, 0.7, 0.7);
@@ -134,7 +136,7 @@ sub plot_cairo_single {
     #avg
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $rev_data, $avg_key, 1);
+    make_revisions_path($cr, $revisions, $rev_indexes, $rev_data, $avg_key, 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -147,8 +149,8 @@ sub plot_cairo_single {
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
     my ($avg_min_rev, $avg_max_rev) = ($test_data->{"$avg_key\_min_rev"}, $test_data->{"$avg_key\_max_rev"});
-    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($avg_min_rev, $rev_data->{$avg_min_rev}{$avg_key});
-    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($avg_max_rev, $rev_data->{$avg_max_rev}{$avg_key});
+    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($rev_indexes->{$avg_min_rev}, $rev_data->{$avg_min_rev}{$avg_key});
+    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($rev_indexes->{$avg_max_rev}, $rev_data->{$avg_max_rev}{$avg_key});
     $cr->restore;
 
     plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
@@ -162,12 +164,12 @@ sub plot_cairo_single {
 }
 
 sub plot_cairo_combined {
-    my ($combined_data, $filename, $revname, $img_width, $img_height, $plot_min_max,
+    my ($combined_data, $rev_indexes, $filename, $revname, $img_width, $img_height, $plot_min_max,
 	$line_width, $marker_radius, $font_size) = @_;
 
     my $min_key = $plot_min_max ? "min" : "avg";
     my $max_key = $plot_min_max ? "max" : "avg";
-    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, $min_key, $max_key);
+    my ($revisions, $min_x, $max_x, $min_y, $max_y) = compute_min_max($combined_data, $rev_indexes, $min_key, $max_key);
     my ($surface, $cr) = make_surface_context($img_width, $img_height);
 
     my $text_distance = $marker_radius + $font_size / 5;
@@ -181,7 +183,7 @@ sub plot_cairo_combined {
     #avg
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    make_revisions_path($cr, $revisions, $combined_data, "avg", 1);
+    make_revisions_path($cr, $revisions, $rev_indexes, $combined_data, "avg", 1);
     $cr->restore;
 
     $cr->set_line_width($line_width);
@@ -192,7 +194,7 @@ sub plot_cairo_combined {
 	#min
 	$cr->save;
 	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-	make_revisions_path($cr, $revisions, $combined_data, "min", 1);
+	make_revisions_path($cr, $revisions, $rev_indexes, $combined_data, "min", 1);
 	$cr->restore;
 
 	$cr->set_line_width($line_width);
@@ -202,7 +204,7 @@ sub plot_cairo_combined {
 	#max
 	$cr->save;
 	transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-	make_revisions_path($cr, $revisions, $combined_data, "max", 1);
+	make_revisions_path($cr, $revisions, $rev_indexes, $combined_data, "max", 1);
 	$cr->restore;
 
 	$cr->set_line_width($line_width);
@@ -234,8 +236,8 @@ sub plot_cairo_combined {
 
     $cr->save;
     transform_coords($cr, $window_x, $window_y, $window_width, $window_height, $min_x, $max_x, $min_y, $max_y);
-    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($min_rev, $min_avg);
-    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($max_rev, $max_avg);
+    my ($avg_min_x, $avg_min_y) = $cr->user_to_device($rev_indexes->{$min_rev}, $min_avg);
+    my ($avg_max_x, $avg_max_y) = $cr->user_to_device($rev_indexes->{$max_rev}, $max_avg);
     $cr->restore;
 
     plot_marker_circle($cr, $avg_min_x, $avg_min_y, $marker_radius, $line_width, 0, 0.6, 0);
@@ -305,6 +307,9 @@ foreach my $confdir (@configs) {
 
     my %inverse_tests = ( "scimark" => 10000 );
 
+    my %rev_indexes = ();
+    my $next_rev_index = 0;
+
     opendir DIR, $basedir or die;
     my @rev_dirs = grep {/^r/ and -d "$basedir/$_"} readdir DIR;
     closedir DIR;
@@ -314,6 +319,9 @@ foreach my $confdir (@configs) {
     foreach my $subdir (@rev_dirs) {
 	$subdir =~ /^r(.+)$/ or die;
 	my $revision = $1;
+	my $rev_index = $next_rev_index++;
+
+	$rev_indexes{$revision} = $rev_index;
 
 	if (!defined($first_rev)) {
 	    $first_rev = $revision;
@@ -439,14 +447,14 @@ foreach my $confdir (@configs) {
 
     #single test plots
     foreach my $test (keys %test_rev_data) {
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
 			  1, "avg", "$basedir/$test\_large.png", \&revname, 500, 150, 2, 5, 16);
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
 			  1, "avg", "$basedir/$test.png", \&revname, 150, 60, 1, 3, 8);
 
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
 			  0, "size", "$basedir/$test\_size_large.png", \&revname, 500, 150, 2, 5, 16);
-	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, $first_rev, $last_rev,
+	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
 			  0, "size", "$basedir/$test\_size.png", \&revname, 150, 60, 1, 3, 8);
     }
 
@@ -495,8 +503,8 @@ foreach my $confdir (@configs) {
     $all_combined_data{$config} = \%combined_data;
 
     #combined plot
-    plot_cairo_combined(\%combined_data, "$basedir/combined_large.png", \&revname, 500, 150, 1, 2, 5, 16);
-    plot_cairo_combined(\%combined_data, "$basedir/combined.png", \&revname, 150, 60, 0, 1, 3, 8);
+    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined_large.png", \&revname, 500, 150, 1, 2, 5, 16);
+    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined.png", \&revname, 150, 60, 0, 1, 3, 8);
 
     #write html index
     my @last_revs = (sort { $a cmp $b } keys %revisions) [-3 .. -1];
