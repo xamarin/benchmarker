@@ -523,7 +523,7 @@ foreach my $confdir (@configs) {
     print FILE "<colgroup align=\"left\">\n";
     print FILE "<colgroup align=\"left\">\n";
 
-    print FILE "<tr><td><b>Test</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td><td colspan=\"2\"><b>Latest but two</b></td><td colspan=\"2\"><b>Latest but one</b></td><td colspan=\"2\"><b>Latest</b></td><td><b>Duration</b></td><td><b>Size</b></td></tr>";
+    print FILE "<tr><td><b>Benchmark</b></td><td colspan=\"2\"><b>Best</b></td><td colspan=\"2\"><b>Worst</b></td><td colspan=\"2\"><b>Latest but two</b></td><td colspan=\"2\"><b>Latest but one</b></td><td colspan=\"2\"><b>Latest</b></td><td><b>Duration</b></td><td><b>Size</b></td></tr>";
     print FILE "<tr><td></td><td colspan=\"2\"></td><td colspan=\"2\"></td>";
     foreach my $rev (@last_revs) {
 	printf FILE "<td colspan=\"2\">%s</td>", revlink ($rev);
