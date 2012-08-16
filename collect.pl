@@ -602,6 +602,8 @@ open FILE, ">$config_root/index.html" or die;
 print FILE "<html><body>\n";
 print FILE "<h1>Mono Performance Monitoring</h1>\n";
 
+print FILE "<a href=\"http://www.mono-project.com/Benchmark_Suite\">Need help?</a>\n";
+
 print FILE "<table cellpadding=\"5\"><tr><td><b>Config</b></td><td><b>Last Revision</b></td><td><b>Average</b></td><td colspan=\"2\"><b>Worst</b></td><td><b>Duration</b></td></tr>\n";
 foreach my $confdir (@configs) {
     my $basedir = "$config_root/$confdir";
