@@ -4,6 +4,7 @@ use strict;
 use Cairo;
 use List::Util qw(min max);
 use File::Basename;
+use Getopt::Long;
 
 use constant PI => 4 * atan2(1, 1);
 
@@ -257,7 +258,9 @@ sub file_mtime {
     return $mtime;
 }
 
-if ($#ARGV < 1) {
+my @config_files = ();
+
+if (!GetOptions ('conf=s' => \@config_files) || $#ARGV < 1) {
     print STDERR "Usage: collect.pl <config-root> <config-dir> ...\n";
     exit 1;
 }
@@ -268,6 +271,42 @@ my @configs = @ARGV [1 .. $#ARGV];
 my %all_combined_data = ();
 my %all_test_data = ();
 my %all_test_rev_data = ();
+
+my %config_file_data = ();
+
+foreach my $file (@config_files) {
+    my $name = undef;
+    my %data = ();
+    open CONF, $file or die;
+    while (<CONF>) {
+	chomp;
+	if (/(\w+)\s*=\s*("?)([^"]+)\2/) {
+	    if ($1 eq "CONFIG_NAME") {
+		$name = $3;
+	    } elsif ($1 eq "IGNORE_REVS") {
+		my @revs = split /\s+/, $3;
+		$data{"ignore"} = \@revs;
+	    }
+	}
+    }
+    if (defined ($name)) {
+	$config_file_data {$name} = \%data;
+    } else {
+	print STDERR "Warning: No CONFIG_NAME in '$file' - ignoring.\n";
+    }
+    close CONF;
+}
+
+sub ignore_sha {
+    my ($config, $sha) = @_;
+    if (exists $config_file_data{$config}->{"ignore"}) {
+	my @ignores = @{$config_file_data{$config}->{"ignore"}};
+	foreach my $ignore (@ignores) {
+	    return 1 if $sha =~ /^$ignore/;
+	}
+    }
+    return 0;
+}
 
 foreach my $confdir (@configs) {
     my $basedir = "$config_root/$confdir";
@@ -321,8 +360,6 @@ foreach my $confdir (@configs) {
 	my $revision = $1;
 	my $rev_index = $next_rev_index++;
 
-	$rev_indexes{$revision} = $rev_index;
-
 	if (!defined($first_rev)) {
 	    $first_rev = $revision;
 	    $last_rev = $revision;
@@ -343,12 +380,19 @@ foreach my $confdir (@configs) {
 	    close SHA;
 	    chomp $sha;
 	    if ($sha =~ /^[0-9a-f]{5,40}$/) {
+		if (ignore_sha ($config, $sha)) {
+		    print "ignoring $sha\n";
+		    next;
+		}
+
 		$shas{$revision} = $sha;
 		print "$revision - $sha\n";
 	    } else {
 		print STDERR "Warning: Invalid SHA1 in '$shaname' - ignoring.\n";
 	    }
 	}
+
+	$rev_indexes{$revision} = $rev_index;
 
 	foreach my $filename (@filenames) {
 	    $filename =~ /^(.+)\.times$/ or die;
