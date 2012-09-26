@@ -81,9 +81,23 @@ rects = []
 
 colors = make_colors (len (configs))
 
+min_y = 1.0
+max_y = 1.0
+
+def register_min_max (mean, err):
+    global min_y, max_y
+
+    if mean - err < min_y:
+        min_y = mean - err
+    if mean + err > max_y:
+        max_y = mean + err
+
 i = 0
 for config in configs:
     (means, errs) = processed [config]
+
+    for j in range (len (means)):
+        register_min_max (means [j], errs [j])
 
     plot = ax.bar (ind + xoff + i * width, means, width, yerr = errs, color = colors [i])
     rects.append (plot [0])
@@ -91,6 +105,7 @@ for config in configs:
     i = i + 1
 
 ax.set_xlim (-xoff, len (benchmarks) + xoff)
+ax.set_ylim (min_y * 0.8, max_y * 1.2)
 
 # add some
 ax.set_xticks (ind + xoff + i * width)
