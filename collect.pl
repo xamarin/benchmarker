@@ -685,6 +685,39 @@ foreach my $confdir (@configs) {
     print FILE "<td><a href=\"$confdir/combined_large.png\"><img src=\"$confdir/combined.png\" border=\"0\"></a></td></tr>\n";
 }
 print FILE "</table>\n";
+
+# iterate through revisions in reverse order
+my $last_common_revision = undef;
+REVISION: foreach my $revision (sort { $b cmp $a } keys %{$all_combined_data{$configs[0]}}) {
+    foreach my $confdir (@configs) {
+	my $basedir = "$config_root/$confdir";
+	my $config = basename ($basedir);
+	next REVISION unless exists $all_combined_data{$config}->{$revision};
+    }
+    $last_common_revision = $revision;
+    last;
+}
+
+if (defined ($last_common_revision)) {
+    print STDERR "Last common revision is $last_common_revision.\n";
+    my $png_file = "$config_root/comparison.png";
+    my @args = ("./compare.py", "-o", $png_file);
+    foreach my $confdir (@configs) {
+	my $basedir = "$config_root/$confdir";
+	push @args, "$basedir/r$last_common_revision";
+    }
+    system (@args);
+    if ($? == 0 and -f $png_file) {
+	printf FILE "<h3>Comparison between configs for %s:</h3>", revlink ($last_common_revision);
+	print FILE "<img src=\"comparison.png\">";
+    } else {
+	print STDERR "Warning: Generating comparison graph failed.\n";
+	print FILE "<p>Comparison graph generation failed.";
+    }
+} else {
+    print STDERR "Warning: No revisions in common - not generating comparison.\n";
+}
+
 print FILE "<p>Written on " . (scalar localtime) . ".</p>\n";
 print FILE "</body></html>\n";
 
