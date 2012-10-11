@@ -105,7 +105,9 @@ for config in configs:
     i = i + 1
 
 ax.set_xlim (-xoff, len (benchmarks) + xoff)
-ax.set_ylim (min_y * 0.8, max_y * 1.2)
+
+delta_y = max_y - min_y
+ax.set_ylim (min_y - delta_y * 0.1, max_y + delta_y * 0.1)
 
 # add some
 ax.set_xticks (ind + xoff + i * width)
