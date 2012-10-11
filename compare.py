@@ -4,11 +4,16 @@ import os
 import colorsys
 import numpy as np
 import matplotlib.pyplot as plt
+from optparse import OptionParser
 
 def make_colors (n):
     return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
 
-configs = sys.argv [1 :]
+parser = OptionParser ()
+parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
+
+(options, configs) = parser.parse_args ()
+
 benchmarks = set ()
 data = {}
 
@@ -119,4 +124,7 @@ ax.legend (rects, configs)
 
 fig.autofmt_xdate ()
 
-plt.show()
+if options.output:
+    fig.savefig (options.output, dpi = 100)
+else:
+    plt.show()
