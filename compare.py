@@ -3,6 +3,7 @@ import sys
 import os
 import colorsys
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 
@@ -13,6 +14,9 @@ parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
 
 (options, configs) = parser.parse_args ()
+
+if options.output:
+    matplotlib.rcParams.update({'font.size': 8})
 
 benchmarks = set ()
 data = {}
