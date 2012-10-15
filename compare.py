@@ -4,11 +4,7 @@ import os
 import colorsys
 import numpy as np
 import matplotlib
-import matplotlib.pyplot as plt
 from optparse import OptionParser
-
-def make_colors (n):
-    return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
 
 parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
@@ -16,7 +12,13 @@ parser.add_option ("-o", "--output", dest = "output", help = "output graph to FI
 (options, configs) = parser.parse_args ()
 
 if options.output:
+    matplotlib.use('Agg')
     matplotlib.rcParams.update({'font.size': 8})
+
+import matplotlib.pyplot as plt
+
+def make_colors (n):
+    return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
 
 benchmarks = set ()
 data = {}
