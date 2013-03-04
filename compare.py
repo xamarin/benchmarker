@@ -8,12 +8,17 @@ from optparse import OptionParser
 
 parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
+parser.add_option ("-i", "--include", action = "append", dest = "include", help = "only include BENCHMARK", metavar = "BENCHMARK")
 
 (options, configs) = parser.parse_args ()
 
 if options.output:
     matplotlib.use('Agg')
     matplotlib.rcParams.update({'font.size': 8})
+
+include = None
+if options.include:
+    include = set (options.include)
 
 import matplotlib.pyplot as plt
 
@@ -26,10 +31,13 @@ data = {}
 for arg in configs:
     data [arg] = {}
     files = filter (lambda x: x.endswith ('.times'), os.listdir (arg))
-    for name in files:
+    for filename in files:
+        name = filename [:-6]
+        if include and not name in include:
+            continue
         benchmarks.add (name)
         times = []
-        for time in open ('%s/%s' % (arg, name)).readlines ():
+        for time in open ('%s/%s' % (arg, filename)).readlines ():
             time = float (time.strip ())
             if name.startswith ('scimark'):
                 time = 10000 / time
