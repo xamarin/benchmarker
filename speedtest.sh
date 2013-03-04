@@ -133,8 +133,7 @@ runtest except shootout time except.exe 10000000
 runtest hash shootout time hash.exe 10000000
 runtest lists shootout time lists.exe 30000
 runtest mandelbrot shootout time mandelbrot.exe 6400
-#FIXME: message crashes on darwin, locks up on linux!
-#runtest message shootout time message.exe 1000000
+runtest message shootout time message.exe 1000000
 runtest n-body shootout time n-body.exe 50000000
 runtest objinst shootout time objinst.exe 1000000000
 runtest raytracer2 shootout time raytracer.csharp-2.exe 250
