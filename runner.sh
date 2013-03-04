@@ -58,5 +58,5 @@ for config in "$@" ; do
 	echo "$SHA" >"$RESULTS_DIR/$CONFIG_NAME/r$REVISION/sha1"
     fi
 
-    mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$RESULTS_DIR/$CONFIG_NAME/r$REVISION/"
+    mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$OUTDIR/"*.pauses "$RESULTS_DIR/$CONFIG_NAME/r$REVISION/"
 done

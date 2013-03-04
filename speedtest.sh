@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ "x$BENCH_SIZE" = x ] ; then
+    BENCH_SIZE=yes
+fi
+if [ "x$BENCH_WALL_CLOCK" = x ] ; then
+    BENCH_WALL_CLOCK=yes
+fi
+if [ "x$BENCH_PAUSE_TIME" = x ] ; then
+    BENCH_PAUSE_TIME=no
+fi
+
 if [ "x$1" = "x" ] ; then
     echo "Usage: speedtest.sh <conf-file>"
     exit 1
@@ -47,44 +57,76 @@ runtest () {
 
     measure="$3"
 
-    #the first run is not timed
-    $TIME /dev/null "$TIMEOUT" "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
-    if [ $? -ne 0 ] ; then
-	echo "Error"
-	popd >/dev/null
-	return
-    fi
-    grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$1.size"
-
-    rm -f "$TMPPREFIX.times" "$TMPPREFIX.out"
-    i=1
-    while [ $i -le $COUNT ] ; do
-	if [ "$measure" = time ] ; then
-	    $TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
-	else
-	    $TIME /dev/null "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
-	fi
+    if [ "$BENCH_SIZE" = yes ] ; then
+	#the size run is not timed
+	$TIME /dev/null "$TIMEOUT" "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
 	if [ $? -ne 0 ] ; then
 	    echo "Error"
 	    popd >/dev/null
 	    return
 	fi
-	i=$(($i + 1))
-    done
+	grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$1.size"
 
-    popd >/dev/null
-
-    if [ "$measure" = time ] ; then
-	cp "$TMPPREFIX.times" "$OUTDIR/$1.times"
-	rm "$TMPPREFIX.times"
-    else
-	$measure
+	echo "Size"
+	cat "$OUTDIR/$1.size"
     fi
 
-    echo "Size"
-    cat "$OUTDIR/$1.size"
-    echo "Times"
-    cat "$OUTDIR/$1.times"
+    if [ "$BENCH_WALL_CLOCK" = yes ] ; then
+	rm -f "$TMPPREFIX.times" "$TMPPREFIX.out"
+	i=1
+	while [ $i -le $COUNT ] ; do
+	    if [ "$measure" = time ] ; then
+		$TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
+	    else
+		$TIME /dev/null "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
+	    fi
+	    if [ $? -ne 0 ] ; then
+		echo "Error"
+		popd >/dev/null
+		return
+	    fi
+	    i=$(($i + 1))
+	done
+
+	if [ "$measure" = time ] ; then
+	    cp "$TMPPREFIX.times" "$OUTDIR/$1.times"
+	    rm "$TMPPREFIX.times"
+	else
+	    $measure
+	fi
+
+	echo "Times"
+	cat "$OUTDIR/$1.times"
+    fi
+
+    if [ "$BENCH_PAUSE_TIME" = yes ] ; then
+	if [ "x$PAUSE_COUNT" = "x" ] ; then
+	    PAUSE_COUNT=3
+	fi
+
+	rm -f "$TMPPREFIX.pauses"
+	i=1
+	while [ $i -le $PAUSE_COUNT ] ; do
+	    echo "*** run $i" >>"$TMPPREFIX.pauses"
+	    if sudo dtrace -l -P 'mono$target' -c "$MONO" | grep gc-concurrent-update-finish-begin >/dev/null ; then
+		SCRIPT='mono$target:::gc-world-stop-begin { self->ts = timestamp; self->concurrent = 0; } mono$target:::gc-concurrent-start-begin { self->concurrent = 1; } mono$target:::gc-concurrent-update-finish-begin { self->concurrent = 1; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d\n", arg0, arg0 && self->concurrent, (timestamp - self->ts)/1000); }'
+	    else
+		SCRIPT='mono$target:::gc-world-stop-begin { self->ts = timestamp; self->concurrent = 0; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d\n", 1, 0, (timestamp - self->ts)/1000); }'
+	    fi
+	    sudo MONO_GC_PARAMS="$MONO_GC_PARAMS" dtrace -q -c "$MONO $4 $5 $6 $7 $8 $9" -n "$SCRIPT" >>"$TMPPREFIX.pauses"
+	    if [ $? -ne 0 ] ; then
+		echo "Error"
+		popd >/dev/null
+		return
+	    fi
+	    i=$(($i + 1))
+	done
+
+	cp "$TMPPREFIX.pauses" "$OUTDIR/$1.pauses"
+	rm "$TMPPREFIX.pauses"
+    fi
+
+    popd >/dev/null
 }
 
 if [ ! -f "$TIME" ] ; then
