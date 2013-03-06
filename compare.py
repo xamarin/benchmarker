@@ -139,6 +139,6 @@ ax.legend (rects, configs)
 fig.autofmt_xdate ()
 
 if options.output:
-    fig.savefig (options.output, dpi = 100)
+    fig.savefig (options.output, dpi = 200)
 else:
     plt.show()

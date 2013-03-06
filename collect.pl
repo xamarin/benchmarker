@@ -8,6 +8,20 @@ use Getopt::Long;
 
 use constant PI => 4 * atan2(1, 1);
 
+use constant LARGE_WIDTH => 500;
+use constant LARGE_HEIGHT => 150;
+use constant LARGE_LINE_WIDTH => 2;
+use constant LARGE_MARKER_RADIUS => 5;
+use constant LARGE_FONT_SIZE => 16;
+
+use constant SMALL_WIDTH => 150;
+use constant SMALL_HEIGHT => 60;
+use constant SMALL_LINE_WIDTH => 1;
+use constant SMALL_MARKER_RADIUS => 3;
+use constant SMALL_FONT_SIZE => 8;
+
+use constant SCALE => 2;
+
 sub make_revisions_path {
     my ($cr, $revisions, $rev_indexes, $data, $key, $moveto) = @_;
     my @revisions = @$revisions;
@@ -103,7 +117,13 @@ sub set_font {
 
 sub plot_cairo_single {
     my ($rev_data, $test_data, $rev_indexes, $min_x_rev, $max_x_rev, $have_min_max, $avg_key, $filename, $revname,
-	$img_width, $img_height, $line_width, $marker_radius, $font_size) = @_;
+	$img_width, $img_height, $line_width, $marker_radius, $font_size, $scale) = @_;
+
+    $img_width *= $scale;
+    $img_height *= $scale;
+    $line_width *= $scale;
+    $marker_radius *= $scale;
+    $font_size *= $scale;
 
     my $min_x = $rev_indexes->{$min_x_rev};
     my $max_x = $rev_indexes->{$max_x_rev};
@@ -165,8 +185,14 @@ sub plot_cairo_single {
 }
 
 sub plot_cairo_combined {
-    my ($combined_data, $rev_indexes, $filename, $revname, $img_width, $img_height, $plot_min_max,
-	$line_width, $marker_radius, $font_size) = @_;
+    my ($combined_data, $rev_indexes, $filename, $revname, $plot_min_max,
+	$img_width, $img_height, $line_width, $marker_radius, $font_size, $scale) = @_;
+
+    $img_width *= $scale;
+    $img_height *= $scale;
+    $line_width *= $scale;
+    $marker_radius *= $scale;
+    $font_size *= $scale;
 
     my $min_key = $plot_min_max ? "min" : "avg";
     my $max_key = $plot_min_max ? "max" : "avg";
@@ -494,14 +520,18 @@ foreach my $confdir (@configs) {
     #single test plots
     foreach my $test (keys %test_rev_data) {
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
-			  1, "avg", "$basedir/$test\_large.png", \&revname, 500, 150, 2, 5, 16);
+			  1, "avg", "$basedir/$test\_large.png", \&revname,
+			  LARGE_WIDTH, LARGE_HEIGHT, LARGE_LINE_WIDTH, LARGE_MARKER_RADIUS, LARGE_FONT_SIZE, SCALE);
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
-			  1, "avg", "$basedir/$test.png", \&revname, 150, 60, 1, 3, 8);
+			  1, "avg", "$basedir/$test.png", \&revname,
+			  SMALL_WIDTH, SMALL_HEIGHT, SMALL_LINE_WIDTH, SMALL_MARKER_RADIUS, SMALL_FONT_SIZE, SCALE);
 
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
-			  0, "size", "$basedir/$test\_size_large.png", \&revname, 500, 150, 2, 5, 16);
+			  0, "size", "$basedir/$test\_size_large.png", \&revname,
+			  LARGE_WIDTH, LARGE_HEIGHT, LARGE_LINE_WIDTH, LARGE_MARKER_RADIUS, LARGE_FONT_SIZE, SCALE);
 	plot_cairo_single($test_rev_data{$test}, $test_data{$test}, \%rev_indexes, $first_rev, $last_rev,
-			  0, "size", "$basedir/$test\_size.png", \&revname, 150, 60, 1, 3, 8);
+			  0, "size", "$basedir/$test\_size.png", \&revname,
+			  SMALL_WIDTH, SMALL_HEIGHT, SMALL_LINE_WIDTH, SMALL_MARKER_RADIUS, SMALL_FONT_SIZE, SCALE);
     }
 
     #compute combined plot data
@@ -549,8 +579,10 @@ foreach my $confdir (@configs) {
     $all_combined_data{$config} = \%combined_data;
 
     #combined plot
-    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined_large.png", \&revname, 500, 150, 1, 2, 5, 16);
-    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined.png", \&revname, 150, 60, 0, 1, 3, 8);
+    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined_large.png", \&revname, 1,
+			LARGE_WIDTH, LARGE_HEIGHT, LARGE_LINE_WIDTH, LARGE_MARKER_RADIUS, LARGE_FONT_SIZE, SCALE);
+    plot_cairo_combined(\%combined_data, \%rev_indexes, "$basedir/combined.png", \&revname, 0,
+			SMALL_WIDTH, SMALL_HEIGHT, SMALL_LINE_WIDTH, SMALL_MARKER_RADIUS, SMALL_FONT_SIZE, SCALE);
 
     #write html index
     my @last_revs = (sort { $a cmp $b } keys %revisions) [-3 .. -1];
@@ -558,7 +590,7 @@ foreach my $confdir (@configs) {
     open FILE, ">$basedir/index.html" or die;
     print FILE "<html><body>\n";
     print FILE "<h1>$config</h1>\n";
-    print FILE "<p><img src=\"combined_large.png\">\n";
+    printf FILE "<p><img src=\"combined_large.png\" width=\"%dpx\" height=\"%dpx\">\n", LARGE_WIDTH, LARGE_HEIGHT;
     print FILE "<p><table cellpadding=\"5\" border=\"1\" rules=\"groups\">\n";
     print FILE "<colgroup align=\"left\">\n";
     print FILE "<colgroup align=\"left\" span=\"2\">\n";
@@ -604,8 +636,8 @@ foreach my $confdir (@configs) {
 	    }
 	}
 
-	print FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\" border=\"0\"></a></td>";
-	print FILE "<td><a href=\"$test\_size_large.png\"><img src=\"$test\_size.png\" border=\"0\"></a></td>";
+	printf FILE "<td><a href=\"$test\_large.png\"><img src=\"$test.png\" border=\"0\" width=\"%dpx\" height=\"%dpx\"></a></td>", SMALL_WIDTH, SMALL_HEIGHT;
+	printf FILE "<td><a href=\"$test\_size_large.png\"><img src=\"$test\_size.png\" border=\"0\" width=\"%dpx\" height=\"%dpx\"></a></td>", SMALL_WIDTH, SMALL_HEIGHT;
 	print FILE "</tr>\n";
     }
     print FILE "</table>\n";
@@ -620,7 +652,7 @@ foreach my $confdir (@configs) {
 	print FILE "<html><body>\n";
 	print FILE "<p><a href=\"index.html\">$config</a>\n";
 	print FILE "<h1>$test on $config</h1>\n";
-	print FILE "<p><img src=\"$test\_large.png\">\n";
+	printf FILE "<p><img src=\"$test\_large.png\" width=\"%dpx\" height=\"%dpx\">\n", LARGE_WIDTH, LARGE_HEIGHT;
 
 	print FILE "<p><table cellpadding=\"5\"><tr><td><b>Revision</b></td><td><b>Average</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Size (bytes)</b></td><td><b>Benchmarked on</b></td><td><b>All times</b></td></tr>\n";
 	foreach my $revision (sort { $b cmp $a } keys %{$test_rev_data{$test}}) {
@@ -684,7 +716,7 @@ foreach my $confdir (@configs) {
     printf FILE "<td>%s</td>", revlink ($last_revision);
     printf FILE "<td>%.2f%%</td>", $combined_data->{$last_revision}{"avg"} / $best_avg * 100;
     printf FILE "<td>%.2f%%</td><td>$worst_test</td>", $worst_quot * 100;
-    print FILE "<td><a href=\"$confdir/combined_large.png\"><img src=\"$confdir/combined.png\" border=\"0\"></a></td></tr>\n";
+    printf FILE "<td><a href=\"$confdir/combined_large.png\"><img src=\"$confdir/combined.png\" border=\"0\" width=\"%dpx\" height=\"%dpx\"></a></td></tr>\n", SMALL_WIDTH, SMALL_HEIGHT;
 }
 print FILE "</table>\n";
 
@@ -711,7 +743,7 @@ if (defined ($last_common_revision)) {
     system (@args);
     if ($? == 0 and -f $png_file) {
 	printf FILE "<h3>Comparison between configs for %s:</h3>", revlink ($last_common_revision);
-	print FILE "<img src=\"comparison.png\">";
+	print FILE "<img src=\"comparison.png\" style=\"zoom: 50%;\">";
     } else {
 	print STDERR "Warning: Generating comparison graph failed.\n";
 	print FILE "<p>Comparison graph generation failed.";
