@@ -60,3 +60,5 @@ for config in "$@" ; do
 
     mv "$OUTDIR/"*.times "$OUTDIR/"*.size "$OUTDIR/"*.pauses "$RESULTS_DIR/$CONFIG_NAME/r$REVISION/"
 done
+
+exit 0
