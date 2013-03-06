@@ -360,6 +360,13 @@ foreach my $confdir (@configs) {
 	my $revision = $1;
 	my $rev_index = $next_rev_index++;
 
+	my $dir = "$basedir/$subdir";
+	opendir DIR, $dir or die;
+	my @filenames = grep /\.times$/, readdir DIR;
+	closedir DIR;
+
+	next unless @filenames;
+
 	if (!defined($first_rev)) {
 	    $first_rev = $revision;
 	    $last_rev = $revision;
@@ -367,11 +374,6 @@ foreach my $confdir (@configs) {
 	    $first_rev = min($first_rev, $revision);
 	    $last_rev = max($last_rev, $revision);
 	}
-
-	my $dir = "$basedir/$subdir";
-	opendir DIR, $dir or die;
-	my @filenames = grep /\.times$/, readdir DIR;
-	closedir DIR;
 
 	my $shaname = "$dir/sha1";
 	if (-f $shaname) {
