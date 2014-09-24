@@ -1,0 +1,26 @@
+# Steps to build IronJS benchmarks suite
+
+BUILDDIR=`pwd`
+MONO=mono
+MONODIR=/Library/Frameworks/Mono.framework/Versions/3.10.0
+
+# FSharp
+cd $BUILDDIR
+git clone https://github.com/fsharp/fsharp
+cd fsharp
+./autogen.sh --prefix=$MONODIR # adapt version
+make
+sudo make install
+
+# IronJS
+cd $BUILDDIR
+git clone https://github.com/xamarin/IronJS
+cd IronJS/Src
+chmod +x mono-build.sh Benchmarks/mono-build.sh
+./mono-build.sh # edit FSC to "$MONO /path/to/fsharp/lib/release/fsc.exe"
+cd Benchmarks
+./mono-build.sh
+
+# Running IronJS benchmarks
+cd $BUILDDIR/IronJS/Src/Benchmarks
+MONO_PATH=.. $MONO Program.exe
