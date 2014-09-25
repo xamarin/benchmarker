@@ -18,7 +18,7 @@ def client ():
 
     if subprocess.Popen("%s EventStore.TestClient.exe --command ping" % (mono), shell=True, stdout=sys.stderr).wait () == 0:
         start = time.time ()
-        s = subprocess.Popen("%s EventStore.TestClient.exe --command '%s'" % (mono, cmd), shell=True, stdout=sys.stderr).wait ()
+        s = subprocess.Popen("%s EventStore.TestClient.exe --command '%s'" % (mono, cmd if len (cmd.strip ()) > 0 else "wrfl 10 1000000"), shell=True, stdout=sys.stderr).wait ()
         end = time.time ()
         if s == 0:
             print (end - start)
