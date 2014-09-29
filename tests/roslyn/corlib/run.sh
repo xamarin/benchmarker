@@ -1,0 +1,3 @@
+#!/bin/sh
+
+time ~/Work/mono/installation/bin/mono-sgen --stats ../roslyn/csc.exe /codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC  -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin -target:library -out:mscorlib-out.dll "@corlib.dll.sources"
