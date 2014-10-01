@@ -49,26 +49,30 @@ grepscimark () {
 }
 
 runtest () {
-    echo "$1"
-
-    benchmark_env "$1"
-
-    pushd "tests/$2" >/dev/null
-
+    name="$1"
+    testdir="$2"
     measure="$3"
+
+    echo "$name"
+
+    benchmark_env "$name"
+
+    pushd "tests/$testdir" >/dev/null
+
+    shift; shift; shift
 
     if [ "$BENCH_SIZE" = yes ] ; then
 	#the size run is not timed
-	$TIME /dev/null "$TIMEOUT" "$MONO" --stats $4 $5 $6 $7 $8 $9 >"$TMPPREFIX.stats" 2>/dev/null
+	$TIME /dev/null "$TIMEOUT" "$MONO" --stats "$@" >"$TMPPREFIX.stats" 2>/tmp/out
 	if [ $? -ne 0 ] ; then
 	    echo "Error"
 	    popd >/dev/null
 	    return
 	fi
-	grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$1.size"
+	grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$name.size"
 
 	echo "Size"
-	cat "$OUTDIR/$1.size"
+	cat "$OUTDIR/$name.size"
     fi
 
     if [ "$BENCH_WALL_CLOCK" = yes ] ; then
@@ -76,9 +80,9 @@ runtest () {
 	i=1
 	while [ $i -le $COUNT ] ; do
 	    if [ "$measure" = time ] ; then
-		$TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >/dev/null 2>&1
+		$TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" "$@" >/dev/null 2>&1
 	    else
-		$TIME /dev/null "$TIMEOUT" "$MONO" $4 $5 $6 $7 $8 $9 >>"$TMPPREFIX.out"
+		$TIME /dev/null "$TIMEOUT" "$MONO" "$@" >>"$TMPPREFIX.out"
 	    fi
 	    if [ $? -ne 0 ] ; then
 		echo "Error"
@@ -89,19 +93,21 @@ runtest () {
 	done
 
 	if [ "$measure" = time ] ; then
-	    cp "$TMPPREFIX.times" "$OUTDIR/$1.times"
+	    cp "$TMPPREFIX.times" "$OUTDIR/$name.times"
 	    rm "$TMPPREFIX.times"
 	else
 	    $measure
 	fi
 
 	echo "Times"
-	cat "$OUTDIR/$1.times"
+	cat "$OUTDIR/$name.times"
     fi
 
     if [ "$BENCH_PAUSE_TIME" = yes ] ; then
+	echo "benching pause times"
+
 	if [ "x$PAUSE_COUNT" = "x" ] ; then
-	    PAUSE_COUNT=3
+	    PAUSE_COUNT=1
 	fi
 
 	rm -f "$TMPPREFIX.pauses"
@@ -109,11 +115,12 @@ runtest () {
 	while [ $i -le $PAUSE_COUNT ] ; do
 	    echo "*** run $i" >>"$TMPPREFIX.pauses"
 	    if sudo dtrace -l -P 'mono$target' -c "$MONO" | grep gc-concurrent-update-finish-begin >/dev/null ; then
-		SCRIPT='mono$target:::gc-world-stop-begin { self->ts = timestamp; self->concurrent = 0; } mono$target:::gc-concurrent-start-begin { self->concurrent = 1; } mono$target:::gc-concurrent-update-finish-begin { self->concurrent = 1; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d\n", arg0, arg0 && self->concurrent, (timestamp - self->ts)/1000); }'
+		SCRIPT='BEGIN { stt = timestamp; } mono$target:::gc-world-stop-begin { printf ("\nstop %d\n", (timestamp - stt)/1000); } mono$target:::gc-concurrent-start-begin { printf ("\nconcurrent %d\n", (timestamp - stt)/1000); } mono$target:::gc-concurrent-update-finish-begin { printf ("\nconcurrent %d\n", (timestamp - stt)/1000); } mono$target:::gc-world-restart-end { printf ("\nrestart %d %d\n", (timestamp - stt)/1000, arg0); }'
 	    else
-		SCRIPT='mono$target:::gc-world-stop-begin { self->ts = timestamp; self->concurrent = 0; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d\n", 1, 0, (timestamp - self->ts)/1000); }'
+		SCRIPT='BEGIN { stt = timestamp; } mono$target:::gc-world-stop-begin { ts = timestamp; concurrent = 0; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d %d\n", 1, 0, (timestamp - ts)/1000, (ts - stt)/1000); }'
 	    fi
-	    sudo MONO_GC_PARAMS="$MONO_GC_PARAMS" dtrace -q -c "$MONO $4 $5 $6 $7 $8 $9" -n "$SCRIPT" >>"$TMPPREFIX.pauses"
+	    #sudo MONO_GC_PARAMS="$MONO_GC_PARAMS" dtrace -q -c "$MONO $4 $5 $6 $7 $8 $9" -n "$SCRIPT" >>"$TMPPREFIX.pauses"
+	    MONO_GC_PARAMS="$MONO_GC_PARAMS" $MONO "$@" >>"$TMPPREFIX.pauses"
 	    if [ $? -ne 0 ] ; then
 		echo "Error"
 		popd >/dev/null
@@ -122,7 +129,7 @@ runtest () {
 	    i=$(($i + 1))
 	done
 
-	cp "$TMPPREFIX.pauses" "$OUTDIR/$1.pauses"
+	cp "$TMPPREFIX.pauses" "$OUTDIR/$name.pauses"
 	rm "$TMPPREFIX.pauses"
     fi
 
