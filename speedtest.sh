@@ -200,4 +200,7 @@ runtest strcat shootout time strcat.exe 80000000
 
 runtest graph4 graph time graph4.exe
 runtest graph8 graph time graph8.exe
+
+runtest sharpchess SharpChess time Program.exe TestPosition.sharpchess 7
+
 #runtest compileswf compile time --compile-all System.Windows.Forms.dll
