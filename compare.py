@@ -39,8 +39,6 @@ for arg in configs:
         times = []
         for time in open ('%s/%s' % (arg, filename)).readlines ():
             time = float (time.strip ())
-            if name.startswith ('scimark'):
-                time = 10000 / time
             times.append (time)
         if len (times) >= 10:
             times = times [2 : -2]

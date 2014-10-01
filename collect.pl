@@ -370,8 +370,6 @@ foreach my $confdir (@configs) {
 	}
     }
 
-    my %inverse_tests = ( "scimark" => 10000 );
-
     my %rev_indexes = ();
     my $next_rev_index = 0;
 
@@ -436,10 +434,6 @@ foreach my $confdir (@configs) {
 	    close FILE;
 
 	    @values > 0 or die;
-
-	    if (exists $inverse_tests{$test}) {
-		@values = map { $inverse_tests{$test} / $_ } @values;
-	    }
 
 	    @values = sort { $a <=> $b } @values;
 	    if (@values >= 10) {

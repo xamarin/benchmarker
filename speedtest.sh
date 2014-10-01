@@ -40,12 +40,11 @@ TMPPREFIX="/tmp/speedtest$$"
 TIMEOUT=200
 
 grepscimark () {
-    grep Composite "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark.times"
-    grep FFT "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-fft.times"
-    grep SOR "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-sor.times"
-    grep Monte "$TMPPREFIX.out" | awk '{ print $4 }' >"$OUTDIR/scimark-montecarlo.times"
-    grep Sparse "$TMPPREFIX.out" | awk '{ print $4 }' >"$OUTDIR/scimark-matmult.times"
-    grep LU "$TMPPREFIX.out" | awk '{ print $3 }' >"$OUTDIR/scimark-lu.times"
+    grep FFT "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-fft.times"
+    grep SOR "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-sor.times"
+    grep Monte "$TMPPREFIX.out" | awk '{ print 10000.0 / $4 }' >"$OUTDIR/scimark-montecarlo.times"
+    grep Sparse "$TMPPREFIX.out" | awk '{ print 10000.0 / $4 }' >"$OUTDIR/scimark-matmult.times"
+    grep LU "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-lu.times"
 }
 
 runtest () {
@@ -159,7 +158,7 @@ fi
 
 #runtest myfib small time myfib.exe
 #runtest monofib small time fib.exe 42
-#runtest scimark scimark grepscimark scimark.exe
+runtest scimark scimark grepscimark scimark.exe
 #runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
 
 runtest euler csgrande/Euler/Euler/bin/Debug time Euler.exe
