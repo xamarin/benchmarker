@@ -47,6 +47,12 @@ grepscimark () {
     grep LU "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-lu.times"
 }
 
+grepironjs () {
+    grep -A1 -e 'Whole Suite' "$TMPPREFIX.out" | grep 'Score' | awk '{ print $2 }' | sed 's/ms//' >"$TMPPREFIX.ironjs"
+    head -1 "$TMPPREFIX.ironjs" >"$OUTDIR/ironjs-sunspider.times"
+    tail -1 "$TMPPREFIX.ironjs" | awk '{ print 10000.0 / $1 }' >"$OUTDIR/ironjs-v8.times"
+}
+
 runtest () {
     name="$1"
     testdir="$2"
@@ -160,6 +166,8 @@ fi
 #runtest monofib small time fib.exe 42
 runtest scimark scimark grepscimark scimark.exe
 #runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
+
+runtest ironjs IronJS grepironjs ijs.exe .
 
 runtest euler csgrande/Euler/Euler/bin/Debug time Euler.exe
 runtest grandetracer csgrande/GrandeTracer/GrandeTracer/bin/Debug time GrandeTracer.exe
