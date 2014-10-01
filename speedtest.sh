@@ -177,6 +177,8 @@ runtest sharpsatbench zorn/SharpSATbench time SharpSATbench.exe input3.cnf
 runtest fsharp f-sharp-2.0 time fsc.exe GeneralTest1.fs
 runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 500000
 
+runtest roslyn roslyn/corlib time ../roslyn/csc.exe /codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC  -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin -target:library -out:mscorlib-out.dll "@corlib.dll.sources"
+
 runtest binarytree shootout time binarytree.exe 19
 runtest except shootout time except.exe 10000000
 runtest hash shootout time hash.exe 10000000
