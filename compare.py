@@ -43,9 +43,9 @@ for arg in configs:
                 time = 10000 / time
             times.append (time)
         if len (times) >= 10:
-            times = times [1 : -1]
-        elif len (times) >= 5:
             times = times [2 : -2]
+        elif len (times) >= 5:
+            times = times [1 : -1]
         data [arg] [name] = times
 
 # remove benchmarks not in every config
