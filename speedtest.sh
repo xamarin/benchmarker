@@ -186,7 +186,7 @@ runtest lists shootout time lists.exe 30000
 runtest mandelbrot shootout time mandelbrot.exe 6400
 runtest message shootout time message.exe 1000000
 runtest n-body shootout time n-body.exe 50000000
-runtest objinst shootout time objinst.exe 1000000000
+runtest objinst shootout time objinst.exe 400000000
 runtest raytracer2 shootout time raytracer.csharp-2.exe 250
 runtest raytracer3 shootout time raytracer.csharp-3.exe 600
 runtest strcat shootout time strcat.exe 80000000
