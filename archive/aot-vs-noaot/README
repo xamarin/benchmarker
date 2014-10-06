@@ -1,0 +1,42 @@
+10.03.2014
+amd64 - i7-4790S CPU @ 3.20GHz
+
+-------------------------------------------------------------------------------
+
+aot-config
+HEAD = https://github.com/mono/mono/commit/627fc398ada27b7a59d255e2126eccd178963a3d
+
+CONFIG_NAME="aot-sgen"
+COUNT=5
+MONO="$DIR/installation/bin/mono-sgen"
+MONO_OPTIONS="-O=aot"
+RESULTS_DIR="$DIR/results"
+# These are revisions collect.pl should ignore.
+IGNORE_REVS="424237fdd4 8cf8572ee1 218bffe92a 2b3148f2a0 a3e93ca28f b84b2aeca6"
+
+benchmark_env () {
+    if [ "$1" = "lcscbench" ] ; then
+        export MONO_GC_PARAMS="nursery-size=32m"
+    fi
+}
+
+-------------------------------------------------------------------------------
+
+no-aot-config
+HEAD = https://github.com/mono/mono/commit/627fc398ada27b7a59d255e2126eccd178963a3d
+
+CONFIG_NAME="default-sgen"
+COUNT=5
+MONO="$DIR/installation/bin/mono-sgen"
+MONO_OPTIONS="-O=-aot"
+RESULTS_DIR="$DIR/results"
+# These are revisions collect.pl should ignore.
+IGNORE_REVS="424237fdd4 8cf8572ee1 218bffe92a 2b3148f2a0 a3e93ca28f b84b2aeca6"
+
+benchmark_env () {
+    if [ "$1" = "lcscbench" ] ; then
+        export MONO_GC_PARAMS="nursery-size=32m"
+    fi
+}
+
+
