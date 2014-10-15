@@ -34,9 +34,9 @@ def grep_stats (filename, statname):
     if not os.path.isfile (filename):
         return None
     for line in open (filename).readlines ():
-        m = re.match ('([^:]+[^ \t])\s*:\s*([0-9.]+)', line)
+        m = re.match ('([^:]+[^ \t])\s*:\s*([0-9.,]+)', line)
         if m and m.group (1) == statname:
-            return number (m.group (2))
+            return number (m.group (2).replace(',','.'))
     return None
 
 def make_colors (n):
