@@ -4,11 +4,13 @@ import os
 import colorsys
 import numpy as np
 import matplotlib
+import re
 from optparse import OptionParser
 
 parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
 parser.add_option ("-i", "--include", action = "append", dest = "include", help = "only include BENCHMARK", metavar = "BENCHMARK")
+parser.add_option ("-j", "--subtract-jit-time", action = "store_true", dest = "subtract_jit", default = False, help = "subtract JIT times from run times")
 
 (options, configs) = parser.parse_args ()
 
@@ -22,6 +24,21 @@ if options.include:
 
 import matplotlib.pyplot as plt
 
+def number (s):
+    try:
+        return int (s)
+    except ValueError:
+        return float (s)
+
+def grep_stats (filename, statname):
+    if not os.path.isfile (filename):
+        return None
+    for line in open (filename).readlines ():
+        m = re.match ('([^:]+[^ \t])\s*:\s*([0-9.]+)', line)
+        if m and m.group (1) == statname:
+            return number (m.group (2))
+    return None
+
 def make_colors (n):
     return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
 
@@ -33,13 +50,26 @@ for arg in configs:
     files = filter (lambda x: x.endswith ('.times'), os.listdir (arg))
     for filename in files:
         name = filename [:-6]
+
         if include and not name in include:
             continue
+
+        if options.subtract_jit:
+            if name.startswith ('ironjs') or name.startswith ('scimark'):
+                print "Can't subtract JIT time in benchmark %s - removing." % name
+                continue
+            jit_time = grep_stats ('%s/%s.stats' % (arg, name), 'Total time spent JITting (sec)')
+            if not jit_time:
+                print ("Can't get JIT time for %s/%s - removing." % (arg, name))
+                continue
+        else:
+            jit_time = 0
+
         benchmarks.add (name)
         times = []
         for time in open ('%s/%s' % (arg, filename)).readlines ():
             time = float (time.strip ())
-            times.append (time)
+            times.append (time - jit_time)
         if len (times) >= 10:
             times = times [2 : -2]
         elif len (times) >= 5:
@@ -50,7 +80,7 @@ for arg in configs:
 
 for bench in benchmarks.copy ():
     if len (filter (lambda c: bench not in data [c], configs)) > 0:
-        print "removing ", bench
+        print "Don't have data for %s in all configurations - removing." % bench
         benchmarks.remove (bench)
 
 benchmarks = list (benchmarks)

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-if [ "x$BENCH_SIZE" = x ] ; then
-    BENCH_SIZE=yes
-fi
 if [ "x$BENCH_WALL_CLOCK" = x ] ; then
     BENCH_WALL_CLOCK=yes
 fi
@@ -66,19 +63,14 @@ runtest () {
 
     shift; shift; shift
 
-    if [ "$BENCH_SIZE" = yes ] ; then
-	#the size run is not timed
-	$TIME /dev/null "$TIMEOUT" "$MONO" "$MONO_OPTIONS" --stats "$@" >"$TMPPREFIX.stats" 2>/tmp/out
-	if [ $? -ne 0 ] ; then
-	    echo "Error"
-	    popd >/dev/null
-	    return
-	fi
-	grep -a '^Native code size' "$TMPPREFIX.stats" | awk '{ print $5 }' >"$OUTDIR/$name.size"
-
-	echo "Size"
-	cat "$OUTDIR/$name.size"
+    #the stats run is not timed
+    $TIME /dev/null "$TIMEOUT" "$MONO" "$MONO_OPTIONS" --stats "$@" >"$TMPPREFIX.stats" 2>/dev/null
+    if [ $? -ne 0 ] ; then
+	echo "Error"
+	popd >/dev/null
+	return
     fi
+    cp "$TMPPREFIX.stats" "$OUTDIR/$name.stats"
 
     if [ "$BENCH_WALL_CLOCK" = yes ] ; then
 	rm -f "$TMPPREFIX.times" "$TMPPREFIX.out"
