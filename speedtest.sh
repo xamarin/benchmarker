@@ -50,7 +50,7 @@ grepironjs () {
     tail -1 "$TMPPREFIX.ironjs" | awk '{ print 10000.0 / $1 }' >"$OUTDIR/ironjs-v8.times"
 }
 
-runtest () {
+runtest () {(
     name="$1"
     testdir="$2"
     measure="$3"
@@ -131,7 +131,7 @@ runtest () {
     fi
 
     popd >/dev/null
-}
+)}
 
 if [ ! -f "$TIME" ] ; then
     echo Building mytime
