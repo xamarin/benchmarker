@@ -50,7 +50,7 @@ grepironjs () {
     tail -1 "$TMPPREFIX.ironjs" | awk '{ print 10000.0 / $1 }' >"$OUTDIR/ironjs-v8.times"
 }
 
-runtest () {
+runtest () {(
     name="$1"
     testdir="$2"
     measure="$3"
@@ -64,7 +64,7 @@ runtest () {
     shift; shift; shift
 
     #the stats run is not timed
-    $TIME /dev/null "$TIMEOUT" "$MONO" "$MONO_OPTIONS" --stats "$@" >"$TMPPREFIX.stats" 2>/dev/null
+    $TIME /dev/null "$TIMEOUT" "$MONO" "${MONO_OPTIONS[@]}" --stats "$@" >"$TMPPREFIX.stats" 2>/dev/null
     if [ $? -ne 0 ] ; then
 	echo "Error"
 	popd >/dev/null
@@ -77,9 +77,9 @@ runtest () {
 	i=1
 	while [ $i -le $COUNT ] ; do
 	    if [ "$measure" = time ] ; then
-		$TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" "$MONO_OPTIONS" "$@" >/dev/null 2>&1
+		$TIME "$TMPPREFIX.times" "$TIMEOUT" "$MONO" "${MONO_OPTIONS[@]}" "$@" >/dev/null 2>&1
 	    else
-		$TIME /dev/null "$TIMEOUT" "$MONO" "$MONO_OPTIONS" "$@" >>"$TMPPREFIX.out"
+		$TIME /dev/null "$TIMEOUT" "$MONO" "${MONO_OPTIONS[@]}" "$@" >>"$TMPPREFIX.out"
 	    fi
 	    if [ $? -ne 0 ] ; then
 		echo "Error"
@@ -117,7 +117,7 @@ runtest () {
 		SCRIPT='BEGIN { stt = timestamp; } mono$target:::gc-world-stop-begin { ts = timestamp; concurrent = 0; } mono$target:::gc-world-restart-end { printf ("\npause-time %d %d %d %d\n", 1, 0, (timestamp - ts)/1000, (ts - stt)/1000); }'
 	    fi
 	    #sudo MONO_GC_PARAMS="$MONO_GC_PARAMS" dtrace -q -c "$MONO $4 $5 $6 $7 $8 $9" -n "$SCRIPT" >>"$TMPPREFIX.pauses"
-	    MONO_GC_PARAMS="$MONO_GC_PARAMS" "$MONO" "$MONO_OPTIONS" "$@" >>"$TMPPREFIX.pauses"
+	    MONO_GC_PARAMS="$MONO_GC_PARAMS" "$MONO" "${MONO_OPTIONS[@]}" "$@" >>"$TMPPREFIX.pauses"
 	    if [ $? -ne 0 ] ; then
 		echo "Error"
 		popd >/dev/null
@@ -131,7 +131,7 @@ runtest () {
     fi
 
     popd >/dev/null
-}
+)}
 
 if [ ! -f "$TIME" ] ; then
     echo Building mytime
