@@ -167,41 +167,6 @@ if [ ! -f "$MONO" ] ; then
     exit 1
 fi
 
-run_benchmark benchmarks/scimark.benchmark
-
-run_benchmark benchmarks/ironjs.benchmark
-
-run_benchmark benchmarks/euler.benchmark
-run_benchmark benchmarks/grandetracer.benchmark
-
-run_benchmark benchmarks/bh.benchmark
-run_benchmark benchmarks/bisort.benchmark
-run_benchmark benchmarks/health.benchmark
-run_benchmark benchmarks/perimeter.benchmark
-run_benchmark benchmarks/specraytracer.benchmark
-run_benchmark benchmarks/db.benchmark
-run_benchmark benchmarks/ahcbench.benchmark
-run_benchmark benchmarks/lcscbench.benchmark
-run_benchmark benchmarks/sharpsatbench.benchmark
-
-run_benchmark benchmarks/fsharp.benchmark
-run_benchmark benchmarks/ipy.benchmark
-
-run_benchmark benchmarks/roslyn.benchmark
-
-run_benchmark benchmarks/binarytree.benchmark
-run_benchmark benchmarks/except.benchmark
-run_benchmark benchmarks/hash.benchmark
-run_benchmark benchmarks/lists.benchmark
-run_benchmark benchmarks/mandelbrot.benchmark
-run_benchmark benchmarks/message.benchmark
-run_benchmark benchmarks/n-body.benchmark
-run_benchmark benchmarks/objinst.benchmark
-run_benchmark benchmarks/raytracer2.benchmark
-run_benchmark benchmarks/raytracer3.benchmark
-run_benchmark benchmarks/strcat.benchmark
-
-run_benchmark benchmarks/graph4.benchmark
-run_benchmark benchmarks/graph8.benchmark
-
-run_benchmark benchmarks/sharpchess.benchmark
+for fn in benchmarks/*.benchmark ; do
+    run_benchmark $fn
+done
