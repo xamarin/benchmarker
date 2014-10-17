@@ -194,7 +194,7 @@ if options.counter:
 else:
     ax.set_ylabel ('relative wall clock time')
 
-ax.legend (rects, configs)
+ax.legend (rects, configs, loc='best', fontsize='medium', labelspacing=0.2).draggable()
 
 fig.autofmt_xdate ()
 
