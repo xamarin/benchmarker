@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="sharpsatbench"
+BENCHMARK_TESTDIR="zorn/SharpSATbench"
+BENCHMARK_CMDLINE=("SharpSATbench.exe" "input3.cnf")

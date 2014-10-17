@@ -1,0 +1,12 @@
+# -*- shell-script -*-
+
+grepironjs () {
+    grep -A1 -e 'Whole Suite' "$TMPPREFIX.out" | grep 'Score' | awk '{ print $2 }' | sed 's/ms//' >"$TMPPREFIX.ironjs"
+    head -1 "$TMPPREFIX.ironjs" >"$OUTDIR/ironjs-sunspider.times"
+    tail -1 "$TMPPREFIX.ironjs" | awk '{ print 10000.0 / $1 }' >"$OUTDIR/ironjs-v8.times"
+}
+
+BENCHMARK_NAME="ironjs"
+BENCHMARK_TESTDIR="IronJS"
+BENCHMARK_MEASURE="grepironjs"
+BENCHMARK_CMDLINE=("ijs.exe" ".")

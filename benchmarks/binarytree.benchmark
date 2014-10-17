@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="binarytree"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("binarytree.exe" "19")

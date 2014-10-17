@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="health"
+BENCHMARK_TESTDIR="csolden/Health/Health/bin/Debug"
+BENCHMARK_CMDLINE=("Health.exe" "-l" "10" "-t" "40")

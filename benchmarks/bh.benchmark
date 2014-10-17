@@ -1,0 +1,6 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="bh"
+BENCHMARK_TESTDIR="csolden/BH/BH/bin/Debug"
+BENCHMARK_MEASURE="time"
+BENCHMARK_CMDLINE=("BH.exe" "-b" "700" "-s" "1000")

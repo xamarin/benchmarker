@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="ipy"
+BENCHMARK_TESTDIR="IronPython-2.0B2"
+BENCHMARK_CMDLINE=("ipy.exe" "pystone.py" "500000")

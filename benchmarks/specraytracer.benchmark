@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="specraytracer"
+BENCHMARK_TESTDIR="csspec/SpecRaytracer/SpecRaytracer/bin/Debug"
+BENCHMARK_CMDLINE=("SpecRaytracer.exe" "200" "20000" "../time-test.model")

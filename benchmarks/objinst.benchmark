@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="objinst"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("objinst.exe" "400000000")

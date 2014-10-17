@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="sharpchess"
+BENCHMARK_TESTDIR="SharpChess"
+BENCHMARK_CMDLINE=("Program.exe" "TestPosition.sharpchess" "7")

@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="ahcbench"
+BENCHMARK_TESTDIR="zorn/ahcbench"
+BENCHMARK_CMDLINE=("ahcbench.exe" "input3.cs")

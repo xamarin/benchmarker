@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="db"
+BENCHMARK_TESTDIR="csspec/DB/DB/bin/Debug"
+BENCHMARK_CMDLINE=("DB.exe" "../input/db6" "../input/scr6")

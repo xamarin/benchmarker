@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="lists"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("lists.exe" "30000")

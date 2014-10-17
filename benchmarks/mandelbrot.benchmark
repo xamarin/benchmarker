@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="mandelbrot"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("mandelbrot.exe" "6400")

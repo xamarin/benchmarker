@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="raytracer3"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("raytracer.csharp-3.exe" "600")

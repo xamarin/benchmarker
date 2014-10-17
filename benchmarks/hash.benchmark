@@ -1,0 +1,5 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="hash"
+BENCHMARK_TESTDIR="shootout"
+BENCHMARK_CMDLINE=("hash.exe" "10000000")

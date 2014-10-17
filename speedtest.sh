@@ -36,20 +36,6 @@ OUTDIR="$DIR/results"
 TMPPREFIX="/tmp/speedtest$$"
 TIMEOUT=200
 
-grepscimark () {
-    grep FFT "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-fft.times"
-    grep SOR "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-sor.times"
-    grep Monte "$TMPPREFIX.out" | awk '{ print 10000.0 / $4 }' >"$OUTDIR/scimark-montecarlo.times"
-    grep Sparse "$TMPPREFIX.out" | awk '{ print 10000.0 / $4 }' >"$OUTDIR/scimark-matmult.times"
-    grep LU "$TMPPREFIX.out" | awk '{ print 10000.0 / $3 }' >"$OUTDIR/scimark-lu.times"
-}
-
-grepironjs () {
-    grep -A1 -e 'Whole Suite' "$TMPPREFIX.out" | grep 'Score' | awk '{ print $2 }' | sed 's/ms//' >"$TMPPREFIX.ironjs"
-    head -1 "$TMPPREFIX.ironjs" >"$OUTDIR/ironjs-sunspider.times"
-    tail -1 "$TMPPREFIX.ironjs" | awk '{ print 10000.0 / $1 }' >"$OUTDIR/ironjs-v8.times"
-}
-
 runtest () {(
     name="$1"
     testdir="$2"
@@ -133,6 +119,33 @@ runtest () {(
     popd >/dev/null
 )}
 
+run_benchmark () {(
+    benchmark_file="$1"
+    if [ ! -f "$benchmark_file" ] ; then
+	echo "Error: Benchmark file '$benchmark_file' doesn't exist.  Ignoring."
+	return
+    fi
+
+    BENCHMARK_MEASURE=time
+
+    . "$benchmark_file"
+
+    if [ "x$BENCHMARK_NAME" = "x" ] ; then
+	echo "Error: Benchmark file '$benchmark_name' doesn't specify a BENCHMARK_NAME.  Ignoring."
+	return
+    fi
+    if [ "x$BENCHMARK_TESTDIR" = "x" ] ; then
+	echo "Error: Benchmark file '$benchmark_name' doesn't specify a BENCHMARK_TESTDIR.  Ignoring."
+	return
+    fi
+    if [ "x$BENCHMARK_CMDLINE" = "x" ] ; then
+	echo "Error: Benchmark file '$benchmark_name' doesn't specify a BENCHMARK_CMDLINE.  Ignoring."
+	return
+    fi
+
+    runtest "$BENCHMARK_NAME" "$BENCHMARK_TESTDIR" "$BENCHMARK_MEASURE" "${BENCHMARK_CMDLINE[@]}"
+)}
+
 if [ ! -f "$TIME" ] ; then
     echo Building mytime
     pushd mytime >/dev/null
@@ -154,45 +167,41 @@ if [ ! -f "$MONO" ] ; then
     exit 1
 fi
 
-#runtest myfib small time myfib.exe
-#runtest monofib small time fib.exe 42
-runtest scimark scimark grepscimark scimark.exe
-#runtest gmcs gmcs time gmcs.exe -define:NET_1_1 -out:mcs.exe @mcs.exe.sources cs-parser.cs
+run_benchmark benchmarks/scimark.benchmark
 
-runtest ironjs IronJS grepironjs ijs.exe .
+run_benchmark benchmarks/ironjs.benchmark
 
-runtest euler csgrande/Euler/Euler/bin/Debug time Euler.exe
-runtest grandetracer csgrande/GrandeTracer/GrandeTracer/bin/Debug time GrandeTracer.exe
-runtest bh csolden/BH/BH/bin/Debug time BH.exe -b 700 -s 1000
-runtest bisort csolden/BiSort/BiSort/bin/Debug time BiSort.exe -s 3000000
-runtest health csolden/Health/Health/bin/Debug time Health.exe -l 10 -t 40
-runtest perimeter csolden/Perimeter/Perimeter/bin/Debug time Perimeter.exe -l 17
-runtest specraytracer csspec/SpecRaytracer/SpecRaytracer/bin/Debug time SpecRaytracer.exe 200 20000 ../time-test.model
-runtest db csspec/DB/DB/bin/Debug time DB.exe ../input/db6 ../input/scr6
-runtest ahcbench zorn/ahcbench time ahcbench.exe input3.cs
-runtest lcscbench zorn/lcscbench time lcscbench.exe input3.cs
-runtest sharpsatbench zorn/SharpSATbench time SharpSATbench.exe input3.cnf
+run_benchmark benchmarks/euler.benchmark
+run_benchmark benchmarks/grandetracer.benchmark
 
-runtest fsharp f-sharp-2.0 time fsc.exe GeneralTest1.fs
-runtest ipy IronPython-2.0B2 time ipy.exe pystone.py 500000
+run_benchmark benchmarks/bh.benchmark
+run_benchmark benchmarks/bisort.benchmark
+run_benchmark benchmarks/health.benchmark
+run_benchmark benchmarks/perimeter.benchmark
+run_benchmark benchmarks/specraytracer.benchmark
+run_benchmark benchmarks/db.benchmark
+run_benchmark benchmarks/ahcbench.benchmark
+run_benchmark benchmarks/lcscbench.benchmark
+run_benchmark benchmarks/sharpsatbench.benchmark
 
-runtest roslyn roslyn/corlib time ../roslyn/csc.exe /codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC  -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin -target:library -out:mscorlib-out.dll "@corlib.dll.sources"
+run_benchmark benchmarks/fsharp.benchmark
+run_benchmark benchmarks/ipy.benchmark
 
-runtest binarytree shootout time binarytree.exe 19
-runtest except shootout time except.exe 10000000
-runtest hash shootout time hash.exe 10000000
-runtest lists shootout time lists.exe 30000
-runtest mandelbrot shootout time mandelbrot.exe 6400
-runtest message shootout time message.exe 1000000
-runtest n-body shootout time n-body.exe 50000000
-runtest objinst shootout time objinst.exe 400000000
-runtest raytracer2 shootout time raytracer.csharp-2.exe 250
-runtest raytracer3 shootout time raytracer.csharp-3.exe 600
-runtest strcat shootout time strcat.exe 80000000
+run_benchmark benchmarks/roslyn.benchmark
 
-runtest graph4 graph time graph4.exe
-runtest graph8 graph time graph8.exe
+run_benchmark benchmarks/binarytree.benchmark
+run_benchmark benchmarks/except.benchmark
+run_benchmark benchmarks/hash.benchmark
+run_benchmark benchmarks/lists.benchmark
+run_benchmark benchmarks/mandelbrot.benchmark
+run_benchmark benchmarks/message.benchmark
+run_benchmark benchmarks/n-body.benchmark
+run_benchmark benchmarks/objinst.benchmark
+run_benchmark benchmarks/raytracer2.benchmark
+run_benchmark benchmarks/raytracer3.benchmark
+run_benchmark benchmarks/strcat.benchmark
 
-runtest sharpchess SharpChess time Program.exe TestPosition.sharpchess 7
+run_benchmark benchmarks/graph4.benchmark
+run_benchmark benchmarks/graph8.benchmark
 
-#runtest compileswf compile time --compile-all System.Windows.Forms.dll
+run_benchmark benchmarks/sharpchess.benchmark

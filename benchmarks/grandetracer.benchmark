@@ -1,0 +1,6 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="grandetracer"
+BENCHMARK_TESTDIR="csgrande/GrandeTracer/GrandeTracer/bin/Debug"
+BENCHMARK_MEASURE="time"
+BENCHMARK_CMDLINE="GrandeTracer.exe"
