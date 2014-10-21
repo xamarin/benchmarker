@@ -44,8 +44,14 @@ def grep_stats (filename, statname):
             return number (m.group (2).replace(',','.'))
     return None
 
+def normalized_rgb (r, g, b):
+    return (r / 255.0, g / 255.0, b / 255.0)
+
 def make_colors (n):
-    return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
+    if n > 4:
+        return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
+    colors = [(119, 208, 101), (180, 85, 182), (52, 152, 219), (44, 62, 80)]
+    return [normalized_rgb (r, g, b) for (r, g, b) in colors] [:n]
 
 benchmarks = set ()
 data = {}
@@ -136,13 +142,14 @@ for i in range (len (benchmarks)):
 
 # plot
 
-bars_width = 0.8                        # the width of all bars for one benchmark combined
+bars_width = 0.6                        # the width of all bars for one benchmark combined
 xoff = (1.0 - bars_width) / 2.0
 ind = np.arange (len (benchmarks))      # the x locations for the groups
 width = bars_width / len (configs)      # the width of the bars
 
 fig = plt.figure()
-ax = fig.add_subplot(111)
+fig.patch.set_facecolor (normalized_rgb (180, 188, 188))
+ax = fig.add_subplot(111, axisbg = 'white')
 rects = []
 
 colors = make_colors (len (configs))
@@ -165,7 +172,9 @@ for config in configs:
     for j in range (len (means)):
         register_min_max (means [j], errs [j])
 
-    plot = ax.bar (ind + xoff + i * width, means, width, yerr = errs, color = colors [i])
+    if options.counter:
+        errs = None
+    plot = ax.bar (ind + xoff + i * width, means, width, yerr = errs, color = colors [i], linewidth = 0)
     rects.append (plot [0])
 
     i = i + 1
@@ -176,8 +185,9 @@ delta_y = max_y - min_y
 ax.set_ylim (min_y - delta_y * 0.1, max_y + delta_y * 0.1)
 
 # add some
-ax.set_xticks (ind + xoff + i * width)
+ax.set_xticks (ind + xoff + (i - 0.5) * width)
 ax.set_xticklabels (benchmarks)
+ax.xaxis.set_tick_params (width = 0)
 
 if options.counter:
     ax.set_ylabel ('relative %s' % options.counter)
@@ -189,6 +199,6 @@ ax.legend (rects, configs)
 fig.autofmt_xdate ()
 
 if options.output:
-    fig.savefig (options.output, dpi = 200)
+    fig.savefig (options.output, dpi = 200, facecolor = fig.get_facecolor(), edgecolor = 'none')
 else:
     plt.show()
