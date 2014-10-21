@@ -12,6 +12,7 @@ parser.add_option ("-o", "--output", dest = "output", help = "output graph to FI
 parser.add_option ("-i", "--include", action = "append", dest = "include", help = "only include BENCHMARK", metavar = "BENCHMARK")
 parser.add_option ("-j", "--subtract-jit-time", action = "store_true", dest = "subtract_jit", default = False, help = "subtract JIT times from run times")
 parser.add_option ("-c", "--counter", dest = "counter", help = "compare values of COUNTER", metavar = "COUNTER")
+parser.add_option ("-m", "--minimum", dest = "minimum", help = "only include benchmarks where reference value is at least VALUE", metavar = "VALUE")
 
 (options, configs) = parser.parse_args ()
 
@@ -26,6 +27,10 @@ if options.include:
 if options.counter and options.subtract_jit:
     print "Error: Can't use both --counter and --subtract-jit-time."
     sys.exit (1)
+
+minimum_value = None
+if options.minimum:
+    minimum_value = float (options.minimum)
 
 import matplotlib.pyplot as plt
 
@@ -52,6 +57,9 @@ def make_colors (n):
         return [colorsys.hsv_to_rgb (float (i) / n, 1.0, 1.0) for i in range (n)]
     colors = [(119, 208, 101), (180, 85, 182), (52, 152, 219), (44, 62, 80)]
     return [normalized_rgb (r, g, b) for (r, g, b) in colors] [:n]
+
+def list_mean (l):
+    return sum (l) / len (l)
 
 benchmarks = set ()
 data = {}
@@ -107,6 +115,9 @@ for bench in benchmarks.copy ():
     if len (filter (lambda c: bench not in data [c], configs)) > 0:
         print "Don't have data for %s in all configurations - removing." % bench
         benchmarks.remove (bench)
+    elif minimum_value != None and list_mean (data [configs [0]] [bench]) < minimum_value:
+        print "Mean value for %s is below minimum - removing." % bench
+        benchmarks.remove (bench)
 
 benchmarks = list (benchmarks)
 benchmarks.sort ()
@@ -121,7 +132,7 @@ for config in configs:
     for bench in benchmarks:
         times = data [config] [bench]
         times.sort ()
-        mean = sum (times) / len (times)
+        mean = list_mean (times)
         means.append (mean)
         errs.append (mean - times [0])
 
