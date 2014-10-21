@@ -11,6 +11,7 @@ parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
 parser.add_option ("-i", "--include", action = "append", dest = "include", help = "only include BENCHMARK", metavar = "BENCHMARK")
 parser.add_option ("-j", "--subtract-jit-time", action = "store_true", dest = "subtract_jit", default = False, help = "subtract JIT times from run times")
+parser.add_option ("-c", "--counter", dest = "counter", help = "compare values of COUNTER", metavar = "COUNTER")
 
 (options, configs) = parser.parse_args ()
 
@@ -21,6 +22,10 @@ if options.output:
 include = None
 if options.include:
     include = set (options.include)
+
+if options.counter and options.subtract_jit:
+    print "Error: Can't use both --counter and --subtract-jit-time."
+    sys.exit (1)
 
 import matplotlib.pyplot as plt
 
@@ -47,9 +52,14 @@ data = {}
 
 for arg in configs:
     data [arg] = {}
-    files = filter (lambda x: x.endswith ('.times'), os.listdir (arg))
+    if options.counter:
+        suffix = '.stats'
+    else:
+        suffix = '.times'
+    files = filter (lambda x: x.endswith (suffix), os.listdir (arg))
     for filename in files:
-        name = filename [:-6]
+        name = filename [:-len (suffix)]
+        filepath = '%s/%s' % (arg, filename)
 
         if include and not name in include:
             continue
@@ -66,15 +76,24 @@ for arg in configs:
             jit_time = 0
 
         benchmarks.add (name)
-        times = []
-        for time in open ('%s/%s' % (arg, filename)).readlines ():
-            time = float (time.strip ())
-            times.append (time - jit_time)
-        if len (times) >= 10:
-            times = times [2 : -2]
-        elif len (times) >= 5:
-            times = times [1 : -1]
-        data [arg] [name] = times
+        samples = []
+
+        if options.counter:
+            sample = grep_stats (filepath, options.counter)
+            if sample == None:
+                print "Error: Counter `%s` is not present in stats file `%s`." % (options.counter, filepath)
+                sys.exit (1)
+            samples.append (float (sample))
+        else:
+            for time in open (filepath).readlines ():
+                time = float (time.strip ())
+                samples.append (time - jit_time)
+
+        if len (samples) >= 10:
+            samples = samples [2 : -2]
+        elif len (samples) >= 5:
+            samples = samples [1 : -1]
+        data [arg] [name] = samples
 
 # remove benchmarks not in every config
 
@@ -160,7 +179,10 @@ ax.set_ylim (min_y - delta_y * 0.1, max_y + delta_y * 0.1)
 ax.set_xticks (ind + xoff + i * width)
 ax.set_xticklabels (benchmarks)
 
-ax.set_ylabel ('relative wall clock time')
+if options.counter:
+    ax.set_ylabel ('relative %s' % options.counter)
+else:
+    ax.set_ylabel ('relative wall clock time')
 
 ax.legend (rects, configs)
 
