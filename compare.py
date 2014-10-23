@@ -6,6 +6,11 @@ import numpy as np
 import matplotlib
 import re
 from optparse import OptionParser
+import math
+
+def unique (l):
+    met = set()
+    return [x for x in l if x not in met and not met.add(x)]
 
 parser = OptionParser ()
 parser.add_option ("-o", "--output", dest = "output", help = "output graph to FILE", metavar = "FILE")
@@ -13,8 +18,11 @@ parser.add_option ("-i", "--include", action = "append", dest = "include", help 
 parser.add_option ("-j", "--subtract-jit-time", action = "store_true", dest = "subtract_jit", default = False, help = "subtract JIT times from run times")
 parser.add_option ("-c", "--counter", dest = "counter", help = "compare values of COUNTER", metavar = "COUNTER")
 parser.add_option ("-m", "--minimum", dest = "minimum", help = "only include benchmarks where reference value is at least VALUE", metavar = "VALUE")
+parser.add_option ("-g", "--geomean", action = "store_true", dest = "geomean", default = False, help = "Output geometric mean of the relative execution speed for each config.")
 
 (options, configs) = parser.parse_args ()
+
+configs = unique(configs)
 
 if options.output:
     matplotlib.use('Agg')
@@ -150,6 +158,25 @@ for i in range (len (benchmarks)):
     nerrs [i] = nerrs [i] / nmeans [i]
     nmeans [i] = 1.0
 
+if options.geomean:
+    # calculate geometric mean
+    processed[configs[0]][0].append(1.)
+    processed[configs[0]][1].append(0)
+    for config in configs[1 :]:
+        gmean = 1
+        (means, errs) = processed [config]
+        for i in range (len (benchmarks)):
+            gmean *= means [i]
+        gmean = math.pow (gmean, 1. / len(benchmarks))
+        means.append(gmean)
+        errs.append(0)
+    benchmarks.append("Geometric mean")
+
+    # output geometric mean in the console
+    print
+    print "Relative execution time compared to the base config (the lower the faster):"
+    for config in configs:
+        print "%s: %f%%" % (config, processed[config][0][-1] * 100)
 
 # plot
 
@@ -205,7 +232,7 @@ if options.counter:
 else:
     ax.set_ylabel ('relative wall clock time')
 
-ax.legend (rects, configs)
+ax.legend (rects, configs, loc='best', fontsize='medium', labelspacing=0.2).draggable()
 
 fig.autofmt_xdate ()
 
