@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<AutomationTest>
+  <!-- ObjectModel perf number input values -->
+  <ObjectModelPerfUsingLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/ObjectModel/Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence.fasta</FilePath>
+    <Alphabet>DNA</Alphabet>
+    <SequenceID>>gi|225010424|ref|NZ_ABVW01000002.1| Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence</SequenceID>
+    <StartIndex>108</StartIndex>
+    <EndIndex>182465</EndIndex>
+    <StartLine>1</StartLine>
+    <SequenceRangeToRead>3500</SequenceRangeToRead>
+  </ObjectModelPerfUsingLargeSizeTestData>
+  <ObjectModelPerfUsingSmallSizeTestData>
+    <FilePath>TestData/PerfTestData/ObjectModel/Macrobrachium lanchesteri mitochondrion, complete genome.fasta</FilePath>
+    <Alphabet>DNA</Alphabet>
+    <SequenceID>>gi|224815204|gb|FJ797435.1| Macrobrachium lanchesteri mitochondrion, complete genome</SequenceID>
+    <StartIndex>108</StartIndex>
+    <EndIndex>15593</EndIndex>
+    <StartLine>1</StartLine>
+    <SequenceRangeToRead>3500</SequenceRangeToRead>
+  </ObjectModelPerfUsingSmallSizeTestData>
+  <ObjectModelPerfUsingLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/ObjectModel/Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence.fasta</FilePath>
+    <Alphabet>DNA</Alphabet>
+    <SequenceID>>gi|225010424|ref|NZ_ABVW01000002.1| Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence</SequenceID>
+    <StartIndex>108</StartIndex>
+    <EndIndex>182465</EndIndex>
+    <StartLine>1</StartLine>
+    <SequenceRangeToRead>3500</SequenceRangeToRead>
+  </ObjectModelPerfUsingLargeSizeTestData>
+  <ObjectModel>
+    <FilePath>TestData/PerfTestData/ObjectModel/Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence.fasta</FilePath>
+    <Alphabet>DNA</Alphabet>
+    <SequenceID>>gi|225010424|ref|NZ_ABVW01000002.1| Flavobacteria bacterium MS024-3C ctg90, whole genome shotgun sequence</SequenceID>
+    <StartIndex>108</StartIndex>
+    <EndIndex>182465</EndIndex>
+    <StartLine>1</StartLine>
+    <SequenceRangeToRead>3500</SequenceRangeToRead>
+  </ObjectModel>
+  <!-- MUMmer perf number input values -->
+  <NcumerSmallSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/SmallSizeE-coli_Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/SmallSizeE-coli_Query.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/DiagonalScoreMatrix.txt</SMFilePath>
+    <MUMLength>10</MUMLength>
+  </NcumerSmallSizeTestData>
+  <MUMmerSmallSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/MUMmer-MediumSizeEcoli_Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/MUMmer-MediumSizeEcoli_Ref.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/DiagonalScoreMatrix.txt</SMFilePath>
+    <MUMLength>10</MUMLength>
+  </MUMmerSmallSizeTestData>
+  <MUMmerLargeSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/LargeSizeEcoli_Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/LargeSizeEcoli_Ref.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/DiagonalScoreMatrix.txt</SMFilePath>
+    <MUMLength>10</MUMLength>
+  </MUMmerLargeSizeTestData>
+  <NUCmerMediumSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/NUCmer-MediumSizeEcoli-Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/NUCmer-MediumSizeEcoli-Query.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/DiagonalScoreMatrix.txt</SMFilePath>
+    <MUMLength>10</MUMLength>
+  </NUCmerMediumSizeTestData>
+  <PamsamSmallSizeTestData>
+    <RefFilePath>TestData/PerfTestData/PAMSAM/Dna/122_Phyllodonta indeterminata voucher_Ref.afa</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/PAMSAM/Dna/122_Phyllodonta indeterminata voucher_Query.afa</QueryFilePath>
+  </PamsamSmallSizeTestData>
+  <PamsamLargeSizeTestData>
+    <RefFilePath>TestData/PerfTestData/PAMSAM/Dna/854_Phyllodonta indeterminata voucher_Ref.afa</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/PAMSAM/Dna/854_Phyllodonta indeterminata voucher_Query.afa</QueryFilePath>
+  </PamsamLargeSizeTestData>
+  <!-- PaDeNA perf number input values -->
+  <PaDeNAEulerTestData>
+    <FilePath>TestData/PerfTestData/PaDeNA/EulerTestData/7MB_Euler.fasta</FilePath>
+    <KmerLength>20</KmerLength>
+    <Depth>20</Depth>
+    <StdDeviation>500</StdDeviation>
+    <Mean>1000</Mean>
+  </PaDeNAEulerTestData>
+  <PaDeNASmallSizeEulerTestData>
+    <FilePath>TestData/PerfTestData/PaDeNA/EulerTestData/2MB_Euler.fasta</FilePath>
+    <KmerLength>20</KmerLength>
+    <Depth>20</Depth>
+    <StdDeviation>500</StdDeviation>
+    <Mean>1000</Mean>
+  </PaDeNASmallSizeEulerTestData>
+  <!-- AlignmentAlgorithm (SmithWaterman/NeedlemanWunsch) perf number input values -->
+  <AlignmentAlgorithmSmallSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/SmallSizeHomosapiensclaspin-Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/SmallSizeHomosapiensclaspin-Query.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/AmbiguousDNA.txt</SMFilePath>
+  </AlignmentAlgorithmSmallSizeTestData>
+  <AlignmentAlgorithmMediumSizeTestData>
+    <RefFilePath>TestData/PerfTestData/AlignmentAlgorithms/MediumSizeStreptomyces_coelicolor_A3-Ref.fasta</RefFilePath>
+    <QueryFilePath>TestData/PerfTestData/AlignmentAlgorithms/MediumSizeStreptomyces_coelicolor_A3-Query.fasta</QueryFilePath>
+    <SMFilePath>TestData/PerfTestData/AlignmentAlgorithms/AmbiguousDNA.txt</SMFilePath>
+  </AlignmentAlgorithmMediumSizeTestData>
+  <BAMParserLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/SAMBAMTestData/LargeSize-NA12273.SLX.MOSAIK.SRP000033.2009_11.bam</FilePath>
+  </BAMParserLargeSizeTestData>
+  <BAMParserVeryLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/SAMBAMTestData/20MBVeryLargeSize-NA12273.SLX.MOSAIK.SRP000033.2009_11.bam</FilePath>
+  </BAMParserVeryLargeSizeTestData>
+  <SAMParserLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/SAMBAMTestData/LargeSize-NA12273.SLX.MOSAIK.SRP000033.2009_11.sam</FilePath>
+  </SAMParserLargeSizeTestData>
+  <SAMParserVeryLargeSizeTestData>
+    <FilePath>TestData/PerfTestData/SAMBAMTestData/20MBVeryLargeSize-NA12273.SLX.MOSAIK.SRP000033.2009_11.sam</FilePath>
+  </SAMParserVeryLargeSizeTestData>
+</AutomationTest>

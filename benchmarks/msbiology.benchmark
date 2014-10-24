@@ -1,0 +1,7 @@
+# -*- shell-script -*-
+
+BENCHMARK_NAME="msbiology"
+BENCHMARK_TESTDIR="MSBiology"
+BENCHMARK_CMDLINE="TestRunner.exe"
+
+TIMEOUT=360
