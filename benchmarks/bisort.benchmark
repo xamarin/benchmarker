@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="bisort"
-BENCHMARK_TESTDIR="csolden/BiSort/BiSort/bin/Debug"
-BENCHMARK_CMDLINE=("BiSort.exe" "-s" "3000000")
+{
+  "Name": "bisort",
+  "TestDirectory": "csolden/BiSort/BiSort/bin/Debug",
+  "CommandLine": ["BiSort.exe", "-s", "3000000"]
+}

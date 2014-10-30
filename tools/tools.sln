@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compare", "compare\compare.csproj", "{57E76AF7-A299-4B39-8F41-44673084DEE3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "common", "common\common.csproj", "{AD342772-DA1A-460F-8BE7-EA3C7A681116}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.ActiveCfg = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.Build.0 = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x86.ActiveCfg = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x86.Build.0 = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x64.ActiveCfg = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x64.Build.0 = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x86.ActiveCfg = Debug|x86
+		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x86.Build.0 = Debug|x86
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x64.ActiveCfg = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x64.Build.0 = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x86.ActiveCfg = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x86.Build.0 = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x64.ActiveCfg = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x64.Build.0 = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x86.ActiveCfg = Debug|x64
+		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x86.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = compare\compare.csproj
+	EndGlobalSection
+EndGlobal
