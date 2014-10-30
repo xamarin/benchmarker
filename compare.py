@@ -127,6 +127,10 @@ for bench in benchmarks.copy ():
         print "Mean value for %s is below minimum - removing." % bench
         benchmarks.remove (bench)
 
+if len (benchmarks) == 0:
+    print "Error: No benchmarks found that are available for all specified configurations."
+    sys.exit (1)
+
 benchmarks = list (benchmarks)
 benchmarks.sort ()
 
