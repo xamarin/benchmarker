@@ -29,9 +29,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="XamarinProfiler.Core">
-      <HintPath>XamarinProfiler.Core.dll</HintPath>
-    </Reference>
     <Reference Include="System.Data.Linq" />
     <Reference Include="System.Data" />
     <Reference Include="Mono.Data.Sqlite" />

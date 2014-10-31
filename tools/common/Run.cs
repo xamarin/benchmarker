@@ -13,8 +13,7 @@ namespace Benchmarker.Common
 		public Benchmark Benchmark { get; set; }
 		public Config Config { get; set; }
 		public string Version { get; set; }
-		public string Stdout { get; set; }
-		public TimeSpan[] Times { get; set; }
+		public Time[] Times { get; set; }
 		public bool Timedout { get; set; }
 
 		public static Run LoadFrom (string filename)
@@ -29,6 +28,12 @@ namespace Benchmarker.Common
 			using (var writer = new StreamWriter (new FileStream (filename, FileMode.Create))) {
 				writer.Write (JsonConvert.SerializeObject (this, Formatting.Indented));
 			}
+		}
+
+		public class Time {
+			public TimeSpan Value { get; set; }
+			public string Output { get; set; }
+			public string Error { get; set; }
 		}
 	}
 }

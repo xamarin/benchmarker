@@ -58,7 +58,7 @@ namespace Benchmarker.Common
 				WorkingDirectory = Path.Combine (testsdir, TestDirectory),
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
-				// RedirectStandardError = true,
+				RedirectStandardError = true,
 			};
 
 			foreach (var env in config.MonoEnvironmentVariables)
@@ -77,42 +77,36 @@ namespace Benchmarker.Common
 
 			process1.WaitForExit ();
 
-			/* Run without timing with --stats */
+			/* Run with timing */
 			info.Arguments = "--stats " + arguments;
 
-			Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
-
-			var process2 = Process.Start (info);
-			var stdout = Task.Run (() => new StreamReader (process2.StandardOutput.BaseStream).ReadToEnd ());
-
-			var success2 = process2.WaitForExit (timeout);
-			if (!success2)
-				process2.Kill ();
-
-
-			/* Run with timing without --stats */
-			info.Arguments = arguments;
-
 			var sw = new Stopwatch ();
-			var times = new TimeSpan [config.Count];
+			var times = new Run.Time [config.Count];
 
-			for (var i = 0; i < times.Length; ++i) {
-				Console.Out.Write ("\t$> {0} {1} {2} -> ({3}/{4}) ", envvar, info.FileName, info.Arguments, i + 1, times.Length);
+			for (var i = 0; i < times.Length + 1; ++i) {
+				Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
+				Console.Out.Write ("\t\t-> ({0}/{1}) ...", i + 1, times.Length);
 
 				sw.Restart ();
 
-				var process3 = Process.Start (info);
-				var success3 = process3.WaitForExit (timeout);
+				var process2 = Process.Start (info);
+				var stdout2 = Task.Factory.StartNew (() => new StreamReader (process2.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+				var stderr2 = Task.Factory.StartNew (() => new StreamReader (process2.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+				var success2 = process2.WaitForExit (timeout);
 
 				sw.Stop ();
 
-				if (!success3)
-					process3.Kill ();
+				if (!success2)
+					process2.Kill ();
 
-				Console.Out.WriteLine (success3 ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
+				Console.Out.WriteLine ("\r\t\t-> ({0}/{1}) {2}", i + 1, times.Length, success2 ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
 
-				times [i] = new TimeSpan (success3 ? sw.ElapsedTicks : -1);
-				timedout = timedout || !success3;
+				if (i > 0) {
+					times [i] = success2 ? new Run.Time { Value = TimeSpan.FromTicks (sw.ElapsedTicks), Output = stdout2.Result, Error = stderr2.Result } :
+								new Run.Time { Value = TimeSpan.Zero, Output = null, Error = null };
+
+					timedout = timedout || !success2;
+				}
 			}
 
 			// FIXME: implement pausetime
@@ -123,7 +117,6 @@ namespace Benchmarker.Common
 				DateTime = DateTime.Now,
 				Benchmark = this,
 				Config = config,
-				Stdout = success2 ? stdout.Result : null,
 				Version = version,
 				Timedout = timedout,
 				Times = times,
