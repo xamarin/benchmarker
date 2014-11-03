@@ -6,6 +6,7 @@ using Benchmarker.Common;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
+using System.Diagnostics;
 
 class Program
 {
@@ -17,7 +18,7 @@ class Program
 
 		Console.Error.WriteLine ("usage: [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> <config-file> [<config-file>+]");
 		Console.Error.WriteLine ("paremeters:");
-		Console.Error.WriteLine ("    --help                display this help");
+		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
@@ -25,10 +26,12 @@ class Program
 		Console.Error.WriteLine ("    -m, --mono-exe        path to mono executable; default to system mono");
 		Console.Error.WriteLine ("    -g, --graph           output graph to FILE; default to current graph.svg in current directory");
 		Console.Error.WriteLine ("    -l, --load-from       load run from FILES, separated by commas");
-		Console.Error.WriteLine ("                             ex: -l results/ahcbench_all_2014-10-31T00:00:00,results/ahcbench_default_2014-10-31T00:01:00");
+		Console.Error.WriteLine ("                             ex: -l results/ahcbench_all_2014-10-31T10:00:00,results/ahcbench_default_2014-10-31T10:01:00");
 		Console.Error.WriteLine ("        --no-graph        disable graph generation");
 		Console.Error.WriteLine ("        --no-run          disable the benchmark execution, load run from existing file in <results-dir>");
 		Console.Error.WriteLine ("    -c, --counter         compare value of COUNTER");
+		Console.Error.WriteLine ("        --geomean         output geometric mean of the relative execution speed for each config");
+		Console.Error.WriteLine ("        --minimum         only include benchmarks where reference value is at least VALUE");
 
 		Environment.Exit (exitcode);
 	}
@@ -44,6 +47,8 @@ class Program
 		var nograph = false;
 		var norun = false;
 		var counter = String.Empty;
+		var geomean = false;
+		var minimum = Double.NaN;
 
 		var optindex = 0;
 
@@ -52,6 +57,7 @@ class Program
 				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]) * 1000;
+				timeout = timeout == 0 ? Int32.MaxValue : timeout;
 			// } else if (args [optindex] == "-p" || args [optindex] == "--pause-time") {
 			// 	pausetime = Boolean.Parse (args [++optindex]);
 			} else if (args [optindex] == "-m" || args [optindex] == "--mono-exe") {
@@ -66,6 +72,10 @@ class Program
 				norun = true;
 			} else if (args [optindex] == "-c" || args [optindex] == "--counter") {
 				counter = args [++optindex];
+			} else if (args [optindex] == "--geomean") {
+				geomean = true;
+			} else if (args [optindex] == "--minimum") {
+				minimum = Double.Parse (args [++optindex]);
 			} else if (args [optindex].StartsWith ("--help")) {
 				Usage ();
 			} else if (args [optindex] == "--") {
@@ -87,8 +97,6 @@ class Program
 
 		if (args.Length - optindex < 4)
 			Usage (null, 1);
-
-		timeout = timeout == 0 ? Int32.MaxValue : timeout;
 
 		var testsdir = args [optindex++];
 		var resultsdir = args [optindex++];
@@ -150,6 +158,9 @@ class Program
 			foreach (var config in configs)
 				series.Add (new ErrorColumnSeries { Title = config.Name, StrokeThickness = 1 });
 
+			if (geomean)
+				series.Add (new ErrorColumnSeries { Title = "geomean", StrokeThickness = 1 });
+
 			var min = Double.NaN;
 			var max = Double.NaN;
 
@@ -157,20 +168,21 @@ class Program
 				var name = kv.Key;
 				var configtimes = kv.Value;
 
+				Debug.Assert (series.Count == configtimes.Count + (geomean ? 1 : 0));
+
 				categoryaxis.Labels.Add (name);
 
 				if (configtimes.Any (ts => ts.Any (t => t.Value == TimeSpan.Zero))) {
 					Console.Out.WriteLine ("Don't have data for \"{0}\" in all configurations - removing", name);
 
-					for (var j = 0; j < configtimes.Count; ++j) {
+					for (var j = 0; j < series.Count; ++j)
 						series [j].Items.Add (new ErrorColumnItem { Value = 0, Error = 0, Color = OxyColors.Automatic });
-					}
 				} else {
 					var values = configtimes.Select (ts => ts.Select (t => {
 						if (String.IsNullOrEmpty (counter)) {
 							return t.Value.TotalMilliseconds;
 						} else {
-							var line = t.Output.Split ('\n').Where (s => s.StartsWith (counter)).LastOrDefault ();
+							var line = t.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
 							if (line == default (string) || !line.Contains (':'))
 								throw new InvalidDataException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
 
@@ -195,16 +207,27 @@ class Program
 					var means = values.Select (ts => ts.Sum () / ts.Count ());
 					var errors = values.Zip (means, (ts, m) => m - ts.Min ());
 
-					var ratio = means.ElementAt (0);
+					if (minimum != Double.NaN && means.Any (m => m < minimum)) {
+						Console.Out.WriteLine ("Mean value for \"{0}\" us below minimum - removing", name);
 
-					var nmeans = means.Select (m => m / ratio).ToList ();
-					var nerrors = errors.Select (e => e / ratio).ToList ();
+						for (var j = 0; j < series.Count; ++j)
+							series [j].Items.Add (new ErrorColumnItem { Value = 0, Error = 0, Color = OxyColors.Automatic });
+					} else {
+						var ratio = means.ElementAt (0);
 
-					min = Math.Min (Double.IsNaN (min) ? Double.MaxValue : min, nmeans.Where (m => m > 0).Zip (nerrors.Where (e => e > 0), (m, e) => m - e).Min ());
-					max = Math.Max (Double.IsNaN (max) ? Double.MinValue : max, nmeans.Where (m => m > 0).Zip (nerrors.Where (e => e > 0), (m, e) => m + e).Max ());
+						var nmeans = means.Select (m => m / ratio).ToList ();
+						var nerrors = errors.Select (e => e / ratio).ToList ();
 
-					for (var j = 0; j < configtimes.Count; ++j) {
-						series [j].Items.Add (new ErrorColumnItem { Value = nmeans [j], Error = nerrors [j], Color = OxyColors.Automatic });
+						if (geomean) {
+							nmeans.Add (Math.Pow (nmeans.Aggregate (1d, (a, m) => m * a), 1d / nmeans.Count));
+							nerrors.Add (0d);
+						}
+
+						min = Math.Min (Double.IsNaN (min) ? Double.MaxValue : min, nmeans.Zip (nerrors, (m, e) => m - e).Min ());
+						max = Math.Max (Double.IsNaN (max) ? Double.MinValue : max, nmeans.Zip (nerrors, (m, e) => m + e).Max ());
+
+						for (var j = 0; j < series.Count; ++j)
+							series [j].Items.Add (new ErrorColumnItem { Value = nmeans [j], Error = nerrors [j], Color = OxyColors.Automatic });
 					}
 				}
 			}
