@@ -1,30 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Benchmarker.Common;
+using Benchmarker.Common.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
-using System.Diagnostics;
 
-class Program
+class Compare
 {
-	static void
-	Usage (string message = null, int exitcode = 0)
+	static void UsageAndExit (string message = null, int exitcode = 0)
 	{
 		if (!String.IsNullOrEmpty (message))
 			Console.Error.WriteLine ("{0}\n", message);
 
 		Console.Error.WriteLine ("usage: [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> <config-file> [<config-file>+]");
-		Console.Error.WriteLine ("paremeters:");
+		Console.Error.WriteLine ("parameters:");
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
 		Console.Error.WriteLine ("    -m, --mono-exe        path to mono executable; default to system mono");
-		Console.Error.WriteLine ("    -g, --graph           output graph to FILE; default to current graph.svg in current directory");
+		Console.Error.WriteLine ("    -g, --graph           output graph to FILE; default to \"graph.svg\" in current directory");
 		Console.Error.WriteLine ("    -l, --load-from       load run from FILES, separated by commas");
 		Console.Error.WriteLine ("                             ex: -l results/ahcbench_all_2014-10-31T10:00:00,results/ahcbench_default_2014-10-31T10:01:00");
 		Console.Error.WriteLine ("        --no-graph        disable graph generation");
@@ -77,26 +76,26 @@ class Program
 			} else if (args [optindex] == "--minimum") {
 				minimum = Double.Parse (args [++optindex]);
 			} else if (args [optindex].StartsWith ("--help")) {
-				Usage ();
+				UsageAndExit ();
 			} else if (args [optindex] == "--") {
 				optindex += 1;
 				break;
 			} else if (args [optindex].StartsWith ("-")) {
 				Console.Error.WriteLine ("unknown parameter {0}", args [optindex]);
-				Usage ();
+				UsageAndExit ();
 			} else {
 				break;
 			}
 		}
 
 		if (norun && nograph)
-			Usage ("You cannot disable run and graph at the same time", 1);
+			UsageAndExit ("You cannot disable run and graph at the same time", 1);
 
 		if (!norun && loadrunfrom.Length > 0)
-			Usage ("You cannot load a run from a file if you run the benchmarks", 1);
+			UsageAndExit ("You cannot load a run from a file if you run the benchmarks", 1);
 
 		if (args.Length - optindex < 4)
-			Usage (null, 1);
+			UsageAndExit (null, 1);
 
 		var testsdir = args [optindex++];
 		var resultsdir = args [optindex++];
@@ -109,18 +108,18 @@ class Program
 		var runs = new Dictionary<string, List<Run.Time[]>> (benchmarks.Length * configs.Length);
 
 		/* Run or load the benchmarks */
-		for (var i = 0; i < benchmarks.Length; ++i) {
+		foreach (var benchmark in benchmarks) {
 			var configtimes = new List<Run.Time[]> (configs.Length);
 
-			for (var j = 0; j < configs.Length; ++j) {
-				var runfileprefix = String.Join ("_", benchmarks [i].Name, configs [j].Name, "");
+			foreach (var config in configs) {
+				var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
 
 				if (!norun) {
 					/* Run the benchmarks */
-					if (configs [j].Count <= 0)
-						throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", configs [j].Name));
+					if (config.Count <= 0)
+						throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
 
-					var run = benchmarks [i].Run (configs [j], testsdir, timeout, monoexe, pausetime);
+					var run = benchmark.Run (config, testsdir, timeout, monoexe, pausetime);
 					run.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s")));
 
 					configtimes.Add (run.Times.ToArray ());
@@ -145,7 +144,7 @@ class Program
 				}
 			}
 
-			runs.Add (benchmarks [i].Name, configtimes);
+			runs.Add (benchmark.Name, configtimes);
 		}
 
 		/* Generate the graph */
@@ -251,6 +250,8 @@ class Program
 			using (var stream = new FileStream (graph, FileMode.Create)) {
 				SvgExporter.Export (plot, stream, 1024, 768, true);
 			}
+
+			Process.Start (graph);
 		}
 	}
 }

@@ -3,7 +3,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Benchmarker.Common
+namespace Benchmarker.Common.Models
 {
 	public class Config
 	{

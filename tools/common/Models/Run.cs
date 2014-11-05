@@ -5,7 +5,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Diagnostics;
 
-namespace Benchmarker.Common
+namespace Benchmarker.Common.Models
 {
 	public class Run
 	{
