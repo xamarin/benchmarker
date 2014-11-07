@@ -7,19 +7,19 @@ using System.Diagnostics;
 
 namespace Benchmarker.Common.Models
 {
-	public class Run
+	public class Result
 	{
 		public DateTime DateTime { get; set; }
 		public Benchmark Benchmark { get; set; }
 		public Config Config { get; set; }
 		public string Version { get; set; }
-		public Time[] Times { get; set; }
+		public Run[] Runs { get; set; }
 		public bool Timedout { get; set; }
 
-		public static Run LoadFrom (string filename)
+		public static Result LoadFrom (string filename)
 		{
 			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
-				return JsonConvert.DeserializeObject<Run> (reader.ReadToEnd ());
+				return JsonConvert.DeserializeObject<Result> (reader.ReadToEnd ());
 			}
 		}
 
@@ -30,8 +30,8 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public class Time {
-			public TimeSpan Value { get; set; }
+		public class Run {
+			public TimeSpan WallClockTime { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
 		}

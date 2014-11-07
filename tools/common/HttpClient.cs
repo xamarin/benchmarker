@@ -15,6 +15,15 @@ namespace Benchmarker.Common
 			}
 		}
 
+		public static HttpWebResponse Get (HttpWebRequest request)
+		{
+			try {
+				return (HttpWebResponse) request.GetResponse ();
+			} catch (WebException e) {
+				throw new WebException (String.Format ("GET {0} : {1}", request.RequestUri.AbsoluteUri, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+			}
+		}
+
 		public static string GetContent (string url)
 		{
 			try {

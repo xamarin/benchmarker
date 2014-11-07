@@ -83,7 +83,7 @@ public class Program
 
 		revision.FetchInto (revisionfolder);
 
-		var profiles = new List<Profile> (benchmarks.Length * configs.Length);
+		var profiles = new List<ProfileResult> (benchmarks.Length * configs.Length);
 
 		foreach (var benchmark in benchmarks) {
 			foreach (var config in configs) {

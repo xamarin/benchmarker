@@ -26,10 +26,10 @@
     <Compile Include="HttpClient.cs" />
     <Compile Include="Models\Benchmark.cs" />
     <Compile Include="Models\Config.cs" />
-    <Compile Include="Models\Profile.cs" />
     <Compile Include="Models\Revision.cs" />
-    <Compile Include="Models\Run.cs" />
     <Compile Include="LogProfiler\Reader.cs" />
+    <Compile Include="Models\Result.cs" />
+    <Compile Include="Models\ProfileResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

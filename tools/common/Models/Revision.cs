@@ -49,7 +49,7 @@ namespace Benchmarker.Common.Models
 				var wrenchrequest = HttpClient.CreateRequest ("https://wrench.mono-project.com/Wrench/GetLatest.aspx?laneName=" + lane);
 				wrenchrequest.AllowAutoRedirect = false;
 
-				var wrenchresponse = (HttpWebResponse)wrenchrequest.GetResponse ();
+				var wrenchresponse = HttpClient.Get (wrenchrequest);
 
 				switch (wrenchresponse.StatusCode) {
 				case HttpStatusCode.Redirect:

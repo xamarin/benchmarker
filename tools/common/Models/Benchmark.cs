@@ -47,7 +47,7 @@ namespace Benchmarker.Common.Models
 				.ToList ();
 		}
 
-		public Run Run (Config config, string testsdir = "tests", int timeout = Int32.MaxValue, string monoexe = null, bool pausetime = false)
+		public Result Run (Config config, string testsdir = "tests", int timeout = Int32.MaxValue, string monoexe = null, bool pausetime = false)
 		{
 			Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", Name, config.Name);
 
@@ -78,7 +78,7 @@ namespace Benchmarker.Common.Models
 			/* Run with timing */
 			info.Arguments = "--stats " + arguments;
 
-			var run = new Run () { DateTime = DateTime.Now, Benchmark = this, Config = config, Version = version, Timedout = false, Times = new Run.Time [config.Count] };
+			var result = new Result () { DateTime = DateTime.Now, Benchmark = this, Config = config, Version = version, Timedout = false, Runs = new Result.Run [config.Count] };
 
 			for (var i = 0; i < config.Count + 1; ++i) {
 				var r = RunProcess (info, i, config.Count, envvar, timeout);
@@ -87,18 +87,18 @@ namespace Benchmarker.Common.Models
 				if (i == 0)
 					continue;
 
-				run.Times [i - 1] = new Run.Time { Value = r.Time, Output = r.Output, Error = r.Error };
-				run.Timedout = run.Timedout || !r.Success;
+				result.Runs [i - 1] = new Result.Run { WallClockTime = r.Time, Output = r.Output, Error = r.Error };
+				result.Timedout = result.Timedout || !r.Success;
 			}
 
 			// FIXME: implement pausetime
 			if (pausetime)
 				throw new NotImplementedException ();
 
-			return run;
+			return result;
 		}
 
-		public Profile Profile (Config config, Revision revision, string revisionfolder, string profilefolder, string testsdir = "tests", int timeout = Int32.MaxValue)
+		public ProfileResult Profile (Config config, Revision revision, string revisionfolder, string profilefolder, string testsdir = "tests", int timeout = Int32.MaxValue)
 		{
 			Console.Out.WriteLine ("Profiling benchmark \"{0}\" with config \"{1}\"", Name, config.Name);
 
@@ -127,10 +127,10 @@ namespace Benchmarker.Common.Models
 
 			var arguments = String.Join (" ", config.MonoOptions.Union (CommandLine));
 
-			var profile = new Profile { DateTime = DateTime.Now, Benchmark = this, Config = config, Revision = revision, Timedout = timedout, Runs = new Profile.Run [config.Count] };
+			var result = new ProfileResult { DateTime = DateTime.Now, Benchmark = this, Config = config, Revision = revision, Timedout = timedout, Runs = new ProfileResult.Run [config.Count] };
 
 			for (var i = 0; i < config.Count + 1; ++i) {
-				var profilefilename = String.Join ("_", new string [] { profile.ToString (), i == 0 ? "dryrun" : i.ToString () }) + ".mlpd";
+				var profilefilename = String.Join ("_", new string [] { result.ToString (), i == 0 ? "dryrun" : i.ToString () }) + ".mlpd";
 
 				info.Arguments = String.Format ("--profile=log:counters,sample,nocalls,noalloc,output={0} ", Path.Combine (
 					profilefolder, profilefilename)) + arguments;
@@ -140,11 +140,11 @@ namespace Benchmarker.Common.Models
 				if (i == 0)
 					continue;
 
-				profile.Runs [i - 1] = new Models.Profile.Run { Index = i, Time = r.Time, Output = r.Output, Error = r.Error, ProfilerOutput = profilefilename };
-				profile.Timedout = profile.Timedout || !r.Success;
+				result.Runs [i - 1] = new Models.ProfileResult.Run { Index = i, WallClockTime = r.Time, Output = r.Output, Error = r.Error, ProfilerOutput = profilefilename };
+				result.Timedout = result.Timedout || !r.Success;
 			}
 
-			return profile;
+			return result;
 		}
 
 		struct RunProcessResult

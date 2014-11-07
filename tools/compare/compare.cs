@@ -42,7 +42,7 @@ class Compare
 		var pausetime = false;
 		var monoexe = String.Empty;
 		var graph = "graph.svg";
-		var loadrunfrom = new string [0];
+		var loadresultfrom = new string [0];
 		var nograph = false;
 		var norun = false;
 		var counter = String.Empty;
@@ -64,7 +64,7 @@ class Compare
 			} else if (args [optindex] == "-g" || args [optindex] == "--graph") {
 				graph = args [++optindex];
 			} else if (args [optindex] == "-l" || args [optindex] == "--load-from") {
-				loadrunfrom = args [++optindex].Split (',').Select (s => s.Trim ()).Union (loadrunfrom).ToArray ();
+				loadresultfrom = args [++optindex].Split (',').Select (s => s.Trim ()).Union (loadresultfrom).ToArray ();
 			} else if (args [optindex] == "--no-graph") {
 				nograph = true;
 			} else if (args [optindex] == "--no-run") {
@@ -91,7 +91,7 @@ class Compare
 		if (norun && nograph)
 			UsageAndExit ("You cannot disable run and graph at the same time", 1);
 
-		if (!norun && loadrunfrom.Length > 0)
+		if (!norun && loadresultfrom.Length > 0)
 			UsageAndExit ("You cannot load a run from a file if you run the benchmarks", 1);
 
 		if (args.Length - optindex < 4)
@@ -105,11 +105,11 @@ class Compare
 		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name).ToArray ();
 		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
 
-		var runs = new Dictionary<string, List<Run.Time[]>> (benchmarks.Length * configs.Length);
+		var runs = new Dictionary<string, List<Result.Run[]>> (benchmarks.Length * configs.Length);
 
 		/* Run or load the benchmarks */
 		foreach (var benchmark in benchmarks) {
-			var configtimes = new List<Run.Time[]> (configs.Length);
+			var configruns = new List<Result.Run[]> (configs.Length);
 
 			foreach (var config in configs) {
 				var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
@@ -119,32 +119,32 @@ class Compare
 					if (config.Count <= 0)
 						throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
 
-					var run = benchmark.Run (config, testsdir, timeout, monoexe, pausetime);
-					run.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s")));
+					var result = benchmark.Run (config, testsdir, timeout, monoexe, pausetime);
+					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s")));
 
-					configtimes.Add (run.Times.ToArray ());
+					configruns.Add (result.Runs.ToArray ());
 				} else {
 					/* Load the benchmarks */
-					var runfile = loadrunfrom.FirstOrDefault (f => Path.GetFileName (f).StartsWith (runfileprefix));
+					var resultfile = loadresultfrom.FirstOrDefault (f => Path.GetFileName (f).StartsWith (runfileprefix));
 
-					if (runfile == default (string))
-						runfile = Directory.EnumerateFiles (resultsdir, runfileprefix + "*")
+					if (resultfile == default (string))
+						resultfile = Directory.EnumerateFiles (resultsdir, runfileprefix + "*")
 									.OrderByDescending (s => s)
 									.FirstOrDefault ();
 
-					if (runfile == default (string)) {
-						configtimes.Add (new Run.Time[] { new Run.Time { Value = TimeSpan.Zero } });
+					if (resultfile == default (string)) {
+						configruns.Add (new Result.Run[] { new Result.Run { WallClockTime = TimeSpan.Zero } });
 					} else {
-						var run = Run.LoadFrom (runfile);
-						if (run == null)
-							throw new InvalidDataException (String.Format ("Cannot load Run from {0}", runfile));
+						var result = Result.LoadFrom (resultfile);
+						if (result == null)
+							throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
 
-						configtimes.Add (run.Times.ToArray ());
+						configruns.Add (result.Runs.ToArray ());
 					}
 				}
 			}
 
-			runs.Add (benchmark.Name, configtimes);
+			runs.Add (benchmark.Name, configruns);
 		}
 
 		/* Generate the graph */
@@ -165,21 +165,21 @@ class Compare
 
 			foreach (var kv in runs) {
 				var name = kv.Key;
-				var configtimes = kv.Value;
+				var configruns = kv.Value;
 
-				Debug.Assert (series.Count == configtimes.Count + (geomean ? 1 : 0));
+				Debug.Assert (series.Count == configruns.Count + (geomean ? 1 : 0));
 
 				categoryaxis.Labels.Add (name);
 
-				if (configtimes.Any (ts => ts.Any (t => t.Value == TimeSpan.Zero))) {
+				if (configruns.Any (ts => ts.Any (t => t.WallClockTime == TimeSpan.Zero))) {
 					Console.Out.WriteLine ("Don't have data for \"{0}\" in all configurations - removing", name);
 
 					for (var j = 0; j < series.Count; ++j)
 						series [j].Items.Add (new ErrorColumnItem { Value = 0, Error = 0, Color = OxyColors.Automatic });
 				} else {
-					var values = configtimes.Select (ts => ts.Select (t => {
+					var values = configruns.Select (ts => ts.Select (t => {
 						if (String.IsNullOrEmpty (counter)) {
-							return t.Value.TotalMilliseconds;
+							return t.WallClockTime.TotalMilliseconds;
 						} else {
 							var line = t.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
 							if (line == default (string) || !line.Contains (':'))

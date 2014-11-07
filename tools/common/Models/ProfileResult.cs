@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Benchmarker.Common.Models
 {
-	public class Profile
+	public class ProfileResult
 	{
 		public DateTime DateTime { get; set; }
 		public Benchmark Benchmark { get; set; }
@@ -36,7 +36,7 @@ namespace Benchmarker.Common.Models
 
 		public class Run {
 			public int Index { get; set; }
-			public TimeSpan Time { get; set; }
+			public TimeSpan WallClockTime { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
 			public string ProfilerOutput { get; set; }
