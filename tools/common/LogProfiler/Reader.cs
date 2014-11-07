@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using XamarinProfiler.Core;
 using XamarinProfiler.Core.Reader;
+using System.Linq;
 
 namespace Benchmarker.Common.LogProfiler
 {
@@ -10,9 +11,11 @@ namespace Benchmarker.Common.LogProfiler
 		LogReader LogReader;
 		ReaderEventListener Listener;
 
-		public delegate void SampleEventHandler (object sender, CountersSampleEventArgs e);
-		public event SampleEventHandler CountersSample;
-		public event SampleEventHandler CountersUpdatedSample;
+		public delegate void CountersDescriptionEventHandler (object sender, CountersDescriptionEventArgs e);
+		public event CountersDescriptionEventHandler CountersDescription;
+
+		public delegate void CountersSampleEventHandler (object sender, CountersSampleEventArgs e);
+		public event CountersSampleEventHandler CountersSample;
 
 		public Reader (string filename)
 		{
@@ -33,17 +36,23 @@ namespace Benchmarker.Common.LogProfiler
 			}
 		}
 
+		public class CountersDescriptionEventArgs : EventArgs
+		{
+			public Counter Counter  { get; internal set; }
+		}
+
 		public class CountersSampleEventArgs : EventArgs
 		{
-			public ulong Timestamp { get; internal set; }
-			public List<Counter> Counters  { get; internal set; }
+			public TimeSpan Timestamp { get; internal set; }
+			public Counter Counter  { get; internal set; }
+			public object Value { get; internal set; }
 		}
 
 		class ReaderEventListener : EventListener
 		{
 			Reader Reader;
 
-			Dictionary<ulong, Counter> Counters = new Dictionary<ulong, Counter> ();
+			Dictionary<Counter, object> Counters = new Dictionary<Counter, object> ();
 
 			public ReaderEventListener (Reader reader)
 			{
@@ -52,21 +61,31 @@ namespace Benchmarker.Common.LogProfiler
 
 			public override void HandleSampleCountersDesc (List<Tuple<string, string, ulong, ulong, ulong, ulong>> counters)
 			{
-				foreach (var t in counters)
-					Counters.Add (t.Item6, new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6, null));
+				Counter counter;
+
+				foreach (var t in counters) {
+					Counters [counter = new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6)] = null;
+
+					if (Reader.CountersDescription != null) {
+						Reader.CountersDescription (this, new CountersDescriptionEventArgs { Counter = counter });
+					}
+				}
 			}
 
 			public override void HandleSampleCounters (ulong timestamp, List<Tuple<ulong, ulong, object>> values)
 			{
-				var counters = values.ConvertAll<Counter> (t => {
-					return Counters [t.Item1] = new Counter (Counters [t.Item1], t.Item3);
-				});
+				foreach (var counter in new List<Counter> (Counters.Keys)) {
+					var value = values.FirstOrDefault (v => v.Item1 == counter.Index);
 
-				if (Reader.CountersUpdatedSample != null)
-					Reader.CountersUpdatedSample (this, new CountersSampleEventArgs () { Timestamp = timestamp, Counters = counters });
+					if (value != null)
+						Counters [counter] = value.Item3;
 
-				if (Reader.CountersSample != null)
-					Reader.CountersSample (this, new CountersSampleEventArgs { Timestamp = timestamp, Counters = new List<Counter> (Counters.Values) });
+					if (Reader.CountersSample != null) {
+						Reader.CountersSample (this, new CountersSampleEventArgs {
+							Timestamp = TimeSpan.FromMilliseconds (timestamp), Counter = counter, Value = Counters [counter]
+						});
+					}
+				}
 			}
 		}
 	}
@@ -74,80 +93,69 @@ namespace Benchmarker.Common.LogProfiler
 	public class Counter {
 		public readonly string Section;
 		public readonly string Name;
-		public readonly ulong Type;
-		public readonly ulong Unit;
-		public readonly ulong Variance;
-		public readonly ulong CounterID;
+		public readonly CounterType Type;
+		public readonly CounterUnit Unit;
+		public readonly CounterVariance Variance;
+		public readonly ulong Index;
 
-		public readonly object Value;
-
-		public string TypeName {
-			get {
-				switch (Type) {
-				case 0: return "Int";
-				case 1: return "UInt";
-				case 2: return "Word";
-				case 3: return "Long";
-				case 4: return "ULong";
-				case 5: return "Double";
-				case 6: return "String";
-				case 7: return "Time Interval";
-				default: throw new NotImplementedException ();
-				}
-			}
-		}
-
-		public string UnitName {
-			get {
-				switch (Unit) {
-				case 0 << 24: return "Raw";
-				case 1 << 24: return "Bytes";
-				case 2 << 24: return "Time";
-				case 3 << 24: return "Count";
-				case 4 << 24: return "Percentage";
-				default: throw new NotImplementedException ();
-				}
-			}
-		}
-
-		public string VarianceName {
-			get {
-				switch (Variance) {
-				case 1 << 28: return "Monotonic";
-				case 1 << 29: return "Constant";
-				case 1 << 30: return "Variable";
-				default: throw new NotImplementedException ();
-				}
-			}
-		}
-
-		public Counter (string section, string name, ulong type, ulong unit, ulong variance, ulong counterID, object value)
+		public Counter (string section, string name, ulong type, ulong unit, ulong variance, ulong counterID)
 		{
 			Section = section;
 			Name = name;
-			Type = type;
-			Unit = unit;
-			Variance = variance;
-			CounterID = counterID;
-
-			Value = value;
-		}
-
-		public Counter (Counter o, object value)
-		{
-			Section = o.Section;
-			Name = o.Name;
-			Type = o.Type;
-			Unit = o.Unit;
-			Variance = o.Variance;
-			CounterID = o.CounterID;
-
-			Value = value;
+			Type = (CounterType) type;
+			Unit = (CounterUnit) unit;
+			Variance = (CounterVariance) variance;
+			Index = counterID;
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} - {1} [{2}, {3}, {4}]", Section, Name, TypeName, UnitName, VarianceName);
+			return String.Format ("{0} - {1} [{2}, {3}, {4}]", Section, Name, Type.ToString (), Unit.ToString (), Variance.ToString ());
 		}
+
+		public override bool Equals (object obj)
+		{
+			if (obj == null)
+				return false;
+
+			var counter = obj as Counter;
+			if (counter == null)
+				return false;
+
+			return Index == counter.Index;
+		}
+
+		public override int GetHashCode ()
+		{
+			return Index.GetHashCode ();
+		}
+	}
+
+	public enum CounterType : ulong
+	{
+		Int = 0UL,
+		UInt = 1UL,
+		Word = 2UL,
+		Long = 3UL,
+		ULong = 4UL,
+		Double = 5UL,
+		String = 6UL,
+		TimeInterval = 7UL,
+	}
+
+	public enum CounterUnit : ulong
+	{
+		Raw = 0UL << 24,
+		Bytes = 1UL << 24,
+		Time = 2UL << 24,
+		Count = 3UL << 24,
+		Percentage = 4UL << 24,
+	}
+
+	public enum CounterVariance : ulong
+	{
+		Monotonic = 1UL << 28,
+		Constant = 1UL << 29,
+		Variable = 1UL << 30,
 	}
 }

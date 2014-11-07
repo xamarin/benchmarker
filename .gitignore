@@ -15,3 +15,5 @@ tools/*.dll
 tools/*.dll.mdb
 tools/*/obj
 tools/*/bin
+tools/*/*/obj
+tools/*/*/bin

@@ -6,30 +6,42 @@ namespace Benchmarker.Common
 {
 	public class HttpClient
 	{
-		public static string GetContent (string server, string query)
+		public static HttpWebResponse Get (string url)
 		{
-			if (String.IsNullOrEmpty (server))
-				throw new Exception ("HttpClient.Server not set");
-
 			try {
-				return ReadResponseContent (HttpWebRequest.CreateHttp (String.Format ("http://{0}{1}", server, query)).GetResponse ());
+				return (HttpWebResponse) CreateRequest (url).GetResponse ();
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", query, ReadResponseContent (e.Response)), e);
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
 			}
 		}
 
-		public static Stream GetStream (string server, string query)
+		public static string GetContent (string url)
 		{
 			try {
-				return HttpWebRequest.CreateHttp (String.Format ("http://{0}{1}", server, query)).GetResponse ().GetResponseStream ();
+				return ReadResponseContent (CreateRequest (url).GetResponse ());
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", query, ReadResponseContent (e.Response)), e);
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
 			}
 		}
 
-		public static string PostStream (string server, string query, Stream content, string content_type = "application/octet-stream") {
+		public static Stream GetStream (string url)
+		{
 			try {
-				var request = HttpWebRequest.CreateHttp (String.Format ("http://{0}{1}", server, query));
+				return CreateRequest (url).GetResponse ().GetResponseStream ();
+			} catch (WebException e) {
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+			}
+		}
+
+		public static string PostStream (string url, Stream content, string content_type = "application/octet-stream")
+		{
+			if (content == null)
+				throw new ArgumentNullException ("content");
+			if (!content.CanRead)
+				throw new ArgumentException ("Cannot read \"content\"");
+
+			try {
+				var request = CreateRequest (url);
 				request.Method = "POST";
 				request.ContentType = content_type;
 
@@ -38,12 +50,28 @@ namespace Benchmarker.Common
 
 				return ReadResponseContent (request.GetResponse ());
 			} catch (WebException e) {
-				throw new WebException (String.Format ("POST {0} : {1}", query, ReadResponseContent (e.Response)), e);
+				throw new WebException (String.Format ("POST {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
 			}
+		}
+
+		public static HttpWebRequest CreateRequest (string url, string useragent = "Xamarin Benchmarker")
+		{
+			if (String.IsNullOrWhiteSpace (url))
+				throw new ArgumentNullException ("url");
+
+			var request = (HttpWebRequest) HttpWebRequest.Create (new Uri (url));
+
+			if (!String.IsNullOrWhiteSpace (useragent))
+				request.UserAgent = useragent;
+
+			return request;
 		}
 
 		static string ReadResponseContent (WebResponse response)
 		{
+			if (response == null)
+				throw new ArgumentNullException ("response");
+
 			return new StreamReader (response.GetResponseStream ()).ReadToEnd ();
 		}
 	}

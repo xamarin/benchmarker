@@ -9,6 +9,8 @@ using Benchmarker.Common.Models;
 using OxyPlot;
 using OxyPlot.Series;
 using OxyPlot.Axes;
+using Newtonsoft.Json;
+using System.IO.Compression;
 
 public class Program
 {
@@ -21,6 +23,7 @@ public class Program
 		Console.Error.WriteLine ("    -a, --architecture    architecture to run against, values can be \"amd64\" or \"x86\"");
 		Console.Error.WriteLine ("    -c, --commit          commit to run against, identified by it's sha commit");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
+		Console.Error.WriteLine ("        --ssh-key         path to ssh key for builder@nas");
 
 		Environment.Exit (exitcode);
 	}
@@ -31,6 +34,7 @@ public class Program
 		var architecture = Environment.Is64BitOperatingSystem ? "amd64" : "x86";
 		var commit = String.Empty;
 		var timeout = Int32.MaxValue;
+		var sshkey = String.Empty;
 
 		var optindex = 0;
 
@@ -43,6 +47,8 @@ public class Program
 				commit = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
+			} else if (args [optindex] == "--ssh-key") {
+				sshkey = args [++optindex];
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -56,10 +62,6 @@ public class Program
 			}
 		}
 
-		architecture = "amd64";
-		commit = "2a14bc4dad10850631656b97396413e6c6a8be83";
-		benchmarksnames = new string[] { "ahcbench" };
-
 		if (args.Length - optindex < 3)
 			UsageAndExit (null, 1);
 
@@ -71,6 +73,10 @@ public class Program
 		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
 
 		var revision = String.IsNullOrEmpty (commit) ? Revision.Last ("mono", architecture) : Revision.Get ("mono", architecture, commit);
+		if (revision == null) {
+			Console.Out.WriteLine ("Revision not found");
+			Environment.Exit (2);
+		}
 
 		var revisionfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
 		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", DateTime.Now.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
@@ -93,38 +99,24 @@ public class Program
 		Console.Out.WriteLine ("Generating graphs in \"{0}\"", graphfolder);
 
 		foreach (var profile in profiles) {
-			// Dictionary [Profile.Run] => List[KeyValuePair[Counter.Timestamp, List[Counter]]]
-			Dictionary<Profile.Run, List<KeyValuePair<ulong, List<Counter>>>> countersvalues =
-				profile.Runs.AsParallel ().Select (r =>
-					KeyValuePair.Create (r, r.GetCounters (profilesfolder).ToList ())
-				).ToDictionary (kv => kv.Key, kv => kv.Value);
+			// Dictionary [Counter] => Dictionary [Profile.Run.ID] => SortedDictionary [Sample.TimeStamp] => Sample.Value
+			Dictionary<Counter, Dictionary<int, SortedDictionary<TimeSpan, object>>> counters =
+				profile.Runs.AsParallel ()
+					.Select (r => KeyValuePair.Create (r, r.GetCounters (profilesfolder)))
+					.SelectMany (run => run.Value.Select (counter => KeyValuePair.Create (counter.Key, KeyValuePair.Create (run.Key.Index, counter.Value))))
+					.Aggregate (new Dictionary<Counter, Dictionary<int, SortedDictionary<TimeSpan, object>>> (), (d, kv) => {
+						if (!d.ContainsKey (kv.Key))
+							d.Add (kv.Key, new Dictionary<int, SortedDictionary<TimeSpan, object>> ());
+						d [kv.Key][kv.Value.Key] = kv.Value.Value;
 
-			// Dictionary [Counter.CounterID] => Counter.ToString ()
-			Dictionary<ulong, string> countersdesc =
-				countersvalues.Values.SelectMany (timestamps =>
-					timestamps.SelectMany (timestamp =>
-						timestamp.Value.Select (c =>
-							KeyValuePair.Create (c.CounterID, c.ToString ())
-						)
-					)
-				).Aggregate (new Dictionary<ulong, string> (), (d, kv) => { d [kv.Key] = kv.Value; return d; });
+						return d;
+					});
 
-			// Dictionary [Counter.CounterID] => Dictionary [Profile.Run] => List[KeyValuePair[Counter.Timestamp, Counter]]
-			Dictionary<ulong, Dictionary<Profile.Run, List<KeyValuePair<ulong, Counter>>>> counters =
-				countersdesc.Select (cdesc =>
-					KeyValuePair.Create (cdesc.Key, countersvalues.Select (pr =>
-						KeyValuePair.Create (pr.Key, pr.Value.Select (cs =>
-							KeyValuePair.Create (cs.Key, cs.Value.Where (c => c.CounterID == cdesc.Key).SingleOrDefault ())
-						).ToList ())
-					).ToDictionary (t => t.Key, t => t.Value))
-				).ToDictionary (t => t.Key, t => t.Value);
-
-			foreach (var cd in countersdesc) {
-				var cid = cd.Key;
-				var cname = cd.Value;
+			foreach (var counter in counters) {
+				var runs = counter.Value.ToList ();
 
 				var plot = new PlotModel {
-					Title = cname,
+					Title = counter.Key.Name,
 					LegendPlacement = LegendPlacement.Outside,
 					LegendPosition = LegendPosition.RightMiddle,
 					LegendOrientation = LegendOrientation.Vertical,
@@ -133,26 +125,48 @@ public class Program
 
 				plot.Axes.Add (new LinearAxis { Minimum = 0, AbsoluteMinimum = 0 });
 
-				for (var i = 0; i < counters [cid].Count; ++i) {
-					var run = counters [cid].ElementAt (i);
-					var serie = new LineSeries { Title = i.ToString () };
+				foreach (var run in runs) {
+					var timestamps = run.Value;
+					var serie = new LineSeries { Title = run.Key.ToString (), MarkerType = MarkerType.Circle };
 
-					foreach (var counter in run.Value)
-						serie.Points.Add (new DataPoint (Convert.ToDouble (counter.Key), Convert.ToDouble (counter.Value.Value)));
+					foreach (var timestamp in timestamps) {
+						double value, rawvalue = Convert.ToDouble (timestamp.Value);
+
+						switch (counter.Key.Type) {
+						case CounterType.Long:
+							if (counter.Key.Unit == CounterUnit.Time)
+								value = rawvalue / 10000d;
+							else
+								value = rawvalue;
+							break;
+						case CounterType.TimeInterval:
+							value = rawvalue / 1000d;
+							break;
+						default:
+							value = rawvalue;
+							break;
+						}
+
+						serie.Points.Add (new DataPoint { X = timestamp.Key.TotalSeconds, Y = value });
+					}
 
 					plot.Series.Add (serie);
 				}
 
-				using (var stream = new FileStream (Path.Combine (Directory.CreateDirectory (Path.Combine (graphfolder, profile.ToString ())).FullName, cname + ".svg"), FileMode.Create))
-					SvgExporter.Export (plot, stream, 1440, 900, true);
+				using (var stream = new FileStream (Path.Combine (Directory.CreateDirectory (Path.Combine (graphfolder, profile.ToString ())).FullName, counter.Key.ToString () + ".svg"), FileMode.Create))
+					SvgExporter.Export (plot, stream, 720, 450, true);
 			}
+
+			var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+			using (var writer = new StreamWriter (new GZipStream (new FileStream (Path.Combine (profilesfolder, profile.ToString () + ".counters.json.gz"), FileMode.Create), CompressionMode.Compress)))
+				serializer.Serialize (writer, counters);
 		}
 
 		Console.Out.WriteLine ("Copying files to storage");
 
 		var info = new ProcessStartInfo {
 			FileName = "scp",
-			Arguments = String.Format ("-r -B -i /Users/ludovic/.ssh/id_rsa~builder@nas.bos.xamarin.com '{0}' builder@nas:/volume1/storage/benchmarker/runs", profilesfolder),
+			Arguments = String.Format ("-r -B {0} '{1}' builder@nas:/volume1/storage/benchmarker/runs", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), profilesfolder),
 			UseShellExecute = true 
 		};
 

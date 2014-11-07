@@ -35,12 +35,13 @@ namespace Benchmarker.Common.Models
 		}
 
 		public class Run {
+			public int Index { get; set; }
 			public TimeSpan Time { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
 			public string ProfilerOutput { get; set; }
 
-			public SortedDictionary<ulong, List<LogProfiler.Counter>> GetCounters (string directory)
+			public Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> GetCounters (string directory)
 			{
 				if (String.IsNullOrEmpty (ProfilerOutput))
 					throw new ArgumentNullException ("ProfilerOutput");
@@ -49,11 +50,12 @@ namespace Benchmarker.Common.Models
 				if (!File.Exists (file))
 					throw new InvalidDataException (String.Format ("ProfilerOutput file \"{0}\" in directory \"{1}\"  does not exists", ProfilerOutput, directory));
 
-				var counters = new SortedDictionary<ulong, List<LogProfiler.Counter>> ();
+				var counters = new Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> ();
 
 				var reader = new LogProfiler.Reader (file);
 
-				reader.CountersSample += (sender, e) => counters.Add (e.Timestamp, e.Counters);
+				reader.CountersDescription += (sender, e) => counters.Add (e.Counter, new SortedDictionary<TimeSpan, object> ());
+				reader.CountersSample += (sender, e) => counters [e.Counter].Add (e.Timestamp, e.Value);
 				reader.Run ();
 
 				return counters;

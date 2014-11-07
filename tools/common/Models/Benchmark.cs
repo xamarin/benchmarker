@@ -140,7 +140,7 @@ namespace Benchmarker.Common.Models
 				if (i == 0)
 					continue;
 
-				profile.Runs [i - 1] = new Models.Profile.Run { Time = r.Time, Output = r.Output, Error = r.Error, ProfilerOutput = profilefilename };
+				profile.Runs [i - 1] = new Models.Profile.Run { Index = i, Time = r.Time, Output = r.Output, Error = r.Error, ProfilerOutput = profilefilename };
 				profile.Timedout = profile.Timedout || !r.Success;
 			}
 
