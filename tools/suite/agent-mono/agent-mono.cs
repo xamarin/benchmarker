@@ -181,7 +181,7 @@ public class Program
 	{
 		var info = new ProcessStartInfo {
 			FileName = "scp",
-			Arguments = String.Format ("-r -B {0} {1} builder@nas:/volume1/storage/benchmarker/counters", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files),
+			Arguments = String.Format ("-r -B {0} {1} builder@nas.bos.xamarin.com:/volume1/storage/benchmarker/counters", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files),
 			UseShellExecute = true,
 		};
 
