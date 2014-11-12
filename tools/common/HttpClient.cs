@@ -11,7 +11,7 @@ namespace Benchmarker.Common
 			try {
 				return (HttpWebResponse) CreateRequest (url).GetResponse ();
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Message), e, e.Status, e.Response);
 			}
 		}
 
@@ -20,7 +20,7 @@ namespace Benchmarker.Common
 			try {
 				return (HttpWebResponse) request.GetResponse ();
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", request.RequestUri.AbsoluteUri, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+				throw new WebException (String.Format ("GET {0} : {1}", request.RequestUri.AbsoluteUri, e.Message), e, e.Status, e.Response);
 			}
 		}
 
@@ -29,7 +29,7 @@ namespace Benchmarker.Common
 			try {
 				return ReadResponseContent (CreateRequest (url).GetResponse ());
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Message), e, e.Status, e.Response);
 			}
 		}
 
@@ -38,7 +38,7 @@ namespace Benchmarker.Common
 			try {
 				return CreateRequest (url).GetResponse ().GetResponseStream ();
 			} catch (WebException e) {
-				throw new WebException (String.Format ("GET {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+				throw new WebException (String.Format ("GET {0} : {1}", url, e.Message), e, e.Status, e.Response);
 			}
 		}
 
@@ -59,7 +59,7 @@ namespace Benchmarker.Common
 
 				return ReadResponseContent (request.GetResponse ());
 			} catch (WebException e) {
-				throw new WebException (String.Format ("POST {0} : {1}", url, e.Response == null ? e.Message : ReadResponseContent (e.Response)), e, e.Status, e.Response);
+				throw new WebException (String.Format ("POST {0} : {1}", url, e.Message), e, e.Status, e.Response);
 			}
 		}
 
