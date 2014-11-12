@@ -159,7 +159,7 @@ namespace Benchmarker.Common.Models
 		RunProcessResult RunProcess (ProcessStartInfo info, int i, int imax, string envvar, int timeout)
 		{
 			Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
-			Console.Out.Write ("\t\t-> {0}", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, imax));
+			Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, imax));
 			Console.Out.Flush ();
 
 			timeout = Timeout > 0 ? Timeout : timeout;
