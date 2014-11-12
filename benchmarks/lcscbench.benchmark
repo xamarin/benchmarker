@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="lcscbench"
-BENCHMARK_TESTDIR="zorn/lcscbench"
-BENCHMARK_CMDLINE=("lcscbench.exe" "input3.cs")
+{
+  "Name": "lcscbench",
+  "TestDirectory": "zorn/lcscbench",
+  "CommandLine": ["lcscbench.exe", "input3.cs"]
+}

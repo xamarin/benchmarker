@@ -1,7 +1,6 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="msbiology"
-BENCHMARK_TESTDIR="MSBiology"
-BENCHMARK_CMDLINE="TestRunner.exe"
-
-TIMEOUT=360
+{
+  "Name": "msbiology",
+  "TestDirectory": "MSBiology",
+  "CommandLine": ["TestRunner.exe"],
+  "Timeout": 360
+}

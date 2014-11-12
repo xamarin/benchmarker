@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="n-body"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("n-body.exe" "50000000")
+{
+  "Name": "n-body",
+  "TestDirectory": "shootout",
+  "CommandLine": ["n-body.exe", "50000000"]
+}

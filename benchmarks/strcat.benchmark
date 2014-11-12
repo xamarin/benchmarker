@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="strcat"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("strcat.exe" "80000000")
+{
+  "Name": "strcat",
+  "TestDirectory": "shootout",
+  "CommandLine": ["strcat.exe", "80000000"]
+}

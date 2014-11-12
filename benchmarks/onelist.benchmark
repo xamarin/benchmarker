@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="onelist"
-BENCHMARK_TESTDIR="small"
-BENCHMARK_CMDLINE="list.exe"
+{
+  "Name": "onelist",
+  "TestDirectory": "small",
+  "CommandLine": ["list.exe"]
+}

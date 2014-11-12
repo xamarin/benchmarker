@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="mandelbrot"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("mandelbrot.exe" "6400")
+{
+  "Name": "mandelbrot",
+  "TestDirectory": "shootout",
+  "CommandLine": ["mandelbrot.exe", "6400"]
+}

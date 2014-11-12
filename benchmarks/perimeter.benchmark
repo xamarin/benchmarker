@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="perimeter"
-BENCHMARK_TESTDIR="csolden/Perimeter/Perimeter/bin/Debug"
-BENCHMARK_CMDLINE=("Perimeter.exe" "-l" "17")
+{
+  "Name": "perimeter",
+  "TestDirectory": "csolden/Perimeter/Perimeter/bin/Debug",
+  "CommandLine": ["Perimeter.exe", "-l", "17"]
+}
