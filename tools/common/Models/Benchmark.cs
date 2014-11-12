@@ -131,7 +131,7 @@ namespace Benchmarker.Common.Models
 			var result = new ProfileResult { DateTime = DateTime.Now, Benchmark = this, Config = config, Revision = revision, Timedout = timedout, Runs = new ProfileResult.Run [config.Count] };
 
 			for (var i = 0; i < config.Count; ++i) {
-				var profilefilename = String.Join ("_", new string [] { result.ToString (), i == 0 ? "dryrun" : i.ToString () }) + ".mlpd";
+				var profilefilename = String.Join ("_", new string [] { result.ToString (), i.ToString () }) + ".mlpd";
 
 				info.Arguments = String.Format ("--profile=log:counters,nocalls,noalloc,output={0} ", Path.Combine (
 					profilefolder, profilefilename)) + arguments;
@@ -151,6 +151,7 @@ namespace Benchmarker.Common.Models
 			public string Output;
 			public string Error;
 			public TimeSpan Time;
+
 		}
 
 		RunProcessResult RunProcess (ProcessStartInfo info, string step, string envvar, int timeout)
