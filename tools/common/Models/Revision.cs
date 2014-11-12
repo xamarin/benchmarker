@@ -76,7 +76,7 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public void FetchInto (string folder)
+		public bool FetchInto (string folder)
 		{
 			Console.Out.WriteLine ("Fetch revision {0}/{1}/{2} in {3}", Project, Architecture, Commit, folder);
 
@@ -84,9 +84,14 @@ namespace Benchmarker.Common.Models
 
 			var filename = Path.Combine (folder, "revision.tar.gz");
 
-			using (var archive = HttpClient.GetStream (String.Format ("http://{0}/binaries/{1}/{2}/{3}.tar.gz", Storage, Project, Architecture, Commit)))
-			using (var file = new FileStream (filename, FileMode.Create, FileAccess.Write))
-				archive.CopyTo (file);
+			try {
+				using (var archive = HttpClient.GetStream (String.Format ("http://{0}/binaries/{1}/{2}/{3}.tar.gz", Storage, Project, Architecture, Commit)))
+				using (var file = new FileStream (filename, FileMode.Create, FileAccess.Write))
+					archive.CopyTo (file);
+			} catch (WebException e) {
+				Console.Out.WriteLine (e.ToString ());
+				return false;
+			}
 
 			var process = Process.Start (new ProcessStartInfo () {
 				FileName = "tar",
@@ -96,6 +101,8 @@ namespace Benchmarker.Common.Models
 			});
 
 			process.WaitForExit ();
+
+			return true;
 		}
 	}
 }

@@ -83,7 +83,8 @@ public class Program
 		var revisionfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
 		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", datetimestart.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
 
-		revision.FetchInto (revisionfolder);
+		if (!revision.FetchInto (revisionfolder))
+			Environment.Exit (0);
 
 		var countersfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
 
