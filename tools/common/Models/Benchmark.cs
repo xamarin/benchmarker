@@ -158,10 +158,9 @@ namespace Benchmarker.Common.Models
 
 		RunProcessResult RunProcess (ProcessStartInfo info, int i, int imax, string envvar, int timeout)
 		{
-			var consoleoutprefix = String.Format ("\t\t-> {0}", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, imax));
-
 			Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
-			Console.Out.Write ("{0} ...", consoleoutprefix);
+			Console.Out.Write ("\t\t-> {0}", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, imax));
+			Console.Out.Flush ();
 
 			timeout = Timeout > 0 ? Timeout : timeout;
 
@@ -177,7 +176,7 @@ namespace Benchmarker.Common.Models
 			if (!success)
 				process.Kill ();
 
-			Console.Out.Write ("\r{0} {1}\n", consoleoutprefix, success ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
+			Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
 
 			return new RunProcessResult {
 				Success = success,
