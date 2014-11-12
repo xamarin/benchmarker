@@ -151,7 +151,6 @@ namespace Benchmarker.Common.Models
 			public string Output;
 			public string Error;
 			public TimeSpan Time;
-
 		}
 
 		RunProcessResult RunProcess (ProcessStartInfo info, string step, string envvar, int timeout)
