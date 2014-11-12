@@ -69,6 +69,8 @@ public class Program
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
 
+		var datetimestart = DateTime.Now;
+
 		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name).ToArray ();
 		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
 
@@ -79,9 +81,11 @@ public class Program
 		}
 
 		var revisionfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
-		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", DateTime.Now.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
+		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", datetimestart.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
 
 		revision.FetchInto (revisionfolder);
+
+		var countersfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
 
 		var profiles = new List<ProfileResult> (benchmarks.Length * configs.Length);
 
@@ -158,16 +162,26 @@ public class Program
 			}
 
 			var serializer = new JsonSerializer { Formatting = Formatting.Indented };
-			using (var writer = new StreamWriter (new GZipStream (new FileStream (Path.Combine (profilesfolder, profile.ToString () + ".counters.json.gz"), FileMode.Create), CompressionMode.Compress)))
+
+			var countersfilename = String.Join ("_", new string [] { profile.Benchmark.Name, profile.Config.Name,
+				datetimestart.ToString ("s").Replace (':', '-'), revision.Commit }.Select (s => s.Replace ('_', '-'))) + ".json.gz";
+
+			using (var writer = new StreamWriter (new GZipStream (new FileStream (Path.Combine (countersfolder, countersfilename), FileMode.Create), CompressionMode.Compress)))
 				serializer.Serialize (writer, counters);
 		}
 
 		Console.Out.WriteLine ("Copying files to storage");
 
+		SCP (sshkey, profilesfolder);
+		SCP (sshkey, String.Join (" ", Directory.EnumerateFiles (countersfolder, "*.json.gz")));
+	}
+
+	static void SCP (string sshkey, string files)
+	{
 		var info = new ProcessStartInfo {
 			FileName = "scp",
-			Arguments = String.Format ("-r -B {0} '{1}' builder@nas:/volume1/storage/benchmarker/runs", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), profilesfolder),
-			UseShellExecute = true 
+			Arguments = String.Format ("-r -B {0} {1} builder@nas:/volume1/storage/benchmarker/counters", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files),
+			UseShellExecute = true,
 		};
 
 		Process.Start (info).WaitForExit ();
