@@ -59,6 +59,7 @@ The new JSON results format is as follow :
       - Name : name of the benchmark
       - TestDirectory : working directory to use to run the benchmark, relative to tests/
       - CommandLine : command line parameters to pass to the benchmark
+      - Timeout : timeout specific to this benchmark, in seconds
     - Config : copy data of the `configs/*.conf` corresponding file
       - Name : name of the config
       - Count : number of time to run the benchmark

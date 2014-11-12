@@ -14,6 +14,7 @@ namespace Benchmarker.Common.Models
 		public string Name { get; set; }
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
+		public int Timeout { get; set; }
 
 		public Benchmark ()
 		{
@@ -162,12 +163,14 @@ namespace Benchmarker.Common.Models
 			Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
 			Console.Out.Write ("{0} ...", consoleoutprefix);
 
+			timeout = Timeout > 0 ? Timeout : timeout;
+
 			var sw = Stopwatch.StartNew ();
 
 			var process = Process.Start (info);
 			var stdout = Task.Factory.StartNew (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 			var stderr = Task.Factory.StartNew (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
-			var success = process.WaitForExit (timeout);
+			var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
 
 			sw.Stop ();
 
