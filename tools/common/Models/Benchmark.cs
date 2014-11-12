@@ -133,7 +133,7 @@ namespace Benchmarker.Common.Models
 			for (var i = 0; i < config.Count + 1; ++i) {
 				var profilefilename = String.Join ("_", new string [] { result.ToString (), i == 0 ? "dryrun" : i.ToString () }) + ".mlpd";
 
-				info.Arguments = String.Format ("--profile=log:counters,sample,nocalls,noalloc,output={0} ", Path.Combine (
+				info.Arguments = String.Format ("--profile=log:counters,nocalls,noalloc,output={0} ", Path.Combine (
 					profilefolder, profilefilename)) + arguments;
 
 				var r = RunProcess (info, i, config.Count, envvar, timeout);
