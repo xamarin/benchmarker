@@ -173,15 +173,15 @@ public class Program
 
 		Console.Out.WriteLine ("Copying files to storage");
 
-		SCP (sshkey, profilesfolder);
-		SCP (sshkey, String.Join (" ", Directory.EnumerateFiles (countersfolder, "*.json.gz")));
+		SCP (sshkey, profilesfolder, "/runs");
+		SCP (sshkey, String.Join (" ", Directory.EnumerateFiles (countersfolder, "*.json.gz")), "/counters");
 	}
 
-	static void SCP (string sshkey, string files)
+	static void SCP (string sshkey, string files, string destination)
 	{
 		var info = new ProcessStartInfo {
 			FileName = "scp",
-			Arguments = String.Format ("-r -B {0} {1} builder@nas.bos.xamarin.com:/volume1/storage/benchmarker/counters", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files),
+			Arguments = String.Format ("-r -B {0} {1} builder@nas.bos.xamarin.com:/volume1/storage/benchmarker{2}", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files, destination),
 			UseShellExecute = true,
 		};
 
