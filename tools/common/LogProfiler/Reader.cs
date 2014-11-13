@@ -74,6 +74,9 @@ namespace Benchmarker.Common.LogProfiler
 
 			public override void HandleSampleCounters (ulong timestamp, List<Tuple<ulong, ulong, object>> values)
 			{
+				if (values.Count == 0)
+					return;
+
 				foreach (var counter in new List<Counter> (Counters.Keys)) {
 					var value = values.FirstOrDefault (v => v.Item1 == counter.Index);
 
