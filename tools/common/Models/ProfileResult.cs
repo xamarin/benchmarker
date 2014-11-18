@@ -25,6 +25,15 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
+		public static ProfileResult LoadFrom (string filename, bool compressed = false)
+		{
+			using (var file = new FileStream (filename, FileMode.Create))
+			using (var stream = compressed ? (Stream) new GZipStream (file, CompressionMode.Decompress) : (Stream) file)
+			using (var reader = new StreamReader (stream)) {
+				return JsonConvert.DeserializeObject<ProfileResult> (reader.ReadToEnd ());
+			}
+		}
+
 		public override string ToString ()
 		{
 			if (Benchmark == null)
@@ -43,15 +52,12 @@ namespace Benchmarker.Common.Models
 			public string Output { get; set; }
 			public string Error { get; set; }
 			public string ProfilerOutput { get; set; }
+			public Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> Counters { get; set; }
 
-			public Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> GetCounters (string directory)
+			public static Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> ParseCounters (string file)
 			{
-				if (String.IsNullOrEmpty (ProfilerOutput))
-					throw new ArgumentNullException ("ProfilerOutput");
-
-				var file = Path.Combine (directory, ProfilerOutput);
 				if (!File.Exists (file))
-					throw new InvalidDataException (String.Format ("ProfilerOutput file \"{0}\" in directory \"{1}\"  does not exists", ProfilerOutput, directory));
+					throw new InvalidDataException (String.Format ("File \"{0}\"  does not exists", file));
 
 				var counters = new Dictionary<LogProfiler.Counter, SortedDictionary<TimeSpan, object>> ();
 

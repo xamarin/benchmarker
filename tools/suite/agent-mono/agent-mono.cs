@@ -86,47 +86,25 @@ public class Program
 		if (!revision.FetchInto (revisionfolder))
 			Environment.Exit (0);
 
-		var countersfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
-
 		var profiles = new List<ProfileResult> (benchmarks.Length * configs.Length);
 
 		foreach (var benchmark in benchmarks) {
 			foreach (var config in configs) {
-				var profile = benchmark.Profile (config, revision, revisionfolder, profilesfolder, testsdir, timeout);
-
-				profile.StoreTo (Path.Combine (profilesfolder, profile.ToString () + ".json.gz"), true);
-
-				profiles.Add (profile);
+				profiles.Add (benchmark.Profile (config, revision, revisionfolder, profilesfolder, testsdir, timeout));
 			}
 		}
 
-		var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+		Parallel.ForEach (profiles, profile => {
+			Parallel.ForEach (profile.Runs, run => {
+				run.Counters = ProfileResult.Run.ParseCounters (profilesfolder + run.ProfilerOutput);
+			});
 
-		foreach (var profile in profiles) {
-			// Dictionary [Counter] => Dictionary [Profile.Run.ID] => SortedDictionary [Sample.TimeStamp] => Sample.Value
-			Dictionary<Counter, Dictionary<int, SortedDictionary<TimeSpan, object>>> counters =
-				profile.Runs.AsParallel ()
-					.Select (r => KeyValuePair.Create (r, r.GetCounters (profilesfolder)))
-					.SelectMany (run => run.Value.Select (counter => KeyValuePair.Create (counter.Key, KeyValuePair.Create (run.Key.Index, counter.Value))))
-					.Aggregate (new Dictionary<Counter, Dictionary<int, SortedDictionary<TimeSpan, object>>> (), (d, kv) => {
-						if (!d.ContainsKey (kv.Key))
-							d.Add (kv.Key, new Dictionary<int, SortedDictionary<TimeSpan, object>> ());
-						d [kv.Key][kv.Value.Key] = kv.Value.Value;
-
-						return d;
-					});
-
-			var countersfilename = String.Join ("_", new string [] { profile.Benchmark.Name, profile.Config.Name,
-				datetimestart.ToString ("s").Replace (':', '-'), revision.Commit }.Select (s => s.Replace ('_', '-'))) + ".json.gz";
-
-			using (var writer = new StreamWriter (new GZipStream (new FileStream (Path.Combine (countersfolder, countersfilename), FileMode.Create), CompressionMode.Compress)))
-				serializer.Serialize (writer, counters);
-		}
+			profile.StoreTo (Path.Combine (profilesfolder, profile.ToString () + ".json.gz"), true);
+		});
 
 		Console.Out.WriteLine ("Copying files to storage");
 
 		SCP (sshkey, profilesfolder, "/runs");
-		SCP (sshkey, String.Join (" ", Directory.EnumerateFiles (countersfolder, "*.json.gz")), "/counters");
 	}
 
 	static void SCP (string sshkey, string files, string destination)
