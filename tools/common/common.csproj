@@ -23,9 +23,13 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.94.0\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.94.0\build\net45\System.Data.SQLite.Core.targets')" />
   <ItemGroup>
+    <Compile Include="HttpClient.cs" />
     <Compile Include="Models\Benchmark.cs" />
     <Compile Include="Models\Config.cs" />
+    <Compile Include="Models\Revision.cs" />
+    <Compile Include="LogProfiler\Reader.cs" />
     <Compile Include="Models\Result.cs" />
+    <Compile Include="Models\ProfileResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -34,11 +38,15 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="XamarinProfiler.Core">
+      <HintPath>XamarinProfiler.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
+    <Folder Include="LogProfiler\" />
   </ItemGroup>
 </Project>

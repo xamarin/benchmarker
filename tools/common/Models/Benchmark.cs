@@ -99,6 +99,52 @@ namespace Benchmarker.Common.Models
 			return result;
 		}
 
+		public ProfileResult Profile (Config config, Revision revision, string revisionfolder, string profilefolder, string testsdir = "tests", int timeout = Int32.MaxValue)
+		{
+			Console.Out.WriteLine ("Profiling benchmark \"{0}\" with config \"{1}\"", Name, config.Name);
+
+			var timedout = false;
+
+			var info = new ProcessStartInfo {
+				FileName = Path.Combine (revisionfolder, "mono"),
+				WorkingDirectory = Path.Combine (testsdir, TestDirectory),
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+			};
+
+			foreach (var env in config.MonoEnvironmentVariables) {
+				if (env.Key == "MONO_PATH" || env.Key == "LD_LIBRARY_PATH")
+					continue;
+
+				info.EnvironmentVariables.Add (env.Key, env.Value);
+			}
+
+			info.EnvironmentVariables.Add ("MONO_PATH", revisionfolder);
+			info.EnvironmentVariables.Add ("LD_LIBRARY_PATH", revisionfolder);
+
+			var envvar = String.Join (" ", config.MonoEnvironmentVariables.Union (new KeyValuePair<string, string>[] { new KeyValuePair<string, string> ("MONO_PATH", revisionfolder), new KeyValuePair<string, string> ("LD_LIBRARY_PATH", revisionfolder) })
+				.Select (kv => kv.Key + "=" + kv.Value));
+
+			var arguments = String.Join (" ", config.MonoOptions.Union (CommandLine));
+
+			var result = new ProfileResult { DateTime = DateTime.Now, Benchmark = this, Config = config, Revision = revision, Timedout = timedout, Runs = new ProfileResult.Run [config.Count] };
+
+			for (var i = 0; i < config.Count; ++i) {
+				var profilefilename = String.Join ("_", new string [] { result.ToString (), i.ToString () }) + ".mlpd";
+
+				info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
+					profilefolder, profilefilename)) + arguments;
+
+				var r = RunProcess (info, String.Format ("({0}/{1})", i + 1, config.Count), envvar, timeout);
+
+				result.Runs [i] = new Models.ProfileResult.Run { Index = i, WallClockTime = r.Time, Output = r.Output, Error = r.Error, ProfilerOutput = profilefilename };
+				result.Timedout = result.Timedout || !r.Success;
+			}
+
+			return result;
+		}
+
 		struct RunProcessResult
 		{
 			public bool Success;
