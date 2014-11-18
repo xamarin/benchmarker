@@ -100,8 +100,7 @@ public class Program
 			}
 		}
 
-		var graphfolder = Directory.CreateDirectory (Path.Combine (profilesfolder, "graphs")).FullName;
-		Console.Out.WriteLine ("Generating graphs in \"{0}\"", graphfolder);
+		var serializer = new JsonSerializer { Formatting = Formatting.Indented };
 
 		foreach (var profile in profiles) {
 			// Dictionary [Counter] => Dictionary [Profile.Run.ID] => SortedDictionary [Sample.TimeStamp] => Sample.Value
@@ -116,53 +115,6 @@ public class Program
 
 						return d;
 					});
-
-			foreach (var counter in counters) {
-				var runs = counter.Value.ToList ();
-
-				var plot = new PlotModel {
-					Title = counter.Key.Name,
-					LegendPlacement = LegendPlacement.Outside,
-					LegendPosition = LegendPosition.RightMiddle,
-					LegendOrientation = LegendOrientation.Vertical,
-					LegendBorderThickness = 0,
-				};
-
-				plot.Axes.Add (new LinearAxis { Minimum = 0, AbsoluteMinimum = 0 });
-
-				foreach (var run in runs) {
-					var timestamps = run.Value;
-					var serie = new LineSeries { Title = run.Key.ToString (), MarkerType = MarkerType.Circle };
-
-					foreach (var timestamp in timestamps) {
-						double value, rawvalue = Convert.ToDouble (timestamp.Value);
-
-						switch (counter.Key.Type) {
-						case CounterType.Long:
-							if (counter.Key.Unit == CounterUnit.Time)
-								value = rawvalue / 10000d;
-							else
-								value = rawvalue;
-							break;
-						case CounterType.TimeInterval:
-							value = rawvalue / 1000d;
-							break;
-						default:
-							value = rawvalue;
-							break;
-						}
-
-						serie.Points.Add (new DataPoint { X = timestamp.Key.TotalSeconds, Y = value });
-					}
-
-					plot.Series.Add (serie);
-				}
-
-				using (var stream = new FileStream (Path.Combine (Directory.CreateDirectory (Path.Combine (graphfolder, profile.ToString ())).FullName, counter.Key.ToString () + ".svg"), FileMode.Create))
-					SvgExporter.Export (plot, stream, 720, 450, true);
-			}
-
-			var serializer = new JsonSerializer { Formatting = Formatting.Indented };
 
 			var countersfilename = String.Join ("_", new string [] { profile.Benchmark.Name, profile.Config.Name,
 				datetimestart.ToString ("s").Replace (':', '-'), revision.Commit }.Select (s => s.Replace ('_', '-'))) + ".json.gz";

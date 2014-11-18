@@ -30,7 +30,7 @@ namespace Benchmarker.Common.Models
 					config.Mono = String.Empty;
 
 				if (config.Count < 1)
-					config.Count = 2;
+					config.Count = 5;
 
 				if (config.MonoOptions == null)
 					config.MonoOptions = new string[0];
