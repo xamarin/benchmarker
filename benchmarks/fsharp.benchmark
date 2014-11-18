@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="fsharp"
-BENCHMARK_TESTDIR="f-sharp-2.0"
-BENCHMARK_CMDLINE=("fsc.exe" "GeneralTest1.fs")
+{
+  "Name": "fsharp",
+  "TestDirectory": "f-sharp-2.0",
+  "CommandLine": ["fsc.exe", "GeneralTest1.fs"]
+}

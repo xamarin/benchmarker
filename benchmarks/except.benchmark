@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="except"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("except.exe" "10000000")
+{
+  "Name": "except",
+  "TestDirectory": "shootout",
+  "CommandLine": ["except.exe", "10000000"]
+}

@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="graph4"
-BENCHMARK_TESTDIR="graph"
-BENCHMARK_CMDLINE="graph4.exe"
+{
+  "Name": "graph4",
+  "TestDirectory": "graph",
+  "CommandLine": ["graph4.exe"]
+}

@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="lists"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("lists.exe" "30000")
+{
+  "Name": "lists",
+  "TestDirectory": "shootout",
+  "CommandLine": ["lists.exe", "30000"]
+}

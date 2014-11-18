@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="raytracer2"
-BENCHMARK_TESTDIR="shootout"
-BENCHMARK_CMDLINE=("raytracer.csharp-2.exe" "250")
+{
+  "Name": "raytracer2",
+  "TestDirectory": "shootout",
+  "CommandLine": ["raytracer.csharp-2.exe", "250"]
+}

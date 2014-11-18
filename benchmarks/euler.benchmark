@@ -1,5 +1,5 @@
-# -*- shell-script -*-
-
-BENCHMARK_NAME="euler"
-BENCHMARK_TESTDIR="csgrande/Euler/Euler/bin/Debug"
-BENCHMARK_CMDLINE="Euler.exe"
+{
+  "Name": "euler",
+  "TestDirectory": "csgrande/Euler/Euler/bin/Debug",
+  "CommandLine": ["Euler.exe"]
+}

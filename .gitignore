@@ -7,3 +7,11 @@ mytime/mytime
 tests/zorn/ahcbench/*.ahd
 tests/zorn/ahcbench/*.orig
 tests/f-sharp-2.0/GeneralTest1.exe
+
+tools/packages
+tools/*.exe
+tools/*.exe.mdb
+tools/*.dll
+tools/*.dll.mdb
+tools/*/obj
+tools/*/bin
