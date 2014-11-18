@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using System.IO.Compression;
 
 namespace Benchmarker.Common.Models
 {
@@ -15,9 +16,11 @@ namespace Benchmarker.Common.Models
 		public bool Timedout { get; set; }
 		public Run[] Runs { get; set; }
 
-		public void StoreTo (string filename)
+		public void StoreTo (string filename, bool compress = false)
 		{
-			using (var writer = new StreamWriter (new FileStream (filename, FileMode.Create))) {
+			using (var file = new FileStream (filename, FileMode.Create))
+			using (var stream = compress ? (Stream) new GZipStream (file, CompressionMode.Compress) : (Stream) file)
+			using (var writer = new StreamWriter (stream)) {
 				writer.Write (JsonConvert.SerializeObject (this, Formatting.Indented));
 			}
 		}

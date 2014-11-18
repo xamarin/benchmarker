@@ -94,7 +94,7 @@ public class Program
 			foreach (var config in configs) {
 				var profile = benchmark.Profile (config, revision, revisionfolder, profilesfolder, testsdir, timeout);
 
-				profile.StoreTo (Path.Combine (profilesfolder, profile.ToString () + ".json"));
+				profile.StoreTo (Path.Combine (profilesfolder, profile.ToString () + ".json.gz"), true);
 
 				profiles.Add (profile);
 			}
