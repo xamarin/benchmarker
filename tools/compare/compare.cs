@@ -149,7 +149,14 @@ class Compare
 					/* Run with timing */
 					info.Arguments = "--stats " + arguments;
 
-					var result = new Result () { DateTime = DateTime.Now, Benchmark = this, Config = config, Version = version, Timedout = false, Runs = new Result.Run [config.Count] };
+					var result = new Result {
+						DateTime = DateTime.Now,
+						Benchmark = benchmark,
+						Config = config,
+						Version = version,
+						Timedout = false,
+						Runs = new Result.Run [config.Count]
+					};
 
 					for (var i = 0; i < config.Count + 1; ++i) {
 						Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
