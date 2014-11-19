@@ -6,9 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Benchmarker.Common.LogProfiler;
 using Benchmarker.Common.Models;
-using OxyPlot;
-using OxyPlot.Series;
-using OxyPlot.Axes;
 using Newtonsoft.Json;
 using System.IO.Compression;
 
@@ -23,7 +20,8 @@ public class Program
 		Console.Error.WriteLine ("    -a, --architecture    architecture to run against, values can be \"amd64\" or \"x86\"");
 		Console.Error.WriteLine ("    -c, --commit          commit to run against, identified by it's sha commit");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
-		Console.Error.WriteLine ("        --ssh-key         path to ssh key for builder@nas");
+		Console.Error.WriteLine ("        --sshkey          path to ssh key for builder@nas");
+		Console.Error.WriteLine ("    -u, --upload          upload results to storage; default to no");
 
 		Environment.Exit (exitcode);
 	}
@@ -35,6 +33,7 @@ public class Program
 		var commit = String.Empty;
 		var timeout = Int32.MaxValue;
 		var sshkey = String.Empty;
+		var upload = false;
 
 		var optindex = 0;
 
@@ -47,8 +46,10 @@ public class Program
 				commit = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
-			} else if (args [optindex] == "--ssh-key") {
+			} else if (args [optindex] == "--sshkey") {
 				sshkey = args [++optindex];
+			} else if (args [optindex] == "-u" || args [optindex] == "--upload") {
+				upload = Boolean.Parse (args [++optindex]);
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -96,26 +97,33 @@ public class Program
 
 		Parallel.ForEach (profiles, profile => {
 			Parallel.ForEach (profile.Runs, run => {
-				run.Counters = ProfileResult.Run.ParseCounters (profilesfolder + run.ProfilerOutput);
+				run.Counters = ProfileResult.Run.ParseCounters (Path.Combine (profilesfolder, run.ProfilerOutput));
 			});
 
 			profile.StoreTo (Path.Combine (profilesfolder, profile.ToString () + ".json.gz"), true);
 		});
 
-		Console.Out.WriteLine ("Copying files to storage");
-
-		SCP (sshkey, profilesfolder, "/runs");
+		if (upload) {
+			Console.Out.WriteLine ("Copying files to storage from \"{0}\"", profilesfolder);
+			SCPToRemote (sshkey, profilesfolder, "/volume1/storage/benchmarker/runs/mono/" + architecture);
+		}
 	}
 
-	static void SCP (string sshkey, string files, string destination)
+	static void SCPToRemote (string sshkey, string files, string destination)
 	{
-		var info = new ProcessStartInfo {
-			FileName = "scp",
-			Arguments = String.Format ("-r -B {0} {1} builder@nas.bos.xamarin.com:/volume1/storage/benchmarker{2}", String.IsNullOrWhiteSpace (sshkey) ? "" : ("-i " + sshkey), files, destination),
-			UseShellExecute = true,
-		};
+		sshkey = String.IsNullOrWhiteSpace (sshkey) ? String.Empty : ("-i " + sshkey);
 
-		Process.Start (info).WaitForExit ();
+		Process.Start (new ProcessStartInfo {
+			FileName = "ssh",
+			Arguments = String.Format ("{0} builder@nas.bos.xamarin.com \"mkdir -p '{1}'\"", sshkey, destination),
+			UseShellExecute = true,
+		}).WaitForExit ();
+
+		Process.Start (new ProcessStartInfo {
+			FileName = "scp",
+			Arguments = String.Format ("{0} -r -B {1} builder@nas.bos.xamarin.com:{2}", sshkey, files, destination),
+			UseShellExecute = true,
+		}).WaitForExit ();
 	}
 
 	struct KeyValuePair
