@@ -72,8 +72,6 @@ public class Program
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
 
-		var datetimestart = DateTime.Now;
-
 		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name).ToArray ();
 		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
 
@@ -84,7 +82,7 @@ public class Program
 		}
 
 		var revisionfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
-		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", datetimestart.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
+		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", GetCommitDate (revision.Commit).ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
 
 		if (!revision.FetchInto (revisionfolder))
 			Environment.Exit (0);
@@ -199,6 +197,12 @@ public class Program
 			Arguments = String.Format ("{0} -r -B {1} builder@nas.bos.xamarin.com:{2}", sshkey, files, destination),
 			UseShellExecute = true,
 		}).WaitForExit ();
+	}
+
+	static DateTime GetCommitDate (string commit)
+	{
+		var json = JObject.Parse (HttpClient.GetContent ("https://api.github.com/repos/mono/mono/commits/" + commit));
+		return DateTime.Parse ((string) json ["commit"] ["committer"] ["date"]);
 	}
 
 	struct KeyValuePair
