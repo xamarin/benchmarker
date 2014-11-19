@@ -145,6 +145,23 @@ namespace Benchmarker.Common.Models
 			return result;
 		}
 
+		public override bool Equals (object other)
+		{
+			if (other == null)
+				return false;
+
+			var benchmark = other as Benchmark;
+			if (benchmark == null)
+				return false;
+
+			return Name == benchmark.Name;
+		}
+
+		public override int GetHashCode ()
+		{
+			return Name.GetHashCode ();
+		}
+
 		struct RunProcessResult
 		{
 			public bool Success;

@@ -44,5 +44,22 @@ namespace Benchmarker.Common.Models
 				return config;
 			}
 		}
+
+		public override bool Equals (object other)
+		{
+			if (other == null)
+				return false;
+
+			var config = other as Config;
+			if (config == null)
+				return false;
+
+			return Name == config.Name;
+		}
+
+		public override int GetHashCode ()
+		{
+			return Name.GetHashCode ();
+		}
 	}
 }

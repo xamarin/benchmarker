@@ -11,9 +11,9 @@ namespace Benchmarker.Common.Models
 	{
 		const string Storage = "nas.bos.xamarin.com/benchmarker";
 
-		public string Project { get; private set; }
-		public string Architecture { get; private set; }
-		public string Commit { get; private set; }
+		public string Project { get; set; }
+		public string Architecture { get; set; }
+		public string Commit { get; set; }
 
 		public static Revision Get (string project, string architecture, string commit)
 		{
@@ -103,6 +103,25 @@ namespace Benchmarker.Common.Models
 			process.WaitForExit ();
 
 			return true;
+		}
+
+		public override bool Equals (object other)
+		{
+			if (other == null)
+				return false;
+
+			var revision = other as Revision;
+			if (revision == null)
+				return false;
+
+			return Project == revision.Project
+				&& Architecture == revision.Architecture
+				&& Commit == revision.Commit;
+		}
+
+		public override int GetHashCode ()
+		{
+			return Project.GetHashCode () ^ Architecture.GetHashCode () ^ Commit.GetHashCode ();
 		}
 	}
 }
