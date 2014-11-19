@@ -7,6 +7,7 @@ using Benchmarker.Common.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
+using System.Threading.Tasks;
 
 class Compare
 {
@@ -119,7 +120,74 @@ class Compare
 					if (config.Count <= 0)
 						throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
 
-					var result = benchmark.Run (config, testsdir, timeout, monoexe, pausetime);
+					Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
+
+					var info = new ProcessStartInfo () {
+						FileName = !String.IsNullOrEmpty (monoexe) ? monoexe : !String.IsNullOrEmpty (config.Mono) ? config.Mono : "mono",
+						WorkingDirectory = Path.Combine (testsdir, benchmark.TestDirectory),
+						UseShellExecute = false,
+						RedirectStandardOutput = true,
+						RedirectStandardError = true,
+					};
+
+					foreach (var env in config.MonoEnvironmentVariables)
+						info.EnvironmentVariables.Add (env.Key, env.Value);
+
+					var envvar = String.Join (" ", config.MonoEnvironmentVariables.Select (kv => kv.Key + "=" + kv.Value));
+					var arguments = String.Join (" ", config.MonoOptions.Union (benchmark.CommandLine));
+
+					/* Run without timing with --version */
+					info.Arguments = "--version " + arguments;
+
+					Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
+
+					var process1 = Process.Start (info);
+					var version = new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ();
+
+					process1.WaitForExit ();
+
+					/* Run with timing */
+					info.Arguments = "--stats " + arguments;
+
+					var result = new Result () { DateTime = DateTime.Now, Benchmark = this, Config = config, Version = version, Timedout = false, Runs = new Result.Run [config.Count] };
+
+					for (var i = 0; i < config.Count + 1; ++i) {
+						Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
+						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
+
+						timeout = benchmark.Timeout > 0 ? benchmark.Timeout : timeout;
+
+						var sw = Stopwatch.StartNew ();
+
+						var process = Process.Start (info);
+						var stdout = Task.Factory.StartNew (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+						var stderr = Task.Factory.StartNew (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+						var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
+
+						sw.Stop ();
+
+						if (!success)
+							process.Kill ();
+
+						Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
+
+						// skip first one
+						if (i == 0)
+							continue;
+
+						result.Runs [i - 1] = new Result.Run {
+							WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
+							Output = success ? stdout.Result : null,
+							Error = success ? stderr.Result : null
+						};
+
+						result.Timedout = result.Timedout || !success;
+					}
+
+					// FIXME: implement pausetime
+					if (pausetime)
+						throw new NotImplementedException ();
+
 					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s")));
 
 					configruns.Add (result.Runs.ToArray ());
