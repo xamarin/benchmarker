@@ -130,9 +130,17 @@ class Program
 		}).WaitForExit ();
 	}
 
-	static void SCPToRemote (string sshkey, string files, string destination)
+	static void SCPToRemote (string sshkey, string files, string destination, bool remove = true)
 	{
 		sshkey = String.IsNullOrWhiteSpace (sshkey) ? String.Empty : ("-i " + sshkey);
+
+		if (remove) {
+			Process.Start (new ProcessStartInfo {
+				FileName = "ssh",
+				Arguments = String.Format ("{0} builder@nas.bos.xamarin.com \"rm -rf '{1}'\"", sshkey, destination),
+				UseShellExecute = true,
+			}).WaitForExit ();
+		}
 
 		Process.Start (new ProcessStartInfo {
 			FileName = "ssh",
