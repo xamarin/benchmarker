@@ -144,15 +144,18 @@ public class Canvas
 	 * Write out the diagonal values from the bottom left corner to the top right.
 	 * Used only to write validity check information. **NS**
 	 */
-	public void WriteDiag()
+	public void WriteDiag(System.IO.TextWriter writer = null)
 	{
+		if (writer == null)
+			writer = System.Console.Out;
+
 		int min = System.Math.Min(GetHeight(), GetWidth());
 
 		for(int i = (min * min) - min; i > 0; i -= min - 1)
 		{
 			if(Pixels[i] != 0)
 			{
-				System.Console.WriteLine(Pixels[i]);  // NS
+				writer.WriteLine(Pixels[i]);  // NS
 			}
 		}
 	}
