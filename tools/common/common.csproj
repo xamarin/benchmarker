@@ -30,11 +30,13 @@
     <Compile Include="LogProfiler\Reader.cs" />
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\ProfileResult.cs" />
+    <Compile Include="LogProfiler\Counter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data.Linq" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Caching" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>

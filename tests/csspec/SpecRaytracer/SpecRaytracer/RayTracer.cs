@@ -41,7 +41,8 @@ public class RayTracer
 		canvas = new Canvas(width, height);
 		new Scene(name).RenderScene(canvas, width, 0, 1);
 
-		canvas.WriteDiag();
+		using (var writer = new System.IO.StreamWriter (System.IO.Stream.Null))
+			canvas.WriteDiag(writer);
 	}
 }
 

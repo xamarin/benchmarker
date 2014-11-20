@@ -20,7 +20,7 @@ public class BiSort
 {
 	private static int treesize = 10;
 	private static bool printMsgs = true;
-	private static bool printResults = true;
+	private static bool printResults = false;
 
 	/**
 	 * The main routine which creates a tree and sorts it a couple of times.
@@ -39,7 +39,7 @@ public class BiSort
 		Value tree = Value.createTree(treesize, 12345768);
 		int sval = Value.random(245867) % Value.RANGE;
 
-		if(printMsgs)
+		if(printResults)
 		{
 			tree.inOrder();
 			Console.Write("\n");

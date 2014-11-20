@@ -57,6 +57,6 @@ Global
 		{84CB327A-B2A8-432F-A443-5D423F021C65} = {3FF28327-5356-4932-B628-5C6E72127969}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = suite\agent-collect\agent-collect.csproj
+		outputpath = .
 	EndGlobalSection
 EndGlobal

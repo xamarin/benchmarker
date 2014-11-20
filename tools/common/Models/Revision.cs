@@ -4,16 +4,24 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Net;
 using System.Linq;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace Benchmarker.Common.Models
 {
-	public class Revision
+	public class Revision : IComparable<Revision>
 	{
 		const string Storage = "nas.bos.xamarin.com/benchmarker";
 
 		public string Project { get; set; }
 		public string Architecture { get; set; }
 		public string Commit { get; set; }
+
+		private DateTime commitDate;
+		public DateTime CommitDate {
+			get { return commitDate != default (DateTime) ? commitDate : (commitDate = GetCommitDate (Project, Commit)); }
+			set { commitDate = value; }
+		}
 
 		public static Revision Get (string project, string architecture, string commit)
 		{
@@ -22,6 +30,7 @@ namespace Benchmarker.Common.Models
 				Project = project,
 				Architecture = architecture,
 				Commit = commit,
+				CommitDate = GetCommitDate (project, commit),
 			};
 		}
 
@@ -67,7 +76,12 @@ namespace Benchmarker.Common.Models
 					if (splits.Length != 4 || splits [0] != lane || splits [3] != "manifest")
 						throw new InvalidDataException (String.Format ("Unknown path format \"{0}\"", redirectpath));
 
-					return new Revision { Project = project, Architecture = architecture, Commit = splits [2] };
+					return new Revision {
+						Project = project,
+						Architecture = architecture,
+						Commit = splits [2],
+						CommitDate = GetCommitDate (project, splits [2]),
+					};
 				default:
 					throw new InvalidDataException (String.Format ("Unknown return status code from Wrench \"{0}\"", wrenchresponse.StatusCode));
 				}
@@ -114,14 +128,49 @@ namespace Benchmarker.Common.Models
 			if (revision == null)
 				return false;
 
-			return Project == revision.Project
-				&& Architecture == revision.Architecture
-				&& Commit == revision.Commit;
+			return Project.Equals (revision.Project)
+				&& Architecture.Equals (revision.Architecture)
+				&& Commit.Equals (revision.Commit);
 		}
 
 		public override int GetHashCode ()
 		{
 			return Project.GetHashCode () ^ Architecture.GetHashCode () ^ Commit.GetHashCode ();
+		}
+
+		int IComparable<Revision>.CompareTo (Revision other)
+		{
+			return CommitDate.CompareTo (other.CommitDate);
+		}
+
+		static Dictionary<string, DateTime> commitDateCache = new Dictionary<string, DateTime> ();
+
+		private static DateTime GetCommitDate (string project, string commit)
+		{
+			if (project == null)
+				throw new ArgumentNullException ("project");
+			if (commit == null)
+				throw new ArgumentNullException ("commit");
+
+			var cacheKey = project + commit;
+			if (commitDateCache.ContainsKey (cacheKey))
+				return commitDateCache [cacheKey];
+
+			var repo = "";
+
+			switch (project) {
+			case "mono":
+				repo = "mono/mono";
+				break;
+			default:
+				throw new NotImplementedException ();
+			}
+
+			var json = JObject.Parse (HttpClient.GetContent ("https://api.github.com/repos/" + repo + "/commits/" + commit + "?client_id=ff2bc0e3286ef5dd07ff&client_secret=2f31e67f2dbfb22dc37d84497b68d145caa0cc66"));
+
+			lock (commitDateCache) {
+				return commitDateCache [cacheKey] = DateTime.Parse ((string)json ["commit"] ["committer"] ["date"]);
+			}
 		}
 	}
 }

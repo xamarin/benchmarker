@@ -21,7 +21,7 @@ class Mandelbrot {
 
       Console.WriteLine("P4");
       Console.WriteLine("{0} {1}", width,height);
-      Stream s = Console.OpenStandardOutput(1024);
+      Stream s = Stream.Null;
 
       for (int y = 0; y < height; y++) {
 	 int bits = 0;

@@ -11,6 +11,15 @@ using System.Threading.Tasks;
 
 class Compare
 {
+	static OxyColor [] XamarinColors = new [] {
+		OxyColor.FromRgb (119, 208, 101), // Green
+		OxyColor.FromRgb ( 44,  62,  80), // Dark Blue
+		OxyColor.FromRgb (180,  85, 182), // Purple
+		OxyColor.FromRgb (180, 188, 188), // Light Gray
+		OxyColor.FromRgb ( 52, 152, 219), // Blue
+		OxyColor.FromRgb (115, 129, 130), // Gray
+	};
+
 	static void UsageAndExit (string message = null, int exitcode = 0)
 	{
 		if (!String.IsNullOrEmpty (message))
@@ -103,19 +112,27 @@ class Compare
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
 
-		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name).ToArray ();
-		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
+		List<Result> results = new List<Result> ();
 
-		var runs = new Dictionary<string, List<Result.Run[]>> (benchmarks.Length * configs.Length);
+		if (norun) {
+			foreach (var resultfile in (loadresultfrom.Length > 0 ? loadresultfrom : Directory.EnumerateFiles (resultsdir, "*.json"))) {
+				var result = Result.LoadFrom (resultfile);
+				if (result == null)
+					throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
 
-		/* Run or load the benchmarks */
-		foreach (var benchmark in benchmarks) {
-			var configruns = new List<Result.Run[]> (configs.Length);
+				if (results.Any (r => r.Benchmark.Equals (result.Benchmark) && r.Config.Equals (result.Config)))
+					continue;
 
-			foreach (var config in configs) {
-				var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
+				results.Add (result);
+			}
+		} else {
+			var configs = configfiles.Select (c => Config.LoadFrom (c)).ToList ();
 
-				if (!norun) {
+			/* Run or load the benchmarks */
+			foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
+				foreach (var config in configs) {
+					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
+
 					/* Run the benchmarks */
 					if (config.Count <= 0)
 						throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
@@ -142,7 +159,8 @@ class Compare
 					Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
 
 					var process1 = Process.Start (info);
-					var version = new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ();
+					var version = Task.Run (() => new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ());
+					var versionerror = Task.Run (() => new StreamReader (process1.StandardError.BaseStream).ReadToEnd ());
 
 					process1.WaitForExit ();
 
@@ -153,7 +171,7 @@ class Compare
 						DateTime = DateTime.Now,
 						Benchmark = benchmark,
 						Config = config,
-						Version = version,
+						Version = version.Result,
 						Timedout = false,
 						Runs = new Result.Run [config.Count]
 					};
@@ -195,138 +213,137 @@ class Compare
 					if (pausetime)
 						throw new NotImplementedException ();
 
-					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s")));
-
-					configruns.Add (result.Runs.ToArray ());
-				} else {
-					/* Load the benchmarks */
-					var resultfile = loadresultfrom.FirstOrDefault (f => Path.GetFileName (f).StartsWith (runfileprefix));
-
-					if (resultfile == default (string))
-						resultfile = Directory.EnumerateFiles (resultsdir, runfileprefix + "*")
-									.OrderByDescending (s => s)
-									.FirstOrDefault ();
-
-					if (resultfile == default (string)) {
-						configruns.Add (new Result.Run[] { new Result.Run { WallClockTime = TimeSpan.Zero } });
-					} else {
-						var result = Result.LoadFrom (resultfile);
-						if (result == null)
-							throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
-
-						configruns.Add (result.Runs.ToArray ());
-					}
+					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s").Replace (':', '-') + ".json"));
+					results.Add (result);
 				}
 			}
-
-			runs.Add (benchmark.Name, configruns);
 		}
 
 		/* Generate the graph */
 		if (!nograph) {
-			var categoryaxis = new CategoryAxis { Position = AxisPosition.Bottom };
-			var valueaxis = new LinearAxis { Position = AxisPosition.Left };
-
-			var series = new List<ErrorColumnSeries> ();
-
-			foreach (var config in configs)
-				series.Add (new ErrorColumnSeries { Title = config.Name, StrokeThickness = 1 });
-
-			if (geomean)
-				series.Add (new ErrorColumnSeries { Title = "geomean", StrokeThickness = 1 });
-
-			var min = Double.NaN;
-			var max = Double.NaN;
-
-			foreach (var kv in runs) {
-				var name = kv.Key;
-				var configruns = kv.Value;
-
-				Debug.Assert (series.Count == configruns.Count + (geomean ? 1 : 0));
-
-				categoryaxis.Labels.Add (name);
-
-				if (configruns.Any (ts => ts.Any (t => t.WallClockTime == TimeSpan.Zero))) {
-					Console.Out.WriteLine ("Don't have data for \"{0}\" in all configurations - removing", name);
-
-					for (var j = 0; j < series.Count; ++j)
-						series [j].Items.Add (new ErrorColumnItem { Value = 0, Error = 0, Color = OxyColors.Automatic });
-				} else {
-					var values = configruns.Select (ts => ts.Select (t => {
-						if (String.IsNullOrEmpty (counter)) {
-							return t.WallClockTime.TotalMilliseconds;
-						} else {
-							var line = t.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
-							if (line == default (string) || !line.Contains (':'))
-								throw new InvalidDataException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
-
-							var value = new string (line.Split (new char [] { ':' }, 2)
-											.ElementAt (1)
-											.Trim ()
-											.ToCharArray ()
-											.TakeWhile (c => (c >= '0' && c <= '9') || c == '.' || c == ',')
-											.ToArray ());
-
-							try {
-								return Double.Parse (value);
-							} catch (FormatException) {
-								Console.Error.WriteLine ("could not parse value \"{0}\" for counter \"{1}\"", value, counter);
-								Environment.Exit (1);
-								// Silent the compiler
-								return Double.NaN;
-							}
-						}
-					}).ToList ()).ToList ();
-
-					var means = values.Select (ts => ts.Sum () / ts.Count ());
-					var errors = values.Zip (means, (ts, m) => m - ts.Min ());
-
-					if (minimum != Double.NaN && means.Any (m => m < minimum)) {
-						Console.Out.WriteLine ("Mean value for \"{0}\" us below minimum - removing", name);
-
-						for (var j = 0; j < series.Count; ++j)
-							series [j].Items.Add (new ErrorColumnItem { Value = 0, Error = 0, Color = OxyColors.Automatic });
-					} else {
-						var ratio = means.ElementAt (0);
-
-						var nmeans = means.Select (m => m / ratio).ToList ();
-						var nerrors = errors.Select (e => e / ratio).ToList ();
-
-						if (geomean) {
-							nmeans.Add (Math.Pow (nmeans.Aggregate (1d, (a, m) => m * a), 1d / nmeans.Count));
-							nerrors.Add (0d);
-						}
-
-						min = Math.Min (Double.IsNaN (min) ? Double.MaxValue : min, nmeans.Zip (nerrors, (m, e) => m - e).Min ());
-						max = Math.Max (Double.IsNaN (max) ? Double.MinValue : max, nmeans.Zip (nerrors, (m, e) => m + e).Max ());
-
-						for (var j = 0; j < series.Count; ++j)
-							series [j].Items.Add (new ErrorColumnItem { Value = nmeans [j], Error = nerrors [j], Color = OxyColors.Automatic });
-					}
-				}
-			}
-
-			valueaxis.AbsoluteMinimum = valueaxis.Minimum = min * 0.95;
-			valueaxis.AbsoluteMaximum = valueaxis.Maximum = max * 1.05;
-
+			Console.WriteLine ("Generate graph in \"{0}\"", graph);
 			var plot = new PlotModel {
 				LegendPlacement = LegendPlacement.Outside,
-				LegendPosition = LegendPosition.BottomCenter,
+				LegendPosition = LegendPosition.TopCenter,
 				LegendOrientation = LegendOrientation.Horizontal,
 				LegendBorderThickness = 0,
+				Padding = new OxyThickness (10, 0, 0, 75),
+				DefaultColors = XamarinColors,
 			};
 
-			foreach (var serie in series)
-				plot.Series.Add (serie);
+			var categoryaxis = new CategoryAxis { Position = AxisPosition.Bottom, Angle = 90 };
+			var valueaxis = new LinearAxis {
+				Position = AxisPosition.Left,
+				MinorGridlineStyle = LineStyle.Automatic,
+				MajorGridlineStyle = LineStyle.Automatic,
+			};
 
 			plot.Axes.Add (categoryaxis);
 			plot.Axes.Add (valueaxis);
 
-			using (var stream = new FileStream (graph, FileMode.Create)) {
-				SvgExporter.Export (plot, stream, 1024, 768, true);
+			var benchmarks = results
+				.GroupBy (r => r.Benchmark)
+				.Select (benchmark => {
+					var benchmarkconfigs = benchmark.Select (r => r.Config).ToArray ();
+
+					Debug.Assert (benchmarkconfigs.Length == benchmarkconfigs.Distinct ().Count (), "There are duplicate configs for benchmark \"{0}\" : {1}",
+						benchmark.Key.Name, String.Join (", ", benchmarkconfigs.OrderBy (c => c.Name).Select (c => c.Name)));
+
+					if (benchmark.Any (r => r.Runs.Any (ru => ru.WallClockTime == TimeSpan.Zero))) {
+						Console.WriteLine ("Don't have data for benchmark \"{0}\" in all configs - removing", benchmark.Key.Name);
+						return null;
+					}
+
+					double[][] values;
+
+					try {
+						counter = String.IsNullOrWhiteSpace (counter) ? "Time" : counter;
+						values = benchmark.Select (r => r.Runs.Select (ru => ExtractCounterValue (counter, ru)).ToArray ()).ToArray ();
+					} catch (FormatException) {
+						Console.Error.WriteLine ("Could not parse value for counter \"{1}\"", counter);
+						return null;
+					}
+
+					double[] means = values.Select (vs => vs.Sum () / vs.Length).ToArray ();
+					double[] errors = values.Zip (means, (vs, m) => m - vs.Min ()).ToArray ();
+
+					if (minimum != Double.NaN && means.Any (m => m < minimum)) {
+						Console.WriteLine ("Mean value for benchmark \"{0}\" below minimum - removing", benchmark.Key.Name);
+						return null;
+					}
+
+					double ratio = means.ElementAt (0);
+
+					double[] nmeans = means.Select (m => m / ratio).ToArray ();
+					double[] nerrors = errors.Select (e => e / ratio).ToArray ();
+
+					Debug.Assert (benchmarkconfigs.Length == nmeans.Length);
+					Debug.Assert (benchmarkconfigs.Length == nerrors.Length);
+
+					return new { Benchmark = benchmark.Key, Configs = benchmarkconfigs, NormalizedMeans = nmeans, NormalizedErrors = nerrors };
+				})
+				.Where (t => t != null)
+				.ToArray ();
+
+			foreach (var n in benchmarks.Select (v => v.Benchmark.Name).Distinct ())
+				categoryaxis.Labels.Add (n);
+
+			var configs = benchmarks
+				.SelectMany (b => b.Configs.Select ((c, i) => new { Benchmark = b.Benchmark, Config = c, NormalizedMean = b.NormalizedMeans [i], NormalizedError = b.NormalizedErrors [i] }))
+				.GroupBy (v => v.Config);
+
+			foreach (var config in configs) {
+				var serie = new ErrorColumnSeries { Title = config.Key.Name, LabelFormatString = "{0:F2}", StrokeThickness = 1 };
+
+				var nmeans = config.Select (c => c.NormalizedMean).ToArray ();
+				var nerrors = config.Select (c => c.NormalizedError).ToArray ();
+
+				for (int i = 0, l = nmeans.Length; i < l; ++i) {
+					serie.Items.Add (new ErrorColumnItem { Value = nmeans [i], Error = nerrors [i], Color = OxyColors.Automatic });
+				}
+
+				plot.Series.Add (serie);
 			}
 
-			Process.Start (graph);
+			if (geomean) {
+				var geomeanserie = new ColumnSeries { Title = "geomean", LabelFormatString = "{0:F2}", StrokeThickness = 1 };
+
+				foreach (var v in benchmarks) {
+					geomeanserie.Items.Add (new ColumnItem {
+						Value = Math.Pow (v.NormalizedMeans.Aggregate (1d, (a, m) => m * a), 1d / v.NormalizedMeans.Length),
+						Color = OxyColors.Automatic,
+					});
+				}
+
+				plot.Series.Add (geomeanserie);
+			}
+
+			valueaxis.AbsoluteMinimum = valueaxis.Minimum = benchmarks.Aggregate (Double.MaxValue, (a, v) => Math.Min (a, v.NormalizedMeans.Zip (v.NormalizedErrors, (m, e) => m - e).Min ())) * 0.99;
+			valueaxis.AbsoluteMaximum = valueaxis.Maximum = benchmarks.Aggregate (Double.MinValue, (a, v) => Math.Max (a, v.NormalizedMeans.Zip (v.NormalizedErrors, (m, e) => m + e).Max ())) * 1.01;
+
+			using (var stream = new FileStream (graph, FileMode.Create))
+				SvgExporter.Export (plot, stream, 1024, 768, true);
+		}
+	}
+
+	static Double ExtractCounterValue (string counter, Result.Run run)
+	{
+
+		if (counter == "Time") {
+			return run.WallClockTime.TotalMilliseconds;
+		} else {
+			var line = run.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
+			if (line == default (string) || !line.Contains (':'))
+				throw new InvalidDataException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
+
+			var value = new string (line.Split (new char [] { ':' }, 2)
+				.ElementAt (1)
+				.Trim ()
+				.ToCharArray ()
+				.TakeWhile (c => (c >= '0' && c <= '9') || c == '.' || c == ',')
+				.ToArray ());
+
+			return Double.Parse (value);
 		}
 	}
 }

@@ -1,13 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
+using Benchmarker.Common.LogProfiler;
 using Benchmarker.Common.Models;
-using System.Collections.Generic;
-using OxyPlot;
-using OxyPlot.Axes;
-using OxyPlot.Series;
+using Newtonsoft.Json;
 
 class Program
 {
@@ -54,105 +54,194 @@ class Program
 		var architecture = args [optindex++];
 
 		var resultsfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
+		var graphsfolder = Directory.CreateDirectory (Path.Combine (resultsfolder, "graphs")).FullName;
 
 		Console.WriteLine ("Downloading results files into \"{0}\"", resultsfolder);
 
-		if (benchmarksnames.Length == 0) {
-			SCPFromRemote (sshkey, String.Format ("/volume1/storage/benchmarker/runs/{0}/{1}/*/*.json.gz", project, architecture), resultsfolder);
-		} else {
-			Parallel.ForEach (benchmarksnames, b => {
-				SCPFromRemote (sshkey, String.Format ("/volume1/storage/benchmarker/runs/{0}/{1}/*/{2}*.json.gz", project, architecture, b), resultsfolder);
-			});
-		}
+		RSyncFromRemote (sshkey, String.Format ("/volume1/storage/benchmarker/runs/{0}/{1}/*", project, architecture), resultsfolder);
 
 		Console.WriteLine ("Reading results files");
 
-		var profiles = Directory.EnumerateFiles (resultsfolder, "*.json.gz")
+		IEnumerable<ProfileResult> profiles = Directory.EnumerateFiles (resultsfolder, "*.json.gz", SearchOption.AllDirectories)
 			.AsParallel ()
-			.Select (p => ProfileResult.LoadFrom (p, true))
-			.Aggregate (new Dictionary<Benchmark, Dictionary<Config, Dictionary<Revision, ProfileResult>>> (), (d, pr) => {
-				if (!d.ContainsKey (pr.Benchmark))
-					d.Add (pr.Benchmark, new Dictionary<Config, Dictionary<Revision, ProfileResult>>());
-				if (!d [pr.Benchmark].ContainsKey (pr.Config))
-					d [pr.Benchmark].Add (pr.Config, new Dictionary<Revision, ProfileResult> ());
+			.Where (f => !f.EndsWith (".counters.json.gz"))
+			.Select (f => ProfileResult.LoadFrom (f, true));
 
-				if (!d [pr.Benchmark][pr.Config].ContainsKey (pr.Revision))
-					d [pr.Benchmark][pr.Config].Add (pr.Revision, pr);
-				else if (d [pr.Benchmark][pr.Config][pr.Revision].DateTime < pr.DateTime)
-					d [pr.Benchmark][pr.Config][pr.Revision] = pr;
+		if (benchmarksnames.Length > 0)
+			profiles = profiles.Where (p => benchmarksnames.Any (n => p.Benchmark.Name == n));
 
-				return d;
+		profiles = profiles.AsParallel ().ToArray ();
+
+		Console.WriteLine ("Generating graphs data in \"{0}\"", graphsfolder);
+
+		{
+			// Time + Counters data for each benchmark
+			Parallel.ForEach (profiles.GroupBy (p => p.Benchmark), benchmark => {
+				// Counter.Name | "Time" => Config.Name => List [KeyValuePair[Revision.Commit, Value]]
+				var data = new Dictionary<string, Dictionary<string, List<KeyValuePair<string, double>>>> ();
+
+				Console.Write ("Benchmark: {0}, Counter: {1}{2}", benchmark.Key.Name, "Time", Environment.NewLine);
+				data.Add ("Time", BenchmarkData (benchmark.Key, benchmark, run => run.WallClockTime.TotalMilliseconds));
+
+				foreach (var counter in ExtractIntersectCounters (benchmark)) {
+					try {
+						Console.Write ("Benchmark: {0}, Counter: {1}{2}", benchmark.Key.Name, counter, Environment.NewLine);
+						data.Add (counter.ToString (), BenchmarkData (benchmark.Key, benchmark.AsEnumerable (), run => ExtractLastCounterValue (run, counter)));
+					} catch (InvalidCastException e) {
+						Console.Out.WriteLine ("Cannot convert \"{0}\" last value to double : {1}{2}", counter, Environment.NewLine, e.ToString ());
+					}
+				}
+
+				using (var stream = new FileStream (Path.Combine (graphsfolder, benchmark.Key.Name + ".json"), FileMode.Create))
+				using (var writer = new StreamWriter (stream))
+					writer.Write (JsonConvert.SerializeObject (
+						data.Select (kv => KeyValuePair.Create (
+								kv.Key,
+								kv.Value.Select (kv1 => KeyValuePair.Create (kv1.Key, kv1.Value.Select (kv2 => new { Commit = kv2.Key, Value = kv2.Value }).ToList ()))
+									.ToDictionary (kv1 => kv1.Key, kv1 => kv1.Value)
+							))
+							.ToDictionary (kv => kv.Key, kv => kv.Value),
+						Formatting.Indented
+					));
 			});
+		}
 
-		Console.WriteLine ("Generating graphs in \"{0}\"", resultsfolder);
+		{
+			// Min/Average/Max counter data for each config
+			Parallel.ForEach (profiles.GroupBy (p => p.Config), config => {
+				// Counter.Name | "Time" => List [KeyValuePair[Revision.Commit, Tuple[Min, Average, Max]]]
+				var data = new Dictionary<string, List<KeyValuePair<string, Tuple<double, double, double>>>> ();
 
-		Parallel.ForEach (profiles, benchmark => {
-			var plot = new PlotModel {
-				Title = benchmark.Key.Name,
-				LegendPlacement = LegendPlacement.Outside,
-				LegendPosition = LegendPosition.RightMiddle,
-				LegendOrientation = LegendOrientation.Vertical,
-				LegendBorderThickness = 0,
-			};
+				Console.Write ("Config: {0}, Counter: {1}{2}", config.Key.Name, "Time", Environment.NewLine);
+				data.Add ("Time", ConfigData (config.Key, config, run => run.WallClockTime.TotalMilliseconds));
 
-			plot.Axes.Add (new LinearAxis { Minimum = 0, MinimumPadding = 0.1, MaximumPadding = 0.1 });
+				foreach (var counter in ExtractIntersectCounters (config)) {
+					try {
+						Console.Write ("Config: {0}, Counter: {1}{2}", config.Key.Name, counter, Environment.NewLine);
+						data.Add (counter.ToString (), ConfigData (config.Key, config.AsEnumerable (), run => ExtractLastCounterValue (run, counter)));
+					} catch (InvalidCastException e) {
+						Console.Out.WriteLine ("Cannot convert \"{0}\" last value to double : {1}{2}", counter, Environment.NewLine, e.ToString ());
+					}
+				}
 
-			foreach (var config in benchmark.Value) {
-				var values = config.Value
-						.OrderBy (kv => kv.Value.DateTime)
-						.Select (revision => revision.Value.Runs.Select (run => run.WallClockTime.TotalMilliseconds).ToArray ())
-						.ToArray ();
-
-				var serie = new LineSeries { Color = OxyColors.Automatic };
-
-				for (var i = 0; i < values.Length; ++i)
-					serie.Points.Add (new DataPoint ((double) i, values [i].Sum () / values [i].Length));
-
-				plot.Series.Add (serie);
-			}
-
-			using (var stream = new FileStream (Path.Combine (resultsfolder, benchmark.Key.Name + ".svg"), FileMode.Create))
-				SvgExporter.Export (plot, stream, 1024, 768, true);
-		});
+				using (var stream = new FileStream (Path.Combine (graphsfolder, config.Key.Name + ".config.json"), FileMode.Create))
+				using (var writer = new StreamWriter (stream))
+					writer.Write (JsonConvert.SerializeObject (
+						data.Select (kv => KeyValuePair.Create (
+								kv.Key,
+								kv.Value.Select (kv1 => new { Commit = kv1.Key, Min = kv1.Value.Item1, Average = kv1.Value.Item2, Max = kv1.Value.Item3 })
+									.ToList ()
+							))
+							.ToDictionary (kv => kv.Key, kv => kv.Value)
+					));
+			});
+		}
 
 		Console.WriteLine ("Uploading graphs");
-		SCPToRemote (sshkey, String.Join (" ", Directory.EnumerateFiles (resultsfolder, "*.svg")), String.Format ("/volume1/storage/benchmarker/graphs/{0}/{1}", project, architecture));
+
+		SCPToRemote (sshkey, Directory.EnumerateFileSystemEntries (graphsfolder).ToList (), String.Format ("/volume1/storage/benchmarker/graphs/{0}/{1}", project, architecture));
 	}
 
-	static void SCPFromRemote (string sshkey, string files, string destination)
+	// Config.Name => List [KeyValuePair[Revision.Commit, Value]]
+	static Dictionary<string, List<KeyValuePair<string, double>>> BenchmarkData (Benchmark benchmark, IEnumerable<ProfileResult> profiles, Func<ProfileResult.Run, double> selector)
+	{
+		return profiles.GroupBy (p => p.Config)
+			.Select (g => KeyValuePair.Create (g.Key.Name, g.Select (p => KeyValuePair.Create (p.Revision.Commit, p.Runs.Select (selector).Sum () / p.Runs.Length)).ToList ()))
+			.ToDictionary (kv => kv.Key, kv => kv.Value);
+	}
+
+	// List [KeyValuePair[Revision.Commit, Tuple[Min, Average, Max]]]
+	static List<KeyValuePair<string, Tuple<double, double, double>>> ConfigData (Config config, IEnumerable<ProfileResult> profiles, Func<ProfileResult.Run, double> selector)
+	{
+		List<KeyValuePair<Benchmark, List<KeyValuePair<Revision, double>>>> benchmarks =
+			profiles.GroupBy (p => p.Benchmark)
+				.Select (g => {
+					return KeyValuePair.Create (
+						g.Key,
+						g.OrderBy (p => p.Revision.CommitDate)
+							.Select (p => {
+								var values = p.Runs.Select (selector).ToArray ();
+								if (values.Any (v => Double.IsNaN (v)))
+									return KeyValuePair.Create (p.Revision, Double.NaN);
+								return KeyValuePair.Create (p.Revision, values.Sum () / values.Length);
+							})
+							.ToList ()
+					);
+				})
+				.Where (kv => !kv.Value.Any (kv1 => Double.IsNaN (kv1.Value)))
+				.ToList ();
+
+		Dictionary<Benchmark, double> medians =
+			benchmarks.Select (b => KeyValuePair.Create (b.Key, b.Value.Select (r => r.Value).OrderBy (d => d).ElementAt (b.Value.Count / 2)))
+				.ToDictionary (kv => kv.Key, kv => kv.Value);
+
+		SortedDictionary<Revision, List<KeyValuePair<Benchmark, double>>> revisionsnormalized =
+			benchmarks.Select (b => KeyValuePair.Create (b.Key, b.Value.Select (r => KeyValuePair.Create (r.Key, medians [b.Key] == 0d ? 0d : r.Value / medians [b.Key]))))
+				.Aggregate (new SortedDictionary<Revision, List<KeyValuePair<Benchmark, double>>> (), (d, b) => {
+					foreach (var r in b.Value) {
+						if (!d.ContainsKey (r.Key))
+							d.Add (r.Key, new List<KeyValuePair<Benchmark, double>> ());
+						d [r.Key].Add (KeyValuePair.Create (b.Key, r.Value));
+					}
+
+					return d;
+				});
+
+		return revisionsnormalized.Select (r => KeyValuePair.Create (r.Key.Commit, Tuple.Create (r.Value.Min (b => b.Value), r.Value.Sum (b => b.Value) / r.Value.Count, r.Value.Max (b => b.Value))))
+					.ToList ();
+	}
+
+	static double ExtractLastCounterValue (ProfileResult.Run run, Counter counter)
+	{
+		var counters = run.Counters.Where (kv => kv.Key.Equals (counter)).ToList ();
+
+		if (counters.Count != 1)
+			return Double.NaN;
+
+		var value = counters.Single ().Value;
+
+		if (value.Count == 0)
+			return Double.NaN;
+
+		return Convert.ToDouble (value.Last ().Value);
+	}
+
+	static IEnumerable<Counter> ExtractIntersectCounters (IEnumerable<ProfileResult> profiles)
+	{
+		return profiles.SelectMany (p => p.Runs)
+				.Aggregate (new Counter[0], (acc, r) => acc.Length == 0 ? ExtractCounters (r).ToArray () : acc.Intersect (ExtractCounters (r)).ToArray ())
+				.Distinct ()
+				.OrderBy (c => c.Section + c.Name)
+				.ToArray ();
+	}
+
+	static IEnumerable<Counter> ExtractCounters (ProfileResult.Run run)
+	{
+		return run.Counters.Where (kv => kv.Value.Count > 0).Select (kv => kv.Key);
+	}
+
+	static string SlugifyCounter (Counter counter)
+	{
+		return counter.Name.ToLower ().Replace (' ', '-').Replace ('/', '-').Replace (':', '-').Replace ("#", "").Replace ("&", "").Replace ("?", "");
+	}
+
+	static void RSyncFromRemote (string sshkey, string files, string destination)
 	{
 		sshkey = String.IsNullOrWhiteSpace (sshkey) ? String.Empty : ("-i '" + sshkey + "'");
 
-		Process.Start (new ProcessStartInfo {
-			FileName = "scp",
-			Arguments = String.Format ("-r -B {0} builder@nas.bos.xamarin.com:'{1}' {2}", sshkey, files, destination),
-			UseShellExecute = true,
-		}).WaitForExit ();
+		Process.Start ("rsync", String.Format ("-rvz --exclude '*.mlpd' -e \"ssh {0}\" builder@nas.bos.xamarin.com:'{1}' {2}", sshkey, files, destination)).WaitForExit ();
 	}
 
-	static void SCPToRemote (string sshkey, string files, string destination, bool remove = true)
+	static void SCPToRemote (string sshkey, List<string> files, string destination)
 	{
 		sshkey = String.IsNullOrWhiteSpace (sshkey) ? String.Empty : ("-i " + sshkey);
 
-		if (remove) {
-			Process.Start (new ProcessStartInfo {
-				FileName = "ssh",
-				Arguments = String.Format ("{0} builder@nas.bos.xamarin.com \"rm -rf '{1}'\"", sshkey, destination),
-				UseShellExecute = true,
-			}).WaitForExit ();
+		Process.Start ("ssh", String.Format ("{0} builder@nas.bos.xamarin.com \"rm -rf '{2}/*'\"", sshkey, files, destination)).WaitForExit ();
+		Process.Start ("ssh", String.Format ("{0} builder@nas.bos.xamarin.com \"mkdir -p '{2}'\"", sshkey, files, destination)).WaitForExit ();
+
+		for (int i = 0, step = 100; i < files.Count; i += step) {
+			Process.Start ("scp", String.Format ("{0} -r -B {1} builder@nas.bos.xamarin.com:{2}", sshkey, String.Join (" ", files.Skip (i).Take (step)), destination)).WaitForExit ();
 		}
-
-		Process.Start (new ProcessStartInfo {
-			FileName = "ssh",
-			Arguments = String.Format ("{0} builder@nas.bos.xamarin.com \"mkdir -p '{1}'\"", sshkey, destination),
-			UseShellExecute = true,
-		}).WaitForExit ();
-
-		Process.Start (new ProcessStartInfo {
-			FileName = "scp",
-			Arguments = String.Format ("{0} -r -B {1} builder@nas.bos.xamarin.com:{2}", sshkey, files, destination),
-			UseShellExecute = true,
-		}).WaitForExit ();
 	}
 
 	struct KeyValuePair

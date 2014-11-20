@@ -57,7 +57,7 @@ namespace Benchmarker.Common.Models
 			if (benchmark == null)
 				return false;
 
-			return Name == benchmark.Name;
+			return Name.Equals (benchmark.Name);
 		}
 
 		public override int GetHashCode ()
