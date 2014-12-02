@@ -1,0 +1,5 @@
+{
+  "Name": "couchbase",
+  "TestDirectory": "CouchBase",
+  "CommandLine": ["./nunit-console.exe", "-run=Couchbase.Lite.PerformanceTest.Test12IndexView", "Couchbase.Lite.Net45.Tests.dll"]
+}
