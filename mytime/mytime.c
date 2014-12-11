@@ -19,6 +19,11 @@ main (int argc, char *argv [])
 	double diff;
 	int timeout;
 
+	if (argc <= 3) {
+		fprintf (stderr, "Usage: mytime TIME-FILE TIMEOUT PROGRAM [ARG ...]\n");
+		exit (1);
+	}
+
 	assert (argc > 3);
 
 	timeout = atoi (argv [2]);
