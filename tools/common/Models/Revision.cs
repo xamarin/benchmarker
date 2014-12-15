@@ -166,7 +166,7 @@ namespace Benchmarker.Common.Models
 				throw new NotImplementedException ();
 			}
 
-			var json = JObject.Parse (HttpClient.GetContent ("https://api.github.com/repos/" + repo + "/commits/" + commit + "?client_id=ff2bc0e3286ef5dd07ff&client_secret=2f31e67f2dbfb22dc37d84497b68d145caa0cc66"));
+			var json = JObject.Parse (HttpClient.GetContent ("https://api.github.com/repos/" + repo + "/commits/" + commit));
 
 			lock (commitDateCache) {
 				return commitDateCache [cacheKey] = DateTime.Parse ((string)json ["commit"] ["committer"] ["date"]);
