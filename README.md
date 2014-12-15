@@ -6,7 +6,7 @@
     nuget restore tools.sln
     xbuild
 
-## Configuring
+## Configs
 
 Each Mono configuration requires a `.conf` file.  The files in the `configs` directory are examples. The JSON structure is as follow :
   - Name : name of the config (must be unique across all configs and benchmarks)
