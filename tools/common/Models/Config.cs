@@ -54,7 +54,7 @@ namespace Benchmarker.Common.Models
 			if (config == null)
 				return false;
 
-			return Name == config.Name;
+			return Name.Equals (config.Name);
 		}
 
 		public override int GetHashCode ()
