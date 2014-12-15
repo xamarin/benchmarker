@@ -49,7 +49,7 @@ namespace Benchmarker.Common.Models
 					lane = "mono-mac-master-64";
 					break;
 				case "x86":
-					lane = "mono-mac-master-32";
+					lane = "mono-mac-master";
 					break;
 				default:
 					throw new ArgumentException (String.Format ("Unknown architecture \"{0}\" for project \"{1}\"", architecture, project));
