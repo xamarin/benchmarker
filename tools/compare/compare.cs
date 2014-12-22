@@ -132,6 +132,7 @@ class Compare
 			foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 				foreach (var config in configs) {
 					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
+					var version = String.Empty;
 
 					/* Run the benchmarks */
 					if (config.Count <= 0)
@@ -140,12 +141,18 @@ class Compare
 					Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
 					var info = new ProcessStartInfo () {
-						FileName = !String.IsNullOrEmpty (monoexe) ? monoexe : !String.IsNullOrEmpty (config.Mono) ? config.Mono : "mono",
 						WorkingDirectory = Path.Combine (testsdir, benchmark.TestDirectory),
 						UseShellExecute = false,
 						RedirectStandardOutput = true,
 						RedirectStandardError = true,
 					};
+
+					if (config.NoMono) {
+						info.FileName = Path.Combine (info.WorkingDirectory, benchmark.CommandLine [0]);
+						benchmark.CommandLine = benchmark.CommandLine.Skip (1).ToArray ();
+					} else {
+						info.FileName = !String.IsNullOrEmpty (monoexe) ? monoexe : !String.IsNullOrEmpty (config.Mono) ? config.Mono : "mono";
+					}
 
 					foreach (var env in config.MonoEnvironmentVariables)
 						info.EnvironmentVariables.Add (env.Key, env.Value);
@@ -153,25 +160,30 @@ class Compare
 					var envvar = String.Join (" ", config.MonoEnvironmentVariables.Select (kv => kv.Key + "=" + kv.Value));
 					var arguments = String.Join (" ", config.MonoOptions.Union (benchmark.CommandLine));
 
-					/* Run without timing with --version */
-					info.Arguments = "--version " + arguments;
+					if (!config.NoMono) {
+						/* Run without timing with --version */
+						info.Arguments = "--version " + arguments;
 
-					Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
+						Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
 
-					var process1 = Process.Start (info);
-					var version = Task.Run (() => new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ());
-					var versionerror = Task.Run (() => new StreamReader (process1.StandardError.BaseStream).ReadToEnd ());
+						var process1 = Process.Start (info);
+						version = Task.Run (() => new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ()).Result;
+						var versionerror = Task.Run (() => new StreamReader (process1.StandardError.BaseStream).ReadToEnd ());
 
-					process1.WaitForExit ();
+						process1.WaitForExit ();
+					} else {
+						info.Arguments = arguments;
+					}
 
 					/* Run with timing */
-					info.Arguments = "--stats " + arguments;
+					if (!config.NoMono)
+						info.Arguments = "--stats " + arguments;
 
 					var result = new Result {
 						DateTime = DateTime.Now,
 						Benchmark = benchmark,
 						Config = config,
-						Version = version.Result,
+						Version = version,
 						Timedout = false,
 						Runs = new Result.Run [config.Count]
 					};

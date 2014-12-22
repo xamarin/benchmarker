@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -9,6 +10,7 @@ namespace Benchmarker.Common.Models
 	{
 		public string Name { get; set; }
 		public int Count { get; set; }
+		public bool NoMono {get; set; }
 		public string Mono { get; set; }
 		public string[] MonoOptions { get; set; }
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
@@ -25,6 +27,11 @@ namespace Benchmarker.Common.Models
 
 				if (String.IsNullOrEmpty (config.Name))
 					throw new InvalidDataException ("Name");
+
+				if (config.NoMono) {
+					Debug.Assert (config.MonoOptions == null || config.MonoOptions.Length == 0);
+					Debug.Assert (config.MonoEnvironmentVariables == null || config.MonoEnvironmentVariables.Count == 0);
+				}
 
 				if (String.IsNullOrEmpty (config.Mono))
 					config.Mono = String.Empty;
