@@ -1,0 +1,17 @@
+building tables
+computing first function...time: 00:00:00.0396366
+building kernels...time: 00:00:00.0218962
+building kernel table...time: 00:00:00.0062022
+computing lookahead relations.................................................................................................................................................time: 00:00:00.0257715
+building lookahead table...time: 00:00:00.0099535
+building action table...state 57: shift/reduce error on RBRACK
+state 87: shift/reduce error on RBRACK
+time: 00:00:00.0243500
+building goto table...time: 00:00:00.0082455
+returning tables.
+2 shift/reduce conflicts
+142 states
+32 nonterminals
+68 terminals
+96 productions
+#rows in action table: 142

@@ -1,5 +1,5 @@
 {
   "Name": "ipy",
-  "TestDirectory": "IronPython-2.0B2",
+  "TestDirectory": "IronPython-2.7.4",
   "CommandLine": ["ipy.exe", "pystone.py", "500000"]
 }

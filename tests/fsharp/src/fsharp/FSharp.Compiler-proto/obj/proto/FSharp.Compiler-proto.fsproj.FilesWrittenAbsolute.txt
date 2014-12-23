@@ -1,0 +1,13 @@
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/.NETFramework,Version=v4.5.AssemblyAttribute.fs
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSComp.fs
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/FSComp.resx
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSStrings.resources
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSComp.resources
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/lex.fs
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/illex.fs
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/pars.fs
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/ilpars.fs
+/Users/schani/Work/mono/android/fsharp/lib/proto/FSharp.Compiler-proto.dll.mdb
+/Users/schani/Work/mono/android/fsharp/lib/proto/FSharp.Compiler-proto.dll
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll
+/Users/schani/Work/mono/android/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll.mdb
