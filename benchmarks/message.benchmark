@@ -1,5 +1,0 @@
-{
-  "Name": "message",
-  "TestDirectory": "shootout",
-  "CommandLine": ["message.exe", "1000000"]
-}
