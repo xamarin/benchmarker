@@ -25,7 +25,8 @@ class Compare
 		if (!String.IsNullOrEmpty (message))
 			Console.Error.WriteLine ("{0}\n", message);
 
-		Console.Error.WriteLine ("usage: [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> <config-file> [<config-file>+]");
+		Console.Error.WriteLine ("usage:          [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> <config-file> [<config-file>+]");
+		Console.Error.WriteLine ("       --no-run [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> [<config-name>+]");
 		Console.Error.WriteLine ("parameters:");
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
@@ -104,7 +105,7 @@ class Compare
 		if (!norun && loadresultfrom.Length > 0)
 			UsageAndExit ("You cannot load a run from a file if you run the benchmarks", 1);
 
-		if (args.Length - optindex < 4)
+		if (args.Length - optindex < (norun ? 3 : 4))
 			UsageAndExit (null, 1);
 
 		var testsdir = args [optindex++];
@@ -122,6 +123,13 @@ class Compare
 
 				if (results.Any (r => r.Benchmark.Equals (result.Benchmark) && r.Config.Equals (result.Config)))
 					continue;
+
+				// If we have been given configuration names, the result's
+				// configuration must match one of them.
+				if (configfiles.Length > 0 && !configfiles.Any (n => n == result.Config.Name)) {
+					Console.WriteLine ("{0} (config {1}) doesn't match any given config", resultfile, result.Config.Name);
+					continue;
+				}
 
 				results.Add (result);
 			}
