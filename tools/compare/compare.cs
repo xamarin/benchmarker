@@ -209,16 +209,17 @@ class Compare
 						Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
 
 						// skip first one
-						if (i == 0)
-							continue;
+						if (i > 0) {
+							result.Runs [i - 1] = new Result.Run {
+								WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
+								Output = success ? stdout.Result : null,
+								Error = success ? stderr.Result : null
+							};
 
-						result.Runs [i - 1] = new Result.Run {
-							WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
-							Output = success ? stdout.Result : null,
-							Error = success ? stderr.Result : null
-						};
+							result.Timedout = result.Timedout || !success;
+						}
 
-						result.Timedout = result.Timedout || !success;
+						process.Close ();
 					}
 
 					// FIXME: implement pausetime
