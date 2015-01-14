@@ -126,10 +126,8 @@ class Compare
 
 				// If we have been given configuration names, the result's
 				// configuration must match one of them.
-				if (configfiles.Length > 0 && !configfiles.Any (n => n == result.Config.Name)) {
-					Console.WriteLine ("{0} (config {1}) doesn't match any given config", resultfile, result.Config.Name);
+				if (configfiles.Length > 0 && !configfiles.Any (n => n == result.Config.Name))
 					continue;
-				}
 
 				results.Add (result);
 			}
