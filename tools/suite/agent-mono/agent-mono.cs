@@ -13,14 +13,17 @@ using Newtonsoft.Json.Linq;
 
 public class Program
 {
-	static void UsageAndExit (string message = null, int exitcode = 0)
+	static void UsageAndExit (string error = null, int exitcode = 0)
 	{
-		Console.Error.WriteLine ("usage: [parameters] [--] <tests-dir> <benchmarks-dir> <config-file> [<config-file>+]");
+		if (!String.IsNullOrEmpty (error)) {
+			Console.Error.WriteLine ("Error : {0}", error);
+			Console.Error.WriteLine ();
+		}
+
+		Console.Error.WriteLine ("usage: [parameters] [--] <mono-executable> <mono-path> <library-path> <architecture> <commit> <tests-dir> <benchmarks-dir> <config-file> [<config-file>+]");
 		Console.Error.WriteLine ("parameters:");
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
-		Console.Error.WriteLine ("    -a, --architecture    architecture to run against, values can be \"amd64\" or \"x86\"");
-		Console.Error.WriteLine ("    -c, --commit          commit to run against, identified by it's sha commit");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --sshkey          path to ssh key for builder@nas");
 		Console.Error.WriteLine ("    -u, --upload          upload results to storage; default to no");
@@ -31,8 +34,6 @@ public class Program
 	public static void Main (string[] args)
 	{
 		var benchmarksnames = new string[0];
-		var architecture = Environment.Is64BitOperatingSystem ? "amd64" : "x86";
-		var commit = String.Empty;
 		var timeout = Int32.MaxValue;
 		var sshkey = String.Empty;
 		var upload = false;
@@ -42,10 +43,6 @@ public class Program
 		for (; optindex < args.Length; ++optindex) {
 			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
 				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
-			} else if (args [optindex] == "-a" || args [optindex] == "--architecture") {
-				architecture = args [++optindex];
-			} else if (args [optindex] == "-c" || args [optindex] == "--commit") {
-				commit = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
 			} else if (args [optindex] == "--sshkey") {
@@ -65,9 +62,14 @@ public class Program
 			}
 		}
 
-		if (args.Length - optindex < 3)
+		if (args.Length - optindex < 8)
 			UsageAndExit (null, 1);
 
+		var monoexecutable = args [optindex++];
+		var monopath = args [optindex++];
+		var librarypath = args [optindex++];
+		var architecture = args [optindex++];
+		var commit = args [optindex++];
 		var testsdir = args [optindex++];
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
@@ -75,17 +77,13 @@ public class Program
 		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name).ToArray ();
 		var configs = configfiles.Select (c => Config.LoadFrom (c)).ToArray ();
 
-		var revision = String.IsNullOrEmpty (commit) ? Revision.Last ("mono", architecture) : Revision.Get ("mono", architecture, commit);
-		if (revision == null) {
-			Console.Out.WriteLine ("Revision not found");
-			Environment.Exit (2);
-		}
+		var revision = Revision.Get ("mono", architecture, commit);
 
-		var revisionfolder = Directory.CreateDirectory (Path.Combine (Path.GetTempPath (), Path.GetRandomFileName ())).FullName;
-		var profilesfolder = Directory.CreateDirectory (Path.Combine (revisionfolder, String.Join ("_", revision.CommitDate.ToString ("s").Replace (':', '-'), revision.Commit))).FullName;
+		var profilesdirname = String.Join ("_", revision.CommitDate.ToString ("s").Replace (':', '-'), revision.Commit);
+		if (Directory.Exists (profilesdirname))
+			Directory.Delete (profilesdirname, true);
 
-		if (!revision.FetchInto (revisionfolder))
-			Environment.Exit (0);
+		var profilesdir = Directory.CreateDirectory (profilesdirname).FullName;
 
 		var profiles = new List<ProfileResult> (benchmarks.Length * configs.Length);
 
@@ -96,8 +94,8 @@ public class Program
 				var timedout = false;
 
 				var info = new ProcessStartInfo {
-					FileName = Path.Combine (revisionfolder, "mono"),
-					WorkingDirectory = Path.Combine (testsdir,benchmark. TestDirectory),
+					FileName = monoexecutable,
+					WorkingDirectory = Path.Combine (testsdir, benchmark.TestDirectory),
 					UseShellExecute = false,
 				};
 
@@ -108,11 +106,17 @@ public class Program
 					info.EnvironmentVariables.Add (env.Key, env.Value);
 				}
 
-				info.EnvironmentVariables.Add ("MONO_PATH", revisionfolder);
-				info.EnvironmentVariables.Add ("LD_LIBRARY_PATH", revisionfolder);
+				info.EnvironmentVariables ["MONO_PATH"] = monopath;
+				info.EnvironmentVariables ["LD_LIBRARY_PATH"] = librarypath;
 
-				var envvar = String.Join (" ", config.MonoEnvironmentVariables.Union (new KeyValuePair<string, string>[] { new KeyValuePair<string, string> ("MONO_PATH", revisionfolder), new KeyValuePair<string, string> ("LD_LIBRARY_PATH", revisionfolder) })
-					.Select (kv => kv.Key + "=" + kv.Value));
+				var envvar = String.Join (" ",
+					config.MonoEnvironmentVariables
+						.Union (new KeyValuePair<string, string>[] {
+							new KeyValuePair<string, string> ("MONO_PATH", info.EnvironmentVariables["MONO_PATH"]),
+							new KeyValuePair<string, string> ("LD_LIBRARY_PATH", info.EnvironmentVariables["LD_LIBRARY_PATH"])
+						})
+						.Select (kv => kv.Key + "=" + kv.Value)
+				);
 
 				var arguments = String.Join (" ", config.MonoOptions.Union (benchmark.CommandLine));
 
@@ -122,7 +126,7 @@ public class Program
 					var profilefilename = String.Join ("_", new string [] { ProfileFilename (profile), i.ToString () }) + ".mlpd";
 
 					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
-						profilesfolder, profilefilename)) + arguments;
+						profilesdir, profilefilename)) + arguments;
 
 					Console.Out.WriteLine ("$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
 
@@ -130,24 +134,24 @@ public class Program
 
 					var sw = Stopwatch.StartNew ();
 
-					var process = Process.Start (info);
+					using (var process = Process.Start (info)) {
+						var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
 
-					var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
+						sw.Stop ();
 
-					sw.Stop ();
+						if (!success)
+							process.Kill ();
 
-					if (!success)
-						process.Kill ();
+						Console.Out.WriteLine ("-> ({0}/{1}) {2}", i + 1, config.Count, success ? sw.Elapsed.ToString () : "timeout!");
 
-					Console.Out.WriteLine ("-> ({0}/{1}) {2}", i + 1, config.Count, success ? sw.Elapsed.ToString () : "timeout!");
+						profile.Runs [i] = new ProfileResult.Run {
+							Index = i,
+							WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
+							ProfilerOutput = profilefilename
+						};
 
-					profile.Runs [i] = new ProfileResult.Run {
-						Index = i,
-						WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
-						ProfilerOutput = profilefilename
-					};
-
-					profile.Timedout = profile.Timedout || !success;
+						profile.Timedout = profile.Timedout || !success;
+					}
 				}
 
 				profiles.Add (profile);
@@ -156,17 +160,17 @@ public class Program
 
 		Parallel.ForEach (profiles, profile => {
 			Parallel.ForEach (profile.Runs, run => {
-				run.Counters = ProfileResult.Run.ParseCounters (Path.Combine (profilesfolder, run.ProfilerOutput));
+				run.Counters = ProfileResult.Run.ParseCounters (Path.Combine (profilesdir, run.ProfilerOutput));
 				run.CountersFile = ProfileFilename (profile) + "_" + run.Index + ".counters.json.gz";
-				run.StoreCountersTo (Path.Combine (profilesfolder, run.CountersFile));
+				run.StoreCountersTo (Path.Combine (profilesdir, run.CountersFile));
 			});
 
-			profile.StoreTo (Path.Combine (profilesfolder, ProfileFilename (profile) + ".json.gz"), true);
+			profile.StoreTo (Path.Combine (profilesdir, ProfileFilename (profile) + ".json.gz"), true);
 		});
 
 		if (upload) {
-			Console.Out.WriteLine ("Copying files to storage from \"{0}\"", profilesfolder);
-			SCPToRemote (sshkey, profilesfolder, "/volume1/storage/benchmarker/runs/mono/" + architecture);
+			Console.Out.WriteLine ("Copying files to storage from \"{0}\"", profilesdir);
+			SCPToRemote (sshkey, profilesdir, "/volume1/storage/benchmarker/runs/mono/" + architecture);
 		}
 	}
 
