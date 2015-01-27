@@ -120,8 +120,15 @@ class Compare
 				if (result == null)
 					throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
 
-				if (results.Any (r => r.Benchmark.Equals (result.Benchmark) && r.Config.Equals (result.Config)))
-					continue;
+				foreach (var r in results) {
+					if (!r.Benchmark.Equals(result.Benchmark) || !r.Config.Equals (result.Config))
+						continue;
+
+					if (r.DateTime < result.DateTime)
+						results.Remove (r);
+
+					break;
+				}
 
 				results.Add (result);
 			}
