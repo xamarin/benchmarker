@@ -268,7 +268,7 @@ class Compare
 					Debug.Assert (benchmarkconfigs.Length == benchmarkconfigs.Distinct ().Count (), "There are duplicate configs for benchmark \"{0}\" : {1}",
 						benchmark.Key.Name, String.Join (", ", benchmarkconfigs.OrderBy (c => c.Name).Select (c => c.Name)));
 
-					if (benchmark.Any (r => r.Runs.Any (ru => ru.WallClockTime == TimeSpan.Zero))) {
+					if (benchmark.Any (r => r.Runs.Any (ru => ru.WallClockTime == TimeSpan.Zero || !string.IsNullOrEmpty(ru.Error)))) {
 						Console.WriteLine ("Don't have data for benchmark \"{0}\" in all configs - removing", benchmark.Key.Name);
 						return null;
 					}
