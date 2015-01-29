@@ -217,7 +217,7 @@ class Compare
 						// skip first one
 						if (i > 0) {
 							result.Runs [i - 1] = new Result.Run {
-								WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
+								WallClockTime = success ? TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds) : TimeSpan.Zero,
 								Output = success ? stdout.Result : null,
 								Error = success ? stderr.Result : null
 							};
