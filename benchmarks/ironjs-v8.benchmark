@@ -1,0 +1,5 @@
+{
+  "Name": "ironjs-v8",
+  "TestDirectory": "IronJS",
+  "CommandLine": ["ijs.exe", ".", "v8"]
+}

@@ -202,12 +202,10 @@ BenchmarkSuite.prototype.RunSingleBenchmark = function(benchmark, data) {
   function Measure(data) {
     var elapsed = 0;
     var start = new Date();
-    for (var n = 0; elapsed < 1000; n++) {
-      benchmark.run();
-      elapsed = new Date() - start;
-    }
+    benchmark.run();
+    elapsed = new Date() - start;
     if (data != null) {
-      data.runs += n;
+      data.runs += 1;
       data.elapsed += elapsed;
     }
   }
@@ -220,7 +218,6 @@ BenchmarkSuite.prototype.RunSingleBenchmark = function(benchmark, data) {
   } else {
     Measure(data);
     // If we've run too few iterations, we continue for another second.
-    if (data.runs < 32) return data;
     var usec = (data.elapsed * 1000) / data.runs;
     this.NotifyStep(new BenchmarkResult(benchmark, usec));
     return null;
