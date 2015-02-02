@@ -1,0 +1,5 @@
+{
+  "Name": "ironjs-sunspider",
+  "TestDirectory": "IronJS",
+  "CommandLine": ["ijs.exe", ".", "sunspider"]
+}

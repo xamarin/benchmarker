@@ -1,0 +1,5 @@
+{
+  "Name": "scimark-mc",
+  "TestDirectory": "scimark",
+  "CommandLine": ["scimark.exe", "MC"]
+}
