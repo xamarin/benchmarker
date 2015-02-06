@@ -1,0 +1,5 @@
+{
+  "Name": "compress",
+  "TestDirectory": "Compress",
+  "CommandLine": ["Compress.exe"]
+}
