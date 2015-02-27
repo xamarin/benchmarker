@@ -107,13 +107,13 @@ public class Program
 				}
 
 				info.EnvironmentVariables ["MONO_PATH"] = monopath;
-				info.EnvironmentVariables ["LD_LIBRARY_PATH"] = librarypath;
+				info.EnvironmentVariables ["DYLD_LIBRARY_PATH"] = librarypath + ":" + info.EnvironmentVariables ["DYLD_LIBRARY_PATH"];
 
 				var envvar = String.Join (" ",
 					config.MonoEnvironmentVariables
 						.Union (new KeyValuePair<string, string>[] {
 							new KeyValuePair<string, string> ("MONO_PATH", info.EnvironmentVariables["MONO_PATH"]),
-							new KeyValuePair<string, string> ("LD_LIBRARY_PATH", info.EnvironmentVariables["LD_LIBRARY_PATH"])
+							new KeyValuePair<string, string> ("DYLD_LIBRARY_PATH", info.EnvironmentVariables["DYLD_LIBRARY_PATH"])
 						})
 						.Select (kv => kv.Key + "=" + kv.Value)
 				);

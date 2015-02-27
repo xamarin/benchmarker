@@ -9,7 +9,7 @@ namespace Benchmarker.Common.LogProfiler
 	public class Reader
 	{
 		LogReader LogReader;
-		ReaderEventListener Listener;
+		Dictionary<Counter, object> Counters = new Dictionary<Counter, object> ();
 
 		public delegate void CountersDescriptionEventHandler (object sender, CountersDescriptionEventArgs e);
 		public event CountersDescriptionEventHandler CountersDescription;
@@ -20,7 +20,6 @@ namespace Benchmarker.Common.LogProfiler
 		public Reader (string filename)
 		{
 			LogReader = new LogReader (filename, true);
-			Listener = new ReaderEventListener (this);
 		}
 
 		public void Run ()
@@ -28,11 +27,46 @@ namespace Benchmarker.Common.LogProfiler
 			if (!LogReader.OpenReader ())
 				return;
 
-			foreach (var buf in LogReader.ReadBuffer (Listener)) {
+			foreach (var buf in LogReader.ReadBuffer ()) {
+				foreach (var e in buf.Events) {
+					var countersdescevent = e as SampleCountersDescEvent;
+					if (countersdescevent != null) {
+						Counter counter;
+
+						foreach (var t in countersdescevent.Counters) {
+							Counters [counter = new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6)] = null;
+
+							if (CountersDescription != null) {
+								CountersDescription (this, new CountersDescriptionEventArgs { Counter = counter });
+							}
+						}
+
+						continue;
+					}
+
+					var countersevent = e as SampleCountersEvent;
+					if (countersevent != null) {
+						if (countersevent.Samples.Count == 0)
+							return;
+
+						foreach (var counter in new List<Counter> (Counters.Keys)) {
+							var value = countersevent.Samples.FirstOrDefault (v => v.Item1 == counter.Index);
+
+							if (value != null)
+								Counters [counter] = value.Item3;
+
+							if (CountersSample != null) {
+								CountersSample (this, new CountersSampleEventArgs {
+									Timestamp = TimeSpan.FromMilliseconds (countersevent.Timestamp), Counter = counter, Value = Counters [counter]
+								});
+							}
+						}
+
+						continue;
+					}
+				}
 				if (LogReader.IsStopping)
 					break;
-				if (buf == null)
-					continue;
 			}
 		}
 
@@ -46,50 +80,6 @@ namespace Benchmarker.Common.LogProfiler
 			public TimeSpan Timestamp { get; internal set; }
 			public Counter Counter  { get; internal set; }
 			public object Value { get; internal set; }
-		}
-
-		class ReaderEventListener : EventListener
-		{
-			Reader Reader;
-
-			Dictionary<Counter, object> Counters = new Dictionary<Counter, object> ();
-
-			public ReaderEventListener (Reader reader)
-			{
-				Reader = reader;
-			}
-
-			public override void HandleSampleCountersDesc (List<Tuple<string, string, ulong, ulong, ulong, ulong>> counters)
-			{
-				Counter counter;
-
-				foreach (var t in counters) {
-					Counters [counter = new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6)] = null;
-
-					if (Reader.CountersDescription != null) {
-						Reader.CountersDescription (this, new CountersDescriptionEventArgs { Counter = counter });
-					}
-				}
-			}
-
-			public override void HandleSampleCounters (ulong timestamp, List<Tuple<ulong, ulong, object>> values)
-			{
-				if (values.Count == 0)
-					return;
-
-				foreach (var counter in new List<Counter> (Counters.Keys)) {
-					var value = values.FirstOrDefault (v => v.Item1 == counter.Index);
-
-					if (value != null)
-						Counters [counter] = value.Item3;
-
-					if (Reader.CountersSample != null) {
-						Reader.CountersSample (this, new CountersSampleEventArgs {
-							Timestamp = TimeSpan.FromMilliseconds (timestamp), Counter = counter, Value = Counters [counter]
-						});
-					}
-				}
-			}
 		}
 	}
 }
