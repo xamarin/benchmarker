@@ -16,11 +16,18 @@ public class List<T> {
             _items = _emptyArray;
         }
 
-        public List(int capacity) {
+        public List(int capacity, bool fill) {
             if (capacity == 0)
 		    _items = _emptyArray;
             else
+	    {
 		    _items = new T[capacity];
+		    if (fill)
+		    {
+			    for (int i = 0; i < capacity; ++i)
+				    _items [i] = default(T);
+		    }
+	    }
         }
 
         public int Count {
@@ -111,7 +118,7 @@ public class Bench {
 			int ii = 0;
 			while (ii++ < max_size)
 			{
-				List<double> y = new List<double>(ii);
+				List<double> y = new List<double>(ii, true);
 				x.Add(y);
 			}
 
@@ -150,7 +157,7 @@ public class Bench {
 			int ii = max_size;
 			while (ii-- > 1)
 			{
-				List<double> y = new List<double>(ii);
+				List<double> y = new List<double>(ii, true);
 				x.Add(y);
 			}
 
@@ -191,8 +198,8 @@ public class Bench {
 			int limit = l1;
 			while (ii++ < limit)
 			{
-				List<double> y = new List<double>(++l1);
-				List<double> y2 = new List<double>(++l2);
+				List<double> y = new List<double>(++l1, true);
+				List<double> y2 = new List<double>(++l2, true);
 				x.Add(y);
 				x.Add(y2);
 			}

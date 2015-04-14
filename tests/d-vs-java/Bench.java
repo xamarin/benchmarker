@@ -170,10 +170,14 @@ public class Bench {
 		}
 
 		public DoubleList(int capacity) {
-			if (capacity == 0)
+			if (capacity == 0) {
 				_items = _emptyArray;
-			else
+			} else {
 				_items = new Double[capacity];
+				/* This makes it slow */
+				for (int i = 0; i < capacity; ++i)
+					_items [i] = 0.0;
+			}
 		}
 
 		public int size () {
