@@ -6,7 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Benchmarker.Common;
-using Benchmarker.Common.LogProfiler;
+//using Benchmarker.Common.LogProfiler;
 using Benchmarker.Common.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -159,11 +159,13 @@ public class Program
 		}
 
 		Parallel.ForEach (profiles, profile => {
+#if false
 			Parallel.ForEach (profile.Runs, run => {
 				run.Counters = ProfileResult.Run.ParseCounters (Path.Combine (profilesdir, run.ProfilerOutput));
 				run.CountersFile = ProfileFilename (profile) + "_" + run.Index + ".counters.json.gz";
 				run.StoreCountersTo (Path.Combine (profilesdir, run.CountersFile));
 			});
+#endif
 
 			profile.StoreTo (Path.Combine (profilesdir, ProfileFilename (profile) + ".json.gz"), true);
 		});

@@ -6,7 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.Caching;
 using Newtonsoft.Json;
-using Benchmarker.Common.LogProfiler;
+//using Benchmarker.Common.LogProfiler;
 
 namespace Benchmarker.Common.Models
 {
@@ -48,11 +48,12 @@ namespace Benchmarker.Common.Models
 			public string ProfilerOutput { get; set; }
 
 			internal string CountersDirectory { get; set; }
-			public string CountersFile { get; set; }
+			//public string CountersFile { get; set; }
 
 			static private MemoryCache counterscache = MemoryCache.Default;
 			static private object counterscachelock = new object ();
 
+#if false
 			private List<KeyValuePair<Counter, SortedDictionary<TimeSpan, object>>> counters;
 
 			public List<KeyValuePair<Counter, SortedDictionary<TimeSpan, object>>> Counters {
@@ -127,6 +128,7 @@ namespace Benchmarker.Common.Models
 			{
 				return String.IsNullOrWhiteSpace (CountersFile);
 			}
+#endif
 		}
 	}
 }

@@ -5,7 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
-using Benchmarker.Common.LogProfiler;
+//using Benchmarker.Common.LogProfiler;
 using Benchmarker.Common.Models;
 using Newtonsoft.Json;
 
@@ -83,6 +83,7 @@ class Program
 				Console.Write ("Benchmark: {0}, Counter: {1}{2}", benchmark.Key.Name, "Time", Environment.NewLine);
 				data.Add ("Time", BenchmarkData (benchmark.Key, benchmark, run => run.WallClockTime.TotalMilliseconds));
 
+#if false
 				foreach (var counter in ExtractIntersectCounters (benchmark)) {
 					try {
 						Console.Write ("Benchmark: {0}, Counter: {1}{2}", benchmark.Key.Name, counter, Environment.NewLine);
@@ -91,6 +92,7 @@ class Program
 						Console.Out.WriteLine ("Cannot convert \"{0}\" last value to double : {1}{2}", counter, Environment.NewLine, e.ToString ());
 					}
 				}
+#endif
 
 				using (var stream = new FileStream (Path.Combine (graphsfolder, benchmark.Key.Name + ".json"), FileMode.Create))
 				using (var writer = new StreamWriter (stream))
@@ -115,6 +117,7 @@ class Program
 				Console.Write ("Config: {0}, Counter: {1}{2}", config.Key.Name, "Time", Environment.NewLine);
 				data.Add ("Time", ConfigData (config.Key, config, run => run.WallClockTime.TotalMilliseconds));
 
+#if false
 				foreach (var counter in ExtractIntersectCounters (config)) {
 					try {
 						Console.Write ("Config: {0}, Counter: {1}{2}", config.Key.Name, counter, Environment.NewLine);
@@ -123,6 +126,7 @@ class Program
 						Console.Out.WriteLine ("Cannot convert \"{0}\" last value to double : {1}{2}", counter, Environment.NewLine, e.ToString ());
 					}
 				}
+#endif
 
 				using (var stream = new FileStream (Path.Combine (graphsfolder, config.Key.Name + ".config.json"), FileMode.Create))
 				using (var writer = new StreamWriter (stream))
@@ -191,6 +195,7 @@ class Program
 					.ToList ();
 	}
 
+#if false
 	static double ExtractLastCounterValue (ProfileResult.Run run, Counter counter)
 	{
 		var counters = run.Counters.Where (kv => kv.Key.Equals (counter)).ToList ();
@@ -224,6 +229,7 @@ class Program
 	{
 		return counter.Name.ToLower ().Replace (' ', '-').Replace ('/', '-').Replace (':', '-').Replace ("#", "").Replace ("&", "").Replace ("?", "");
 	}
+#endif
 
 	static void RSyncFromRemote (string sshkey, string files, string destination)
 	{
