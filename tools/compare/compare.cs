@@ -166,7 +166,6 @@ class Compare
 						Config = config,
 						Version = version,
 						Timedout = false,
-						Runs = new Result.Run [config.Count]
 					};
 
 					for (var i = 0; i < config.Count + 1; ++i) {
@@ -180,9 +179,8 @@ class Compare
 						
 						result.Timedout = result.Timedout || run == null;
 
-						if (run == null)
-							run = new Result.Run { };
-						result.Runs [i - 1] = run;
+						if (run != null)
+							result.Runs.Add (run);
 					}
 
 					// FIXME: implement pausetime

@@ -14,8 +14,16 @@ namespace Benchmarker.Common.Models
 		public Benchmark Benchmark { get; set; }
 		public Config Config { get; set; }
 		public string Version { get; set; }
-		public Run[] Runs { get; set; }
+
+		List<Run> runs;
+		public List<Run> Runs { get { return runs; } }
+
 		public bool Timedout { get; set; }
+
+		public Result ()
+		{
+			runs = new List<Run> ();
+		}
 
 		public static Result LoadFrom (string filename)
 		{

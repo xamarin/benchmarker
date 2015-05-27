@@ -104,7 +104,7 @@ public class Program
 				runner.SetEnvironmentVariable ("MONO_PATH", monopath);
 				runner.SetEnvironmentVariable ("DYLD_LIBRARY_PATH", librarypath + ":" + runner.GetEnvironmentVariable ("DYLD_LIBRARY_PATH"));
 
-				var profile = new ProfileResult { DateTime = DateTime.Now, Benchmark = benchmark, Config = config, Revision = revision, Timedout = timedout, Runs = new ProfileResult.Run [config.Count] };
+				var profile = new ProfileResult { DateTime = DateTime.Now, Benchmark = benchmark, Config = config, Revision = revision, Timedout = timedout };
 
 				for (var i = 0; i < config.Count; ++i) {
 					var profilefilename = String.Join ("_", new string [] { ProfileFilename (profile), i.ToString () }) + ".mlpd";
@@ -112,10 +112,10 @@ public class Program
 
 					profile.Timedout = profile.Timedout || run == null;
 
-					if (run == null)
-						run = new ProfileResult.Run { };
-					run.Index = i;
-					profile.Runs [i] = run;
+					if (run != null) {
+						run.Index = i;
+						profile.Runs.Add (run);
+					}
 				}
 
 				profiles.Add (profile);

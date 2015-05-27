@@ -17,7 +17,14 @@ namespace Benchmarker.Common.Models
 		public Config Config { get; set; }
 		public Revision Revision { get; set; }
 		public bool Timedout { get; set; }
-		public Run[] Runs { get; set; }
+
+		List<Run> runs;
+		public List<Run> Runs { get { return runs; } }
+
+		public ProfileResult ()
+		{
+			runs = new List<Run> ();
+		}
 
 		public void StoreTo (string filename, bool compress = false)
 		{

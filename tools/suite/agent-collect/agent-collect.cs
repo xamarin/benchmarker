@@ -150,7 +150,7 @@ class Program
 	static Dictionary<string, List<KeyValuePair<string, double>>> BenchmarkData (Benchmark benchmark, IEnumerable<ProfileResult> profiles, Func<ProfileResult.Run, double> selector)
 	{
 		return profiles.GroupBy (p => p.Config)
-			.Select (g => KeyValuePair.Create (g.Key.Name, g.Select (p => KeyValuePair.Create (p.Revision.Commit, p.Runs.Select (selector).Sum () / p.Runs.Length)).ToList ()))
+			.Select (g => KeyValuePair.Create (g.Key.Name, g.Select (p => KeyValuePair.Create (p.Revision.Commit, p.Runs.Select (selector).Sum () / p.Runs.Count)).ToList ()))
 			.ToDictionary (kv => kv.Key, kv => kv.Value);
 	}
 
