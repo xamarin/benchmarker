@@ -117,8 +117,7 @@ class Compare
 		var resultsdir = args [optindex++];
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
-
-		var runSet = new RunSet { StartDateTime = DateTime.Now };
+		var allResults = new List<Result> ();
 
 		if (norun) {
 			foreach (var resultfile in (loadresultfrom.Length > 0 ? loadresultfrom : Directory.EnumerateFiles (resultsdir, "*.json"))) {
@@ -126,12 +125,12 @@ class Compare
 				if (result == null)
 					throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
 
-				foreach (var r in runSet.Results) {
+				foreach (var r in allResults) {
 					if (!r.Benchmark.Equals(result.Benchmark) || !r.Config.Equals (result.Config))
 						continue;
 
 					if (r.DateTime < result.DateTime)
-						runSet.Results.Remove (r);
+						allResults.Remove (r);
 
 					break;
 				}
@@ -141,14 +140,16 @@ class Compare
 				if (configfiles.Length > 0 && !configfiles.Any (n => n == result.Config.Name))
 					continue;
 
-				runSet.Results.Add (result);
+				allResults.Add (result);
 			}
 		} else {
 			var configs = configfiles.Select (c => Config.LoadFrom (c)).ToList ();
 
 			/* Run or load the benchmarks */
-			foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
-				foreach (var config in configs) {
+			foreach (var config in configs) {
+				var runSet = new RunSet { StartDateTime = DateTime.Now };
+
+				foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
 
 					/* Run the benchmarks */
@@ -189,15 +190,16 @@ class Compare
 
 					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s").Replace (':', '-') + ".json"));
 					runSet.Results.Add (result);
+					allResults.Add (result);
 				}
+
+				runSet.FinishDateTime = DateTime.Now;
+
+				Console.WriteLine ("uploading");
+				AsyncContext.Run (() => runSet.UploadToParse ());
+				Console.WriteLine ("uploaded");
 			}
 		}
-
-		runSet.FinishDateTime = DateTime.Now;
-
-		Console.WriteLine ("uploading");
-		AsyncContext.Run (() => runSet.UploadToParse ());
-		Console.WriteLine ("uploaded");
 
 		/* Generate the graph */
 		if (!nograph) {
@@ -221,7 +223,7 @@ class Compare
 			plot.Axes.Add (categoryaxis);
 			plot.Axes.Add (valueaxis);
 
-			var benchmarks = runSet.Results
+			var benchmarks = allResults
 				.GroupBy (r => r.Benchmark)
 				.Select (benchmark => {
 					var benchmarkconfigs = benchmark.Select (r => r.Config).ToArray ();
