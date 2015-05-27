@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using System.Diagnostics;
+using Parse;
+using System.Threading.Tasks;
 
 namespace Benchmarker.Common.Models
 {
@@ -35,6 +36,16 @@ namespace Benchmarker.Common.Models
 			public string Output { get; set; }
 			public string Error { get; set; }
 		}
+
+		public async Task UploadRunsToParse (ParseObject runSet) {
+			var b = await Benchmark.GetOrUploadToParse ();
+			foreach (var run in Runs) {
+				var obj = new ParseObject ("Run");
+				obj ["benchmark"] = b;
+				obj ["runSet"] = runSet;
+				obj ["elapsedMilliseconds"] = run.WallClockTime.TotalMilliseconds;
+				await obj.SaveAsync ();
+			}
+		}
 	}
 }
-

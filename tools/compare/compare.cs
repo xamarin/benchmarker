@@ -9,6 +9,8 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System.Threading.Tasks;
+using Parse;
+using Nito.AsyncEx;
 
 class Compare
 {
@@ -63,6 +65,8 @@ class Compare
 
 		var optindex = 0;
 
+		ParseClient.Initialize ("7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES", "FwqUX9gNQP5HmP16xDcZRoh0jJRCDvdoDpv8L87p");
+
 		for (; optindex < args.Length; ++optindex) {
 			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
 				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
@@ -114,7 +118,7 @@ class Compare
 		var benchmarksdir = args [optindex++];
 		var configfiles = args.Skip (optindex).ToArray ();
 
-		List<Result> results = new List<Result> ();
+		var runSet = new RunSet { StartDateTime = DateTime.Now };
 
 		if (norun) {
 			foreach (var resultfile in (loadresultfrom.Length > 0 ? loadresultfrom : Directory.EnumerateFiles (resultsdir, "*.json"))) {
@@ -122,12 +126,12 @@ class Compare
 				if (result == null)
 					throw new InvalidDataException (String.Format ("Cannot load Result from {0}", resultfile));
 
-				foreach (var r in results) {
+				foreach (var r in runSet.Results) {
 					if (!r.Benchmark.Equals(result.Benchmark) || !r.Config.Equals (result.Config))
 						continue;
 
 					if (r.DateTime < result.DateTime)
-						results.Remove (r);
+						runSet.Results.Remove (r);
 
 					break;
 				}
@@ -137,7 +141,7 @@ class Compare
 				if (configfiles.Length > 0 && !configfiles.Any (n => n == result.Config.Name))
 					continue;
 
-				results.Add (result);
+				runSet.Results.Add (result);
 			}
 		} else {
 			var configs = configfiles.Select (c => Config.LoadFrom (c)).ToList ();
@@ -186,10 +190,16 @@ class Compare
 						throw new NotImplementedException ();
 
 					result.StoreTo (Path.Combine (resultsdir, runfileprefix + DateTime.Now.ToString ("s").Replace (':', '-') + ".json"));
-					results.Add (result);
+					runSet.Results.Add (result);
 				}
 			}
 		}
+
+		runSet.FinishDateTime = DateTime.Now;
+
+		Console.WriteLine ("uploading");
+		AsyncContext.Run (() => runSet.UploadToParse ());
+		Console.WriteLine ("uploaded");
 
 		/* Generate the graph */
 		if (!nograph) {
@@ -213,7 +223,7 @@ class Compare
 			plot.Axes.Add (categoryaxis);
 			plot.Axes.Add (valueaxis);
 
-			var benchmarks = results
+			var benchmarks = runSet.Results
 				.GroupBy (r => r.Benchmark)
 				.Select (benchmark => {
 					var benchmarkconfigs = benchmark.Select (r => r.Config).ToArray ();

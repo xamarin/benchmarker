@@ -32,6 +32,7 @@
     <Compile Include="Models\ProfileResult.cs" />
     <Compile Include="LogProfiler\Counter.cs" />
     <Compile Include="Runner.cs" />
+    <Compile Include="Models\RunSet.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -41,6 +42,13 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Parse.NetFx45">
+      <HintPath>..\packages\Parse.1.5.0\lib\net45\Parse.NetFx45.dll</HintPath>
+    </Reference>
+    <Reference Include="Parse">
+      <HintPath>..\packages\Parse.1.5.0\lib\net45\Parse.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Posix" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

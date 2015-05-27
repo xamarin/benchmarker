@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using Parse;
 
 namespace Benchmarker.Common.Models
 {
@@ -64,6 +65,16 @@ namespace Benchmarker.Common.Models
 		{
 			return Name.GetHashCode ();
 		}
+
+		public async Task<ParseObject> GetOrUploadToParse ()
+		{
+			var results = await ParseObject.GetQuery ("Benchmark").WhereEqualTo ("name", Name).FindAsync ();
+			if (results.Count () > 0)
+				return results.First ();
+			var obj = new ParseObject ("Benchmark");
+			obj ["name"] = Name;
+			await obj.SaveAsync ();
+			return obj;
+		}
 	}
 }
-
