@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Benchmarker.Common;
 using Benchmarker.Common.Models;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -49,7 +50,6 @@ class Compare
 	public static void Main (string[] args)
 	{
 		var benchmarksnames = new string[0];
-		var timeout = Int32.MaxValue;
 		var pausetime = false;
 		var monoexe = String.Empty;
 		var graph = "graph.svg";
@@ -59,6 +59,7 @@ class Compare
 		var counter = String.Empty;
 		var geomean = false;
 		var minimum = Double.NaN;
+		var timeout = Int32.MaxValue;
 
 		var optindex = 0;
 
@@ -145,7 +146,6 @@ class Compare
 			foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 				foreach (var config in configs) {
 					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
-					var version = String.Empty;
 
 					/* Run the benchmarks */
 					if (config.Count <= 0)
@@ -153,44 +153,8 @@ class Compare
 
 					Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-					var info = new ProcessStartInfo () {
-						WorkingDirectory = Path.Combine (testsdir, benchmark.TestDirectory),
-						UseShellExecute = false,
-						RedirectStandardOutput = true,
-						RedirectStandardError = true,
-					};
-
-					if (config.NoMono) {
-						info.FileName = Path.Combine (info.WorkingDirectory, benchmark.CommandLine [0]);
-						benchmark.CommandLine = benchmark.CommandLine.Skip (1).ToArray ();
-					} else {
-						info.FileName = !String.IsNullOrEmpty (monoexe) ? monoexe : !String.IsNullOrEmpty (config.Mono) ? config.Mono : "mono";
-					}
-
-					foreach (var env in config.MonoEnvironmentVariables)
-						info.EnvironmentVariables.Add (env.Key, env.Value);
-
-					var envvar = String.Join (" ", config.MonoEnvironmentVariables.Select (kv => kv.Key + "=" + kv.Value));
-					var arguments = String.Join (" ", config.MonoOptions.Union (benchmark.CommandLine));
-
-					if (!config.NoMono) {
-						/* Run without timing with --version */
-						info.Arguments = "--version " + arguments;
-
-						Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
-
-						var process1 = Process.Start (info);
-						version = Task.Run (() => new StreamReader (process1.StandardOutput.BaseStream).ReadToEnd ()).Result;
-						var versionerror = Task.Run (() => new StreamReader (process1.StandardError.BaseStream).ReadToEnd ());
-
-						process1.WaitForExit ();
-					} else {
-						info.Arguments = arguments;
-					}
-
-					/* Run with timing */
-					if (!config.NoMono)
-						info.Arguments = "--stats " + arguments;
+					var runner = new Runner (monoexe, testsdir, config, benchmark, timeout);
+					var version = runner.GetVersion ();
 
 					var result = new Result {
 						DateTime = DateTime.Now,
@@ -202,37 +166,19 @@ class Compare
 					};
 
 					for (var i = 0; i < config.Count + 1; ++i) {
-						Console.Out.WriteLine ("\t$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
 						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
-						timeout = benchmark.Timeout > 0 ? benchmark.Timeout : timeout;
-
-						var sw = Stopwatch.StartNew ();
-
-						var process = Process.Start (info);
-						var stdout = Task.Factory.StartNew (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
-						var stderr = Task.Factory.StartNew (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
-						var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
-
-						sw.Stop ();
-
-						if (!success)
-							process.Kill ();
-
-						Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "timeout!");
+						var run = runner.Run ();
 
 						// skip first one
-						if (i > 0) {
-							result.Runs [i - 1] = new Result.Run {
-								WallClockTime = success ? TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds) : TimeSpan.Zero,
-								Output = success ? stdout.Result : null,
-								Error = success ? stderr.Result : null
-							};
+						if (i == 0)
+							continue;
+						
+						result.Timedout = result.Timedout || run == null;
 
-							result.Timedout = result.Timedout || !success;
-						}
-
-						process.Close ();
+						if (run == null)
+							run = new Result.Run { };
+						result.Runs [i - 1] = run;
 					}
 
 					// FIXME: implement pausetime

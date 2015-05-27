@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using Benchmarker.Common;
 //using Benchmarker.Common.LogProfiler;
 using Benchmarker.Common.Models;
@@ -93,65 +93,29 @@ public class Program
 
 				var timedout = false;
 
-				var info = new ProcessStartInfo {
-					FileName = monoexecutable,
-					WorkingDirectory = Path.Combine (testsdir, benchmark.TestDirectory),
-					UseShellExecute = false,
-				};
+				var runner = new Runner (monoexecutable, testsdir, config, benchmark, timeout);
 
 				foreach (var env in config.MonoEnvironmentVariables) {
 					if (env.Key == "MONO_PATH" || env.Key == "LD_LIBRARY_PATH")
 						continue;
-
-					info.EnvironmentVariables.Add (env.Key, env.Value);
+					runner.SetEnvironmentVariable (env.Key, env.Value);
 				}
 
-				info.EnvironmentVariables ["MONO_PATH"] = monopath;
-				info.EnvironmentVariables ["DYLD_LIBRARY_PATH"] = librarypath + ":" + info.EnvironmentVariables ["DYLD_LIBRARY_PATH"];
-
-				var envvar = String.Join (" ",
-					config.MonoEnvironmentVariables
-						.Union (new KeyValuePair<string, string>[] {
-							new KeyValuePair<string, string> ("MONO_PATH", info.EnvironmentVariables["MONO_PATH"]),
-							new KeyValuePair<string, string> ("DYLD_LIBRARY_PATH", info.EnvironmentVariables["DYLD_LIBRARY_PATH"])
-						})
-						.Select (kv => kv.Key + "=" + kv.Value)
-				);
-
-				var arguments = String.Join (" ", config.MonoOptions.Union (benchmark.CommandLine));
+				runner.SetEnvironmentVariable ("MONO_PATH", monopath);
+				runner.SetEnvironmentVariable ("DYLD_LIBRARY_PATH", librarypath + ":" + runner.GetEnvironmentVariable ("DYLD_LIBRARY_PATH"));
 
 				var profile = new ProfileResult { DateTime = DateTime.Now, Benchmark = benchmark, Config = config, Revision = revision, Timedout = timedout, Runs = new ProfileResult.Run [config.Count] };
 
 				for (var i = 0; i < config.Count; ++i) {
 					var profilefilename = String.Join ("_", new string [] { ProfileFilename (profile), i.ToString () }) + ".mlpd";
+					var run = runner.ProfilerRun (profilesdir, profilefilename);
 
-					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
-						profilesdir, profilefilename)) + arguments;
+					profile.Timedout = profile.Timedout || run == null;
 
-					Console.Out.WriteLine ("$> {0} {1} {2}", envvar, info.FileName, info.Arguments);
-
-					timeout = benchmark.Timeout > 0 ? benchmark.Timeout : timeout;
-
-					var sw = Stopwatch.StartNew ();
-
-					using (var process = Process.Start (info)) {
-						var success = process.WaitForExit (timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
-
-						sw.Stop ();
-
-						if (!success)
-							process.Kill ();
-
-						Console.Out.WriteLine ("-> ({0}/{1}) {2}", i + 1, config.Count, success ? sw.Elapsed.ToString () : "timeout!");
-
-						profile.Runs [i] = new ProfileResult.Run {
-							Index = i,
-							WallClockTime = success ? TimeSpan.FromTicks (sw.ElapsedTicks) : TimeSpan.Zero,
-							ProfilerOutput = profilefilename
-						};
-
-						profile.Timedout = profile.Timedout || !success;
-					}
+					if (run == null)
+						run = new ProfileResult.Run { };
+					run.Index = i;
+					profile.Runs [i] = run;
 				}
 
 				profiles.Add (profile);

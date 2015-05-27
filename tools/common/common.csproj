@@ -31,6 +31,7 @@
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\ProfileResult.cs" />
     <Compile Include="LogProfiler\Counter.cs" />
+    <Compile Include="Runner.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
