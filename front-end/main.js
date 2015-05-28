@@ -137,7 +137,7 @@ var xamarinPerformanceStart;
 	var options = { orientation: 'vertical' };
 
 	var div = document.getElementById ('comparisonChart');
-	div.style.height = (35 + 30 * commonBenchmarkIds.length) + "px";
+	div.style.height = (35 + (15 * this.runSets.length) * commonBenchmarkIds.length) + "px";
 
 	var chart = new google.visualization.CandlestickChart (div);
 	chart.draw (data, options);
