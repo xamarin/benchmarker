@@ -20,10 +20,14 @@ var xamarinPerformanceStart;
 	this.configSelect = makeSelect ();
 	this.runSetSelect = makeSelect ();
 
+	this.descriptionDiv = document.createElement ('div');
+	this.descriptionDiv.style.display = 'inline-block';
+
 	var div = document.createElement ('div');
 	div.appendChild (this.machineSelect);
 	div.appendChild (this.configSelect);
 	div.appendChild (this.runSetSelect);
+	div.appendChild (this.descriptionDiv);
 
 	var selectorsDiv = document.getElementById ('runSetSelectors');
 	selectorsDiv.appendChild (div);
@@ -59,6 +63,7 @@ var xamarinPerformanceStart;
 	if (this === runSetSelectors [runSetSelectors.length - 1])
 	    addNewRunSetSelector ();
 
+	this.updateDescription ();
 	runSetsChanged ();
     };
 
@@ -69,6 +74,28 @@ var xamarinPerformanceStart;
 	    return undefined;
 
 	return this.filteredRunSets [runSetIndex];
+    };
+
+    RunSetSelector.prototype.updateDescription = function updateDescription () {
+	var runSet = this.getRunSet ();
+	deleteChildren (this.descriptionDiv);
+
+	var mono = runSet.get ('monoExecutable');
+	if (mono !== undefined) {
+	    this.descriptionDiv.appendChild (document.createTextNode (mono));
+	    this.descriptionDiv.appendChild (document.createElement ('br'));
+	}
+
+	var envVars = runSet.get ('monoEnvironmentVariables');
+	for (var name in envVars) {
+	    this.descriptionDiv.appendChild (document.createTextNode (name + "=" + envVars [name]));
+	    this.descriptionDiv.appendChild (document.createElement ('br'));
+	}
+
+	var options = runSet.get ('monoOptions');
+	if (options !== undefined) {
+	    this.descriptionDiv.appendChild (document.createTextNode (options.toString ()));
+	}
     };
 
     var RunSetComparator = function (runSets) {
@@ -197,9 +224,13 @@ var xamarinPerformanceStart;
 	return range.map (function (x) { return x / mean; });
     }
 
+    function deleteChildren (elem) {
+	while (elem.firstChild !== null)
+	    elem.removeChild (elem.firstChild);
+    }
+
     function populateSelect (select, rows) {
-	while (select.firstChild !== null)
-	    select.removeChild (select.firstChild);
+	deleteChildren (select);
 
 	for (var i = 0; i < rows.length; ++i) {
 	    var name = rows [i];
