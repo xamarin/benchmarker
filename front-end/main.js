@@ -49,8 +49,6 @@ var xamarinPerformanceStart;
 	this.containerDiv.appendChild (this.runSetSelect);
 	this.containerDiv.appendChild (this.descriptionDiv);
 
-	console.log (allMachines);
-
 	var names = allMachines.map (function (o) { return o.get ('name'); });
 	populateSelect (this.machineSelect, names);
 	populateSelect (this.configSelect, allConfigNames);
@@ -148,7 +146,6 @@ var xamarinPerformanceStart;
 	    query.equalTo ('runSet', rs);
 	    query.find ({
 		success: function (index, results) {
-		    console.log ("loaded runs for " + index);
 		    this.runsByIndex [index] = results;
 		    this.runsLoaded ();
 		}.bind (this, i),
@@ -194,8 +191,6 @@ var xamarinPerformanceStart;
 	    }
 	    dataArray.push (row);
 	}
-
-	console.log (dataArray);
 
 	var data = google.visualization.arrayToDataTable (dataArray, true);
 	for (var i = 0; i < this.runSets.length; ++i)
