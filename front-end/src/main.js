@@ -141,15 +141,15 @@ var xamarinPerformanceStart;
 	constructor (runSets) {
 	    this.runSets = runSets;
 	    this.runsByIndex = [];
-	    for (var i = 0; i < this.runSets.length; ++i) {
+	    for (let i = 0; i < this.runSets.length; ++i) {
 		var rs = this.runSets [i];
 		var query = new Parse.Query (ParseRun);
 		query.equalTo ('runSet', rs);
 		query.find ({
-		    success: function (index, results) {
-			this.runsByIndex [index] = results;
+		    success: results => {
+			this.runsByIndex [i] = results;
 			this.runsLoaded ();
-		    }.bind (this, i),
+		    },
 		    error: function (error) {
 			alert ("error loading runs");
 		    }
