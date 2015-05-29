@@ -50,13 +50,13 @@ var xamarinPerformanceStart;
 	    this.containerDiv.appendChild (this.runSetSelect);
 	    this.containerDiv.appendChild (this.descriptionDiv);
 
-	    var names = allMachines.map (function (o) { return o.get ('name'); });
+	    var names = allMachines.map (o => o.get ('name'));
 	    populateSelect (this.machineSelect, names);
 	    populateSelect (this.configSelect, allConfigNames);
 
 	    if (runSet !== undefined) {
 		var machineId = runSet.get ('machine').id;
-		var machineIndex = findIndex (allMachines, function (m) { return m.id === machineId; });
+		var machineIndex = findIndex (allMachines, m => m.id === machineId);
 		this.machineSelect.selectedIndex = machineIndex;
 
 		var configName = runSet.get ('configName');
@@ -66,7 +66,7 @@ var xamarinPerformanceStart;
 		this.updateRunSets ();
 
 		var runSetId = runSet.id;
-		var runSetIndex = findIndex (this.filteredRunSets, function (rs) { return rs.id === runSetId; });
+		var runSetIndex = findIndex (this.filteredRunSets, rs => rs.id === runSetId);
 		this.runSetSelect.selectedIndex = runSetIndex;
 	    }
 
@@ -88,11 +88,10 @@ var xamarinPerformanceStart;
 	    var machine = allMachines [machineIndex];
 	    var configName = allConfigNames [configIndex];
 
-	    this.filteredRunSets = allRunSets.filter (function (rs) {
-		return rs.get ('machine').id === machine.id && rs.get ('configName') === configName;
-	    });
+	    this.filteredRunSets = allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
+						      rs.get ('configName') === configName);
 
-	    populateSelect (this.runSetSelect, this.filteredRunSets.map (function (o) { return o.get ('startedAt'); }));
+	    populateSelect (this.runSetSelect, this.filteredRunSets.map (o => o.get ('startedAt')));
 	}
 
 	runSetSelected () {
@@ -168,7 +167,7 @@ var xamarinPerformanceStart;
 
 	    for (var i = 0; i < this.runSets.length; ++i) {
 		var runs = this.runsByIndex [i];
-		var benchmarkIds = uniqArray (runs.map (function (o) { return o.get ('benchmark').id; }));
+		var benchmarkIds = uniqArray (runs.map (o => o.get ('benchmark').id));
 		if (commonBenchmarkIds === undefined) {
 		    commonBenchmarkIds = benchmarkIds;
 		    continue;
@@ -183,7 +182,7 @@ var xamarinPerformanceStart;
 		var row = [benchmarkNameForId (benchmarkId)];
 		var mean = undefined;
 		for (var j = 0; j < this.runSets.length; ++j) {
-		    var runs = this.runsByIndex [j].filter (function (r) { return r.get ('benchmark').id === benchmarkId; });
+		    var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
 		    var range = calculateRunsRange (runs);
 		    if (mean === undefined) {
 			// FIXME: eventually we'll have more meaningful ranges
@@ -267,7 +266,7 @@ var xamarinPerformanceStart;
     }
 
     function normalizeRange (mean, range) {
-	return range.map (function (x) { return x / mean; });
+	return range.map (x => x / mean);
     }
 
     function deleteChildren (elem) {
@@ -302,7 +301,7 @@ var xamarinPerformanceStart;
     }
 
     function hashForRunSets (runSets) {
-	var ids = runSets.map (function (o) { return o.id; });
+	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
     }
 
@@ -331,7 +330,7 @@ var xamarinPerformanceStart;
     function runSetsLoaded (results) {
 	console.log ("run sets loaded: " + results.length);
 	allRunSets = results;
-	allConfigNames = uniqArray (allRunSets.map (function (o) { return o.get ('configName'); }));
+	allConfigNames = uniqArray (allRunSets.map (o => o.get ('configName')));
 	checkAllDataLoaded ();
     }
 
