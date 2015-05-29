@@ -3,6 +3,8 @@
 var xamarinPerformanceStart;
 
 (function () {
+    var startupRunSetIds;
+
     var ParseMachine;
     var ParseRunSet;
     var ParseRun;
@@ -15,7 +17,26 @@ var xamarinPerformanceStart;
 
     var runSetSelectors = [];
 
-    var RunSetSelector = function () {
+    var RunSetSelector = function (runSetId) {
+	this.containerDiv = document.createElement ('div');
+
+	var selectorsDiv = document.getElementById ('runSetSelectors');
+	selectorsDiv.appendChild (this.containerDiv);
+
+	if (runSetId === undefined) {
+	    this.addUI ();
+	} else {
+	    var query = new Parse.Query (ParseRunSet);
+	    query.get (runSetId, {
+		success: this.addUI.bind (this),
+		error: function (object, error) {
+		    alert ("error loading run set " + runSetId);
+		}
+	    });
+	}
+    };
+
+    RunSetSelector.prototype.addUI = function addUI (runSet) {
 	this.machineSelect = makeSelect ();
 	this.configSelect = makeSelect ();
 	this.runSetSelect = makeSelect ();
@@ -23,23 +44,39 @@ var xamarinPerformanceStart;
 	this.descriptionDiv = document.createElement ('div');
 	this.descriptionDiv.style.display = 'inline-block';
 
-	var div = document.createElement ('div');
-	div.appendChild (this.machineSelect);
-	div.appendChild (this.configSelect);
-	div.appendChild (this.runSetSelect);
-	div.appendChild (this.descriptionDiv);
+	this.containerDiv.appendChild (this.machineSelect);
+	this.containerDiv.appendChild (this.configSelect);
+	this.containerDiv.appendChild (this.runSetSelect);
+	this.containerDiv.appendChild (this.descriptionDiv);
 
-	var selectorsDiv = document.getElementById ('runSetSelectors');
-	selectorsDiv.appendChild (div);
+	console.log (allMachines);
 
 	var names = allMachines.map (function (o) { return o.get ('name'); });
 	populateSelect (this.machineSelect, names);
-	this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
-
 	populateSelect (this.configSelect, allConfigNames);
-	this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
 
+	if (runSet !== undefined) {
+	    var machineId = runSet.get ('machine').id;
+	    var machineIndex = findIndex (allMachines, function (m) { return m.id === machineId; });
+	    this.machineSelect.selectedIndex = machineIndex;
+
+	    var configName = runSet.get ('configName');
+	    var configIndex = allConfigNames.indexOf (configName);
+	    this.configSelect.selectedIndex = configIndex;
+
+	    this.updateRunSets ();
+
+	    var runSetId = runSet.id;
+	    var runSetIndex = findIndex (this.filteredRunSets, function (rs) { return rs.id === runSetId; });
+	    this.runSetSelect.selectedIndex = runSetIndex;
+	}
+
+	this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
+	this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
 	this.runSetSelect.addEventListener ('change', this.runSetSelected.bind (this));
+
+	if (runSet !== undefined)
+	    this.runSetSelected ();
     };
 
     RunSetSelector.prototype.updateRunSets = function updateRunSets () {
@@ -68,6 +105,9 @@ var xamarinPerformanceStart;
     };
 
     RunSetSelector.prototype.getRunSet = function getRunSet () {
+	if (this.runSetSelect === undefined)
+	    return undefined;
+
 	var runSetIndex = this.runSetSelect.selectedIndex;
 
 	if (runSetIndex < 0)
@@ -183,6 +223,14 @@ var xamarinPerformanceStart;
 	return select;
     }
 
+    function findIndex (arr, f) {
+	for (var i = 0; i < arr.length; ++i) {
+	    if (f (arr [i]))
+		return i;
+	}
+	return -1;
+    }
+
     function uniqArray (arr) {
 	var hash = {};
 	for (var i = 0; i < arr.length; ++i) {
@@ -241,15 +289,23 @@ var xamarinPerformanceStart;
 	}
     }
 
-    function addNewRunSetSelector () {
-	runSetSelectors.push (new RunSetSelector ());
+    function addNewRunSetSelector (runSetId) {
+	runSetSelectors.push (new RunSetSelector (runSetId));
     }
 
     function checkAllDataLoaded () {
 	if (allMachines === undefined || allRunSets === undefined || allBenchmarks === undefined)
 	    return;
 
-	addNewRunSetSelector ();
+	if (startupRunSetIds !== undefined)
+	    startupRunSetIds.forEach (addNewRunSetSelector);
+	else
+	    addNewRunSetSelector ();
+    }
+
+    function hashForRunSets (runSets) {
+	var ids = runSets.map (function (o) { return o.id; });
+	return ids.join ('+');
     }
 
     function runSetsChanged () {
@@ -260,10 +316,12 @@ var xamarinPerformanceStart;
 		continue;
 	    runSets.push (rs);
 	}
-	console.log ("run sets selected: " + runSets.length);
+
 	if (runSets.length > 1) {
 	    new RunSetComparator (runSets);
 	}
+
+	window.location.hash = hashForRunSets (runSets);
     }
 
     function machinesLoaded (results) {
@@ -317,6 +375,9 @@ var xamarinPerformanceStart;
 		alert ("error loading benchmarks");
 	    }
 	});
+
+	if (window.location.hash)
+	    startupRunSetIds = window.location.hash.substring (1).split ('+');
     }
 
     xamarinPerformanceStart = start;
