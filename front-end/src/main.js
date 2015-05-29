@@ -10,11 +10,11 @@ var xamarinPerformanceStart;
 
     var controller;
 
-    var runSetSelectors = [];
-
     class CompareController {
 	constructor (startupRunSetIds) {
 	    this.startupRunSetIds = startupRunSetIds;
+
+	    this.runSetSelectors = [];
 
 	    var machineQuery = new Parse.Query (ParseMachine);
 	    machineQuery.find ({
@@ -62,9 +62,9 @@ var xamarinPerformanceStart;
 		return;
 
 	    if (this.startupRunSetIds !== undefined)
-		this.startupRunSetIds.forEach (addNewRunSetSelector);
+		this.startupRunSetIds.forEach (this.addNewRunSetSelector.bind (this));
 	    else
-		addNewRunSetSelector ();
+		this.addNewRunSetSelector ();
 	}
 
 	benchmarkNameForId (id) {
@@ -77,6 +77,26 @@ var xamarinPerformanceStart;
 	runSetsForMachineAndConfig (machine, configName) {
 	    return this.allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
 					   rs.get ('configName') === configName);
+	}
+
+	addNewRunSetSelector (runSetId) {
+	    this.runSetSelectors.push (new RunSetSelector (runSetId));
+	}
+
+	runSetsChanged () {
+	    var runSets = [];
+	    for (var i = 0; i < this.runSetSelectors.length; ++i) {
+		var rs = this.runSetSelectors [i].getRunSet ();
+		if (rs === undefined)
+		    continue;
+		runSets.push (rs);
+	    }
+
+	    if (runSets.length > 1) {
+		new RunSetComparator (runSets);
+	    }
+
+	    window.location.hash = hashForRunSets (runSets);
 	}
     }
 
@@ -157,11 +177,11 @@ var xamarinPerformanceStart;
 	}
 
 	runSetSelected () {
-	    if (this === runSetSelectors [runSetSelectors.length - 1])
-		addNewRunSetSelector ();
+	    if (this === controller.runSetSelectors [controller.runSetSelectors.length - 1])
+		controller.addNewRunSetSelector ();
 
 	    this.updateDescription ();
-	    runSetsChanged ();
+	    controller.runSetsChanged ();
 	}
 
 	getRunSet () {
@@ -341,29 +361,9 @@ var xamarinPerformanceStart;
 	}
     }
 
-    function addNewRunSetSelector (runSetId) {
-	runSetSelectors.push (new RunSetSelector (runSetId));
-    }
-
     function hashForRunSets (runSets) {
 	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
-    }
-
-    function runSetsChanged () {
-	var runSets = [];
-	for (var i = 0; i < runSetSelectors.length; ++i) {
-	    var rs = runSetSelectors [i].getRunSet ();
-	    if (rs === undefined)
-		continue;
-	    runSets.push (rs);
-	}
-
-	if (runSets.length > 1) {
-	    new RunSetComparator (runSets);
-	}
-
-	window.location.hash = hashForRunSets (runSets);
     }
 
     function start () {
