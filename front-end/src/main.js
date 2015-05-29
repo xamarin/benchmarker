@@ -8,8 +8,6 @@ var xamarinPerformanceStart;
     var ParseRun;
     var ParseBenchmark;
 
-    var controller;
-
     class CompareController {
 	constructor (startupRunSetIds) {
 	    this.startupRunSetIds = startupRunSetIds;
@@ -80,7 +78,7 @@ var xamarinPerformanceStart;
 	}
 
 	addNewRunSetSelector (runSetId) {
-	    this.runSetSelectors.push (new RunSetSelector (runSetId));
+	    this.runSetSelectors.push (new RunSetSelector (this, runSetId));
 	}
 
 	runSetsChanged () {
@@ -92,16 +90,17 @@ var xamarinPerformanceStart;
 		runSets.push (rs);
 	    }
 
-	    if (runSets.length > 1) {
-		new RunSetComparator (runSets);
-	    }
+	    if (runSets.length > 1)
+		new RunSetComparator (this, runSets);
 
 	    window.location.hash = hashForRunSets (runSets);
 	}
     }
 
     class RunSetSelector {
-	constructor (runSetId) {
+	constructor (controller, runSetId) {
+	    this.controller = controller;
+
 	    this.containerDiv = document.createElement ('div');
 
 	    var selectorsDiv = document.getElementById ('runSetSelectors');
@@ -133,17 +132,17 @@ var xamarinPerformanceStart;
 	    this.containerDiv.appendChild (this.runSetSelect);
 	    this.containerDiv.appendChild (this.descriptionDiv);
 
-	    var names = controller.allMachines.map (o => o.get ('name'));
+	    var names = this.controller.allMachines.map (o => o.get ('name'));
 	    populateSelect (this.machineSelect, names);
-	    populateSelect (this.configSelect, controller.allConfigNames);
+	    populateSelect (this.configSelect, this.controller.allConfigNames);
 
 	    if (runSet !== undefined) {
 		var machineId = runSet.get ('machine').id;
-		var machineIndex = findIndex (controller.allMachines, m => m.id === machineId);
+		var machineIndex = findIndex (this.controller.allMachines, m => m.id === machineId);
 		this.machineSelect.selectedIndex = machineIndex;
 
 		var configName = runSet.get ('configName');
-		var configIndex = controller.allConfigNames.indexOf (configName);
+		var configIndex = this.controller.allConfigNames.indexOf (configName);
 		this.configSelect.selectedIndex = configIndex;
 
 		this.updateRunSets ();
@@ -168,20 +167,20 @@ var xamarinPerformanceStart;
 	    if (machineIndex < 0 || configIndex < 0)
 		return;
 
-	    var machine = controller.allMachines [machineIndex];
-	    var configName = controller.allConfigNames [configIndex];
+	    var machine = this.controller.allMachines [machineIndex];
+	    var configName = this.controller.allConfigNames [configIndex];
 
-	    this.filteredRunSets = controller.runSetsForMachineAndConfig (machine, configName);
+	    this.filteredRunSets = this.controller.runSetsForMachineAndConfig (machine, configName);
 
 	    populateSelect (this.runSetSelect, this.filteredRunSets.map (o => o.get ('startedAt')));
 	}
 
 	runSetSelected () {
-	    if (this === controller.runSetSelectors [controller.runSetSelectors.length - 1])
-		controller.addNewRunSetSelector ();
+	    if (this === this.controller.runSetSelectors [this.controller.runSetSelectors.length - 1])
+		this.controller.addNewRunSetSelector ();
 
 	    this.updateDescription ();
-	    controller.runSetsChanged ();
+	    this.controller.runSetsChanged ();
 	}
 
 	getRunSet () {
@@ -220,7 +219,9 @@ var xamarinPerformanceStart;
     }
 
     class RunSetComparator {
-	constructor (runSets) {
+	constructor (controller, runSets) {
+	    this.controller = controller;
+
 	    this.runSets = runSets;
 	    this.runsByIndex = [];
 	    for (let i = 0; i < this.runSets.length; ++i) {
@@ -261,7 +262,7 @@ var xamarinPerformanceStart;
 
 	    for (var i = 0; i < commonBenchmarkIds.length; ++i) {
 		var benchmarkId = commonBenchmarkIds [i]
-		var row = [controller.benchmarkNameForId (benchmarkId)];
+		var row = [this.controller.benchmarkNameForId (benchmarkId)];
 		var mean = undefined;
 		for (var j = 0; j < this.runSets.length; ++j) {
 		    var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
@@ -382,7 +383,7 @@ var xamarinPerformanceStart;
 	if (window.location.hash)
 	    startupRunSetIds = window.location.hash.substring (1).split ('+');
 
-	controller = new CompareController (startupRunSetIds);
+	new CompareController (startupRunSetIds);
     }
 
     xamarinPerformanceStart = start;
