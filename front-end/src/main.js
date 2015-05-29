@@ -3,19 +3,82 @@
 var xamarinPerformanceStart;
 
 (function () {
-    var startupRunSetIds;
-
     var ParseMachine;
     var ParseRunSet;
     var ParseRun;
     var ParseBenchmark;
 
-    var allMachines;
-    var allRunSets;
-    var allConfigNames;
-    var allBenchmarks;
+    var controller;
 
     var runSetSelectors = [];
+
+    class CompareController {
+	constructor (startupRunSetIds) {
+	    this.startupRunSetIds = startupRunSetIds;
+
+	    var machineQuery = new Parse.Query (ParseMachine);
+	    machineQuery.find ({
+		success: this.machinesLoaded.bind (this),
+		error: function (error) {
+		    alert ("error loading machines");
+		}
+	    });
+
+	    var runSetQuery = new Parse.Query (ParseRunSet);
+	    runSetQuery.find ({
+		success: this.runSetsLoaded.bind (this),
+		error: function (error) {
+		    alert ("error loading run sets");
+		}
+	    });
+
+	    var benchmarkQuery = new Parse.Query (ParseBenchmark);
+	    benchmarkQuery.find ({
+		success: results => {
+		    this.allBenchmarks = results;
+		    this.checkAllDataLoaded ();
+		},
+		error: function (error) {
+		    alert ("error loading benchmarks");
+		}
+	    });
+	}
+
+	machinesLoaded (results) {
+	    console.log ("machines loaded: " + results.length);
+	    this.allMachines = results;
+	    this.checkAllDataLoaded ();
+	}
+
+	runSetsLoaded (results) {
+	    console.log ("run sets loaded: " + results.length);
+	    this.allRunSets = results;
+	    this.allConfigNames = uniqArray (this.allRunSets.map (o => o.get ('configName')));
+	    this.checkAllDataLoaded ();
+	}
+
+	checkAllDataLoaded () {
+	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
+		return;
+
+	    if (this.startupRunSetIds !== undefined)
+		this.startupRunSetIds.forEach (addNewRunSetSelector);
+	    else
+		addNewRunSetSelector ();
+	}
+
+	benchmarkNameForId (id) {
+	    for (var i = 0; i < this.allBenchmarks.length; ++i) {
+		if (this.allBenchmarks [i].id == id)
+		    return this.allBenchmarks [i].get ('name');
+	    }
+	}
+
+	runSetsForMachineAndConfig (machine, configName) {
+	    return this.allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
+					   rs.get ('configName') === configName);
+	}
+    }
 
     class RunSetSelector {
 	constructor (runSetId) {
@@ -50,17 +113,17 @@ var xamarinPerformanceStart;
 	    this.containerDiv.appendChild (this.runSetSelect);
 	    this.containerDiv.appendChild (this.descriptionDiv);
 
-	    var names = allMachines.map (o => o.get ('name'));
+	    var names = controller.allMachines.map (o => o.get ('name'));
 	    populateSelect (this.machineSelect, names);
-	    populateSelect (this.configSelect, allConfigNames);
+	    populateSelect (this.configSelect, controller.allConfigNames);
 
 	    if (runSet !== undefined) {
 		var machineId = runSet.get ('machine').id;
-		var machineIndex = findIndex (allMachines, m => m.id === machineId);
+		var machineIndex = findIndex (controller.allMachines, m => m.id === machineId);
 		this.machineSelect.selectedIndex = machineIndex;
 
 		var configName = runSet.get ('configName');
-		var configIndex = allConfigNames.indexOf (configName);
+		var configIndex = controller.allConfigNames.indexOf (configName);
 		this.configSelect.selectedIndex = configIndex;
 
 		this.updateRunSets ();
@@ -85,11 +148,10 @@ var xamarinPerformanceStart;
 	    if (machineIndex < 0 || configIndex < 0)
 		return;
 
-	    var machine = allMachines [machineIndex];
-	    var configName = allConfigNames [configIndex];
+	    var machine = controller.allMachines [machineIndex];
+	    var configName = controller.allConfigNames [configIndex];
 
-	    this.filteredRunSets = allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
-						      rs.get ('configName') === configName);
+	    this.filteredRunSets = controller.runSetsForMachineAndConfig (machine, configName);
 
 	    populateSelect (this.runSetSelect, this.filteredRunSets.map (o => o.get ('startedAt')));
 	}
@@ -179,7 +241,7 @@ var xamarinPerformanceStart;
 
 	    for (var i = 0; i < commonBenchmarkIds.length; ++i) {
 		var benchmarkId = commonBenchmarkIds [i]
-		var row = [benchmarkNameForId (benchmarkId)];
+		var row = [controller.benchmarkNameForId (benchmarkId)];
 		var mean = undefined;
 		for (var j = 0; j < this.runSets.length; ++j) {
 		    var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
@@ -204,13 +266,6 @@ var xamarinPerformanceStart;
 
 	    var chart = new google.visualization.CandlestickChart (div);
 	    chart.draw (data, options);
-	}
-    }
-
-    function benchmarkNameForId (id) {
-	for (var i = 0; i < allBenchmarks.length; ++i) {
-	    if (allBenchmarks [i].id == id)
-		return allBenchmarks [i].get ('name');
 	}
     }
 
@@ -290,16 +345,6 @@ var xamarinPerformanceStart;
 	runSetSelectors.push (new RunSetSelector (runSetId));
     }
 
-    function checkAllDataLoaded () {
-	if (allMachines === undefined || allRunSets === undefined || allBenchmarks === undefined)
-	    return;
-
-	if (startupRunSetIds !== undefined)
-	    startupRunSetIds.forEach (addNewRunSetSelector);
-	else
-	    addNewRunSetSelector ();
-    }
-
     function hashForRunSets (runSets) {
 	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
@@ -321,19 +366,6 @@ var xamarinPerformanceStart;
 	window.location.hash = hashForRunSets (runSets);
     }
 
-    function machinesLoaded (results) {
-	console.log ("machines loaded: " + results.length);
-	allMachines = results;
-	checkAllDataLoaded ();
-    }
-
-    function runSetsLoaded (results) {
-	console.log ("run sets loaded: " + results.length);
-	allRunSets = results;
-	allConfigNames = uniqArray (allRunSets.map (o => o.get ('configName')));
-	checkAllDataLoaded ();
-    }
-
     function start () {
 	google.load ('visualization', '1.0', {'packages':['corechart']});
 	// FIXME: do this at some point
@@ -346,35 +378,11 @@ var xamarinPerformanceStart;
 	ParseRun = Parse.Object.extend ('Run');
 	ParseBenchmark = Parse.Object.extend ('Benchmark');
 
-	var machineQuery = new Parse.Query (ParseMachine);
-	machineQuery.find ({
-	    success: machinesLoaded,
-	    error: function (error) {
-		alert ("error loading machines");
-	    }
-	});
-
-	var runSetQuery = new Parse.Query (ParseRunSet);
-	runSetQuery.find ({
-	    success: runSetsLoaded,
-	    error: function (error) {
-		alert ("error loading run sets");
-	    }
-	});
-
-	var benchmarkQuery = new Parse.Query (ParseBenchmark);
-	benchmarkQuery.find ({
-	    success: function (results) {
-		allBenchmarks = results;
-		checkAllDataLoaded ();
-	    },
-	    error: function (error) {
-		alert ("error loading benchmarks");
-	    }
-	});
-
+	var startupRunSetIds;
 	if (window.location.hash)
 	    startupRunSetIds = window.location.hash.substring (1).split ('+');
+
+	controller = new CompareController (startupRunSetIds);
     }
 
     xamarinPerformanceStart = start;
