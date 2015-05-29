@@ -81,7 +81,11 @@ var xamarinPerformanceStart;
 	    this.runSetSelectors.push (new RunSetSelector (this, runSetId));
 	}
 
-	runSetsChanged () {
+	runSetChanged (runSetSelector) {
+	    /* If the user selected from the last selector, add a new one. */
+	    if (runSetSelector === this.runSetSelectors [this.runSetSelectors.length - 1])
+		this.addNewRunSetSelector ();
+
 	    var runSets = [];
 	    for (var i = 0; i < this.runSetSelectors.length; ++i) {
 		var rs = this.runSetSelectors [i].getRunSet ();
@@ -176,11 +180,8 @@ var xamarinPerformanceStart;
 	}
 
 	runSetSelected () {
-	    if (this === this.controller.runSetSelectors [this.controller.runSetSelectors.length - 1])
-		this.controller.addNewRunSetSelector ();
-
 	    this.updateDescription ();
-	    this.controller.runSetsChanged ();
+	    this.controller.runSetChanged (this);
 	}
 
 	getRunSet () {
