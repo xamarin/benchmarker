@@ -17,3 +17,12 @@ tools/*/obj
 tools/*/bin
 tools/*/*/obj
 tools/*/*/bin
+
+front-end/build
+
+wrench-results
+wrench-results.old
+results-test
+results.jon
+results.old
+results.pre-json
