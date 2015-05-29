@@ -59,10 +59,19 @@ var xamarinPerformanceStart;
 	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
 		return;
 
+	    let runSetIdToLoad;
+	    if (this.startupRunSetIds !== undefined)
+		runSetIdToLoad = this.startupRunSetIds [0];
+
+	    React.render (React.createElement (RunSetSelector, {controller: this, runSetIdToLoad: runSetIdToLoad}),
+			  document.getElementById ('runSetSelectors'));
+
+	    /*
 	    if (this.startupRunSetIds !== undefined)
 		this.startupRunSetIds.forEach (this.addNewRunSetSelector.bind (this));
 	    else
 		this.addNewRunSetSelector ();
+	    */
 	}
 
 	benchmarkNameForId (id) {
@@ -70,6 +79,14 @@ var xamarinPerformanceStart;
 		if (this.allBenchmarks [i].id == id)
 		    return this.allBenchmarks [i].get ('name');
 	    }
+	}
+
+	machineForId (id) {
+	    return find (this.allMachines, m => m.id === id);
+	}
+
+	runSetForId (id) {
+	    return find (this.allRunSets, rs => rs.id === id);
 	}
 
 	runSetsForMachineAndConfig (machine, configName) {
@@ -101,61 +118,130 @@ var xamarinPerformanceStart;
 	}
     }
 
-    class RunSetSelector {
-	constructor (controller, runSetId) {
-	    this.controller = controller;
+    class RunSetSelector extends React.Component {
+	constructor (props) {
+	    super (props);
 
-	    this.containerDiv = document.createElement ('div');
-
-	    var selectorsDiv = document.getElementById ('runSetSelectors');
-	    selectorsDiv.appendChild (this.containerDiv);
-
-	    if (runSetId === undefined) {
-		this.addUI ();
-	    } else {
-		var query = new Parse.Query (ParseRunSet);
-		query.get (runSetId, {
-		    success: this.addUI.bind (this),
-		    error: function (object, error) {
-			alert ("error loading run set " + runSetId);
-		    }
-		});
-	    }
+	    this.state = {loading: this.props.runSetIdToLoad !== undefined};
+	    console.log (this.state);
 	}
 
+	componentDidMount () {
+	    if (this.props.runSetIdToLoad === undefined)
+		return;
+
+	    var query = new Parse.Query (ParseRunSet);
+	    query.get (this.props.runSetIdToLoad, {
+		success: this.runSetLoaded.bind (this),
+		error: function (object, error) {
+		    alert ("error loading run set " + runSetId);
+		}
+	    });
+	}
+
+	runSetLoaded (runSet) {
+	    console.log ("run set loaded");
+
+	    let machine = runSet.get ('machine');
+	    machine = this.props.controller.machineForId (machine.id);
+
+	    let configName = runSet.get ('configName');
+
+	    this.setState ({loading: false,
+			    machine: machine,
+			    configName: configName,
+			    runSet: runSet});
+	}
+
+	machineSelected (event) {
+	    let machineId = event.target.value;
+	    console.log ("machine selected: " + machineId);
+	    let machine = this.props.controller.machineForId (machineId);
+	    console.log (machine);
+	    this.setState ({machine: machine, runSet: undefined});
+	}
+
+	configSelected (event) {
+	    let configName = event.target.value;
+	    console.log ("config selected: " + configName);
+	    this.setState ({configName: configName, runSet: undefined});
+	}
+
+	runSetSelected (event) {
+	    let runSetId = event.target.value;
+	    console.log ("run set selected: " + runSetId);
+	    let runSet = this.props.controller.runSetForId (runSetId);
+	    this.setState ({runSet: runSet});
+	}
+
+	render () {
+	    console.log (this.state);
+
+	    if (this.state.loading)
+		return <div>loading</div>;
+
+	    let machineId, runSetId, filteredRunSets;
+
+	    if (this.state.machine !== undefined)
+		machineId = this.state.machine.id;
+
+	    if (this.state.runSet !== undefined)
+		runSetId = this.state.runSet.id;
+
+	    if (this.state.machine !== undefined && this.state.configName !== undefined)
+		filteredRunSets = this.props.controller.runSetsForMachineAndConfig (this.state.machine, this.state.configName);
+	    else
+		filteredRunSets = [];
+
+	    console.log (filteredRunSets);
+
+	    let machineSelect = <select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
+		{
+		    this.props.controller.allMachines.map (m => <option value={m.id}>{m.get ('name')}</option>)
+		}
+		</select>;
+	    let configSelect = <select size="6" value={this.state.configName} onChange={this.configSelected.bind (this)}>
+		{
+		    this.props.controller.allConfigNames.map (c => <option value={c}>{c}</option>)
+		}
+		</select>;
+	    let runSetsSelect = <select size="6" selectedIndex="-1" value={runSetId} onChange={this.runSetSelected.bind (this)}>
+		{
+		    filteredRunSets.map (rs => <option value={rs.id}>{rs.get ('startedAt').toString ()}</option>)
+		}
+		</select>;
+
+	    console.log ("runSetId is " + runSetId);
+
+	    return <div>
+		{machineSelect}
+	    	{configSelect}
+	    	{runSetsSelect}
+	    	{this.renderRunSetDescription ()}
+		</div>;
+	}
+
+	renderRunSetDescription () {
+	    let runSet = this.state.runSet;
+
+	    if (runSet === undefined)
+		return <div style={{display: "inline-block"}}>?</div>;
+
+	    let mono = runSet.get ('monoExecutable') || "";
+	    let envVars = runSet.get ('monoEnvironmentVariables') || {};
+	    let options = runSet.get ('monoOptions') || [];
+
+	    return <div style={{display: "inline-block"}}>
+		{mono}<br/>
+		{
+		    Object.keys (envVars).map (name => <div>{name + "=" + envVars [name]}</div>)
+		}
+	    	{options.toString ()}
+	    </div>;
+	}
+
+	    /*
 	addUI (runSet) {
-	    this.machineSelect = makeSelect ();
-	    this.configSelect = makeSelect ();
-	    this.runSetSelect = makeSelect ();
-
-	    this.descriptionDiv = document.createElement ('div');
-	    this.descriptionDiv.style.display = 'inline-block';
-
-	    this.containerDiv.appendChild (this.machineSelect);
-	    this.containerDiv.appendChild (this.configSelect);
-	    this.containerDiv.appendChild (this.runSetSelect);
-	    this.containerDiv.appendChild (this.descriptionDiv);
-
-	    var names = this.controller.allMachines.map (o => o.get ('name'));
-	    populateSelect (this.machineSelect, names);
-	    populateSelect (this.configSelect, this.controller.allConfigNames);
-
-	    if (runSet !== undefined) {
-		var machineId = runSet.get ('machine').id;
-		var machineIndex = findIndex (this.controller.allMachines, m => m.id === machineId);
-		this.machineSelect.selectedIndex = machineIndex;
-
-		var configName = runSet.get ('configName');
-		var configIndex = this.controller.allConfigNames.indexOf (configName);
-		this.configSelect.selectedIndex = configIndex;
-
-		this.updateRunSets ();
-
-		var runSetId = runSet.id;
-		var runSetIndex = findIndex (this.filteredRunSets, rs => rs.id === runSetId);
-		this.runSetSelect.selectedIndex = runSetIndex;
-	    }
-
 	    this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
 	    this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
 	    this.runSetSelect.addEventListener ('change', this.runSetSelected.bind (this));
@@ -171,52 +257,22 @@ var xamarinPerformanceStart;
 	    if (machineIndex < 0 || configIndex < 0)
 		return;
 
-	    var machine = this.controller.allMachines [machineIndex];
-	    var configName = this.controller.allConfigNames [configIndex];
 
-	    this.filteredRunSets = this.controller.runSetsForMachineAndConfig (machine, configName);
-
-	    populateSelect (this.runSetSelect, this.filteredRunSets.map (o => o.get ('startedAt')));
+	    populateSelect (this.runSetSelect, );
 	}
 
 	runSetSelected () {
 	    this.updateDescription ();
-	    this.controller.runSetChanged (this);
+	    this.props.controller.runSetChanged (this);
 	}
+	    */
 
 	getRunSet () {
-	    if (this.runSetSelect === undefined)
-		return undefined;
-
-	    var runSetIndex = this.runSetSelect.selectedIndex;
-
-	    if (runSetIndex < 0)
-		return undefined;
-
-	    return this.filteredRunSets [runSetIndex];
+	    return this.state.runSet;
 	}
 
-	updateDescription () {
-	    var runSet = this.getRunSet ();
-	    deleteChildren (this.descriptionDiv);
-
-	    var mono = runSet.get ('monoExecutable');
-	    if (mono !== undefined) {
-		this.descriptionDiv.appendChild (document.createTextNode (mono));
-		this.descriptionDiv.appendChild (document.createElement ('br'));
-	    }
-
-	    var envVars = runSet.get ('monoEnvironmentVariables');
-	    for (var name in envVars) {
-		this.descriptionDiv.appendChild (document.createTextNode (name + "=" + envVars [name]));
-		this.descriptionDiv.appendChild (document.createElement ('br'));
-	    }
-
-	    var options = runSet.get ('monoOptions');
-	    if (options !== undefined) {
-		this.descriptionDiv.appendChild (document.createTextNode (options.toString ()));
-	    }
-	}
+	/*
+	*/
     }
 
     class RunSetComparator {
@@ -303,6 +359,10 @@ var xamarinPerformanceStart;
 		return i;
 	}
 	return -1;
+    }
+
+    function find (arr, f) {
+	return arr [findIndex (arr, f)];
     }
 
     function uniqArray (arr) {
