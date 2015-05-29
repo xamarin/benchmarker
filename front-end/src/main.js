@@ -17,124 +17,126 @@ var xamarinPerformanceStart;
 
     var runSetSelectors = [];
 
-    var RunSetSelector = function (runSetId) {
-	this.containerDiv = document.createElement ('div');
+    class RunSetSelector {
+	constructor (runSetId) {
+	    this.containerDiv = document.createElement ('div');
 
-	var selectorsDiv = document.getElementById ('runSetSelectors');
-	selectorsDiv.appendChild (this.containerDiv);
+	    var selectorsDiv = document.getElementById ('runSetSelectors');
+	    selectorsDiv.appendChild (this.containerDiv);
 
-	if (runSetId === undefined) {
-	    this.addUI ();
-	} else {
-	    var query = new Parse.Query (ParseRunSet);
-	    query.get (runSetId, {
-		success: this.addUI.bind (this),
-		error: function (object, error) {
-		    alert ("error loading run set " + runSetId);
-		}
+	    if (runSetId === undefined) {
+		this.addUI ();
+	    } else {
+		var query = new Parse.Query (ParseRunSet);
+		query.get (runSetId, {
+		    success: this.addUI.bind (this),
+		    error: function (object, error) {
+			alert ("error loading run set " + runSetId);
+		    }
+		});
+	    }
+	}
+
+	addUI (runSet) {
+	    this.machineSelect = makeSelect ();
+	    this.configSelect = makeSelect ();
+	    this.runSetSelect = makeSelect ();
+
+	    this.descriptionDiv = document.createElement ('div');
+	    this.descriptionDiv.style.display = 'inline-block';
+
+	    this.containerDiv.appendChild (this.machineSelect);
+	    this.containerDiv.appendChild (this.configSelect);
+	    this.containerDiv.appendChild (this.runSetSelect);
+	    this.containerDiv.appendChild (this.descriptionDiv);
+
+	    var names = allMachines.map (function (o) { return o.get ('name'); });
+	    populateSelect (this.machineSelect, names);
+	    populateSelect (this.configSelect, allConfigNames);
+
+	    if (runSet !== undefined) {
+		var machineId = runSet.get ('machine').id;
+		var machineIndex = findIndex (allMachines, function (m) { return m.id === machineId; });
+		this.machineSelect.selectedIndex = machineIndex;
+
+		var configName = runSet.get ('configName');
+		var configIndex = allConfigNames.indexOf (configName);
+		this.configSelect.selectedIndex = configIndex;
+
+		this.updateRunSets ();
+
+		var runSetId = runSet.id;
+		var runSetIndex = findIndex (this.filteredRunSets, function (rs) { return rs.id === runSetId; });
+		this.runSetSelect.selectedIndex = runSetIndex;
+	    }
+
+	    this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
+	    this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
+	    this.runSetSelect.addEventListener ('change', this.runSetSelected.bind (this));
+
+	    if (runSet !== undefined)
+		this.runSetSelected ();
+	}
+
+	updateRunSets () {
+	    var machineIndex = this.machineSelect.selectedIndex;
+	    var configIndex = this.configSelect.selectedIndex;
+
+	    if (machineIndex < 0 || configIndex < 0)
+		return;
+
+	    var machine = allMachines [machineIndex];
+	    var configName = allConfigNames [configIndex];
+
+	    this.filteredRunSets = allRunSets.filter (function (rs) {
+		return rs.get ('machine').id === machine.id && rs.get ('configName') === configName;
 	    });
-	}
-    };
 
-    RunSetSelector.prototype.addUI = function addUI (runSet) {
-	this.machineSelect = makeSelect ();
-	this.configSelect = makeSelect ();
-	this.runSetSelect = makeSelect ();
-
-	this.descriptionDiv = document.createElement ('div');
-	this.descriptionDiv.style.display = 'inline-block';
-
-	this.containerDiv.appendChild (this.machineSelect);
-	this.containerDiv.appendChild (this.configSelect);
-	this.containerDiv.appendChild (this.runSetSelect);
-	this.containerDiv.appendChild (this.descriptionDiv);
-
-	var names = allMachines.map (function (o) { return o.get ('name'); });
-	populateSelect (this.machineSelect, names);
-	populateSelect (this.configSelect, allConfigNames);
-
-	if (runSet !== undefined) {
-	    var machineId = runSet.get ('machine').id;
-	    var machineIndex = findIndex (allMachines, function (m) { return m.id === machineId; });
-	    this.machineSelect.selectedIndex = machineIndex;
-
-	    var configName = runSet.get ('configName');
-	    var configIndex = allConfigNames.indexOf (configName);
-	    this.configSelect.selectedIndex = configIndex;
-
-	    this.updateRunSets ();
-
-	    var runSetId = runSet.id;
-	    var runSetIndex = findIndex (this.filteredRunSets, function (rs) { return rs.id === runSetId; });
-	    this.runSetSelect.selectedIndex = runSetIndex;
+	    populateSelect (this.runSetSelect, this.filteredRunSets.map (function (o) { return o.get ('startedAt'); }));
 	}
 
-	this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
-	this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
-	this.runSetSelect.addEventListener ('change', this.runSetSelected.bind (this));
+	runSetSelected () {
+	    if (this === runSetSelectors [runSetSelectors.length - 1])
+		addNewRunSetSelector ();
 
-	if (runSet !== undefined)
-	    this.runSetSelected ();
-    };
-
-    RunSetSelector.prototype.updateRunSets = function updateRunSets () {
-	var machineIndex = this.machineSelect.selectedIndex;
-	var configIndex = this.configSelect.selectedIndex;
-
-	if (machineIndex < 0 || configIndex < 0)
-	    return;
-
-	var machine = allMachines [machineIndex];
-	var configName = allConfigNames [configIndex];
-
-	this.filteredRunSets = allRunSets.filter (function (rs) {
-	    return rs.get ('machine').id === machine.id && rs.get ('configName') === configName;
-	});
-
-	populateSelect (this.runSetSelect, this.filteredRunSets.map (function (o) { return o.get ('startedAt'); }));
-    };
-
-    RunSetSelector.prototype.runSetSelected = function runSetSelected () {
-	if (this === runSetSelectors [runSetSelectors.length - 1])
-	    addNewRunSetSelector ();
-
-	this.updateDescription ();
-	runSetsChanged ();
-    };
-
-    RunSetSelector.prototype.getRunSet = function getRunSet () {
-	if (this.runSetSelect === undefined)
-	    return undefined;
-
-	var runSetIndex = this.runSetSelect.selectedIndex;
-
-	if (runSetIndex < 0)
-	    return undefined;
-
-	return this.filteredRunSets [runSetIndex];
-    };
-
-    RunSetSelector.prototype.updateDescription = function updateDescription () {
-	var runSet = this.getRunSet ();
-	deleteChildren (this.descriptionDiv);
-
-	var mono = runSet.get ('monoExecutable');
-	if (mono !== undefined) {
-	    this.descriptionDiv.appendChild (document.createTextNode (mono));
-	    this.descriptionDiv.appendChild (document.createElement ('br'));
+	    this.updateDescription ();
+	    runSetsChanged ();
 	}
 
-	var envVars = runSet.get ('monoEnvironmentVariables');
-	for (var name in envVars) {
-	    this.descriptionDiv.appendChild (document.createTextNode (name + "=" + envVars [name]));
-	    this.descriptionDiv.appendChild (document.createElement ('br'));
+	getRunSet () {
+	    if (this.runSetSelect === undefined)
+		return undefined;
+
+	    var runSetIndex = this.runSetSelect.selectedIndex;
+
+	    if (runSetIndex < 0)
+		return undefined;
+
+	    return this.filteredRunSets [runSetIndex];
 	}
 
-	var options = runSet.get ('monoOptions');
-	if (options !== undefined) {
-	    this.descriptionDiv.appendChild (document.createTextNode (options.toString ()));
+	updateDescription () {
+	    var runSet = this.getRunSet ();
+	    deleteChildren (this.descriptionDiv);
+
+	    var mono = runSet.get ('monoExecutable');
+	    if (mono !== undefined) {
+		this.descriptionDiv.appendChild (document.createTextNode (mono));
+		this.descriptionDiv.appendChild (document.createElement ('br'));
+	    }
+
+	    var envVars = runSet.get ('monoEnvironmentVariables');
+	    for (var name in envVars) {
+		this.descriptionDiv.appendChild (document.createTextNode (name + "=" + envVars [name]));
+		this.descriptionDiv.appendChild (document.createElement ('br'));
+	    }
+
+	    var options = runSet.get ('monoOptions');
+	    if (options !== undefined) {
+		this.descriptionDiv.appendChild (document.createTextNode (options.toString ()));
+	    }
 	}
-    };
+    }
 
     var RunSetComparator = function (runSets) {
 	var self = this;
