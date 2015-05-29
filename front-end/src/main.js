@@ -138,74 +138,75 @@ var xamarinPerformanceStart;
 	}
     }
 
-    var RunSetComparator = function (runSets) {
-	var self = this;
-	this.runSets = runSets;
-	this.runsByIndex = [];
-	for (var i = 0; i < this.runSets.length; ++i) {
-	    var rs = this.runSets [i];
-	    var query = new Parse.Query (ParseRun);
-	    query.equalTo ('runSet', rs);
-	    query.find ({
-		success: function (index, results) {
-		    this.runsByIndex [index] = results;
-		    this.runsLoaded ();
-		}.bind (this, i),
-		error: function (error) {
-		    alert ("error loading runs");
-		}
-	    });
-	}
-    };
-
-    RunSetComparator.prototype.runsLoaded = function runsLoaded () {
-	for (var i = 0; i < this.runSets.length; ++i) {
-	    if (this.runsByIndex [i] === undefined)
-		return;
-	}
-
-	var commonBenchmarkIds;
-
-	for (var i = 0; i < this.runSets.length; ++i) {
-	    var runs = this.runsByIndex [i];
-	    var benchmarkIds = uniqArray (runs.map (function (o) { return o.get ('benchmark').id; }));
-	    if (commonBenchmarkIds === undefined) {
-		commonBenchmarkIds = benchmarkIds;
-		continue;
+    class RunSetComparator {
+	constructor (runSets) {
+	    this.runSets = runSets;
+	    this.runsByIndex = [];
+	    for (var i = 0; i < this.runSets.length; ++i) {
+		var rs = this.runSets [i];
+		var query = new Parse.Query (ParseRun);
+		query.equalTo ('runSet', rs);
+		query.find ({
+		    success: function (index, results) {
+			this.runsByIndex [index] = results;
+			this.runsLoaded ();
+		    }.bind (this, i),
+		    error: function (error) {
+			alert ("error loading runs");
+		    }
+		});
 	    }
-	    commonBenchmarkIds = intersectArray (benchmarkIds, commonBenchmarkIds);
 	}
 
-	var dataArray = [];
-
-	for (var i = 0; i < commonBenchmarkIds.length; ++i) {
-	    var benchmarkId = commonBenchmarkIds [i]
-	    var row = [benchmarkNameForId (benchmarkId)];
-	    var mean = undefined;
-	    for (var j = 0; j < this.runSets.length; ++j) {
-		var runs = this.runsByIndex [j].filter (function (r) { return r.get ('benchmark').id === benchmarkId; });
-		var range = calculateRunsRange (runs);
-		if (mean === undefined) {
-		    // FIXME: eventually we'll have more meaningful ranges
-		    mean = range [1];
-		}
-		row = row.concat (normalizeRange (mean, range));
+	runsLoaded () {
+	    for (var i = 0; i < this.runSets.length; ++i) {
+		if (this.runsByIndex [i] === undefined)
+		    return;
 	    }
-	    dataArray.push (row);
+
+	    var commonBenchmarkIds;
+
+	    for (var i = 0; i < this.runSets.length; ++i) {
+		var runs = this.runsByIndex [i];
+		var benchmarkIds = uniqArray (runs.map (function (o) { return o.get ('benchmark').id; }));
+		if (commonBenchmarkIds === undefined) {
+		    commonBenchmarkIds = benchmarkIds;
+		    continue;
+		}
+		commonBenchmarkIds = intersectArray (benchmarkIds, commonBenchmarkIds);
+	    }
+
+	    var dataArray = [];
+
+	    for (var i = 0; i < commonBenchmarkIds.length; ++i) {
+		var benchmarkId = commonBenchmarkIds [i]
+		var row = [benchmarkNameForId (benchmarkId)];
+		var mean = undefined;
+		for (var j = 0; j < this.runSets.length; ++j) {
+		    var runs = this.runsByIndex [j].filter (function (r) { return r.get ('benchmark').id === benchmarkId; });
+		    var range = calculateRunsRange (runs);
+		    if (mean === undefined) {
+			// FIXME: eventually we'll have more meaningful ranges
+			mean = range [1];
+		    }
+		    row = row.concat (normalizeRange (mean, range));
+		}
+		dataArray.push (row);
+	    }
+
+	    var data = google.visualization.arrayToDataTable (dataArray, true);
+	    for (var i = 0; i < this.runSets.length; ++i)
+		data.setColumnLabel (1 + 4 * i, this.runSets [i].get ('startedAt'));
+
+	    var options = { orientation: 'vertical' };
+
+	    var div = document.getElementById ('comparisonChart');
+	    div.style.height = (35 + (15 * this.runSets.length) * commonBenchmarkIds.length) + "px";
+
+	    var chart = new google.visualization.CandlestickChart (div);
+	    chart.draw (data, options);
 	}
-
-	var data = google.visualization.arrayToDataTable (dataArray, true);
-	for (var i = 0; i < this.runSets.length; ++i)
-	    data.setColumnLabel (1 + 4 * i, this.runSets [i].get ('startedAt'));
-
-	var options = { orientation: 'vertical' };
-
-	var div = document.getElementById ('comparisonChart');
-	div.style.height = (35 + (15 * this.runSets.length) * commonBenchmarkIds.length) + "px";
-
-	var chart = new google.visualization.CandlestickChart (div);
-	chart.draw (data, options);
-    };
+    }
 
     function benchmarkNameForId (id) {
 	for (var i = 0; i < allBenchmarks.length; ++i) {
