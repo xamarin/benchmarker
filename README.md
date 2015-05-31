@@ -26,6 +26,13 @@ Each benchmark requires a `.benchmark` file. The files in the `benchmarks` direc
   - `CommandLine`: command line to run the benchnark, does not contain the runtime (mono) executable
   - `Timeout`: benchmark specific timeout, override the command line one
 
+## Building the front-end
+
+### Requirements
+
+    brew install npm
+	npm -g install babel
+
 ## Comparing directly
 
 To compare two or more revisions and/or configurations directly, use `tools/compare.exe`:
