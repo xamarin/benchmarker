@@ -123,17 +123,30 @@ var xamarinPerformanceStart;
 	handleChange (index, newSelection) {
 	    var selections = updateArray (this.state.selections, index, newSelection);
 	    this.setState ({selections: selections});
-	    this.props.onChange (selections);
 	}
 
 	addSelector () {
 	    this.setState ({selections: this.state.selections.concat ({})});
 	}
 
+	removeSelector (i) {
+	    this.setState ({selections: removeArrayElement (this.state.selections, i)});
+	}
+
+	setState (newState) {
+	    super.setState (newState);
+	    this.props.onChange (newState.selections);
+	}
+
 	render () {
 	    return <div>
 		{this.state.selections.map ((selection, i) =>
-					    <RunSetSelector controller={this.props.controller} selection={selection} onChange={this.handleChange.bind (this, i)} />)}
+					    <div>
+					      <RunSetSelector controller={this.props.controller}
+					        selection={selection}
+					        onChange={this.handleChange.bind (this, i)} />
+					      <button onClick={this.removeSelector.bind (this, i)}>Delete</button>
+					    </div>)}
 		<button onClick={this.addSelector.bind (this)}>Add run set!</button>
 		</div>;
 	}
@@ -344,6 +357,10 @@ var xamarinPerformanceStart;
 		crr.push (a);
 	}
 	return crr;
+    }
+
+    function removeArrayElement (arr, i) {
+	return arr.slice (0, i).concat (arr.slice (i + 1));
     }
 
     function updateArray (arr, i, v) {
