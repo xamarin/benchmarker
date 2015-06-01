@@ -3,6 +3,8 @@
 var xamarinPerformanceStart;
 
 (function () {
+    var utils = xamarin_utils;
+
     var ParseMachine;
     var ParseRunSet;
     var ParseRun;
@@ -51,7 +53,7 @@ var xamarinPerformanceStart;
 	runSetsLoaded (results) {
 	    console.log ("run sets loaded: " + results.length);
 	    this.allRunSets = results;
-	    this.allConfigNames = uniqArray (this.allRunSets.map (o => o.get ('configName')));
+	    this.allConfigNames = utils.uniqArray (this.allRunSets.map (o => o.get ('configName')));
 	    this.checkAllDataLoaded ();
 	}
 
@@ -86,11 +88,11 @@ var xamarinPerformanceStart;
 	}
 
 	machineForId (id) {
-	    return find (this.allMachines, m => m.id === id);
+	    return utils.find (this.allMachines, m => m.id === id);
 	}
 
 	runSetForId (id) {
-	    return find (this.allRunSets, rs => rs.id === id);
+	    return utils.find (this.allRunSets, rs => rs.id === id);
 	}
 
 	runSetsForMachineAndConfig (machine, configName) {
@@ -121,7 +123,7 @@ var xamarinPerformanceStart;
 	}
 
 	handleChange (index, newSelection) {
-	    var selections = updateArray (this.state.selections, index, newSelection);
+	    var selections = utils.updateArray (this.state.selections, index, newSelection);
 	    this.setState ({selections: selections});
 	}
 
@@ -130,7 +132,7 @@ var xamarinPerformanceStart;
 	}
 
 	removeSelector (i) {
-	    this.setState ({selections: removeArrayElement (this.state.selections, i)});
+	    this.setState ({selections: utils.removeArrayElement (this.state.selections, i)});
 	}
 
 	setState (newState) {
@@ -279,12 +281,12 @@ var xamarinPerformanceStart;
 
 	    for (var i = 0; i < this.runSets.length; ++i) {
 		var runs = this.runsByIndex [i];
-		var benchmarkIds = uniqArray (runs.map (o => o.get ('benchmark').id));
+		var benchmarkIds = utils.uniqArray (runs.map (o => o.get ('benchmark').id));
 		if (commonBenchmarkIds === undefined) {
 		    commonBenchmarkIds = benchmarkIds;
 		    continue;
 		}
-		commonBenchmarkIds = intersectArray (benchmarkIds, commonBenchmarkIds);
+		commonBenchmarkIds = utils.intersectArray (benchmarkIds, commonBenchmarkIds);
 	    }
 
 	    var dataArray = [];
@@ -319,56 +321,6 @@ var xamarinPerformanceStart;
 	}
     }
 
-    function makeSelect () {
-	var select = document.createElement ('select');
-	select.setAttribute ('size', 6);
-	return select;
-    }
-
-    function findIndex (arr, f) {
-	for (var i = 0; i < arr.length; ++i) {
-	    if (f (arr [i]))
-		return i;
-	}
-	return -1;
-    }
-
-    function find (arr, f) {
-	return arr [findIndex (arr, f)];
-    }
-
-    function uniqArray (arr) {
-	var hash = {};
-	for (var i = 0; i < arr.length; ++i) {
-	    hash [arr [i]] = true;
-	}
-	var newArr = [];
-	for (var o in hash) {
-	    newArr.push (o);
-	}
-	return newArr;
-    }
-
-    function intersectArray (arr, brr) {
-	var crr = [];
-	for (var i = 0; i < arr.length; ++i) {
-	    var a = arr [i];
-	    if (brr.indexOf (a) >= 0)
-		crr.push (a);
-	}
-	return crr;
-    }
-
-    function removeArrayElement (arr, i) {
-	return arr.slice (0, i).concat (arr.slice (i + 1));
-    }
-
-    function updateArray (arr, i, v) {
-	var newArr = arr.slice ();
-	newArr [i] = v;
-	return newArr;
-    }
-
     function calculateRunsRange (runs) {
 	var min, max;
 	var sum = 0;
@@ -386,23 +338,6 @@ var xamarinPerformanceStart;
 
     function normalizeRange (mean, range) {
 	return range.map (x => x / mean);
-    }
-
-    function deleteChildren (elem) {
-	while (elem.firstChild !== null)
-	    elem.removeChild (elem.firstChild);
-    }
-
-    function populateSelect (select, rows) {
-	deleteChildren (select);
-
-	for (var i = 0; i < rows.length; ++i) {
-	    var name = rows [i];
-	    var option = document.createElement ('option');
-	    var text = document.createTextNode (name);
-	    option.appendChild (text);
-	    select.appendChild (option);
-	}
     }
 
     function hashForRunSets (runSets) {
