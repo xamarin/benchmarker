@@ -59,19 +59,8 @@ var xamarinPerformanceStart;
 	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
 		return;
 
-	    let runSetIdToLoad;
-	    if (this.startupRunSetIds !== undefined)
-		runSetIdToLoad = this.startupRunSetIds [0];
-
-	    React.render (React.createElement (RunSetSelector, {controller: this, runSetIdToLoad: runSetIdToLoad}),
+	    React.render (React.createElement (RunSetSelectors, {controller: this, startupRunSetIds: this.startupRunSetIds}),
 			  document.getElementById ('runSetSelectors'));
-
-	    /*
-	    if (this.startupRunSetIds !== undefined)
-		this.startupRunSetIds.forEach (this.addNewRunSetSelector.bind (this));
-	    else
-		this.addNewRunSetSelector ();
-	    */
 	}
 
 	benchmarkNameForId (id) {
@@ -118,41 +107,30 @@ var xamarinPerformanceStart;
 	}
     }
 
-    class RunSetSelector extends React.Component {
+    class RunSetSelectors extends React.Component {
 	constructor (props) {
 	    super (props);
 
-	    this.state = {loading: this.props.runSetIdToLoad !== undefined};
-	    console.log (this.state);
+	    if (this.props.startupRunSetIds === undefined) {
+		this.state = {selections: [{}]};
+	    } else {
+		this.state = {selections: this.props.startupRunSetIds.map (id => {
+		    let runSet = this.props.controller.runSetForId (id);
+		    let machine = this.props.controller.machineForId (runSet.get ('machine').id);
+		    return {machine: machine, configName: runSet.get ('configName'), runSet: runSet};
+		})};
+	    }
 	}
 
-	componentDidMount () {
-	    if (this.props.runSetIdToLoad === undefined)
-		return;
-
-	    var query = new Parse.Query (ParseRunSet);
-	    query.get (this.props.runSetIdToLoad, {
-		success: this.runSetLoaded.bind (this),
-		error: function (object, error) {
-		    alert ("error loading run set " + runSetId);
-		}
-	    });
+	render () {
+	    return <div>
+		{this.state.selections.map (selection =>
+					    <RunSetSelector controller={this.props.controller} selection={selection} />)}
+		</div>;
 	}
+    }
 
-	runSetLoaded (runSet) {
-	    console.log ("run set loaded");
-
-	    let machine = runSet.get ('machine');
-	    machine = this.props.controller.machineForId (machine.id);
-
-	    let configName = runSet.get ('configName');
-
-	    this.setState ({loading: false,
-			    machine: machine,
-			    configName: configName,
-			    runSet: runSet});
-	}
-
+    class RunSetSelector extends React.Component {
 	machineSelected (event) {
 	    let machineId = event.target.value;
 	    console.log ("machine selected: " + machineId);
@@ -175,21 +153,19 @@ var xamarinPerformanceStart;
 	}
 
 	render () {
-	    console.log (this.state);
-
-	    if (this.state.loading)
-		return <div>loading</div>;
+	    let selection = this.props.selection;
+	    console.log (this.selection);
 
 	    let machineId, runSetId, filteredRunSets;
 
-	    if (this.state.machine !== undefined)
-		machineId = this.state.machine.id;
+	    if (selection.machine !== undefined)
+		machineId = selection.machine.id;
 
-	    if (this.state.runSet !== undefined)
-		runSetId = this.state.runSet.id;
+	    if (selection.runSet !== undefined)
+		runSetId = selection.runSet.id;
 
-	    if (this.state.machine !== undefined && this.state.configName !== undefined)
-		filteredRunSets = this.props.controller.runSetsForMachineAndConfig (this.state.machine, this.state.configName);
+	    if (selection.machine !== undefined && selection.configName !== undefined)
+		filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.configName);
 	    else
 		filteredRunSets = [];
 
@@ -200,7 +176,7 @@ var xamarinPerformanceStart;
 		    this.props.controller.allMachines.map (m => <option value={m.id} key={m.id}>{m.get ('name')}</option>)
 		}
 		</select>;
-	    let configSelect = <select size="6" value={this.state.configName} onChange={this.configSelected.bind (this)}>
+	    let configSelect = <select size="6" value={selection.configName} onChange={this.configSelected.bind (this)}>
 		{
 		    this.props.controller.allConfigNames.map (c => <option value={c} key={c}>{c}</option>)
 		}
@@ -222,7 +198,7 @@ var xamarinPerformanceStart;
 	}
 
 	renderRunSetDescription () {
-	    let runSet = this.state.runSet;
+	    let runSet = this.props.selection.runSet;
 
 	    if (runSet === undefined)
 		return <div style={{display: "inline-block"}}>?</div>;
