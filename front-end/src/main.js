@@ -140,35 +140,56 @@ var xamarinPerformanceStart;
 	    this.props.onChange (newState.selections);
 	}
 
-	render () {
-	    return <div>
-		{this.state.selections.map ((selection, i) =>
-					    <div>
-					      <RunSetSelector controller={this.props.controller}
-					        selection={selection}
-					        onChange={this.handleChange.bind (this, i)} />
-					      <button onClick={this.removeSelector.bind (this, i)}>Delete</button>
-					    </div>)}
-		<button onClick={this.addSelector.bind (this)}>Add run set!</button>
-		</div>;
-	}
+		render () {
+			function renderSelector (selection, index) {
+				return <div>
+					<RunSetSelector
+						controller={this.props.controller}
+						selection={selection}
+						onChange={this.handleChange.bind (this, index)} />
+					<button onClick={this.removeSelector.bind (this, index)}>Delete</button>
+				</div>;
+			}
+			return <div>
+				{this.state.selections.map (renderSelector.bind (this))}
+				<button onClick={this.addSelector.bind (this)}>Add run set!</button>
+			</div>;
+		}
+    }
+
+    class ConfigSelector extends React.Component {
+		render () {
+			function renderMachineOption (machine) {
+				return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
+			}
+			function renderConfigOption (configName) {
+				return <option value={configName} key={configName}>{configName}</option>;
+			}
+			let machineId;
+			if (this.props.machine !== undefined)
+				machineId = this.props.machine.id;
+			return <div>
+				<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
+					{this.props.controller.allMachines.map (renderMachineOption)}
+				</select>
+				<select size="6" value={this.props.configName} onChange={this.configSelected.bind (this)}>
+					{this.props.controller.allConfigNames.map (renderConfigOption)}
+				</select>
+			</div>;
+		}
+
+		machineSelected (event) {
+			let machine = this.props.controller.machineForId (event.target.value);
+			this.props.onChange ({machine: machine, configName: this.props.configName});
+		}
+
+		configSelected (event) {
+			this.props.onChange ({machine: this.props.machine, configName: event.target.value});
+		}
+
     }
 
     class RunSetSelector extends React.Component {
-	machineSelected (event) {
-	    let selection = this.props.selection;
-	    let machineId = event.target.value;
-	    console.log ("machine selected: " + machineId);
-	    let machine = this.props.controller.machineForId (machineId);
-	    this.props.onChange ({machine: machine, configName: selection.configName});
-	}
-
-	configSelected (event) {
-	    let selection = this.props.selection;
-	    let configName = event.target.value;
-	    console.log ("config selected: " + configName);
-	    this.props.onChange ({machine: selection.machine, configName: configName});
-	}
 
 	runSetSelected (event) {
 	    let selection = this.props.selection;
@@ -197,29 +218,31 @@ var xamarinPerformanceStart;
 
 	    console.log (filteredRunSets);
 
-	    let machineSelect = <select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
-		{
-		    this.props.controller.allMachines.map (m => <option value={m.id} key={m.id}>{m.get ('name')}</option>)
+		function renderRunSetOption (rs) {
+			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
 		}
-		</select>;
-	    let configSelect = <select size="6" value={selection.configName} onChange={this.configSelected.bind (this)}>
-		{
-		    this.props.controller.allConfigNames.map (c => <option value={c} key={c}>{c}</option>)
-		}
-		</select>;
-	    let runSetsSelect = <select size="6" selectedIndex="-1" value={runSetId} onChange={this.runSetSelected.bind (this)}>
-		{
-		    filteredRunSets.map (rs => <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>)
-		}
-		</select>;
+
+		var configSelector =
+			<ConfigSelector
+				controller={this.props.controller}
+				machine={selection.machine}
+				configName={selection.configName}
+				onChange={this.props.onChange} />;
+		let runSetsSelect =
+			<select
+				size="6"
+				selectedIndex="-1"
+				value={runSetId}
+				onChange={this.runSetSelected.bind (this)}>
+				{filteredRunSets.map (renderRunSetOption)}
+			</select>;
 
 	    console.log ("runSetId is " + runSetId);
 
-	    return <div>
-		{machineSelect}
-	    	{configSelect}
-	    	{runSetsSelect}
-	    	<RunSetDescription runSet={this.props.selection.runSet} />
+		return <div>
+			{configSelector}
+			{runSetsSelect}
+			<RunSetDescription runSet={this.props.selection.runSet} />
 		</div>;
 	}
 
