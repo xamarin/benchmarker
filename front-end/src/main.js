@@ -199,27 +199,8 @@ var xamarinPerformanceStart;
 		{machineSelect}
 	    	{configSelect}
 	    	{runSetsSelect}
-	    	{this.renderRunSetDescription ()}
+	    	<RunSetDescription runSet={this.props.selection.runSet} />
 		</div>;
-	}
-
-	renderRunSetDescription () {
-	    let runSet = this.props.selection.runSet;
-
-	    if (runSet === undefined)
-		return <div style={{display: "inline-block"}}>?</div>;
-
-	    let mono = runSet.get ('monoExecutable') || "";
-	    let envVars = runSet.get ('monoEnvironmentVariables') || {};
-	    let options = runSet.get ('monoOptions') || [];
-
-	    return <div style={{display: "inline-block"}}>
-		{mono}<br/>
-		{
-		    Object.keys (envVars).map (name => <div>{name + "=" + envVars [name]}</div>)
-		}
-	    	{options.toString ()}
-	    </div>;
 	}
 
 	    /*
@@ -255,6 +236,27 @@ var xamarinPerformanceStart;
 
 	/*
 	*/
+    }
+
+    class RunSetDescription extends React.Component {
+	render () {
+	    let runSet = this.props.runSet;
+
+	    if (runSet === undefined)
+		return <div style={{display: "inline-block"}}>?</div>;
+
+	    let mono = runSet.get ('monoExecutable') || "";
+	    let envVars = runSet.get ('monoEnvironmentVariables') || {};
+	    let options = runSet.get ('monoOptions') || [];
+
+	    return <div style={{display: "inline-block"}}>
+		{mono}<br/>
+		{
+		    Object.keys (envVars).map (name => <div>{name + "=" + envVars [name]}</div>)
+		}
+	    	{options.toString ()}
+	    </div>;
+	}
     }
 
     class RunSetComparator {
