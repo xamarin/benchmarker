@@ -59,10 +59,23 @@ var xamarinPerformanceStart;
 	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
 		return;
 
+	    var selections;
+
+	    if (this.startupRunSetIds === undefined) {
+		selections = [{}];
+	    } else {
+		selections = this.startupRunSetIds.map (id => {
+		    let runSet = this.runSetForId (id);
+		    let machine = this.machineForId (runSet.get ('machine').id);
+		    return {machine: machine, configName: runSet.get ('configName'), runSet: runSet};
+		});
+	    }
+
 	    React.render (React.createElement (RunSetSelectorList, {controller: this,
-								    startupRunSetIds: this.startupRunSetIds,
-								    onChange: this.runSetsChanged.bind (this)}),
+								    initialSelections: selections,
+								    onChange: this.updateForSelection.bind (this)}),
 			  document.getElementById ('runSetSelectors'));
+	    this.updateForSelection (selections);
 	}
 
 	benchmarkNameForId (id) {
@@ -85,7 +98,7 @@ var xamarinPerformanceStart;
 					   rs.get ('configName') === configName);
 	}
 
-	runSetsChanged (selection) {
+	updateForSelection (selection) {
 	    var runSets = [];
 	    for (var i = 0; i < selection.length; ++i) {
 		var rs = selection [i].runSet;
@@ -94,10 +107,8 @@ var xamarinPerformanceStart;
 		runSets.push (rs);
 	    }
 
-/*
 	    if (runSets.length > 1)
 		new RunSetComparator (this, runSets);
-*/
 
 	    window.location.hash = hashForRunSets (runSets);
 	}
@@ -106,16 +117,7 @@ var xamarinPerformanceStart;
     class RunSetSelectorList extends React.Component {
 	constructor (props) {
 	    super (props);
-
-	    if (this.props.startupRunSetIds === undefined) {
-		this.state = {selections: [{}]};
-	    } else {
-		this.state = {selections: this.props.startupRunSetIds.map (id => {
-		    let runSet = this.props.controller.runSetForId (id);
-		    let machine = this.props.controller.machineForId (runSet.get ('machine').id);
-		    return {machine: machine, configName: runSet.get ('configName'), runSet: runSet};
-		})};
-	    }
+	    this.state = {selections: this.props.initialSelections};
 	}
 
 	handleChange (index, newSelection) {
