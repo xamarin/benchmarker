@@ -126,10 +126,15 @@ var xamarinPerformanceStart;
 	    this.setState ({selections: updateArray (this.state.selections, index, newSelection)});
 	}
 
+	addSelector () {
+	    this.setState ({selections: this.state.selections.concat ({})});
+	}
+
 	render () {
 	    return <div>
 		{this.state.selections.map ((selection, i) =>
 					    <RunSetSelector controller={this.props.controller} selection={selection} onChange={this.handleChange.bind (this, i)} />)}
+		<button onClick={this.addSelector.bind (this)}>Add run set!</button>
 		</div>;
 	}
     }
@@ -233,9 +238,6 @@ var xamarinPerformanceStart;
 	getRunSet () {
 	    return this.state.runSet;
 	}
-
-	/*
-	*/
     }
 
     class RunSetDescription extends React.Component {
