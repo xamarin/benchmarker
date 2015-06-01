@@ -59,7 +59,9 @@ var xamarinPerformanceStart;
 	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
 		return;
 
-	    React.render (React.createElement (RunSetSelectorList, {controller: this, startupRunSetIds: this.startupRunSetIds}),
+	    React.render (React.createElement (RunSetSelectorList, {controller: this,
+								    startupRunSetIds: this.startupRunSetIds,
+								    onChange: this.runSetsChanged.bind (this)}),
 			  document.getElementById ('runSetSelectors'));
 	}
 
@@ -83,25 +85,19 @@ var xamarinPerformanceStart;
 					   rs.get ('configName') === configName);
 	}
 
-	addNewRunSetSelector (runSetId) {
-	    this.runSetSelectors.push (new RunSetSelector (this, runSetId));
-	}
-
-	runSetChanged (runSetSelector) {
-	    /* If the user selected from the last selector, add a new one. */
-	    if (runSetSelector === this.runSetSelectors [this.runSetSelectors.length - 1])
-		this.addNewRunSetSelector ();
-
+	runSetsChanged (selection) {
 	    var runSets = [];
-	    for (var i = 0; i < this.runSetSelectors.length; ++i) {
-		var rs = this.runSetSelectors [i].getRunSet ();
+	    for (var i = 0; i < selection.length; ++i) {
+		var rs = selection [i].runSet;
 		if (rs === undefined)
 		    continue;
 		runSets.push (rs);
 	    }
 
+/*
 	    if (runSets.length > 1)
 		new RunSetComparator (this, runSets);
+*/
 
 	    window.location.hash = hashForRunSets (runSets);
 	}
@@ -123,7 +119,9 @@ var xamarinPerformanceStart;
 	}
 
 	handleChange (index, newSelection) {
-	    this.setState ({selections: updateArray (this.state.selections, index, newSelection)});
+	    var selections = updateArray (this.state.selections, index, newSelection);
+	    this.setState ({selections: selections});
+	    this.props.onChange (selections);
 	}
 
 	addSelector () {
@@ -207,33 +205,6 @@ var xamarinPerformanceStart;
 	    	<RunSetDescription runSet={this.props.selection.runSet} />
 		</div>;
 	}
-
-	    /*
-	addUI (runSet) {
-	    this.machineSelect.addEventListener ('change', this.updateRunSets.bind (this));
-	    this.configSelect.addEventListener ('change', this.updateRunSets.bind (this));
-	    this.runSetSelect.addEventListener ('change', this.runSetSelected.bind (this));
-
-	    if (runSet !== undefined)
-		this.runSetSelected ();
-	}
-
-	updateRunSets () {
-	    var machineIndex = this.machineSelect.selectedIndex;
-	    var configIndex = this.configSelect.selectedIndex;
-
-	    if (machineIndex < 0 || configIndex < 0)
-		return;
-
-
-	    populateSelect (this.runSetSelect, );
-	}
-
-	runSetSelected () {
-	    this.updateDescription ();
-	    this.props.controller.runSetChanged (this);
-	}
-	    */
 
 	getRunSet () {
 	    return this.state.runSet;
