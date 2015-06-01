@@ -59,7 +59,7 @@ var xamarinPerformanceStart;
 	    if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
 		return;
 
-	    React.render (React.createElement (RunSetSelectors, {controller: this, startupRunSetIds: this.startupRunSetIds}),
+	    React.render (React.createElement (RunSetSelectorList, {controller: this, startupRunSetIds: this.startupRunSetIds}),
 			  document.getElementById ('runSetSelectors'));
 	}
 
@@ -107,7 +107,7 @@ var xamarinPerformanceStart;
 	}
     }
 
-    class RunSetSelectors extends React.Component {
+    class RunSetSelectorList extends React.Component {
 	constructor (props) {
 	    super (props);
 
@@ -122,39 +122,45 @@ var xamarinPerformanceStart;
 	    }
 	}
 
+	handleChange (index, newSelection) {
+	    this.setState ({selections: updateArray (this.state.selections, index, newSelection)});
+	}
+
 	render () {
 	    return <div>
-		{this.state.selections.map (selection =>
-					    <RunSetSelector controller={this.props.controller} selection={selection} />)}
+		{this.state.selections.map ((selection, i) =>
+					    <RunSetSelector controller={this.props.controller} selection={selection} onChange={this.handleChange.bind (this, i)} />)}
 		</div>;
 	}
     }
 
     class RunSetSelector extends React.Component {
 	machineSelected (event) {
+	    let selection = this.props.selection;
 	    let machineId = event.target.value;
 	    console.log ("machine selected: " + machineId);
 	    let machine = this.props.controller.machineForId (machineId);
-	    console.log (machine);
-	    this.setState ({machine: machine, runSet: undefined});
+	    this.props.onChange ({machine: machine, configName: selection.configName});
 	}
 
 	configSelected (event) {
+	    let selection = this.props.selection;
 	    let configName = event.target.value;
 	    console.log ("config selected: " + configName);
-	    this.setState ({configName: configName, runSet: undefined});
+	    this.props.onChange ({machine: selection.machine, configName: configName});
 	}
 
 	runSetSelected (event) {
+	    let selection = this.props.selection;
 	    let runSetId = event.target.value;
 	    console.log ("run set selected: " + runSetId);
 	    let runSet = this.props.controller.runSetForId (runSetId);
-	    this.setState ({runSet: runSet});
+	    this.props.onChange ({machine: selection.machine, configName: selection.configName, runSet: runSet});
 	}
 
 	render () {
 	    let selection = this.props.selection;
-	    console.log (this.selection);
+	    console.log (selection);
 
 	    let machineId, runSetId, filteredRunSets;
 
@@ -361,6 +367,12 @@ var xamarinPerformanceStart;
 		crr.push (a);
 	}
 	return crr;
+    }
+
+    function updateArray (arr, i, v) {
+	var newArr = arr.slice ();
+	newArr [i] = v;
+	return newArr;
     }
 
     function calculateRunsRange (runs) {
