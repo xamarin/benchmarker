@@ -1,6 +1,7 @@
 /* @flow */
 
-var xamarinPerformanceStart;
+var xamarinCompareStart;
+var xamarinTimelineStart;
 
 (function () {
 	var utils = xamarin_utils;
@@ -11,11 +12,9 @@ var xamarinPerformanceStart;
 	var ParseRun;
 	var ParseRunSet;
 
-	class CompareController {
-		constructor (startupRunSetIds) {
-			this.startupRunSetIds = startupRunSetIds;
+	class PerformanceController {
 
-			this.runSetSelectors = [];
+		constructor () {
 
 			var machineQuery = new Parse.Query (ParseMachine);
 			machineQuery.find ({
@@ -70,32 +69,6 @@ var xamarinPerformanceStart;
 			this.checkAllDataLoaded ();
 		}
 
-		checkAllDataLoaded () {
-			if (this.allMachines === undefined
-				|| this.allRunSets === undefined
-				|| this.allBenchmarks === undefined
-				|| this.allConfigs === undefined)
-				return;
-
-			var selections;
-
-			if (this.startupRunSetIds === undefined) {
-				selections = [{}];
-			} else {
-				selections = this.startupRunSetIds.map (id => {
-					let runSet = this.runSetForId (id);
-					let machine = this.machineForId (runSet.get ('machine').id);
-					return {machine: machine, config: runSet.get ('config'), runSet: runSet};
-				});
-			}
-
-			React.render (React.createElement (RunSetSelectorList, {controller: this,
-																	initialSelections: selections,
-																	onChange: this.updateForSelection.bind (this)}),
-						  document.getElementById ('runSetSelectors'));
-			this.updateForSelection (selections);
-		}
-
 		benchmarkNameForId (id) {
 			for (var i = 0; i < this.allBenchmarks.length; ++i) {
 				if (this.allBenchmarks [i].id == id)
@@ -118,6 +91,92 @@ var xamarinPerformanceStart;
 		runSetsForMachineAndConfig (machine, config) {
 			return this.allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
 										   rs.get ('config').id === config.id);
+		}
+
+		checkAllDataLoaded () {
+			if (this.allMachines === undefined
+				|| this.allRunSets === undefined
+				|| this.allBenchmarks === undefined
+				|| this.allConfigs === undefined)
+				return;
+
+			this.allDataLoaded ();
+		}
+
+	}
+
+	class TimelineController extends PerformanceController {
+
+		allDataLoaded () {
+
+			React.render (
+				React.createElement (
+					TimelineSelector,
+					{
+						controller: this,
+						onChange: this.updateForSelection.bind (this)
+					}
+				),
+				document.getElementById ('timelineSelector')
+			);
+
+		}
+
+		updateForSelection (selection) {
+			if (selection.machine !== undefined && selection.config !== undefined)
+				console.log ('wahoo ' + selection.machine.id + ', ' + selection.config.id);
+		}
+
+	}
+
+	class TimelineSelector extends React.Component {
+
+		constructor (props) {
+			super (props);
+			this.state = {};
+		}
+
+		render () {
+			return <ConfigSelector
+				controller={this.props.controller}
+				machine={this.state.machine}
+				config={this.state.config}
+				onChange={this.handleChange.bind (this)} />;
+		}
+
+		handleChange (newState) {
+			this.setState (newState);
+			this.props.onChange (newState);
+		}
+
+	}
+
+	class CompareController extends PerformanceController {
+
+		constructor (startupRunSetIds) {
+			super ();
+			this.startupRunSetIds = startupRunSetIds;
+		}
+
+		allDataLoaded () {
+			var selections;
+
+			if (this.startupRunSetIds === undefined) {
+				selections = [{}];
+			} else {
+				selections = this.startupRunSetIds.map (id => {
+					let runSet = this.runSetForId (id);
+					let machine = this.machineForId (runSet.get ('machine').id);
+					return {machine: machine, config: runSet.get ('config'), runSet: runSet};
+				});
+			}
+
+			React.render (React.createElement (RunSetSelectorList, {controller: this,
+																	initialSelections: selections,
+																	onChange: this.updateForSelection.bind (this)}),
+						  document.getElementById ('runSetSelectors'));
+
+			this.updateForSelection (selections);
 		}
 
 		updateForSelection (selection) {
@@ -392,7 +451,7 @@ var xamarinPerformanceStart;
 		return ids.join ('+');
 	}
 
-	function start () {
+	function start (started) {
 		google.load ('visualization', '1.0', {'packages':['corechart']});
 		// FIXME: do this at some point
 		//google.setOnLoadCallback (drawChart);
@@ -405,12 +464,20 @@ var xamarinPerformanceStart;
 		ParseRun = Parse.Object.extend ('Run');
 		ParseRunSet = Parse.Object.extend ('RunSet');
 
+		started ();
+	}
+
+	function compareStarted () {
 		var startupRunSetIds;
 		if (window.location.hash)
 			startupRunSetIds = window.location.hash.substring (1).split ('+');
-
 		new CompareController (startupRunSetIds);
 	}
 
-	xamarinPerformanceStart = start;
+	function timelineStarted () {
+		new TimelineController ();
+	}
+
+	xamarinCompareStart = start.bind (null, compareStarted);
+	xamarinTimelineStart = start.bind (null, timelineStarted);
 }) ();
