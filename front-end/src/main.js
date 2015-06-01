@@ -5,10 +5,11 @@ var xamarinPerformanceStart;
 (function () {
 	var utils = xamarin_utils;
 
-	var ParseMachine;
-	var ParseRunSet;
-	var ParseRun;
 	var ParseBenchmark;
+	var ParseConfig;
+	var ParseMachine;
+	var ParseRun;
+	var ParseRunSet;
 
 	class CompareController {
 		constructor (startupRunSetIds) {
@@ -32,6 +33,14 @@ var xamarinPerformanceStart;
 				}
 			});
 
+			var configQuery = new Parse.Query (ParseConfig);
+			configQuery.find ({
+				success: this.configsLoaded.bind (this),
+				error: function (error) {
+					alert ("error loading configs");
+				}
+			});
+
 			var benchmarkQuery = new Parse.Query (ParseBenchmark);
 			benchmarkQuery.find ({
 				success: results => {
@@ -50,15 +59,22 @@ var xamarinPerformanceStart;
 			this.checkAllDataLoaded ();
 		}
 
+		configsLoaded (results) {
+			this.allConfigs = results;
+			this.checkAllDataLoaded ();
+		}
+
 		runSetsLoaded (results) {
 			console.log ("run sets loaded: " + results.length);
 			this.allRunSets = results;
-			this.allConfigNames = utils.uniqArray (this.allRunSets.map (o => o.get ('configName')));
 			this.checkAllDataLoaded ();
 		}
 
 		checkAllDataLoaded () {
-			if (this.allMachines === undefined || this.allRunSets === undefined || this.allBenchmarks === undefined)
+			if (this.allMachines === undefined
+				|| this.allRunSets === undefined
+				|| this.allBenchmarks === undefined
+				|| this.allConfigs === undefined)
 				return;
 
 			var selections;
@@ -69,7 +85,7 @@ var xamarinPerformanceStart;
 				selections = this.startupRunSetIds.map (id => {
 					let runSet = this.runSetForId (id);
 					let machine = this.machineForId (runSet.get ('machine').id);
-					return {machine: machine, configName: runSet.get ('configName'), runSet: runSet};
+					return {machine: machine, config: runSet.get ('config'), runSet: runSet};
 				});
 			}
 
@@ -91,13 +107,17 @@ var xamarinPerformanceStart;
 			return utils.find (this.allMachines, m => m.id === id);
 		}
 
+		configForId (id) {
+			return utils.find (this.allConfigs, m => m.id === id);
+		}
+
 		runSetForId (id) {
 			return utils.find (this.allRunSets, rs => rs.id === id);
 		}
 
-		runSetsForMachineAndConfig (machine, configName) {
+		runSetsForMachineAndConfig (machine, config) {
 			return this.allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
-										   rs.get ('configName') === configName);
+										   rs.get ('config').id === config.id);
 		}
 
 		updateForSelection (selection) {
@@ -162,29 +182,33 @@ var xamarinPerformanceStart;
 			function renderMachineOption (machine) {
 				return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
 			}
-			function renderConfigOption (configName) {
-				return <option value={configName} key={configName}>{configName}</option>;
+			function renderConfigOption (config) {
+				return <option value={config.id} key={config.id}>{config.get ('name')}</option>;
 			}
 			let machineId;
 			if (this.props.machine !== undefined)
 				machineId = this.props.machine.id;
+			let configId;
+			if (this.props.config !== undefined)
+				configId = this.props.config.id;
 			return <div>
 				<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
 					{this.props.controller.allMachines.map (renderMachineOption)}
 				</select>
-				<select size="6" value={this.props.configName} onChange={this.configSelected.bind (this)}>
-					{this.props.controller.allConfigNames.map (renderConfigOption)}
+				<select size="6" value={configId} onChange={this.configSelected.bind (this)}>
+					{this.props.controller.allConfigs.map (renderConfigOption)}
 				</select>
 			</div>;
 		}
 
 		machineSelected (event) {
 			let machine = this.props.controller.machineForId (event.target.value);
-			this.props.onChange ({machine: machine, configName: this.props.configName});
+			this.props.onChange ({machine: machine, config: this.props.config});
 		}
 
 		configSelected (event) {
-			this.props.onChange ({machine: this.props.machine, configName: event.target.value});
+			let config = this.props.controller.configForId (event.target.value);
+			this.props.onChange ({machine: this.props.machine, config: config});
 		}
 
 	}
@@ -196,7 +220,7 @@ var xamarinPerformanceStart;
 			let runSetId = event.target.value;
 			console.log ("run set selected: " + runSetId);
 			let runSet = this.props.controller.runSetForId (runSetId);
-			this.props.onChange ({machine: selection.machine, configName: selection.configName, runSet: runSet});
+			this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
 		}
 
 		render () {
@@ -211,8 +235,8 @@ var xamarinPerformanceStart;
 			if (selection.runSet !== undefined)
 				runSetId = selection.runSet.id;
 
-			if (selection.machine !== undefined && selection.configName !== undefined)
-				filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.configName);
+			if (selection.machine !== undefined && selection.config !== undefined)
+				filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
 			else
 				filteredRunSets = [];
 
@@ -226,7 +250,7 @@ var xamarinPerformanceStart;
 				<ConfigSelector
 					controller={this.props.controller}
 					machine={selection.machine}
-					configName={selection.configName}
+					config={selection.config}
 					onChange={this.props.onChange} />;
 			let runSetsSelect =
 				<select
@@ -375,10 +399,11 @@ var xamarinPerformanceStart;
 
 		Parse.initialize('7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES', 'qnBBT97Mttqsvq3g9zghnBVn2iiHLAQvTzekUigm');
 
-		ParseMachine = Parse.Object.extend ('Machine');
-		ParseRunSet = Parse.Object.extend ('RunSet');
-		ParseRun = Parse.Object.extend ('Run');
 		ParseBenchmark = Parse.Object.extend ('Benchmark');
+		ParseConfig = Parse.Object.extend ('Config');
+		ParseMachine = Parse.Object.extend ('Machine');
+		ParseRun = Parse.Object.extend ('Run');
+		ParseRunSet = Parse.Object.extend ('RunSet');
 
 		var startupRunSetIds;
 		if (window.location.hash)
