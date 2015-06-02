@@ -123,8 +123,113 @@ var xamarinTimelineStart;
 		}
 
 		updateForSelection (selection) {
-			if (selection.machine !== undefined && selection.config !== undefined)
-				console.log ('wahoo ' + selection.machine.id + ', ' + selection.config.id);
+			let machine = selection.machine;
+			let config = selection.config;
+			if (machine === undefined || config === undefined)
+				return;
+
+			var runSetQuery = new Parse.Query (ParseRunSet);
+			runSetQuery
+				.equalTo ('machine', machine)
+				.equalTo ('config', config);
+			var runQuery = new Parse.Query (ParseRun);
+			runQuery
+				.matchesQuery ('runSet', runSetQuery)
+				.limit (1000)
+				.find ({
+					success: this.runsLoaded.bind (this, machine, config),
+					error: function (error) {
+						alert ("error loading runs");
+					}
+				});
+
+		}
+
+		runsLoaded (machine, config, runs) {
+
+			let runSets = this.runSetsForMachineAndConfig (machine, config);
+			runSets.sort (function (a, b) {
+				return a.get ('startedAt') - b.get ('startedAt');
+			});
+
+			/* A table of run data. The rows are indexed by benchmark index, the
+			 * columns by sorted run set index.
+			 */
+			let runTable = [];
+
+			/* Get a row index from a benchmark ID. */
+			let benchmarkIndicesById = {};
+			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+				runTable.push ([]);
+				benchmarkIndicesById [this.allBenchmarks [i].id] = i;
+			}
+
+			/* Get a column index from a run set ID. */
+			let runSetIndicesById = {};
+			for (let i = 0; i < runSets.length; ++i) {
+				for (let j = 0; j < this.allBenchmarks.length; ++j)
+					runTable [j].push ([]);
+				runSetIndicesById [runSets [i].id] = i;
+			}
+
+			/* Partition runs by benchmark and run set. */
+			for (let i = 0; i < runs.length; ++i) {
+				let run = runs [i];
+				let runIndex = runSetIndicesById [run.get ('runSet').id];
+				let benchmarkIndex = benchmarkIndicesById [run.get ('benchmark').id];
+				runTable [benchmarkIndex] [runIndex].push (run);
+			}
+
+			/* Compute the mean elapsed time for each. */
+			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+				for (let j = 0; j < runSets.length; ++j) {
+					let runs = runTable [i] [j];
+					let sum = runs
+						.map (run => run.get ('elapsedMilliseconds'))
+						.reduce ((sum, time) => sum + time, 0);
+					runTable [i] [j] = sum / runs.length;
+				}
+			}
+
+			/* Compute the average time for a benchmark, and normalize times by
+			 * it, i.e., in a given run set, a given benchmark took some
+			 * proportion of the average time for that benchmark.
+			 */
+			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+				for (let j = 0; j < runSets.length; ++j) {
+					let normal = runTable [i]
+						.filter (x => !isNaN (x))
+						.reduce ((sum, time) => sum + time, 0)
+						/ runTable [i].length;
+					runTable [i] = runTable [i].map (time => time / normal);
+				}
+			}
+
+			let entries = [['Run Set', 'Elapsed Time']];
+			for (let j = 0; j < runSets.length; ++j) {
+				let sum = 0;
+				let count = 0;
+				for (let i = 0; i < this.allBenchmarks.length; ++i) {
+					if (isNaN (runTable [i] [j]))
+						continue;
+					sum += runTable [i] [j];
+					++count;
+				}
+				entries.push ([runSets [j].get ('startedAt'), sum / count]);
+			}
+
+			let table = google.visualization.arrayToDataTable (entries);
+			let options = {
+				vAxis: {
+					minValue: 0,
+					viewWindow: {
+						min: 0,
+					},
+				},
+			};
+			let chart = new google.visualization.LineChart (document.getElementById ('timelineChart'));
+			chart.draw (table, options);
+
 		}
 
 	}
