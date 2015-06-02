@@ -205,26 +205,43 @@ var xamarinTimelineStart;
 				}
 			}
 
-			let entries = [['Run Set', 'Elapsed Time']];
+			var table = new google.visualization.DataTable ();
+
+			/* FIXME: We probably don't actually want to use the date
+			 * as the x axis.
+			 */
+			table.addColumn ({type: 'date', label: "Run Set"});
+			table.addColumn ({type: 'number', label: "Elapsed Time"});
+			table.addColumn ({type: 'number', role: 'interval'});
+			table.addColumn ({type: 'number', role: 'interval'});
+
 			for (let j = 0; j < runSets.length; ++j) {
 				let sum = 0;
 				let count = 0;
+				let min, max;
 				for (let i = 0; i < this.allBenchmarks.length; ++i) {
-					if (isNaN (runTable [i] [j]))
+					let val = runTable [i] [j];
+					if (isNaN (val))
 						continue;
-					sum += runTable [i] [j];
+					sum += val;
+					if (min === undefined || val < min)
+						min = val;
+					if (max === undefined || val > max)
+						max = val;
 					++count;
 				}
-				entries.push ([runSets [j].get ('startedAt'), sum / count]);
+				table.addRow ([runSets [j].get ('startedAt'), sum / count, min, max]);
 			}
 
-			let table = google.visualization.arrayToDataTable (entries);
 			let options = {
 				vAxis: {
 					minValue: 0,
 					viewWindow: {
 						min: 0,
 					},
+				},
+				intervals: {
+					style: 'area',
 				},
 			};
 			let chart = new google.visualization.LineChart (document.getElementById ('timelineChart'));
