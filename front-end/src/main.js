@@ -558,6 +558,9 @@ var xamarinTimelineStart;
 				query.equalTo ('runSet', rs);
 				query.find ({
 					success: results => {
+						if (this.props.runSets !== runSets)
+							return;
+
 						this.runsByIndex [i] = results;
 						this.runsLoaded ();
 					},
