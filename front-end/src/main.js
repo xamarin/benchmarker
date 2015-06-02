@@ -14,6 +14,11 @@ var xamarinTimelineStart;
 
 	class PerformanceController {
 
+		allBenchmarks: Array<Object>;
+		allMachines: Array<Object>;
+		allRunSets: Array<Object>;
+		allConfigs: Array<Object>;
+
 		constructor () {
 
 			var machineQuery = new Parse.Query (ParseMachine);
@@ -50,6 +55,9 @@ var xamarinTimelineStart;
 					alert ("error loading benchmarks");
 				}
 			});
+		}
+
+		allDataLoaded () {
 		}
 
 		machinesLoaded (results) {
@@ -106,6 +114,9 @@ var xamarinTimelineStart;
 	}
 
 	class TimelineController extends PerformanceController {
+
+		initialMachineId: string;
+		initialConfigId: string;
 
 		constructor (machineId, configId) {
 			super ();
