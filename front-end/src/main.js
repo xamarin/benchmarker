@@ -318,52 +318,66 @@ var xamarinTimelineStart;
 				});
 			}
 
-			React.render (React.createElement (RunSetSelectorList, {controller: this,
-																	initialSelections: selections,
-																	onChange: this.updateForSelection.bind (this)}),
-						  document.getElementById ('runSetSelectors'));
+			React.render (React.createElement (ComparePage, {controller: this,
+															 initialSelections: selections,
+															 onChange: this.updateForSelection.bind (this)}),
+						  document.getElementById ('comparePage'));
 
 			this.updateForSelection (selections);
 		}
 
-		updateForSelection (selection) {
-			var runSets = [];
-			for (var i = 0; i < selection.length; ++i) {
-				var rs = selection [i].runSet;
-				if (rs === undefined)
-					continue;
-				runSets.push (rs);
-			}
-
-			if (runSets.length > 1)
-				new RunSetComparator (this, runSets);
-
+		updateForSelection (selections) {
+			var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
 			window.location.hash = hashForRunSets (runSets);
 		}
 	}
 
-	class RunSetSelectorList extends React.Component {
+	class ComparePage extends React.Component {
 		constructor (props) {
 			super (props);
 			this.state = {selections: this.props.initialSelections};
 		}
 
-		handleChange (index, newSelection) {
-			var selections = utils.updateArray (this.state.selections, index, newSelection);
-			this.setState ({selections: selections});
-		}
-
-		addSelector () {
-			this.setState ({selections: this.state.selections.concat ({})});
-		}
-
-		removeSelector (i) {
-			this.setState ({selections: utils.removeArrayElement (this.state.selections, i)});
-		}
-
 		setState (newState) {
 			super.setState (newState);
 			this.props.onChange (newState.selections);
+		}
+
+		render () {
+			console.log ("rendering compare page");
+
+			var selections = this.state.selections;
+			var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
+
+			let comparator;
+
+			if (runSets.length > 1)
+				comparator = <RunSetComparator controller={this.props.controller} runSets={runSets} />;
+			else
+				comparator = <div className='diagnostic'>Please select at least two run sets.</div>;
+
+			return <div>
+				<RunSetSelectorList
+					controller={this.props.controller}
+					selections={this.state.selections}
+					onChange={this.setState.bind (this)} />
+				{comparator}
+				</div>;
+		}
+	}
+
+	class RunSetSelectorList extends React.Component {
+		handleChange (index, newSelection) {
+			var selections = utils.updateArray (this.props.selections, index, newSelection);
+			this.props.onChange ({selections: selections});
+		}
+
+		addSelector () {
+			this.props.onChange ({selections: this.props.selections.concat ({})});
+		}
+
+		removeSelector (i) {
+			this.props.onChange ({selections: utils.removeArrayElement (this.props.selections, i)});
 		}
 
 		render () {
@@ -377,7 +391,7 @@ var xamarinTimelineStart;
 				</section>;
 			}
 			return <div className="RunSetSelectorList">
-				{this.state.selections.map (renderSelector.bind (this))}
+				{this.props.selections.map (renderSelector.bind (this))}
 				<footer><button onClick={this.addSelector.bind (this)}>Add Run Set</button></footer>
 			</div>;
 		}
@@ -525,14 +539,21 @@ var xamarinTimelineStart;
 		}
 	}
 
-	class RunSetComparator {
-		constructor (controller, runSets) {
-			this.controller = controller;
+	class RunSetComparator extends React.Component {
+		constructor (props) {
+			console.log ("run set comparator constructing");
 
-			this.runSets = runSets;
+			super (props);
+
+			this.invalidateState (props.runSets);
+		}
+
+		invalidateState (runSets) {
+			this.state = {};
+
 			this.runsByIndex = [];
-			for (let i = 0; i < this.runSets.length; ++i) {
-				var rs = this.runSets [i];
+			for (let i = 0; i < runSets.length; ++i) {
+				var rs = runSets [i];
 				var query = new Parse.Query (ParseRun);
 				query.equalTo ('runSet', rs);
 				query.find ({
@@ -547,15 +568,23 @@ var xamarinTimelineStart;
 			}
 		}
 
+		componentWillReceiveProps (nextProps) {
+			this.invalidateState (nextProps.runSets);
+		}
+
 		runsLoaded () {
-			for (var i = 0; i < this.runSets.length; ++i) {
+			console.log ("run loaded");
+
+			for (var i = 0; i < this.props.runSets.length; ++i) {
 				if (this.runsByIndex [i] === undefined)
 					return;
 			}
 
+			console.log ("all runs loaded");
+
 			var commonBenchmarkIds;
 
-			for (var i = 0; i < this.runSets.length; ++i) {
+			for (var i = 0; i < this.props.runSets.length; ++i) {
 				var runs = this.runsByIndex [i];
 				var benchmarkIds = utils.uniqArray (runs.map (o => o.get ('benchmark').id));
 				if (commonBenchmarkIds === undefined) {
@@ -569,9 +598,9 @@ var xamarinTimelineStart;
 
 			for (var i = 0; i < commonBenchmarkIds.length; ++i) {
 				var benchmarkId = commonBenchmarkIds [i]
-				var row = [this.controller.benchmarkNameForId (benchmarkId)];
+				var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
 				var mean = undefined;
-				for (var j = 0; j < this.runSets.length; ++j) {
+				for (var j = 0; j < this.props.runSets.length; ++j) {
 					var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
 					var range = calculateRunsRange (runs);
 					if (mean === undefined) {
@@ -584,16 +613,44 @@ var xamarinTimelineStart;
 			}
 
 			var data = google.visualization.arrayToDataTable (dataArray, true);
-			for (var i = 0; i < this.runSets.length; ++i)
-				data.setColumnLabel (1 + 4 * i, this.runSets [i].get ('startedAt'));
+			for (var i = 0; i < this.props.runSets.length; ++i)
+				data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
+
+			var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
+
+			this.setState ({table: data, height: height});
+		}
+
+		render () {
+			if (this.state.table === undefined)
+				return <div className='diagnostic'>Loading...</div>;
 
 			var options = { orientation: 'vertical' };
+			return <GoogleChart
+				graphName='comparisonChart'
+				chartClass={google.visualization.CandlestickChart}
+				height={this.state.height}
+				table={this.state.table}
+				options={options} />;
+		}
+	}
 
-			var div = document.getElementById ('comparisonChart');
-			div.style.height = (35 + (15 * this.runSets.length) * commonBenchmarkIds.length) + "px";
+	class GoogleChart extends React.Component {
+		render () {
+			return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
+		}
 
-			var chart = new google.visualization.CandlestickChart (div);
-			chart.draw (data, options);
+		componentDidMount () {
+			this.drawCharts();
+		}
+
+		componentDidUpdate () {
+			this.drawCharts();
+		}
+
+		drawCharts () {
+			var chart = new this.props.chartClass (document.getElementById (this.props.graphName));
+			chart.draw (this.props.table, this.props.options);
 		}
 	}
 
