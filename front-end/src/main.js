@@ -107,19 +107,32 @@ var xamarinTimelineStart;
 
 	class TimelineController extends PerformanceController {
 
+		constructor (machineId, configId) {
+			super ();
+			this.initialMachineId = machineId;
+			this.initialConfigId = configId;
+		}
+
 		allDataLoaded () {
+			let initialSelection = {};
+			if (this.initialMachineId !== undefined)
+				initialSelection.machine = this.machineForId (this.initialMachineId);
+			if (this.initialConfigId !== undefined)
+				initialSelection.config = this.configForId (this.initialConfigId);
 
 			React.render (
 				React.createElement (
 					TimelineSelector,
 					{
 						controller: this,
+						initialSelection: initialSelection,
 						onChange: this.updateForSelection.bind (this)
 					}
 				),
 				document.getElementById ('timelineSelector')
 			);
 
+			this.updateForSelection (initialSelection);
 		}
 
 		updateForSelection (selection) {
@@ -143,6 +156,7 @@ var xamarinTimelineStart;
 					}
 				});
 
+			window.location.hash = machine.id + '+' + config.id;
 		}
 
 		runsLoaded (machine, config, runs) {
@@ -255,7 +269,7 @@ var xamarinTimelineStart;
 
 		constructor (props) {
 			super (props);
-			this.state = {};
+			this.state = props.initialSelection;
 		}
 
 		render () {
@@ -597,7 +611,15 @@ var xamarinTimelineStart;
 	}
 
 	function timelineStarted () {
-		new TimelineController ();
+		let machineId, configId;
+		if (window.location.hash) {
+			let ids = window.location.hash.substring (1).split ('+');
+			if (ids.length == 2) {
+				machineId = ids [0];
+				configId = ids [1];
+			}
+		}
+		new TimelineController (machineId, configId);
 	}
 
 	xamarinCompareStart = start.bind (null, compareStarted);
