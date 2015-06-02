@@ -13,6 +13,7 @@ namespace Benchmarker.Common.Models
 		public List<Result> Results { get { return results; } }
 		public DateTime StartDateTime { get; set; }
 		public DateTime FinishDateTime { get; set; }
+		public Config Config { get; set; }
 
 		public RunSet ()
 		{
@@ -46,12 +47,16 @@ namespace Benchmarker.Common.Models
 		public async Task<ParseObject> UploadToParse ()
 		{
 			var m = await GetOrUploadMachineToParse ();
+			var c = await Config.GetOrUploadToParse ();
 			var obj = new ParseObject ("RunSet");
 			obj ["machine"] = m;
+			obj ["config"] = c;
 			obj ["startedAt"] = StartDateTime;
 			obj ["finishedAt"] = FinishDateTime;
 			await obj.SaveAsync ();
 			foreach (var result in results) {
+				if (result.Config != Config)
+					throw new Exception ("Results must have the same config as their RunSets");
 				if (result.Timedout)
 					continue;
 				await result.UploadRunsToParse (obj);

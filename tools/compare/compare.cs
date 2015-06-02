@@ -147,7 +147,7 @@ class Compare
 
 			/* Run or load the benchmarks */
 			foreach (var config in configs) {
-				var runSet = new RunSet { StartDateTime = DateTime.Now };
+				var runSet = new RunSet { StartDateTime = DateTime.Now, Config = config };
 
 				foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");

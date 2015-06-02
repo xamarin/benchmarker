@@ -3,6 +3,9 @@ using System.IO;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Parse;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Benchmarker.Common.Models
 {
@@ -67,6 +70,66 @@ namespace Benchmarker.Common.Models
 		public override int GetHashCode ()
 		{
 			return Name.GetHashCode ();
+		}
+
+		static bool OptionsEqual (IEnumerable<string> native, IEnumerable<object> parse)
+		{
+			if (parse == null)
+				return false;
+			foreach (var s in native) {
+				var found = false;
+				foreach (var p in parse) {
+					var ps = p as string;
+					if (s == ps) {
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					return false;
+			}
+			return true;
+		}
+
+		static bool EnvironmentVariablesEqual (IDictionary<string, string> native, IDictionary<string, object> parse)
+		{
+			if (parse == null)
+				return false;
+			foreach (var kv in native) {
+				if (!parse.ContainsKey (kv.Key))
+					return false;
+				var v = parse [kv.Key] as string;
+				if (v != kv.Value)
+					return false;
+			}
+			return true;
+		}
+
+		public async Task<ParseObject> GetOrUploadToParse ()
+		{
+			var executable = Path.GetFileName (Mono);
+
+			var results = await ParseObject.GetQuery ("Config")
+				.WhereEqualTo ("name", Name)
+				.WhereEqualTo ("monoExecutable", executable)
+				.FindAsync ();
+			foreach (var o in results) {
+				if (OptionsEqual (MonoOptions, o ["monoOptions"] as IEnumerable<object>)
+				    && EnvironmentVariablesEqual (MonoEnvironmentVariables, o ["monoEnvironmentVariables"] as IDictionary<string, object>)) {
+					Console.WriteLine ("found config " + o.ObjectId);
+					return o;
+				}
+			}
+
+			Console.WriteLine ("creating new config");
+
+			var obj = new ParseObject ("Config");
+			obj ["name"] = Name;
+			obj ["monoExecutable"] = executable;
+			obj ["monoOptions"] = MonoOptions;
+			obj ["monoEnvironmentVariables"] = MonoEnvironmentVariables;
+			await obj.SaveAsync ();
+			return obj;
 		}
 	}
 }
