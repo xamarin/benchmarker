@@ -357,17 +357,17 @@ var xamarinTimelineStart;
 
 		render () {
 			function renderSelector (selection, index) {
-				return <div>
+				return <section>
+					<button onClick={this.removeSelector.bind (this, index)}>Remove</button>
 					<RunSetSelector
 						controller={this.props.controller}
 						selection={selection}
 						onChange={this.handleChange.bind (this, index)} />
-					<button onClick={this.removeSelector.bind (this, index)}>Delete</button>
-					</div>;
+				</section>;
 			}
-			return <div>
+			return <div className="RunSetSelectorList">
 				{this.state.selections.map (renderSelector.bind (this))}
-				<button onClick={this.addSelector.bind (this)}>Add run set!</button>
+				<footer><button onClick={this.addSelector.bind (this)}>Add Run Set</button></footer>
 			</div>;
 		}
 	}
@@ -386,7 +386,7 @@ var xamarinTimelineStart;
 			let configId;
 			if (this.props.config !== undefined)
 				configId = this.props.config.id;
-			return <div>
+			return <div className="ConfigSelector">
 				<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
 					{this.props.controller.allMachines.map (renderMachineOption)}
 				</select>
@@ -441,14 +441,21 @@ var xamarinTimelineStart;
 				return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
 			}
 
-			var configSelector =
+			let config = selection.config === undefined
+				? undefined
+				: this.props.controller.configForId (selection.config.id);
+
+			let configSelector =
 				<ConfigSelector
 					controller={this.props.controller}
 					machine={selection.machine}
-					config={selection.config}
+					config={config}
 					onChange={this.props.onChange} />;
-			let runSetsSelect =
-				<select
+			let runSetsSelect = filteredRunSets.length === 0
+				? <select size="6" disabled="true">
+					<option className="diagnostic">Please select a machine and config.</option>
+				</select>
+				: <select
 					size="6"
 					selectedIndex="-1"
 					value={runSetId}
@@ -458,10 +465,10 @@ var xamarinTimelineStart;
 
 			console.log ("runSetId is " + runSetId);
 
-			return <div>
+			return <div className="RunSetSelector">
 				{configSelector}
 				{runSetsSelect}
-				<RunSetDescription runSet={this.props.selection.runSet} />
+				<ConfigDescription config={config} />
 			</div>;
 		}
 
@@ -470,23 +477,39 @@ var xamarinTimelineStart;
 		}
 	}
 
-	class RunSetDescription extends React.Component {
+	class ConfigDescription extends React.Component {
 		render () {
-			let runSet = this.props.runSet;
+			let config = this.props.config;
 
-			if (runSet === undefined)
-				return <div style={{display: "inline-block"}}>?</div>;
+			if (config === undefined)
+				return <div className="ConfigDescription"></div>;
 
-			let mono = runSet.get ('monoExecutable') || "";
-			let envVars = runSet.get ('monoEnvironmentVariables') || {};
-			let options = runSet.get ('monoOptions') || [];
+			let mono = config.get ('monoExecutable');
+			let monoExecutable = mono === undefined
+				? <span className="diagnostic">No mono executable specified.</span>
+				: <code>{mono}</code>;
+			let envVarsMap = config.get ('monoEnvironmentVariables') || {};
+			let envVars = Object.keys (envVarsMap);
+			let envVarsList = envVars.length === 0
+				? <span className="diagnostic">No environment variables specified.</span>
+				: <ul>
+					{envVars.map (name => <li><code>{name + "=" + envVarsMap [name]}</code></li>)}
+				</ul>;
+			let options = config.get ('monoOptions') || [];
+			let optionsList = options.length === 0
+				? <span className="diagnostic">No command-line options specified.</span>
+				: <code>{options.join (' ')}</code>;
 
-			return <div style={{display: "inline-block"}}>
-				{mono}<br/>
-				{
-					Object.keys (envVars).map (name => <div>{name + "=" + envVars [name]}</div>)
-				}
-				{options.toString ()}
+			return <div className="ConfigDescription">
+				<hr />
+				<dl>
+					<dt>Mono Executable</dt>
+					<dd>{monoExecutable}</dd>
+					<dt>Environment Variables</dt>
+					<dd>{envVarsList}</dd>
+					<dt>Command-line Options</dt>
+					<dd>{optionsList}</dd>
+				</dl>
 			</div>;
 		}
 	}

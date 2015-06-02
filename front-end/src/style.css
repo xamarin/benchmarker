@@ -1,0 +1,83 @@
+/* RunSetSelectorList */
+
+.RunSetSelectorList {
+	border: 1px solid black;
+	margin: 1em;
+	padding: 0 0.5em;
+}
+
+.RunSetSelectorList footer, .RunSetSelectorList section {
+	clear: both;
+	margin: 1em 0;
+	width: 100%;
+}
+
+.RunSetSelectorList button {
+	font-size: 100%;
+	margin: 0 0.5em;
+	padding: 0.25em;
+}
+
+.RunSetSelectorList section button {
+	float: right;
+	margin: 0 0.5em 0 1em;
+}
+
+/* RunSetSelector */
+
+.RunSetSelector {
+	border: 1px solid black;
+	margin: 0.5em;
+	overflow: hidden;
+	padding: 0 0.5em;
+	vertical-align: top;
+	font-family: sans-serif;
+}
+
+.RunSetSelector hr {
+	border: none;
+	border-bottom: 1px solid black;
+}
+
+/* ConfigSelector, RunSetSelector */
+
+.RunSetSelector .ConfigSelector {
+	display: inline-block;
+}
+
+.ConfigSelector select, .RunSetSelector select {
+	font-size: smaller;
+	margin: 1em 0.5em;
+	height: 6em;
+}
+
+.ConfigSelector option, .RunSetSelector option {
+	font-family: sans-serif;
+	padding: 0.5em;
+}
+
+/* ConfigDescription */
+
+.ConfigDescription {
+	padding: 0 0.5em;
+	vertical-align: top;
+	font-family: sans-serif;
+}
+
+.ConfigDescription dd, .ConfigDescription dt {
+	margin-bottom: 1em;
+}
+
+.ConfigDescription dd {
+	margin-left: 1em;
+}
+
+.ConfigDescription dt {
+	font-weight: bold;
+}
+
+/* Miscellany */
+
+.diagnostic {
+	font-style: italic;
+}
