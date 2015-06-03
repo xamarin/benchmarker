@@ -1,0 +1,36 @@
+.diagnostic {
+	font-style: italic;
+}
+
+/* ConfigDescription */
+
+.ConfigDescription {
+	padding: 0 0.5em;
+	vertical-align: top;
+	font-family: sans-serif;
+}
+
+.ConfigDescription dd, .ConfigDescription dt {
+	margin-bottom: 1em;
+}
+
+.ConfigDescription dd {
+	margin-left: 1em;
+}
+
+.ConfigDescription dt {
+	font-weight: bold;
+}
+
+/* ConfigSelector */
+
+.ConfigSelector select, .RunSetSelector select {
+	font-size: smaller;
+	margin: 1em 0.5em;
+	height: 6em;
+}
+
+.ConfigSelector option, .RunSetSelector option {
+	font-family: sans-serif;
+	padding: 0.5em;
+}

@@ -1,10 +1,12 @@
-all : build/main.js build/utils.js build/style.css
+JSX_SOURCES = $(wildcard src/*.js)
+JS_TARGETS = $(addprefix build/, $(notdir $(JSX_SOURCES)))
+CSS_SOURCES = $(wildcard src/*.css)
+CSS_TARGETS = $(addprefix build/, $(notdir $(CSS_SOURCES)))
 
-build/main.js : src/main.js Makefile
-	babel --source-maps=inline src/main.js -o build/main.js
+all : $(JS_TARGETS) $(CSS_TARGETS)
 
-build/utils.js : src/utils.js Makefile
-	babel --source-maps=inline src/utils.js -o build/utils.js
+build/%.js : src/%.js Makefile
+	babel --source-maps=inline "$<" -o "$@"
 
-build/style.css : src/style.css Makefile
-	cp -f src/style.css build/style.css
+build/%.css : src/%.css Makefile
+	cp -f "$<" "$@"
