@@ -14,6 +14,7 @@ namespace Benchmarker.Common.Models
 		public DateTime StartDateTime { get; set; }
 		public DateTime FinishDateTime { get; set; }
 		public Config Config { get; set; }
+		public Commit Commit { get; set; }
 
 		public RunSet ()
 		{
@@ -48,9 +49,11 @@ namespace Benchmarker.Common.Models
 		{
 			var m = await GetOrUploadMachineToParse ();
 			var c = await Config.GetOrUploadToParse ();
+			var commit = await Commit.GetOrUploadToParse ();
 			var obj = new ParseObject ("RunSet");
 			obj ["machine"] = m;
 			obj ["config"] = c;
+			obj ["commit"] = commit;
 			obj ["startedAt"] = StartDateTime;
 			obj ["finishedAt"] = FinishDateTime;
 			await obj.SaveAsync ();

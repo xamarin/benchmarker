@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Collections;
 using System.Threading.Tasks;
 using Benchmarker.Common.Models;
@@ -23,43 +24,18 @@ namespace Benchmarker.Common
 			benchmark = _benchmark;
 			defaultTimeout = _timeout;
 
-			info = new ProcessStartInfo {
-				WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory),
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
-			};
+			info = config.NewProcessStartInfo (monoExecutable);
+
+			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
 
 			var commandLine = benchmark.CommandLine;
 
 			if (config.NoMono) {
 				info.FileName = Path.Combine (info.WorkingDirectory, commandLine [0]);
 				commandLine = commandLine.Skip (1).ToArray ();
-			} else {
-				info.FileName = !String.IsNullOrEmpty (monoExecutable) ? monoExecutable : !String.IsNullOrEmpty (config.Mono) ? config.Mono : null;
 			}
-
-			if (info.FileName == null) {
-				Console.Error.WriteLine ("Error: No mono executable specified.");
-				Environment.Exit (1);
-			}
-
-			foreach (var env in config.MonoEnvironmentVariables)
-				info.EnvironmentVariables.Add (env.Key, env.Value);
 
 			arguments = String.Join (" ", config.MonoOptions.Concat (commandLine));
-		}
-
-		string PrintableEnvironmentVariables ()
-		{
-			var builder = new StringBuilder ();
-			foreach (DictionaryEntry entry in info.EnvironmentVariables) {
-				builder.Append (entry.Key.ToString ());
-				builder.Append ("=");
-				builder.Append (entry.Value.ToString ());
-				builder.Append (" ");
-			}
-			return builder.ToString ();
 		}
 
 		public string GetEnvironmentVariable (string key)
@@ -75,28 +51,6 @@ namespace Benchmarker.Common
 			info.EnvironmentVariables.Add (key, value);
 		}
 
-		public string GetVersion ()
-		{
-			if (config.NoMono)
-				return String.Empty;
-			
-			/* Run without timing with --version */
-			info.Arguments = "--version " + arguments;
-
-			Console.Out.WriteLine ("\t$> {0} {1} {2}", PrintableEnvironmentVariables (), info.FileName, info.Arguments);
-
-			var process = Process.Start (info);
-			var version = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
-			var versionerror = Task.Run (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd ());
-
-			process.WaitForExit ();
-			process.Close ();
-
-			Console.WriteLine ("version is " + version);
-
-			return version;
-		}
-
 		Result.Run Run (string profilesDirectory, string profileFilename)
 		{
 			try {
@@ -105,7 +59,7 @@ namespace Benchmarker.Common
 				else
 					Debug.Assert (profileFilename == null);
 				
-				Console.Out.WriteLine ("\t$> {0} {1} {2}", PrintableEnvironmentVariables (), info.FileName, info.Arguments);
+				Console.Out.WriteLine ("\t$> {0} {1} {2}", Config.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
 
 				/* Run with timing */
 				if (config.NoMono)

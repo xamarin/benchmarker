@@ -147,7 +147,13 @@ class Compare
 
 			/* Run or load the benchmarks */
 			foreach (var config in configs) {
-				var runSet = new RunSet { StartDateTime = DateTime.Now, Config = config };
+				var commit = AsyncContext.Run (() => config.GetCommit ());
+
+				var runSet = new RunSet {
+					StartDateTime = DateTime.Now,
+					Config = config,
+					Commit = commit
+				};
 
 				foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 					var runfileprefix = String.Join ("_", benchmark.Name, config.Name, "");
@@ -159,13 +165,16 @@ class Compare
 					Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
 					var runner = new Runner (monoexe, testsdir, config, benchmark, timeout);
-					var version = runner.GetVersion ();
+
+					if (commit == null) {
+						Console.WriteLine ("Could not get commit");
+						Environment.Exit (1);
+					}
 
 					var result = new Result {
 						DateTime = DateTime.Now,
 						Benchmark = benchmark,
 						Config = config,
-						Version = version,
 						Timedout = false,
 					};
 
@@ -196,7 +205,12 @@ class Compare
 				runSet.FinishDateTime = DateTime.Now;
 
 				Console.WriteLine ("uploading");
-				AsyncContext.Run (() => runSet.UploadToParse ());
+				try {
+					AsyncContext.Run (() => runSet.UploadToParse ());
+				} catch (Exception exc) {
+					Console.WriteLine ("Failure uploading data: " + exc);
+					Environment.Exit (1);
+				}
 				Console.WriteLine ("uploaded");
 			}
 		}

@@ -6,6 +6,10 @@ using System.Collections.Generic;
 using Parse;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Collections;
+using System.Text;
+using Benchmarker.Common.Git;
 
 namespace Benchmarker.Common.Models
 {
@@ -55,6 +59,125 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
+		public ProcessStartInfo NewProcessStartInfo (string monoExecutable)
+		{
+			var info = new ProcessStartInfo {
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+			};
+
+			if (!NoMono) {
+				info.FileName = !String.IsNullOrEmpty (monoExecutable) ? monoExecutable : !String.IsNullOrEmpty (Mono) ? Mono : null;
+				if (info.FileName == null) {
+					Console.Error.WriteLine ("Error: No mono executable specified.");
+					Environment.Exit (1);
+				}
+			}
+
+			foreach (var env in MonoEnvironmentVariables)
+				info.EnvironmentVariables.Add (env.Key, env.Value);
+		
+			return info;
+		}
+
+		public static string PrintableEnvironmentVariables (ProcessStartInfo info)
+		{
+			var builder = new StringBuilder ();
+			foreach (DictionaryEntry entry in info.EnvironmentVariables) {
+				builder.Append (entry.Key.ToString ());
+				builder.Append ("=");
+				builder.Append (entry.Value.ToString ());
+				builder.Append (" ");
+			}
+			return builder.ToString ();
+		}
+
+		static Octokit.GitHubClient gitHubClient;
+		static Octokit.GitHubClient GitHubClient {
+			get {
+				if (gitHubClient == null) {
+					gitHubClient = new Octokit.GitHubClient (new Octokit.ProductHeaderValue ("XamarinBenchmark"));
+					if (gitHubClient == null)
+						throw new Exception ("Could not instantiate GitHub client");
+				}
+				return gitHubClient;
+			}
+		}
+
+		public async Task<Commit> GetCommit ()
+		{
+			if (NoMono) {
+				// FIXME: return a dummy commit
+				return null;
+			}
+
+			var info = NewProcessStartInfo (null);
+			/* Run without timing with --version */
+			info.Arguments = "--version";
+
+			Console.Out.WriteLine ("\t$> {0} {1} {2}", PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
+
+			var process = Process.Start (info);
+			var version = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
+			var versionError = Task.Run (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd ()).Result;
+
+			process.WaitForExit ();
+			process.Close ();
+
+			var line = version.Split (new char[] {'\n'}, 2) [0];
+			var regex = new Regex ("^Mono JIT.*\\((.*)/([0-9a-f]+) (.*)\\)");
+			var match = regex.Match (line);
+
+			if (!match.Success) {
+				Console.WriteLine ("Error: cannot parse mono version.");
+				return null;
+			}
+
+			var commit = new Commit ();
+			commit.Branch = match.Groups [1].Value;
+			commit.Hash = match.Groups [2].Value;
+			var date = match.Groups [3].Value;
+
+			Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
+
+			if (commit.Branch == "(detached")
+				commit.Branch = null;
+
+			var github = GitHubClient;
+			Octokit.Commit gitHubCommit = null;
+			try {
+				gitHubCommit = await github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash);
+			} catch (Octokit.NotFoundException) {
+			}
+			if (gitHubCommit == null) {
+				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
+			} else {
+				commit.Hash = gitHubCommit.Sha;
+				Console.WriteLine ("Got commit " + commit.Hash + " from GitHub");
+			}
+
+			try {
+				var repo = new Repository (Path.GetDirectoryName (Mono));
+				var gitHash = repo.RevParse (commit.Hash);
+				if (gitHash == null) {
+					Console.WriteLine ("Could not get commit " + commit.Hash + " from repository");
+				} else {
+					Console.WriteLine ("Got commit " + gitHash + " from repository");
+
+					commit.Hash = gitHash;
+					commit.MergeBaseHash = repo.MergeBase (commit.Hash, "master");
+					commit.CommitDate = repo.CommitDate (commit.Hash);
+
+					Console.WriteLine ("Commit {0} merge base {1} date {2}", commit.Hash, commit.MergeBaseHash, commit.CommitDate);
+				}
+			} catch (Exception) {
+				Console.WriteLine ("Could not get git repository");
+			}
+
+			return commit;
+		}
+			
 		public override bool Equals (object other)
 		{
 			if (other == null)
