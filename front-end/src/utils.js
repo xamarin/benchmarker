@@ -1,6 +1,7 @@
 var xp_utils = (function () {
+    "use strict";
 
-	let exports = {};
+    let exports = {};
 
     exports.findIndex = function findIndex (arr, f) {
 		for (var i = 0; i < arr.length; ++i) {

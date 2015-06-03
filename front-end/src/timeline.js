@@ -1,4 +1,10 @@
+/* global React */
+/* global Parse */
+/* global google */
+/* global xp_common */
+
 var xp_timeline = (function () {
+	"use strict";
 
 	var exports = {};
 
@@ -6,12 +12,12 @@ var xp_timeline = (function () {
 		let machineId, configId;
 		if (window.location.hash) {
 			let ids = window.location.hash.substring (1).split ('+');
-			if (ids.length == 2) {
+			if (ids.length === 2) {
 				machineId = ids [0];
 				configId = ids [1];
 			}
 		}
-		new Controller (machineId, configId);
+		var controller = new Controller (machineId, configId);
 	}
 
 	exports.start = xp_common.start.bind (null, started);
@@ -121,7 +127,7 @@ var xp_timeline = (function () {
 				.find ({
 					success: this.runsLoaded.bind (this, machine, config),
 					error: function (error) {
-						alert ("error loading runs");
+						alert ("error loading runs: " + error);
 					}
 				});
 
@@ -157,7 +163,7 @@ var xp_timeline = (function () {
 
 		}
 
-		runsLoaded (machine, config, runs) {
+		runsLoaded (machine, config, allRuns) {
 
 			let allBenchmarks = this.props.controller.allBenchmarks;
 			let runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
@@ -183,9 +189,9 @@ var xp_timeline = (function () {
 				runSetIndicesById [runSets [i].id] = i;
 			}
 
-			/* Partition runs by benchmark and run set. */
-			for (let i = 0; i < runs.length; ++i) {
-				let run = runs [i];
+			/* Partition allRuns by benchmark and run set. */
+			for (let i = 0; i < allRuns.length; ++i) {
+				let run = allRuns [i];
 				let runIndex = runSetIndicesById [run.get ('runSet').id];
 				let benchmarkIndex = benchmarkIndicesById [run.get ('benchmark').id];
 				runTable [benchmarkIndex] [runIndex].push (run);
@@ -197,7 +203,7 @@ var xp_timeline = (function () {
 					let runs = runTable [i] [j];
 					let sum = runs
 						.map (run => run.get ('elapsedMilliseconds'))
-						.reduce ((sum, time) => sum + time, 0);
+						.reduce ((sumSoFar, time) => sumSoFar + time, 0);
 					runTable [i] [j] = sum / runs.length;
 				}
 			}

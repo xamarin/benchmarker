@@ -10,3 +10,6 @@ build/%.js : src/%.js Makefile
 
 build/%.css : src/%.css Makefile
 	cp -f "$<" "$@"
+
+lint :
+	eslint src

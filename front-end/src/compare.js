@@ -1,4 +1,11 @@
+/* global React */
+/* global Parse */
+/* global google */
+/* global xp_common */
+/* global xp_utils */
+
 var xp_compare = (function () {
+	"use strict";
 
 	var exports = {};
 
@@ -6,7 +13,7 @@ var xp_compare = (function () {
 		var startupRunSetIds;
 		if (window.location.hash)
 			startupRunSetIds = window.location.hash.substring (1).split ('+');
-		new Controller (startupRunSetIds);
+		var controller = new Controller (startupRunSetIds);
 	}
 
 	exports.start = xp_common.start.bind (null, started);
@@ -99,6 +106,7 @@ var xp_compare = (function () {
 			this.state = {};
 
 			this.runsByIndex = [];
+			/* FIXME: use the containedIn constraint? */
 			for (let i = 0; i < runSets.length; ++i) {
 				var rs = runSets [i];
 				var query = new Parse.Query (xp_common.Run);
@@ -112,7 +120,7 @@ var xp_compare = (function () {
 						this.runsLoaded ();
 					},
 					error: function (error) {
-						alert ("error loading runs");
+						alert ("error loading runs: " + error);
 					}
 				});
 			}
@@ -125,7 +133,7 @@ var xp_compare = (function () {
 		runsLoaded () {
 			console.log ("run loaded");
 
-			for (var i = 0; i < this.props.runSets.length; ++i) {
+			for (let i = 0; i < this.props.runSets.length; ++i) {
 				if (this.runsByIndex [i] === undefined)
 					return;
 			}
@@ -134,8 +142,8 @@ var xp_compare = (function () {
 
 			var commonBenchmarkIds;
 
-			for (var i = 0; i < this.props.runSets.length; ++i) {
-				var runs = this.runsByIndex [i];
+			for (let i = 0; i < this.props.runSets.length; ++i) {
+				let runs = this.runsByIndex [i];
 				var benchmarkIds = xp_utils.uniqArray (runs.map (o => o.get ('benchmark').id));
 				if (commonBenchmarkIds === undefined) {
 					commonBenchmarkIds = benchmarkIds;
@@ -146,12 +154,12 @@ var xp_compare = (function () {
 
 			var dataArray = [];
 
-			for (var i = 0; i < commonBenchmarkIds.length; ++i) {
-				var benchmarkId = commonBenchmarkIds [i]
+			for (let i = 0; i < commonBenchmarkIds.length; ++i) {
+				var benchmarkId = commonBenchmarkIds [i];
 				var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
-				var mean = undefined;
+				let mean;
 				for (var j = 0; j < this.props.runSets.length; ++j) {
-					var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
+					let runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
 					var range = xp_common.calculateRunsRange (runs);
 					if (mean === undefined) {
 						// FIXME: eventually we'll have more meaningful ranges
@@ -163,7 +171,7 @@ var xp_compare = (function () {
 			}
 
 			var data = google.visualization.arrayToDataTable (dataArray, true);
-			for (var i = 0; i < this.props.runSets.length; ++i)
+			for (let i = 0; i < this.props.runSets.length; ++i)
 				data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
 
 			var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";

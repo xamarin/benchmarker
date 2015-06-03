@@ -1,4 +1,10 @@
+/* global Parse */
+/* global google */
+/* global React */
+/* global xp_utils */
+
 var xp_common = (function () {
+	"use strict";
 
 	var exports = {};
 
@@ -9,7 +15,7 @@ var xp_common = (function () {
 	var RunSet;
 
 	exports.start = function start (started) {
-		google.load ('visualization', '1.0', {'packages':['corechart']});
+		google.load ('visualization', '1.0', {'packages': ['corechart']});
 		// FIXME: do this at some point
 		//google.setOnLoadCallback (drawChart);
 
@@ -28,7 +34,7 @@ var xp_common = (function () {
 		exports.RunSet = RunSet;
 
 		started ();
-	}
+	};
 
 	class Controller {
 
@@ -43,7 +49,7 @@ var xp_common = (function () {
 			machineQuery.find ({
 				success: this.machinesLoaded.bind (this),
 				error: function (error) {
-					alert ("error loading machines");
+					alert ("error loading machines: " + error);
 				}
 			});
 
@@ -51,7 +57,7 @@ var xp_common = (function () {
 			runSetQuery.find ({
 				success: this.runSetsLoaded.bind (this),
 				error: function (error) {
-					alert ("error loading run sets");
+					alert ("error loading run sets: " + error);
 				}
 			});
 
@@ -59,7 +65,7 @@ var xp_common = (function () {
 			configQuery.find ({
 				success: this.configsLoaded.bind (this),
 				error: function (error) {
-					alert ("error loading configs");
+					alert ("error loading configs: " + error);
 				}
 			});
 
@@ -70,7 +76,7 @@ var xp_common = (function () {
 					this.checkAllDataLoaded ();
 				},
 				error: function (error) {
-					alert ("error loading benchmarks");
+					alert ("error loading benchmarks: " + error);
 				}
 			});
 		}
@@ -97,7 +103,7 @@ var xp_common = (function () {
 
 		benchmarkNameForId (id) {
 			for (var i = 0; i < this.allBenchmarks.length; ++i) {
-				if (this.allBenchmarks [i].id == id)
+				if (this.allBenchmarks [i].id === id)
 					return this.allBenchmarks [i].get ('name');
 			}
 		}
@@ -115,8 +121,11 @@ var xp_common = (function () {
 		}
 
 		runSetsForMachineAndConfig (machine, config) {
-			return this.allRunSets.filter (rs => rs.get ('machine').id === machine.id &&
-										   rs.get ('config').id === config.id);
+			return this.allRunSets.filter (
+				rs =>
+					rs.get ('machine').id === machine.id &&
+					rs.get ('config').id === config.id
+			);
 		}
 
 		checkAllDataLoaded () {
@@ -147,7 +156,8 @@ var xp_common = (function () {
 		}
 
 		drawCharts () {
-			var chart = new this.props.chartClass (document.getElementById (this.props.graphName));
+			var ChartClass = this.props.chartClass;
+			var chart = new ChartClass (document.getElementById (this.props.graphName));
 			chart.draw (this.props.table, this.props.options);
 		}
 	}
@@ -167,16 +177,16 @@ var xp_common = (function () {
 		}
 		var mean = sum / runs.length;
 		return [min, mean, mean, max];
-	}
+	};
 
 	exports.normalizeRange = function normalizeRange (mean, range) {
 		return range.map (x => x / mean);
-	}
+	};
 
 	exports.hashForRunSets = function hashForRunSets (runSets) {
 		var ids = runSets.map (o => o.id);
 		return ids.join ('+');
-	}
+	};
 
 	class ConfigSelector extends React.Component {
 		render () {
