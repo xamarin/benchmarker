@@ -133,14 +133,14 @@ var xamarinTimelineStart;
 
 			React.render (
 				React.createElement (
-					TimelineSelector,
+					TimelinePage,
 					{
 						controller: this,
 						initialSelection: initialSelection,
 						onChange: this.updateForSelection.bind (this)
 					}
 				),
-				document.getElementById ('timelineSelector')
+				document.getElementById ('timelinePage')
 			);
 
 			this.updateForSelection (initialSelection);
@@ -151,6 +151,61 @@ var xamarinTimelineStart;
 			let config = selection.config;
 			if (machine === undefined || config === undefined)
 				return;
+			window.location.hash = machine.id + '+' + config.id;
+		}
+
+	}
+
+	class TimelinePage extends React.Component {
+
+		constructor (props) {
+			super (props);
+			this.state = {
+				machine: this.props.initialSelection.machine,
+				config: this.props.initialSelection.config
+			};
+		}
+
+		setState (newState) {
+			super.setState (newState);
+			this.props.onChange (newState);
+		}
+
+		render () {
+
+			let chart;
+
+			if (this.state.machine === undefined || this.state.config === undefined)
+				chart = <div className="diagnostic">Please select a machine and config.</div>;
+			else
+				chart = <TimelineChart
+					controller={this.props.controller}
+					machine={this.state.machine}
+					config={this.state.config} />;
+
+			return <div>
+				<TimelineSelector
+					controller={this.props.controller}
+					machine={this.state.machine}
+					config={this.state.config}
+					onChange={this.setState.bind (this)} />
+				{chart}
+			</div>;
+
+		}
+
+	}
+
+	class TimelineChart extends React.Component {
+
+		constructor (props) {
+			super (props);
+			this.invalidateState (props.machine, props.config);
+		}
+
+		invalidateState (machine, config) {
+
+			this.state = {};
 
 			var runSetQuery = new Parse.Query (ParseRunSet);
 			runSetQuery
@@ -166,16 +221,44 @@ var xamarinTimelineStart;
 						alert ("error loading runs");
 					}
 				});
+			
+		}
 
-			window.location.hash = machine.id + '+' + config.id;
+		componentWillReceiveProps (nextProps) {
+			this.invalidateState (nextProps.machine, nextProps.config);
+		}
+
+		render () {
+
+			if (this.state.table === undefined)
+				return <div className="diagnostic">Loading&hellip;</div>;
+
+			let options = {
+				vAxis: {
+					minValue: 0,
+					viewWindow: {
+						min: 0,
+					},
+				},
+				intervals: {
+					style: 'area',
+				},
+			};
+
+			return <GoogleChart
+				graphName='timelineChart'
+				chartClass={google.visualization.LineChart}
+				height={600}
+				table={this.state.table}
+				options={options} />;
+
 		}
 
 		runsLoaded (machine, config, runs) {
 
-			let runSets = this.runSetsForMachineAndConfig (machine, config);
-			runSets.sort (function (a, b) {
-				return a.get ('startedAt') - b.get ('startedAt');
-			});
+			let allBenchmarks = this.props.controller.allBenchmarks;
+			let runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
+			runSets.sort ((a, b) => a.get ('startedAt') - b.get ('startedAt'));
 
 			/* A table of run data. The rows are indexed by benchmark index, the
 			 * columns by sorted run set index.
@@ -184,15 +267,15 @@ var xamarinTimelineStart;
 
 			/* Get a row index from a benchmark ID. */
 			let benchmarkIndicesById = {};
-			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+			for (let i = 0; i < allBenchmarks.length; ++i) {
 				runTable.push ([]);
-				benchmarkIndicesById [this.allBenchmarks [i].id] = i;
+				benchmarkIndicesById [allBenchmarks [i].id] = i;
 			}
 
 			/* Get a column index from a run set ID. */
 			let runSetIndicesById = {};
 			for (let i = 0; i < runSets.length; ++i) {
-				for (let j = 0; j < this.allBenchmarks.length; ++j)
+				for (let j = 0; j < allBenchmarks.length; ++j)
 					runTable [j].push ([]);
 				runSetIndicesById [runSets [i].id] = i;
 			}
@@ -206,7 +289,7 @@ var xamarinTimelineStart;
 			}
 
 			/* Compute the mean elapsed time for each. */
-			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+			for (let i = 0; i < allBenchmarks.length; ++i) {
 				for (let j = 0; j < runSets.length; ++j) {
 					let runs = runTable [i] [j];
 					let sum = runs
@@ -220,7 +303,7 @@ var xamarinTimelineStart;
 			 * it, i.e., in a given run set, a given benchmark took some
 			 * proportion of the average time for that benchmark.
 			 */
-			for (let i = 0; i < this.allBenchmarks.length; ++i) {
+			for (let i = 0; i < allBenchmarks.length; ++i) {
 				for (let j = 0; j < runSets.length; ++j) {
 					let normal = runTable [i]
 						.filter (x => !isNaN (x))
@@ -244,7 +327,7 @@ var xamarinTimelineStart;
 				let sum = 0;
 				let count = 0;
 				let min, max;
-				for (let i = 0; i < this.allBenchmarks.length; ++i) {
+				for (let i = 0; i < allBenchmarks.length; ++i) {
 					let val = runTable [i] [j];
 					if (isNaN (val))
 						continue;
@@ -258,19 +341,7 @@ var xamarinTimelineStart;
 				table.addRow ([runSets [j].get ('startedAt'), sum / count, min, max]);
 			}
 
-			let options = {
-				vAxis: {
-					minValue: 0,
-					viewWindow: {
-						min: 0,
-					},
-				},
-				intervals: {
-					style: 'area',
-				},
-			};
-			let chart = new google.visualization.LineChart (document.getElementById ('timelineChart'));
-			chart.draw (table, options);
+			this.setState ({table: table});
 
 		}
 
@@ -280,20 +351,18 @@ var xamarinTimelineStart;
 
 		constructor (props) {
 			super (props);
-			this.state = props.initialSelection;
+			this.state = {
+				machine: this.props.machine,
+				config: this.props.config
+			};
 		}
 
 		render () {
 			return <ConfigSelector
 				controller={this.props.controller}
-				machine={this.state.machine}
-				config={this.state.config}
-				onChange={this.handleChange.bind (this)} />;
-		}
-
-		handleChange (newState) {
-			this.setState (newState);
-			this.props.onChange (newState);
+				machine={this.props.machine}
+				config={this.props.config}
+				onChange={this.props.onChange} />;
 		}
 
 	}
@@ -349,20 +418,19 @@ var xamarinTimelineStart;
 			var selections = this.state.selections;
 			var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
 
-			let comparator;
-
+			let chart;
 			if (runSets.length > 1)
-				comparator = <RunSetComparator controller={this.props.controller} runSets={runSets} />;
+				chart = <CompareChart controller={this.props.controller} runSets={runSets} />;
 			else
-				comparator = <div className='diagnostic'>Please select at least two run sets.</div>;
+				chart = <div className='diagnostic'>Please select at least two run sets.</div>;
 
 			return <div>
 				<RunSetSelectorList
 					controller={this.props.controller}
 					selections={this.state.selections}
 					onChange={this.setState.bind (this)} />
-				{comparator}
-				</div>;
+				{chart}
+			</div>;
 		}
 	}
 
@@ -539,9 +607,10 @@ var xamarinTimelineStart;
 		}
 	}
 
-	class RunSetComparator extends React.Component {
+	class CompareChart extends React.Component {
+
 		constructor (props) {
-			console.log ("run set comparator constructing");
+			console.log ("run set compare chart constructing");
 
 			super (props);
 
@@ -626,7 +695,7 @@ var xamarinTimelineStart;
 
 		render () {
 			if (this.state.table === undefined)
-				return <div className='diagnostic'>Loading...</div>;
+				return <div className='diagnostic'>Loading&hellip;</div>;
 
 			var options = { orientation: 'vertical' };
 			return <GoogleChart
