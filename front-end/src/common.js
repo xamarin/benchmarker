@@ -54,7 +54,8 @@ var xp_common = (function () {
 				}
 			});
 
-			var runSetQuery = new Parse.Query (RunSet);
+			var runSetQuery = new Parse.Query (RunSet)
+				.include ('commit');
 			runSetQuery.find ({
 				success: this.runSetsLoaded.bind (this),
 				error: function (error) {

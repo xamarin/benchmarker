@@ -154,10 +154,20 @@ var xp_timeline = (function () {
 					viewWindow: {
 						min: 0,
 					},
+					gridlines: {
+						color: 'transparent'
+					},
+					baseline: 1.0
+				},
+				hAxis: {
+					gridlines: {
+						color: 'transparent'
+					},
+					textPosition: 'none'
 				},
 				intervals: {
 					style: 'area',
-				},
+				}
 			};
 
 			return <xp_common.GoogleChart
@@ -186,7 +196,13 @@ var xp_timeline = (function () {
 
 			let allBenchmarks = this.props.controller.allBenchmarks;
 			let runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
-			runSets.sort ((a, b) => a.get ('startedAt') - b.get ('startedAt'));
+			runSets.sort ((a, b) => {
+				var aDate = a.get ('commit').get ('commitDate');
+				var bDate = b.get ('commit').get ('commitDate');
+				if (aDate.getTime () !== bDate.getTime ())
+					return aDate - bDate;
+				return a.get ('startedAt') - b.get ('startedAt');
+			});
 
 			/* A table of run data. The rows are indexed by benchmark index, the
 			 * columns by sorted run set index.
@@ -243,10 +259,7 @@ var xp_timeline = (function () {
 
 			var table = new google.visualization.DataTable ();
 
-			/* FIXME: We probably don't actually want to use the date
-			 * as the x axis.
-			 */
-			table.addColumn ({type: 'date', label: "Run Set"});
+			table.addColumn ({type: 'number', label: "Run Set Index"});
 			table.addColumn ({type: 'number', label: "Elapsed Time"});
 			table.addColumn ({type: 'number', role: 'interval'});
 			table.addColumn ({type: 'number', role: 'interval'});
@@ -266,7 +279,7 @@ var xp_timeline = (function () {
 						max = val;
 					++count;
 				}
-				table.addRow ([runSets [j].get ('startedAt'), sum / count, min, max]);
+				table.addRow ([j, sum / count, min, max]);
 			}
 
 			this.setState ({table: table});
