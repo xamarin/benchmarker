@@ -15,9 +15,10 @@ var xp_common = (function () {
 	var RunSet;
 
 	exports.start = function start (started) {
-		google.load ('visualization', '1.0', {'packages': ['corechart']});
-		// FIXME: do this at some point
-		//google.setOnLoadCallback (drawChart);
+		google.load ('visualization', '1.0', {
+			packages: ['corechart'],
+			callback: googleChartsDidLoad
+		});
 
 		Parse.initialize('7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES', 'qnBBT97Mttqsvq3g9zghnBVn2iiHLAQvTzekUigm');
 
@@ -142,6 +143,26 @@ var xp_common = (function () {
 
 	exports.Controller = Controller;
 
+	var googleChartsLoaded = false;
+	var googleChartsStateComponents = [];
+
+	function googleChartsDidLoad () {
+		googleChartsLoaded = true;
+		for (var i = 0; i < googleChartsStateComponents.length; ++i) {
+			var component = googleChartsStateComponents [i];
+			if (component === undefined)
+				continue;
+			component.googleChartsLoaded ();
+		}
+		googleChartsStateComponents = undefined;
+	}
+
+	function canUseGoogleCharts () {
+		return googleChartsLoaded;
+	}
+
+	exports.canUseGoogleCharts = canUseGoogleCharts;
+
 	class GoogleChart extends React.Component {
 		render () {
 			return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
@@ -163,6 +184,27 @@ var xp_common = (function () {
 	}
 
 	exports.GoogleChart = GoogleChart;
+
+	class GoogleChartsStateComponent extends React.Component {
+		componentWillMount () {
+			if (googleChartsLoaded)
+				return;
+
+			googleChartsStateComponents.push (this);
+		}
+
+		componentWillUnmount () {
+			if (googleChartsLoaded)
+				return;
+
+			googleChartsStateComponents [googleChartsStateComponents.indexOf (this)] = undefined;
+		}
+
+		googleChartsLoaded () {
+		}
+	}
+
+	exports.GoogleChartsStateComponent = GoogleChartsStateComponent;
 
 	exports.calculateRunsRange = function calculateRunsRange (runs) {
 		var min, max;

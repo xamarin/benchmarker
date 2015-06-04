@@ -92,7 +92,7 @@ var xp_compare = (function () {
 		}
 	}
 
-	class Chart extends React.Component {
+	class Chart extends xp_common.GoogleChartsStateComponent {
 
 		constructor (props) {
 			console.log ("run set compare chart constructing");
@@ -130,8 +130,15 @@ var xp_compare = (function () {
 			this.invalidateState (nextProps.runSets);
 		}
 
+		googleChartsLoaded () {
+			this.runsLoaded ();
+		}
+
 		runsLoaded () {
 			console.log ("run loaded");
+
+			if (!xp_common.canUseGoogleCharts ())
+				return;
 
 			for (let i = 0; i < this.props.runSets.length; ++i) {
 				if (this.runsByIndex [i] === undefined)
