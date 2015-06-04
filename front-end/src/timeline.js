@@ -175,8 +175,20 @@ var xp_timeline = (function () {
 				chartClass={google.visualization.LineChart}
 				height={600}
 				table={this.state.table}
-				options={options} />;
+				options={options}
+				selectListener={this.selectListener.bind (this)} />;
 
+		}
+
+		selectListener (chart) {
+			var item = chart.getSelection () [0];
+			if (item === undefined)
+				return;
+			console.log ("selected");
+			console.log (item);
+			var runSet = this.sortedRunSets [item.row];
+			console.log (runSet);
+			window.open (xp_common.githubCommitLink (runSet.get ('commit').get ('hash')));
 		}
 
 		googleChartsLoaded () {
@@ -203,6 +215,8 @@ var xp_timeline = (function () {
 					return aDate - bDate;
 				return a.get ('startedAt') - b.get ('startedAt');
 			});
+
+			this.sortedRunSets = runSets;
 
 			/* A table of run data. The rows are indexed by benchmark index, the
 			 * columns by sorted run set index.
@@ -259,6 +273,7 @@ var xp_timeline = (function () {
 			table.addColumn ({type: 'number', label: "Elapsed Time"});
 			table.addColumn ({type: 'number', role: 'interval'});
 			table.addColumn ({type: 'number', role: 'interval'});
+			table.addColumn ({type: 'string', role: 'tooltip'});
 
 			for (let j = 0; j < runSets.length; ++j) {
 				let sum = 0;
@@ -275,13 +290,26 @@ var xp_timeline = (function () {
 						max = val;
 					++count;
 				}
-				table.addRow ([j, sum / count, min, max]);
+				var runSet = runSets [j];
+				var commit = runSet.get ('commit');
+				var commitDateString = commit.get ('commitDate').toDateString ();
+				var branch = "";
+				if (commit.get ('branch') !== undefined)
+					branch = " (" + commit.get ('branch') + ")";
+				var startedAtString = runSet.get ('startedAt').toDateString ();
+				var hashString = commit.get ('hash').substring (0, 10);
+				var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
+				table.addRow ([
+					j,
+					sum / count,
+					min,
+					max,
+					tooltip
+				]);
 			}
 
 			this.setState ({table: table});
-
 		}
-
 	}
 
 	return exports;

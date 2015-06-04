@@ -181,6 +181,8 @@ var xp_common = (function () {
 			var ChartClass = this.props.chartClass;
 			var chart = new ChartClass (document.getElementById (this.props.graphName));
 			chart.draw (this.props.table, this.props.options);
+			if (this.props.selectListener !== undefined)
+			    google.visualization.events.addListener (chart, 'select', this.props.selectListener.bind (null, chart));
 		}
 	}
 
@@ -307,6 +309,12 @@ var xp_common = (function () {
 	}
 
 	exports.ConfigDescription = ConfigDescription;
+
+	function githubCommitLink (commit) {
+		return "https://github.com/mono/mono/commit/" + commit;
+	}
+
+	exports.githubCommitLink = githubCommitLink;
 
 	return exports;
 
