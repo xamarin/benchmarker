@@ -59,7 +59,7 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public ProcessStartInfo NewProcessStartInfo (string monoExecutable)
+		public ProcessStartInfo NewProcessStartInfo ()
 		{
 			var info = new ProcessStartInfo {
 				UseShellExecute = false,
@@ -68,11 +68,11 @@ namespace Benchmarker.Common.Models
 			};
 
 			if (!NoMono) {
-				info.FileName = !String.IsNullOrEmpty (monoExecutable) ? monoExecutable : !String.IsNullOrEmpty (Mono) ? Mono : null;
-				if (info.FileName == null) {
+				if (Mono == null) {
 					Console.Error.WriteLine ("Error: No mono executable specified.");
 					Environment.Exit (1);
 				}
+				info.FileName = Mono;
 			}
 
 			foreach (var env in MonoEnvironmentVariables)
@@ -105,14 +105,14 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public async Task<Commit> GetCommit ()
+		public async Task<Commit> GetCommit (string optionalCommitHash)
 		{
 			if (NoMono) {
 				// FIXME: return a dummy commit
 				return null;
 			}
 
-			var info = NewProcessStartInfo (null);
+			var info = NewProcessStartInfo ();
 			/* Run without timing with --version */
 			info.Arguments = "--version";
 
@@ -144,17 +144,12 @@ namespace Benchmarker.Common.Models
 			if (commit.Branch == "(detached")
 				commit.Branch = null;
 
-			var github = GitHubClient;
-			Octokit.Commit gitHubCommit = null;
-			try {
-				gitHubCommit = await github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash);
-			} catch (Octokit.NotFoundException) {
-			}
-			if (gitHubCommit == null) {
-				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
-			} else {
-				commit.Hash = gitHubCommit.Sha;
-				Console.WriteLine ("Got commit " + commit.Hash + " from GitHub");
+			if (optionalCommitHash != null) {
+				if (!optionalCommitHash.StartsWith (commit.Hash)) {
+					Console.WriteLine ("Error: Commit hash specified on command line does not match the one reported with --version.");
+					return null;
+				}
+				commit.Hash = optionalCommitHash;
 			}
 
 			try {
@@ -165,14 +160,45 @@ namespace Benchmarker.Common.Models
 				} else {
 					Console.WriteLine ("Got commit " + gitHash + " from repository");
 
+					if (optionalCommitHash != null && optionalCommitHash != gitHash) {
+						Console.WriteLine ("Error: Commit hash specified on command line does not match the one from the git repository.");
+						return null;
+					}
+
 					commit.Hash = gitHash;
 					commit.MergeBaseHash = repo.MergeBase (commit.Hash, "master");
 					commit.CommitDate = repo.CommitDate (commit.Hash);
+
+					if (commit.CommitDate == null) {
+						Console.WriteLine ("Error: Could not get commit date from the git repository.");
+						return null;
+					}
 
 					Console.WriteLine ("Commit {0} merge base {1} date {2}", commit.Hash, commit.MergeBaseHash, commit.CommitDate);
 				}
 			} catch (Exception) {
 				Console.WriteLine ("Could not get git repository");
+			}
+
+			var github = GitHubClient;
+			Octokit.Commit gitHubCommit = null;
+			try {
+				gitHubCommit = await github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash);
+			} catch (Octokit.NotFoundException) {
+				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
+			}
+			if (gitHubCommit == null) {
+				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
+			} else {
+				if (optionalCommitHash != null && optionalCommitHash != gitHubCommit.Sha) {
+					Console.WriteLine ("Error: Commit hash specified on command line does not match the one from GitHub.");
+					return null;
+				}
+
+				commit.Hash = gitHubCommit.Sha;
+				if (commit.CommitDate == null)
+					commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
+				Console.WriteLine ("Got commit " + commit.Hash + " from GitHub");
 			}
 
 			return commit;

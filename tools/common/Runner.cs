@@ -18,13 +18,13 @@ namespace Benchmarker.Common
 		string arguments;
 		int defaultTimeout;
 
-		public Runner (string monoExecutable, string testsDirectory, Config _config, Benchmark _benchmark, int _timeout)
+		public Runner (string testsDirectory, Config _config, Benchmark _benchmark, int _timeout)
 		{
 			config = _config;
 			benchmark = _benchmark;
 			defaultTimeout = _timeout;
 
-			info = config.NewProcessStartInfo (monoExecutable);
+			info = config.NewProcessStartInfo ();
 
 			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
 

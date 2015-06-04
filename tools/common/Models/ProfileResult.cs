@@ -57,10 +57,10 @@ namespace Benchmarker.Common.Models
 			internal string CountersDirectory { get; set; }
 			//public string CountersFile { get; set; }
 
+#if false
 			static private MemoryCache counterscache = MemoryCache.Default;
 			static private object counterscachelock = new object ();
 
-#if false
 			private List<KeyValuePair<Counter, SortedDictionary<TimeSpan, object>>> counters;
 
 			public List<KeyValuePair<Counter, SortedDictionary<TimeSpan, object>>> Counters {

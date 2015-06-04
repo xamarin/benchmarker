@@ -27,9 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="OxyPlot">
-      <HintPath>..\packages\OxyPlot.Core.2014.1.546\lib\portable-net4+sl4+wp71+win8\OxyPlot.dll</HintPath>
-    </Reference>
     <Reference Include="Parse.NetFx45">
       <HintPath>..\packages\Parse.1.5.0\lib\net45\Parse.NetFx45.dll</HintPath>
     </Reference>
