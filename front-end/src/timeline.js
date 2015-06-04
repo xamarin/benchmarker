@@ -248,13 +248,9 @@ var xp_timeline = (function () {
 			 * proportion of the average time for that benchmark.
 			 */
 			for (let i = 0; i < allBenchmarks.length; ++i) {
-				for (let j = 0; j < runSets.length; ++j) {
-					let normal = runTable [i]
-						.filter (x => !isNaN (x))
-						.reduce ((sum, time) => sum + time, 0)
-						/ runTable [i].length;
-					runTable [i] = runTable [i].map (time => time / normal);
-				}
+				let filtered = runTable [i].filter (x => !isNaN (x));
+				let normal = filtered.reduce ((sum, time) => sum + time, 0) / filtered.length;
+				runTable [i] = runTable [i].map (time => time / normal);
 			}
 
 			var table = new google.visualization.DataTable ();
