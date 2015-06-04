@@ -93,7 +93,7 @@ var xp_timeline = (function () {
 					config={this.state.config} />;
 
 			return <div>
-				<Selector
+				<xp_common.ConfigSelector
 					controller={this.props.controller}
 					machine={this.state.machine}
 					config={this.state.config}
@@ -252,26 +252,6 @@ var xp_timeline = (function () {
 
 			this.setState ({table: table});
 
-		}
-
-	}
-
-	class Selector extends React.Component {
-
-		constructor (props) {
-			super (props);
-			this.state = {
-				machine: this.props.machine,
-				config: this.props.config
-			};
-		}
-
-		render () {
-			return <xp_common.ConfigSelector
-				controller={this.props.controller}
-				machine={this.props.machine}
-				config={this.props.config}
-				onChange={this.props.onChange} />;
 		}
 
 	}
