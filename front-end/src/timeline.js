@@ -105,7 +105,7 @@ var xp_timeline = (function () {
 
 	}
 
-	class Chart extends React.Component {
+	class Chart extends xp_common.GoogleChartsStateComponent {
 
 		constructor (props) {
 			super (props);
@@ -125,7 +125,13 @@ var xp_timeline = (function () {
 				.matchesQuery ('runSet', runSetQuery)
 				.limit (1000)
 				.find ({
-					success: this.runsLoaded.bind (this, machine, config),
+					success: results => {
+						if (machine !== this.props.machine || config !== this.props.config)
+							return;
+
+						this.allRuns = results;
+						this.runsLoaded ();
+					},
 					error: function (error) {
 						alert ("error loading runs: " + error);
 					}
@@ -163,7 +169,20 @@ var xp_timeline = (function () {
 
 		}
 
-		runsLoaded (machine, config, allRuns) {
+		googleChartsLoaded () {
+			this.runsLoaded ();
+		}
+
+		runsLoaded () {
+			var machine = this.props.machine;
+			var config = this.props.config;
+			var allRuns = this.allRuns;
+
+			if (this.allRuns === undefined)
+				return;
+
+			if (!xp_common.canUseGoogleCharts ())
+				return;
 
 			let allBenchmarks = this.props.controller.allBenchmarks;
 			let runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
