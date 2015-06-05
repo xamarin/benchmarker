@@ -1,4 +1,4 @@
-/* @flow weak */
+/* @flow */
 
 /* global google */
 
@@ -80,43 +80,44 @@ export class Controller {
 	allDataLoaded () {
 	}
 
-	machinesLoaded (results) {
+	machinesLoaded (results: Array<ParseObject>) {
 		console.log ("machines loaded: " + results.length);
 		this.allMachines = results;
 		this.checkAllDataLoaded ();
 	}
 
-	configsLoaded (results) {
+	configsLoaded (results: Array<ParseObject>) {
 		this.allConfigs = results;
 		this.checkAllDataLoaded ();
 	}
 
-	runSetsLoaded (results) {
+	runSetsLoaded (results: Array<ParseObject>) {
 		console.log ("run sets loaded: " + results.length);
 		this.allRunSets = results;
 		this.checkAllDataLoaded ();
 	}
 
-	benchmarkNameForId (id) {
+	benchmarkNameForId (id: string) : ?string {
 		for (var i = 0; i < this.allBenchmarks.length; ++i) {
 			if (this.allBenchmarks [i].id === id)
 				return this.allBenchmarks [i].get ('name');
 		}
+		return null;
 	}
 
-	machineForId (id) {
+	machineForId (id: string) : ParseObject {
 		return xp_utils.find (this.allMachines, m => m.id === id);
 	}
 
-	configForId (id) {
+	configForId (id: string) : ParseObject {
 		return xp_utils.find (this.allConfigs, m => m.id === id);
 	}
 
-	runSetForId (id) {
+	runSetForId (id: string) : ParseObject {
 		return xp_utils.find (this.allRunSets, rs => rs.id === id);
 	}
 
-	runSetsForMachineAndConfig (machine, config) {
+	runSetsForMachineAndConfig (machine: ParseObject, config: ParseObject) : Array<ParseObject> {
 		return this.allRunSets.filter (
 			rs =>
 				rs.get ('machine').id === machine.id &&
@@ -136,11 +137,11 @@ export class Controller {
 
 }
 
-var googleChartsLoaded = false;
 var googleChartsStateComponents = [];
 
 function googleChartsDidLoad () {
-	googleChartsLoaded = true;
+	if (googleChartsStateComponents === undefined)
+		return;
 	for (var i = 0; i < googleChartsStateComponents.length; ++i) {
 		var component = googleChartsStateComponents [i];
 		if (component === undefined)
@@ -150,8 +151,8 @@ function googleChartsDidLoad () {
 	googleChartsStateComponents = undefined;
 }
 
-export function canUseGoogleCharts () {
-	return googleChartsLoaded;
+export function canUseGoogleCharts (): boolean {
+	return googleChartsStateComponents === undefined;
 }
 
 export class GoogleChart extends React.Component {
@@ -178,14 +179,14 @@ export class GoogleChart extends React.Component {
 
 export class GoogleChartsStateComponent extends React.Component {
 	componentWillMount () {
-		if (googleChartsLoaded)
+		if (googleChartsStateComponents === undefined)
 			return;
 
 		googleChartsStateComponents.push (this);
 	}
 
 	componentWillUnmount () {
-		if (googleChartsLoaded)
+		if (googleChartsStateComponents === undefined)
 			return;
 
 		googleChartsStateComponents [googleChartsStateComponents.indexOf (this)] = undefined;
@@ -195,8 +196,11 @@ export class GoogleChartsStateComponent extends React.Component {
 	}
 }
 
-export function calculateRunsRange (runs) {
-	var min, max;
+type Range = [number, number, number, number];
+
+export function calculateRunsRange (runs: Array<ParseObject>): Range {
+	var min: number | void;
+	var max: number | void;
 	var sum = 0;
 	for (var i = 0; i < runs.length; ++i) {
 		var v = runs [i].get ('elapsedMilliseconds');
@@ -207,30 +211,32 @@ export function calculateRunsRange (runs) {
 		sum += v;
 	}
 	var mean = sum / runs.length;
+	if (min === undefined || max === undefined)
+		min = max = 0;
 	return [min, mean, mean, max];
 }
 
-export function normalizeRange (mean, range) {
+export function normalizeRange (mean: number, range: Range) : Range {
 	return range.map (x => x / mean);
 }
 
-export function hashForRunSets (runSets) {
+export function hashForRunSets (runSets: Array<ParseObject>) : string {
 	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
 }
 
 export class ConfigSelector extends React.Component {
-	render () {
+	render () : Object {
 		function renderMachineOption (machine) {
 			return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
 		}
 		function renderConfigOption (config) {
 			return <option value={config.id} key={config.id}>{config.get ('name')}</option>;
 		}
-		let machineId;
+		var machineId = undefined;
 		if (this.props.machine !== undefined)
 			machineId = this.props.machine.id;
-		let configId;
+		var configId = undefined;
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
 		return <div className="ConfigSelector">
@@ -243,38 +249,38 @@ export class ConfigSelector extends React.Component {
 			</div>;
 	}
 
-	machineSelected (event) {
-		let machine = this.props.controller.machineForId (event.target.value);
+	machineSelected (event: Object) {
+		var machine = this.props.controller.machineForId (event.target.value);
 		this.props.onChange ({machine: machine, config: this.props.config});
 	}
 
-	configSelected (event) {
-		let config = this.props.controller.configForId (event.target.value);
+	configSelected (event: Object) {
+		var config = this.props.controller.configForId (event.target.value);
 		this.props.onChange ({machine: this.props.machine, config: config});
 	}
 
 }
 
 export class ConfigDescription extends React.Component {
-	render () {
-		let config = this.props.config;
+	render () : Object {
+		var config = this.props.config;
 
 		if (config === undefined)
 			return <div className="ConfigDescription"></div>;
 
-		let mono = config.get ('monoExecutable');
-		let monoExecutable = mono === undefined
+		var mono = config.get ('monoExecutable');
+		var monoExecutable = mono === undefined
 			? <span className="diagnostic">No mono executable specified.</span>
 			: <code>{mono}</code>;
-		let envVarsMap = config.get ('monoEnvironmentVariables') || {};
-		let envVars = Object.keys (envVarsMap);
-		let envVarsList = envVars.length === 0
+		var envVarsMap = config.get ('monoEnvironmentVariables') || {};
+		var envVars = Object.keys (envVarsMap);
+		var envVarsList = envVars.length === 0
 			? <span className="diagnostic">No environment variables specified.</span>
 			: <ul>
 			{envVars.map (name => <li><code>{name + "=" + envVarsMap [name]}</code></li>)}
 		</ul>;
-		let options = config.get ('monoOptions') || [];
-		let optionsList = options.length === 0
+		var options = config.get ('monoOptions') || [];
+		var optionsList = options.length === 0
 			? <span className="diagnostic">No command-line options specified.</span>
 			: <code>{options.join (' ')}</code>;
 
@@ -293,8 +299,8 @@ export class ConfigDescription extends React.Component {
 }
 
 export class MachineDescription extends React.Component {
-	render () {
-		let machine = this.props.machine;
+	render () : Object {
+		var machine = this.props.machine;
 
 		if (machine === undefined)
 			return <div className="MachineDescription"></div>;
@@ -312,6 +318,6 @@ export class MachineDescription extends React.Component {
 	}
 }
 
-export function githubCommitLink (commit) {
+export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
