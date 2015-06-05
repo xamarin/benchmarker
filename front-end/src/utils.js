@@ -19,11 +19,7 @@ export function uniqStringArray (arr: Array<string>) : Array<string> {
     for (var i = 0; i < arr.length; ++i) {
 		hash [arr [i]] = true;
     }
-    var newArr = [];
-    for (var o in hash) {
-		newArr.push (o);
-    }
-    return newArr;
+	return Object.keys (hash);
 }
 
 export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
