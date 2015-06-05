@@ -2,17 +2,17 @@
 
 "use strict";
 
-import xp_utils from './utils.js';
+import * as xp_utils from './utils.js';
 import {Parse} from 'parse';
 import React from 'react';
 
-var Benchmark;
-var Config;
-var Machine;
-var Run;
-var RunSet;
+export var Benchmark;
+export var Config;
+export var Machine;
+export var Run;
+export var RunSet;
 
-exports.start = function start (started) {
+export function start (started) {
 	google.load ('visualization', '1.0', {
 		packages: ['corechart'],
 		callback: googleChartsDidLoad
@@ -26,16 +26,10 @@ exports.start = function start (started) {
 	Run = Parse.Object.extend ('Run');
 	RunSet = Parse.Object.extend ('RunSet');
 
-	exports.Benchmark = Benchmark;
-	exports.Config = Config;
-	exports.Machine = Machine;
-	exports.Run = Run;
-	exports.RunSet = RunSet;
-
 	started ();
-};
+}
 
-class Controller {
+export class Controller {
 
 	allBenchmarks: Array<Object>;
 	allMachines: Array<Object>;
@@ -140,8 +134,6 @@ class Controller {
 
 }
 
-exports.Controller = Controller;
-
 var googleChartsLoaded = false;
 var googleChartsStateComponents = [];
 
@@ -156,13 +148,11 @@ function googleChartsDidLoad () {
 	googleChartsStateComponents = undefined;
 }
 
-function canUseGoogleCharts () {
+export function canUseGoogleCharts () {
 	return googleChartsLoaded;
 }
 
-exports.canUseGoogleCharts = canUseGoogleCharts;
-
-class GoogleChart extends React.Component {
+export class GoogleChart extends React.Component {
 	render () {
 		return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
 	}
@@ -184,9 +174,7 @@ class GoogleChart extends React.Component {
 	}
 }
 
-exports.GoogleChart = GoogleChart;
-
-class GoogleChartsStateComponent extends React.Component {
+export class GoogleChartsStateComponent extends React.Component {
 	componentWillMount () {
 		if (googleChartsLoaded)
 			return;
@@ -205,9 +193,7 @@ class GoogleChartsStateComponent extends React.Component {
 	}
 }
 
-exports.GoogleChartsStateComponent = GoogleChartsStateComponent;
-
-exports.calculateRunsRange = function calculateRunsRange (runs) {
+export function calculateRunsRange (runs) {
 	var min, max;
 	var sum = 0;
 	for (var i = 0; i < runs.length; ++i) {
@@ -220,18 +206,18 @@ exports.calculateRunsRange = function calculateRunsRange (runs) {
 	}
 	var mean = sum / runs.length;
 	return [min, mean, mean, max];
-};
+}
 
-exports.normalizeRange = function normalizeRange (mean, range) {
+export function normalizeRange (mean, range) {
 	return range.map (x => x / mean);
-};
+}
 
-exports.hashForRunSets = function hashForRunSets (runSets) {
+export function hashForRunSets (runSets) {
 	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
-};
+}
 
-class ConfigSelector extends React.Component {
+export class ConfigSelector extends React.Component {
 	render () {
 		function renderMachineOption (machine) {
 			return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
@@ -267,9 +253,7 @@ class ConfigSelector extends React.Component {
 
 }
 
-exports.ConfigSelector = ConfigSelector;
-
-class ConfigDescription extends React.Component {
+export class ConfigDescription extends React.Component {
 	render () {
 		let config = this.props.config;
 
@@ -306,10 +290,6 @@ class ConfigDescription extends React.Component {
 	}
 }
 
-exports.ConfigDescription = ConfigDescription;
-
-function githubCommitLink (commit) {
+export function githubCommitLink (commit) {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
-
-exports.githubCommitLink = githubCommitLink;

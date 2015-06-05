@@ -2,8 +2,8 @@
 
 "use strict";
 
-import xp_utils from './utils.js';
-import xp_common from './common.js';
+import * as xp_utils from './utils.js';
+import * as xp_common from './common.js';
 import {Parse} from 'parse';
 import React from 'react';
 
