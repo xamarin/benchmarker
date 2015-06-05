@@ -31,7 +31,7 @@ Each benchmark requires a `.benchmark` file. The files in the `benchmarks` direc
 ### Requirements
 
     brew install npm
-	npm -g install babel
+	npm -g install webpack
 
 ## Comparing directly
 

@@ -19,6 +19,7 @@ tools/*/*/obj
 tools/*/*/bin
 
 front-end/build
+front-end/node_modules
 
 wrench-results
 wrench-results.old
