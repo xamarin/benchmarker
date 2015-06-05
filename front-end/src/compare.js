@@ -94,25 +94,35 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	invalidateState (runSets) {
 		this.state = {};
 
-		this.runsByIndex = [];
-		/* FIXME: use the containedIn constraint? */
-		for (let i = 0; i < runSets.length; ++i) {
-			var rs = runSets [i];
-			var query = new Parse.Query (xp_common.Run);
-			query.equalTo ('runSet', rs);
-			query.find ({
-				success: results => {
-					if (this.props.runSets !== runSets)
-						return;
+		var query = new Parse.Query (xp_common.Run);
+		query.containedIn ('runSet', runSets)
+			.limit (10000);
+		query.find ({
+			success: results => {
+				if (this.props.runSets !== runSets)
+					return;
 
-					this.runsByIndex [i] = results;
-					this.runsLoaded ();
-				},
-				error: function (error) {
-					alert ("error loading runs: " + error);
-				}
-			});
-		}
+				this.runsByIndex = [];
+
+				var runSetIndexById = {};
+				runSets.forEach ((rs, i) => {
+					this.runsByIndex [i] = [];
+					runSetIndexById [rs.id] = i;
+				});
+
+				results.forEach (r => {
+					var i = runSetIndexById [r.get ('runSet').id];
+					if (this.runsByIndex [i] === undefined)
+						this.runsByIndex [i] = [];
+					this.runsByIndex [i].push (r);
+				});
+
+				this.runsLoaded ();
+			},
+			error: function (error) {
+				alert ("error loading runs: " + error);
+			}
+		});
 	}
 
 	componentWillReceiveProps (nextProps) {
