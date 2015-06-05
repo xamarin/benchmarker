@@ -1,6 +1,8 @@
+/* @flow */
+
 "use strict";
 
-export function findIndex (arr, f) {
+export function findIndex<T> (arr : Array<T>, f: (v: T) => boolean) : number {
     for (var i = 0; i < arr.length; ++i) {
 		if (f (arr [i]))
 			return i;
@@ -8,11 +10,11 @@ export function findIndex (arr, f) {
     return -1;
 }
 
-export function find (arr, f) {
+export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T {
     return arr [findIndex (arr, f)];
 }
 
-export function uniqArray (arr) {
+export function uniqStringArray (arr: Array<string>) : Array<string> {
     var hash = {};
     for (var i = 0; i < arr.length; ++i) {
 		hash [arr [i]] = true;
@@ -24,7 +26,7 @@ export function uniqArray (arr) {
     return newArr;
 }
 
-export function intersectArray (arr, brr) {
+export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
     var crr = [];
     for (var i = 0; i < arr.length; ++i) {
 		var a = arr [i];
@@ -34,11 +36,11 @@ export function intersectArray (arr, brr) {
     return crr;
 }
 
-export function removeArrayElement (arr, i) {
+export function removeArrayElement<T> (arr: Array<T>, i: number) : Array<T> {
     return arr.slice (0, i).concat (arr.slice (i + 1));
 }
 
-export function updateArray (arr, i, v) {
+export function updateArray<T> (arr: Array<T>, i: number, v: T) : Array<T> {
     var newArr = arr.slice ();
     newArr [i] = v;
     return newArr;

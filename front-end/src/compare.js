@@ -140,7 +140,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 		for (let i = 0; i < this.props.runSets.length; ++i) {
 			let runs = this.runsByIndex [i];
-			var benchmarkIds = xp_utils.uniqArray (runs.map (o => o.get ('benchmark').id));
+			var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
 			if (commonBenchmarkIds === undefined) {
 				commonBenchmarkIds = benchmarkIds;
 				continue;
