@@ -1,3 +1,5 @@
+/* @flow */
+
 /* global google */
 
 "use strict";
@@ -8,6 +10,8 @@ import {Parse} from 'parse';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
+
+	startupRunSetIds: Array<string> | void;
 
 	constructor (startupRunSetIds) {
 		super ();
@@ -21,8 +25,8 @@ class Controller extends xp_common.Controller {
 			selections = [{}];
 		} else {
 			selections = this.startupRunSetIds.map (id => {
-				let runSet = this.runSetForId (id);
-				let machine = this.machineForId (runSet.get ('machine').id);
+				var runSet = this.runSetForId (id);
+				var machine = this.machineForId (runSet.get ('machine').id);
 				return {machine: machine, config: runSet.get ('config'), runSet: runSet};
 			});
 		}
@@ -65,7 +69,7 @@ class Page extends React.Component {
 		var selections = this.state.selections;
 		var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
 
-		let chart;
+		var chart;
 		if (runSets.length > 1)
 			chart = <Chart controller={this.props.controller} runSets={runSets} />;
 		else
@@ -139,7 +143,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		if (!xp_common.canUseGoogleCharts ())
 			return;
 
-		for (let i = 0; i < this.props.runSets.length; ++i) {
+		for (var i = 0; i < this.props.runSets.length; ++i) {
 			if (this.runsByIndex [i] === undefined)
 				return;
 		}
@@ -148,8 +152,8 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 		var commonBenchmarkIds;
 
-		for (let i = 0; i < this.props.runSets.length; ++i) {
-			let runs = this.runsByIndex [i];
+		for (var i = 0; i < this.props.runSets.length; ++i) {
+			var runs = this.runsByIndex [i];
 			var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
 			if (commonBenchmarkIds === undefined) {
 				commonBenchmarkIds = benchmarkIds;
@@ -158,14 +162,17 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 			commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
 		}
 
+		if (commonBenchmarkIds === undefined)
+			return;
+
 		var dataArray = [];
 
-		for (let i = 0; i < commonBenchmarkIds.length; ++i) {
+		for (var i = 0; i < commonBenchmarkIds.length; ++i) {
 			var benchmarkId = commonBenchmarkIds [i];
 			var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
-			let mean;
+			var mean = undefined;
 			for (var j = 0; j < this.props.runSets.length; ++j) {
-				let runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
+				var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
 				var range = xp_common.calculateRunsRange (runs);
 				if (mean === undefined) {
 					// FIXME: eventually we'll have more meaningful ranges
@@ -177,7 +184,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		}
 
 		var data = google.visualization.arrayToDataTable (dataArray, true);
-		for (let i = 0; i < this.props.runSets.length; ++i)
+		for (var i = 0; i < this.props.runSets.length; ++i)
 			data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
 
 		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
@@ -233,18 +240,20 @@ class RunSetSelectorList extends React.Component {
 class RunSetSelector extends React.Component {
 
 	runSetSelected (event) {
-		let selection = this.props.selection;
-		let runSetId = event.target.value;
+		var selection = this.props.selection;
+		var runSetId = event.target.value;
 		console.log ("run set selected: " + runSetId);
-		let runSet = this.props.controller.runSetForId (runSetId);
+		var runSet = this.props.controller.runSetForId (runSetId);
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
 	}
 
 	render () {
-		let selection = this.props.selection;
+		var selection = this.props.selection;
 		console.log (selection);
 
-		let machineId, runSetId, filteredRunSets;
+		var machineId = undefined;
+		var runSetId = undefined;
+		var filteredRunSets = undefined;
 
 		if (selection.machine !== undefined)
 			machineId = selection.machine.id;
@@ -263,17 +272,17 @@ class RunSetSelector extends React.Component {
 			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
 		}
 
-		let config = selection.config === undefined
+		var config = selection.config === undefined
 			? undefined
 			: this.props.controller.configForId (selection.config.id);
 
-		let configSelector =
+		var configSelector =
 			<xp_common.ConfigSelector
 		controller={this.props.controller}
 		machine={selection.machine}
 		config={config}
 		onChange={this.props.onChange} />;
-		let runSetsSelect = filteredRunSets.length === 0
+		var runSetsSelect = filteredRunSets.length === 0
 			? <select size="6" disabled="true">
 			<option className="diagnostic">Please select a machine and config.</option>
 			</select>
