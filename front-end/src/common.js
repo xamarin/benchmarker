@@ -290,6 +290,26 @@ export class ConfigDescription extends React.Component {
 	}
 }
 
+export class MachineDescription extends React.Component {
+	render () {
+		let machine = this.props.machine;
+
+		if (machine === undefined)
+			return <div className="MachineDescription"></div>;
+
+		return <div className="MachineDescription">
+			<dl>
+			<dt>Name</dt>
+			<dd>{machine.get ('name')}</dd>
+			<dt>Architecture</dt>
+			<dd>{machine.get ('architecture')}</dd>
+			<dt>Dedicated?</dt>
+			<dd>{machine.get ('isDedicated').toString ()}</dd>
+			</dl>
+		</div>;
+	}
+}
+
 export function githubCommitLink (commit) {
 	return "https://github.com/mono/mono/commit/" + commit;
 }

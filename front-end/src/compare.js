@@ -280,6 +280,7 @@ class RunSetSelector extends React.Component {
 		return <div className="RunSetSelector">
 			{configSelector}
 		{runSetsSelect}
+			<xp_common.MachineDescription machine={selection.machine} />
 			<xp_common.ConfigDescription config={config} />
 			</div>;
 	}
