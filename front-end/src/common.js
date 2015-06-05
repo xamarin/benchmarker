@@ -2,9 +2,9 @@
 
 "use strict";
 
-var xp_utils = require ('./utils.js');
-var Parse = require ('parse').Parse;
-var React = require ('react');
+import xp_utils from './utils.js';
+import {Parse} from 'parse';
+import React from 'react';
 
 var Benchmark;
 var Config;

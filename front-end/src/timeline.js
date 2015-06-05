@@ -2,9 +2,9 @@
 
 "use strict";
 
-var xp_common = require ('./common.js');
-var Parse = require ('parse').Parse;
-var React = require ('react');
+import xp_common from './common.js';
+import {Parse} from 'parse';
+import React from 'react';
 
 class Controller extends xp_common.Controller {
 
