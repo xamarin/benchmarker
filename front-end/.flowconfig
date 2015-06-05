@@ -1,9 +1,9 @@
 [ignore]
 .*/build/.*
-.*/node_modules/.*
 
 [include]
 
 [libs]
+interfaces/
 
 [options]

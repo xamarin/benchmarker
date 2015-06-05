@@ -1,3 +1,5 @@
+/* @flow weak */
+
 /* global google */
 
 "use strict";
@@ -12,7 +14,7 @@ export var Machine;
 export var Run;
 export var RunSet;
 
-export function start (started) {
+export function start (started: () => void) {
 	google.load ('visualization', '1.0', {
 		packages: ['corechart'],
 		callback: googleChartsDidLoad
