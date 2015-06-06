@@ -2,6 +2,7 @@ module.exports = {
     entry: {
 		compare: "./src/compare.js",
 		config: "./src/config.js",
+		machine: "./src/machine.js",
 		timeline: "./src/timeline.js"
     },
     output: {

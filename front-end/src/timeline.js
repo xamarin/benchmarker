@@ -84,7 +84,6 @@ class Page extends React.Component {
 		machine={this.state.machine}
 		config={this.state.config}
 		onChange={this.setState.bind (this)} />
-			<xp_common.MachineDescription machine={this.state.machine} />
 			{chart}
 		</div>;
 

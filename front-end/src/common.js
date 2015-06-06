@@ -228,7 +228,11 @@ export function hashForRunSets (runSets: Array<ParseObject>) : string {
 export class ConfigSelector extends React.Component {
 	render () : Object {
 		function renderMachineOption (machine) {
-			return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
+			return <option
+				value={machine.id}
+				key={machine.id}
+				onDoubleClick={this.openMachineDescription.bind (this)}
+				>{machine.get ('name')}</option>;
 		}
 		function renderConfigOption (config) {
 			return <option
@@ -245,12 +249,16 @@ export class ConfigSelector extends React.Component {
 			configId = this.props.config.id;
 		return <div className="ConfigSelector">
 			<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
-			{this.props.controller.allMachines.map (renderMachineOption)}
+			{this.props.controller.allMachines.map (renderMachineOption.bind (this))}
 		</select>
 			<select size="6" value={configId} onChange={this.configSelected.bind (this)}>
 			{this.props.controller.allConfigs.map (renderConfigOption.bind (this))}
 		</select>
 			</div>;
+	}
+
+	openMachineDescription () {
+		window.open ('machine.html#' + this.props.machine.id);
 	}
 
 	openConfigDescription () {
@@ -293,7 +301,7 @@ export class ConfigDescription extends React.Component {
 			: <code>{options.join (' ')}</code>;
 
 		return <div className="Description">
-			<hr />
+			<h1>{config.get ('name')}</h1>
 			<dl>
 			<dt>Mono Executable</dt>
 			<dd>{monoExecutable}</dd>
@@ -314,9 +322,8 @@ export class MachineDescription extends React.Component {
 			return <div className="Description"></div>;
 
 		return <div className="Description">
+			<h1>{machine.get ('name')}</h1>
 			<dl>
-			<dt>Name</dt>
-			<dd>{machine.get ('name')}</dd>
 			<dt>Architecture</dt>
 			<dd>{machine.get ('architecture')}</dd>
 			<dt>Dedicated?</dt>
