@@ -266,7 +266,7 @@ export class ConfigDescription extends React.Component {
 		var config = this.props.config;
 
 		if (config === undefined)
-			return <div className="ConfigDescription"></div>;
+			return <div className="Description"></div>;
 
 		var mono = config.get ('monoExecutable');
 		var monoExecutable = mono === undefined
@@ -284,7 +284,7 @@ export class ConfigDescription extends React.Component {
 			? <span className="diagnostic">No command-line options specified.</span>
 			: <code>{options.join (' ')}</code>;
 
-		return <div className="ConfigDescription">
+		return <div className="Description">
 			<hr />
 			<dl>
 			<dt>Mono Executable</dt>
@@ -303,9 +303,9 @@ export class MachineDescription extends React.Component {
 		var machine = this.props.machine;
 
 		if (machine === undefined)
-			return <div className="MachineDescription"></div>;
+			return <div className="Description"></div>;
 
-		return <div className="MachineDescription">
+		return <div className="Description">
 			<dl>
 			<dt>Name</dt>
 			<dd>{machine.get ('name')}</dd>

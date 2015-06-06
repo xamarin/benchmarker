@@ -2,35 +2,38 @@
 	font-style: italic;
 }
 
-/* ConfigDescription */
+/* ConfigDescription, MachineDescription */
 
-.ConfigDescription {
-	padding: 0 0.5em;
+.Description {
+	padding: 0 0.25em;
 	vertical-align: top;
 	font-family: sans-serif;
 }
 
-.ConfigDescription dd, .ConfigDescription dt {
+.Description > button {
+	margin-bottom: 0.5em;
+}
+
+.Description > dl > dd, .Description > dl > dt {
 	margin-bottom: 1em;
 }
 
-.ConfigDescription dd {
+.Description > dl > dd {
 	margin-left: 1em;
 }
 
-.ConfigDescription dt {
+.Description > dl > dt {
 	font-weight: bold;
 }
 
-/* ConfigSelector */
+/* ConfigSelector, RunSetSelector */
 
-.ConfigSelector select, .RunSetSelector select {
-	font-size: smaller;
-	margin: 1em 0.5em;
+.ConfigSelector > select, .RunSetSelector > select {
+	margin: 0.5em 0.25em;
 	height: 6em;
 }
 
-.ConfigSelector option, .RunSetSelector option {
+.ConfigSelector > select > option, .RunSetSelector > select > option {
 	font-family: sans-serif;
-	padding: 0.5em;
+	padding: 0.25em;
 }

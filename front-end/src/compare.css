@@ -2,19 +2,20 @@
 
 .RunSetSelector {
 	border: 1px solid black;
-	margin: 0.5em;
+	display: inline-block;
+	margin: 0.25em;
 	overflow: hidden;
-	padding: 0 0.5em;
+	padding: 0 0.25em;
 	vertical-align: top;
 	font-family: sans-serif;
 }
 
-.RunSetSelector hr {
+.RunSetSelector > hr {
 	border: none;
 	border-bottom: 1px solid black;
 }
 
-.RunSetSelector .ConfigSelector {
+.RunSetSelector > .ConfigSelector {
 	display: inline-block;
 }
 
@@ -22,23 +23,22 @@
 
 .RunSetSelectorList {
 	border: 1px solid black;
-	margin: 1em;
-	padding: 0 0.5em;
+	margin: 0.5em;
+	padding: 0 0.25em;
 }
 
-.RunSetSelectorList footer, .RunSetSelectorList section {
+.RunSetSelectorList > footer, .RunSetSelectorList > section {
 	clear: both;
-	margin: 1em 0;
+	margin: 0.5em 0;
 	width: 100%;
 }
 
-.RunSetSelectorList button {
-	font-size: 100%;
-	margin: 0 0.5em;
-	padding: 0.25em;
+.RunSetSelectorList > footer > button {
+	margin: 0 0.25em;
+	padding: 0.125em;
 }
 
-.RunSetSelectorList section button {
+.RunSetSelectorList > section > button {
 	float: right;
-	margin: 0 0.5em 0 1em;
+	margin: 0 0.25em 0 0.5em;
 }
