@@ -1,31 +1,61 @@
-JS_TARGETS = build/compare.js build/config.js build/machine.js build/timeline.js
+# Stuff you should feel safe changing
 
-COMMON_SOURCES = src/utils.js src/common.js
+PAGES = compare config machine timeline
+COMMON = common utils
+DEPS = babel-loader parse react
+STYLES = common compare style
 
-CSS_SOURCES = $(wildcard src/*.css)
-CSS_TARGETS = $(addprefix build/, $(notdir $(CSS_SOURCES)))
+# Sources and targets
 
-NODE_MODULES = node_modules/babel-loader node_modules/parse node_modules/react
+COMMON_SOURCES = $(addprefix src/,$(addsuffix .js,$(COMMON)))
+PAGE_TARGETS = $(addprefix build/,$(addsuffix .js,$(PAGES)))
+STYLE_TARGETS = $(addprefix build/,$(addsuffix .css,$(STYLES)))
+DEP_TARGETS = $(addprefix node_modules/,$(DEPS))
 
-all : $(JS_TARGETS) $(CSS_TARGETS) $(NODE_MODULES)
+# Entry points
 
-$(JS_TARGETS) : src/compare.js src/config.js src/machine.js src/timeline.js $(COMMON_SOURCES) Makefile
-	webpack --devtool=inline-source-map
+.PHONY : all
+all : $(PAGE_TARGETS) $(STYLE_TARGETS)
 
-build/%.css : src/%.css Makefile
-	cp -f "$<" "$@"
-
+.PHONY : lint
 lint :
-	eslint src
+	@echo 'Linting...'
+	@eslint src
 
-node_modules/babel-loader :
-	npm install babel-loader
-
-node_modules/parse :
-	npm install parse
-
-node_modules/react :
-	npm install react
-
+.PHONY : clean
 clean :
-	rm -rf build/*
+	@echo 'Cleaning...'
+	@rm -rf build/*
+
+# Pages
+
+define PAGE_RULE
+build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js
+	@echo "Building page '$1'..."
+	@webpack --devtool=inline-source-map src/$1.js --output-file build/$1.js
+
+endef
+
+$(foreach PAGE,$(PAGES),$(eval $(call PAGE_RULE,$(PAGE))))
+
+# Dependencies
+
+define DEP_RULE
+node_modules/$1 :
+	@echo 'Installing $1...'
+	@npm install "$1"
+
+endef
+
+$(foreach DEP,$(DEPS),$(eval $(call DEP_RULE,$(DEP))))
+
+# Styles
+
+define STYLE_RULE
+build/$1.css : src/$1.css Makefile
+	@echo "Building style '$1'..."
+	@cp -f src/$1.css build/$1.css
+
+endef
+
+$(foreach STYLE,$(STYLES),$(eval $(call STYLE_RULE,$(STYLE))))
