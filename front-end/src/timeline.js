@@ -1,3 +1,5 @@
+/* @flow weak */
+
 /* global google */
 
 "use strict";
@@ -18,7 +20,7 @@ class Controller extends xp_common.Controller {
 	}
 
 	allDataLoaded () {
-		let initialSelection = {};
+		var initialSelection = {};
 		if (this.initialMachineId !== undefined)
 			initialSelection.machine = this.machineForId (this.initialMachineId);
 		if (this.initialConfigId !== undefined)
@@ -40,8 +42,8 @@ class Controller extends xp_common.Controller {
 	}
 
 	updateForSelection (selection) {
-		let machine = selection.machine;
-		let config = selection.config;
+		var machine = selection.machine;
+		var config = selection.config;
 		if (machine === undefined || config === undefined)
 			return;
 		window.location.hash = machine.id + '+' + config.id;
@@ -66,7 +68,7 @@ class Page extends React.Component {
 
 	render () {
 
-		let chart;
+		var chart;
 
 		if (this.state.machine === undefined || this.state.config === undefined)
 			chart = <div className="diagnostic">Please select a machine and config.</div>;
@@ -134,7 +136,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		if (this.state.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
-		let options = {
+		var options = {
 			vAxis: {
 				minValue: 0,
 				viewWindow: {
@@ -182,6 +184,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	}
 
 	runsLoaded () {
+		var i = 0, j = 0;
 		var machine = this.props.machine;
 		var config = this.props.config;
 		var allRuns = this.allRuns;
@@ -192,8 +195,8 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		if (!xp_common.canUseGoogleCharts ())
 			return;
 
-		let allBenchmarks = this.props.controller.allBenchmarks;
-		let runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
+		var allBenchmarks = this.props.controller.allBenchmarks;
+		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 		runSets.sort ((a, b) => {
 			var aDate = a.get ('commit').get ('commitDate');
 			var bDate = b.get ('commit').get ('commitDate');
@@ -207,39 +210,41 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		/* A table of run data. The rows are indexed by benchmark index, the
 		 * columns by sorted run set index.
 		 */
-		let runTable = [];
+		var runTable : Array<Array<Array<ParseObject>>> = [];
+		var runMetricsTable : Array<Array<number>> = [];
 
 		/* Get a row index from a benchmark ID. */
-		let benchmarkIndicesById = {};
-		for (let i = 0; i < allBenchmarks.length; ++i) {
+		var benchmarkIndicesById = {};
+		for (i = 0; i < allBenchmarks.length; ++i) {
 			runTable.push ([]);
+			runMetricsTable.push ([]);
 			benchmarkIndicesById [allBenchmarks [i].id] = i;
 		}
 
 		/* Get a column index from a run set ID. */
-		let runSetIndicesById = {};
-		for (let i = 0; i < runSets.length; ++i) {
-			for (let j = 0; j < allBenchmarks.length; ++j)
+		var runSetIndicesById = {};
+		for (i = 0; i < runSets.length; ++i) {
+			for (j = 0; j < allBenchmarks.length; ++j)
 				runTable [j].push ([]);
 			runSetIndicesById [runSets [i].id] = i;
 		}
 
 		/* Partition allRuns by benchmark and run set. */
-		for (let i = 0; i < allRuns.length; ++i) {
-			let run = allRuns [i];
-			let runIndex = runSetIndicesById [run.get ('runSet').id];
-			let benchmarkIndex = benchmarkIndicesById [run.get ('benchmark').id];
+		for (i = 0; i < allRuns.length; ++i) {
+			var run = allRuns [i];
+			var runIndex = runSetIndicesById [run.get ('runSet').id];
+			var benchmarkIndex = benchmarkIndicesById [run.get ('benchmark').id];
 			runTable [benchmarkIndex] [runIndex].push (run);
 		}
 
 		/* Compute the mean elapsed time for each. */
-		for (let i = 0; i < allBenchmarks.length; ++i) {
-			for (let j = 0; j < runSets.length; ++j) {
-				let runs = runTable [i] [j];
-				let sum = runs
-					.map (run => run.get ('elapsedMilliseconds'))
+		for (i = 0; i < allBenchmarks.length; ++i) {
+			for (j = 0; j < runSets.length; ++j) {
+				var runs = runTable [i] [j];
+				var sum = runs
+					.map (r => r.get ('elapsedMilliseconds'))
 					.reduce ((sumSoFar, time) => sumSoFar + time, 0);
-				runTable [i] [j] = sum / runs.length;
+				runMetricsTable [i] [j] = sum / runs.length;
 			}
 		}
 
@@ -247,10 +252,10 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		 * it, i.e., in a given run set, a given benchmark took some
 		 * proportion of the average time for that benchmark.
 		 */
-		for (let i = 0; i < allBenchmarks.length; ++i) {
-			let filtered = runTable [i].filter (x => !isNaN (x));
-			let normal = filtered.reduce ((sum, time) => sum + time, 0) / filtered.length;
-			runTable [i] = runTable [i].map (time => time / normal);
+		for (i = 0; i < allBenchmarks.length; ++i) {
+			var filtered = runMetricsTable [i].filter (x => !isNaN (x));
+			var normal = filtered.reduce ((sumSoFar, time) => sumSoFar + time, 0) / filtered.length;
+			runMetricsTable [i] = runMetricsTable [i].map (time => time / normal);
 		}
 
 		var table = new google.visualization.DataTable ();
@@ -261,12 +266,13 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		table.addColumn ({type: 'number', role: 'interval'});
 		table.addColumn ({type: 'string', role: 'tooltip'});
 
-		for (let j = 0; j < runSets.length; ++j) {
-			let sum = 0;
-			let count = 0;
-			let min, max;
-			for (let i = 0; i < allBenchmarks.length; ++i) {
-				let val = runTable [i] [j];
+		for (j = 0; j < runSets.length; ++j) {
+			var sum = 0;
+			var count = 0;
+			var min = undefined;
+			var max = undefined;
+			for (i = 0; i < allBenchmarks.length; ++i) {
+				var val = runMetricsTable [i] [j];
 				if (isNaN (val))
 					continue;
 				sum += val;
@@ -299,9 +305,10 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 }
 
 function started () {
-	let machineId, configId;
+	var machineId = undefined;
+	var configId = undefined;
 	if (window.location.hash) {
-		let ids = window.location.hash.substring (1).split ('+');
+		var ids = window.location.hash.substring (1).split ('+');
 		if (ids.length === 2) {
 			machineId = ids [0];
 			configId = ids [1];
