@@ -80,10 +80,10 @@ class Page extends React.Component {
 
 		return <div>
 			<xp_common.ConfigSelector
-		controller={this.props.controller}
-		machine={this.state.machine}
-		config={this.state.config}
-		onChange={this.setState.bind (this)} />
+				controller={this.props.controller}
+				machine={this.state.machine}
+				config={this.state.config}
+				onChange={this.setState.bind (this)} />
 			{chart}
 		</div>;
 

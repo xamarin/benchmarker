@@ -298,7 +298,7 @@ class RunSetSelector extends React.Component {
 
 		return <div className="RunSetSelector">
 			{configSelector}
-		{runSetsSelect}
+			{runSetsSelect}
 			</div>;
 	}
 
