@@ -231,7 +231,11 @@ export class ConfigSelector extends React.Component {
 			return <option value={machine.id} key={machine.id}>{machine.get ('name')}</option>;
 		}
 		function renderConfigOption (config) {
-			return <option value={config.id} key={config.id}>{config.get ('name')}</option>;
+			return <option
+				value={config.id}
+				key={config.id}
+				onDoubleClick={this.openConfigDescription.bind (this)}
+				>{config.get ('name')}</option>;
 		}
 		var machineId = undefined;
 		if (this.props.machine !== undefined)
@@ -244,9 +248,13 @@ export class ConfigSelector extends React.Component {
 			{this.props.controller.allMachines.map (renderMachineOption)}
 		</select>
 			<select size="6" value={configId} onChange={this.configSelected.bind (this)}>
-			{this.props.controller.allConfigs.map (renderConfigOption)}
+			{this.props.controller.allConfigs.map (renderConfigOption.bind (this))}
 		</select>
 			</div>;
+	}
+
+	openConfigDescription () {
+		window.open ('config.html#' + this.props.config.id);
 	}
 
 	machineSelected (event: Object) {
