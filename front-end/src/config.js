@@ -2,7 +2,6 @@
 
 import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
-import Parse from 'parse';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
@@ -32,8 +31,8 @@ class Controller extends xp_common.Controller {
 function started () {
 	var configId;
 	if (window.location.hash)
-		configId = window.location.hash.substring (1)
-	new Controller (configId);
+		configId = window.location.hash.substring (1);
+	var controller = new Controller (configId);
 }
 
 xp_common.start (started);

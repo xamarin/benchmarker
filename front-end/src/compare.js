@@ -138,12 +138,14 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	}
 
 	runsLoaded () {
+		var i;
+
 		console.log ("run loaded");
 
 		if (!xp_common.canUseGoogleCharts ())
 			return;
 
-		for (var i = 0; i < this.props.runSets.length; ++i) {
+		for (i = 0; i < this.props.runSets.length; ++i) {
 			if (this.runsByIndex [i] === undefined)
 				return;
 		}
@@ -152,7 +154,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 		var commonBenchmarkIds;
 
-		for (var i = 0; i < this.props.runSets.length; ++i) {
+		for (i = 0; i < this.props.runSets.length; ++i) {
 			var runs = this.runsByIndex [i];
 			var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
 			if (commonBenchmarkIds === undefined) {
@@ -167,13 +169,13 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 		var dataArray = [];
 
-		for (var i = 0; i < commonBenchmarkIds.length; ++i) {
+		for (i = 0; i < commonBenchmarkIds.length; ++i) {
 			var benchmarkId = commonBenchmarkIds [i];
 			var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
 			var mean = undefined;
 			for (var j = 0; j < this.props.runSets.length; ++j) {
-				var runs = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
-				var range = xp_common.calculateRunsRange (runs);
+				var filteredRuns = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
+				var range = xp_common.calculateRunsRange (filteredRuns);
 				if (mean === undefined) {
 					// FIXME: eventually we'll have more meaningful ranges
 					mean = range [1];
@@ -184,7 +186,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		}
 
 		var data = google.visualization.arrayToDataTable (dataArray, true);
-		for (var i = 0; i < this.props.runSets.length; ++i)
+		for (i = 0; i < this.props.runSets.length; ++i)
 			data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
 
 		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";

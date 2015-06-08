@@ -265,7 +265,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		table.addColumn ({type: 'string', role: 'tooltip'});
 
 		for (j = 0; j < runSets.length; ++j) {
-			var sum = 0;
+			var sumForRunSet = 0;
 			var count = 0;
 			var min = undefined;
 			var max = undefined;
@@ -273,7 +273,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 				var val = runMetricsTable [i] [j];
 				if (isNaN (val))
 					continue;
-				sum += val;
+				sumForRunSet += val;
 				if (min === undefined || val < min)
 					min = val;
 				if (max === undefined || val > max)
@@ -291,7 +291,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 			var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
 			table.addRow ([
 				j,
-				sum / count,
+				sumForRunSet / count,
 				min,
 				max,
 				tooltip
