@@ -68,6 +68,7 @@ class Page extends React.Component {
 
 		var selections = this.state.selections;
 		var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
+		runSets = xp_utils.uniqArrayByString (runSets, rs => rs.id);
 
 		var chart;
 		if (runSets.length > 1)

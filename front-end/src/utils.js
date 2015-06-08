@@ -22,6 +22,14 @@ export function uniqStringArray (arr: Array<string>) : Array<string> {
 	return Object.keys (hash);
 }
 
+export function uniqArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<T> {
+    var hash = {};
+    for (var i = 0; i < arr.length; ++i) {
+		hash [keyFunc (arr [i])] = arr [i];
+    }
+	return Object.keys (hash).map (k => hash [k]);
+}
+
 export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
     var crr = [];
     for (var i = 0; i < arr.length; ++i) {
