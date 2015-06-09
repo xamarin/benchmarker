@@ -16,13 +16,14 @@ class Compare
 		if (!String.IsNullOrEmpty (message))
 			Console.Error.WriteLine ("{0}\n", message);
 
-		Console.Error.WriteLine ("usage:          [parameters] [--] <tests-dir> <benchmarks-dir> <config-file>");
-		Console.Error.WriteLine ("parameters:");
+		Console.Error.WriteLine ("Usage:          [options] [--] <tests-dir> <benchmarks-dir> <config-file>");
+		Console.Error.WriteLine ("Options:");
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit          the hash of the commit being tested");
+		Console.Error.WriteLine ("        --root            will be substituted for $ROOT in the config");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
 
 		Environment.Exit (exitcode);
@@ -34,6 +35,7 @@ class Compare
 		//var pausetime = false;
 		var timeout = Int32.MaxValue;
 		string commitFromCmdline = null;
+		string rootFromCmdline = null;
 
 		var optindex = 0;
 
@@ -44,6 +46,8 @@ class Compare
 				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
 			} else if (args [optindex] == "--commit") {
 				commitFromCmdline = args [++optindex];
+			} else if (args [optindex] == "--root") {
+				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]) * 1000;
 				timeout = timeout == 0 ? Int32.MaxValue : timeout;
@@ -69,7 +73,7 @@ class Compare
 		var benchmarksdir = args [optindex++];
 		var configfile = args [optindex++];
 
-		var config = Config.LoadFrom (configfile);
+		var config = Config.LoadFrom (configfile, rootFromCmdline);
 
 		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline));
 

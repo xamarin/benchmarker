@@ -27,7 +27,7 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
-		public static Config LoadFrom (string filename)
+		public static Config LoadFrom (string filename, string root)
 		{
 			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
 				var config = JsonConvert.DeserializeObject<Config> (reader.ReadToEnd ());
@@ -40,8 +40,11 @@ namespace Benchmarker.Common.Models
 					Debug.Assert (config.MonoEnvironmentVariables == null || config.MonoEnvironmentVariables.Count == 0);
 				}
 
-				if (String.IsNullOrEmpty (config.Mono))
+				if (String.IsNullOrEmpty (config.Mono)) {
 					config.Mono = String.Empty;
+				} else if (root != null) {
+					config.Mono = config.Mono.Replace ("$ROOT", root);
+				}
 
 				if (config.Count < 1)
 					config.Count = 10;
