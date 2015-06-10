@@ -136,10 +136,6 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 		var options = {
 			vAxis: {
-				minValue: 0,
-				viewWindow: {
-					min: 0,
-				},
 				gridlines: {
 					color: 'transparent'
 				},
