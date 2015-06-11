@@ -23,6 +23,7 @@ class Compare
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit          the hash of the commit being tested");
+		Console.Error.WriteLine ("        --build-url       the URL of the binary build");
 		Console.Error.WriteLine ("        --root            will be substituted for $ROOT in the config");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
 
@@ -36,6 +37,7 @@ class Compare
 		var timeout = Int32.MaxValue;
 		string commitFromCmdline = null;
 		string rootFromCmdline = null;
+		string buildURL = null;
 
 		var optindex = 0;
 
@@ -46,6 +48,8 @@ class Compare
 				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
 			} else if (args [optindex] == "--commit") {
 				commitFromCmdline = args [++optindex];
+			} else if (args [optindex] == "--build-url") {
+				buildURL = args [++optindex];
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
@@ -89,7 +93,8 @@ class Compare
 		var runSet = new RunSet {
 			StartDateTime = DateTime.Now,
 			Config = config,
-			Commit = commit
+			Commit = commit,
+			BuildURL = buildURL
 		};
 
 		foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {

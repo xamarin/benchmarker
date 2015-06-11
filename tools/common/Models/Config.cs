@@ -132,23 +132,25 @@ namespace Benchmarker.Common.Models
 			var regex = new Regex ("^Mono JIT.*\\((.*)/([0-9a-f]+) (.*)\\)");
 			var match = regex.Match (line);
 
-			if (!match.Success) {
-				Console.WriteLine ("Error: cannot parse mono version.");
-				return null;
-			}
-
 			var commit = new Commit ();
-			commit.Branch = match.Groups [1].Value;
-			commit.Hash = match.Groups [2].Value;
-			var date = match.Groups [3].Value;
 
-			Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
+			if (match.Success) {
+				commit.Branch = match.Groups [1].Value;
+				commit.Hash = match.Groups [2].Value;
+				var date = match.Groups [3].Value;
+				Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
+			} else {
+				if (optionalCommitHash == null) {
+					Console.WriteLine ("Error: cannot parse mono version and no commit given.");
+					return null;
+				}
+			}
 
 			if (commit.Branch == "(detached")
 				commit.Branch = null;
 
 			if (optionalCommitHash != null) {
-				if (!optionalCommitHash.StartsWith (commit.Hash)) {
+				if (commit.Hash != null && !optionalCommitHash.StartsWith (commit.Hash)) {
 					Console.WriteLine ("Error: Commit hash specified on command line does not match the one reported with --version.");
 					return null;
 				}

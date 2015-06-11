@@ -15,6 +15,7 @@ namespace Benchmarker.Common.Models
 		public DateTime FinishDateTime { get; set; }
 		public Config Config { get; set; }
 		public Commit Commit { get; set; }
+		public string BuildURL { get; set; }
 
 		public RunSet ()
 		{
@@ -54,6 +55,7 @@ namespace Benchmarker.Common.Models
 			obj ["machine"] = m;
 			obj ["config"] = c;
 			obj ["commit"] = commit;
+			obj ["buildURL"] = BuildURL;
 			obj ["startedAt"] = StartDateTime;
 			obj ["finishedAt"] = FinishDateTime;
 			await obj.SaveAsync ();
