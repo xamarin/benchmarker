@@ -336,3 +336,24 @@ export class MachineDescription extends React.Component {
 export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
+
+export function pageParseQuery (makeQuery: () => Object, success: (results: Array<Object>) => void, error: (error: Object) => void, soFar: (Array<Object> | void)) : void {
+	if (soFar === undefined)
+		soFar = [];
+
+	var query = makeQuery ();
+	query.limit (1000).skip (soFar.length);
+	query.find ({
+		success: results => {
+			soFar = soFar.concat (results);
+			if (results.length == 1000) {
+				pageParseQuery (makeQuery, success, error, soFar);
+			} else {
+				success (soFar);
+			}
+		},
+		error: e => {
+			error (e);
+		}
+	});
+}

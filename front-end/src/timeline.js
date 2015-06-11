@@ -106,23 +106,22 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		runSetQuery
 			.equalTo ('machine', machine)
 			.equalTo ('config', config);
-		var runQuery = new Parse.Query (xp_common.Run);
-		runQuery
-			.matchesQuery ('runSet', runSetQuery)
-			.limit (1000)
-			.find ({
-				success: results => {
-					if (machine !== this.props.machine || config !== this.props.config)
-						return;
+		xp_common.pageParseQuery (
+			() => {
+				var runQuery = new Parse.Query (xp_common.Run);
+				runQuery.matchesQuery ('runSet', runSetQuery);
+				return runQuery;
+			},
+			results => {
+				if (machine !== this.props.machine || config !== this.props.config)
+					return;
 
-					this.allRuns = results;
-					this.runsLoaded ();
-				},
-				error: function (error) {
-					alert ("error loading runs: " + error);
-				}
+				this.allRuns = results;
+				this.runsLoaded ();
+			},
+			function (error) {
+				alert ("error loading runs: " + error);
 			});
-
 	}
 
 	componentWillReceiveProps (nextProps) {
