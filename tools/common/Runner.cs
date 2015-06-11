@@ -16,13 +16,13 @@ namespace Benchmarker.Common
 		Config config;
 		Benchmark benchmark;
 		string arguments;
-		int defaultTimeout;
+		int defaultTimeoutSeconds;
 
-		public Runner (string testsDirectory, Config _config, Benchmark _benchmark, int _timeout)
+		public Runner (string testsDirectory, Config _config, Benchmark _benchmark, int _timeoutSeconds)
 		{
 			config = _config;
 			benchmark = _benchmark;
-			defaultTimeout = _timeout;
+			defaultTimeoutSeconds = _timeoutSeconds;
 
 			info = config.NewProcessStartInfo ();
 
@@ -51,8 +51,10 @@ namespace Benchmarker.Common
 			info.EnvironmentVariables.Add (key, value);
 		}
 
-		Result.Run Run (string profilesDirectory, string profileFilename)
+		Result.Run Run (string profilesDirectory, string profileFilename, out bool timedOut)
 		{
+			timedOut = false;
+
 			try {
 				if (profilesDirectory != null)
 					Debug.Assert (profileFilename != null);
@@ -72,7 +74,7 @@ namespace Benchmarker.Common
 						profilesDirectory, profileFilename)) + info.Arguments;
 				}
 				
-				var timeout = benchmark.Timeout > 0 ? benchmark.Timeout : defaultTimeout;
+				var timeout = benchmark.Timeout > 0 ? benchmark.Timeout : defaultTimeoutSeconds;
 
 				var sw = Stopwatch.StartNew ();
 
@@ -83,10 +85,15 @@ namespace Benchmarker.Common
 
 					sw.Stop ();
 
-					if (success && process.ExitCode != 0)
+					if (!success) {
+						Console.Out.WriteLine ("timed out!");
+						timedOut = true;
+					} else if (process.ExitCode != 0) {
+						Console.Out.WriteLine ("failure!");
 						success = false;
-
-					Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "failure!");
+					} else {
+						Console.Out.WriteLine (success ? sw.ElapsedMilliseconds.ToString () + "ms" : "failure!");
+					}
 
 					if (!success) {
 						process.Kill ();
@@ -104,14 +111,14 @@ namespace Benchmarker.Common
 			}
 		}
 
-		public Result.Run Run ()
+		public Result.Run Run (out bool timedOut)
 		{
-			return Run (null, null);
+			return Run (null, null, out timedOut);
 		}
 
-		public ProfileResult.Run ProfilerRun (string profilesDirectory, string profileFilename)
+		public ProfileResult.Run ProfilerRun (string profilesDirectory, string profileFilename, out bool timedOut)
 		{
-			var run = Run (profilesDirectory, profileFilename);
+			var run = Run (profilesDirectory, profileFilename, out timedOut);
 			if (run == null)
 				return null;
 

@@ -277,7 +277,7 @@ namespace Benchmarker.Common.Models
 
 			Console.WriteLine ("creating new config");
 
-			var obj = new ParseObject ("Config");
+			var obj = ParseInterface.NewParseObject ("Config");
 			obj ["name"] = Name;
 			obj ["monoExecutable"] = executable;
 			obj ["monoOptions"] = MonoOptions;

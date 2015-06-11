@@ -34,14 +34,17 @@ class Compare
 	{
 		var benchmarksnames = new string[0];
 		//var pausetime = false;
-		var timeout = Int32.MaxValue;
+		var timeout = -1;
 		string commitFromCmdline = null;
 		string rootFromCmdline = null;
 		string buildURL = null;
 
 		var optindex = 0;
 
-		ParseClient.Initialize ("7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES", "FwqUX9gNQP5HmP16xDcZRoh0jJRCDvdoDpv8L87p");
+		if (!ParseInterface.Initialize ()) {
+			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
+			Environment.Exit (1);
+		}
 
 		for (; optindex < args.Length; ++optindex) {
 			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
@@ -53,8 +56,8 @@ class Compare
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
-				timeout = Int32.Parse (args [++optindex]) * 1000;
-				timeout = timeout == 0 ? Int32.MaxValue : timeout;
+				timeout = Int32.Parse (args [++optindex]);
+				timeout = timeout <= 0 ? -1 : timeout;
 			// } else if (args [optindex] == "-p" || args [optindex] == "--pause-time") {
 			// 	pausetime = Boolean.Parse (args [++optindex]);
 			} else if (args [optindex].StartsWith ("--help")) {
@@ -110,23 +113,36 @@ class Compare
 				DateTime = DateTime.Now,
 				Benchmark = benchmark,
 				Config = config,
-				Timedout = false,
 			};
 
+			var haveTimedOut = false;
+			var haveCrashed = false;
+
 			for (var i = 0; i < config.Count + 1; ++i) {
+				bool timedOut;
+
 				Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
-				var run = runner.Run ();
+				var run = runner.Run (out timedOut);
 
 				// skip first one
 				if (i == 0)
 					continue;
-				
-				result.Timedout = result.Timedout || run == null;
 
-				if (run != null)
+				if (run != null) {
 					result.Runs.Add (run);
+				} else {
+					if (timedOut)
+						haveTimedOut = true;
+					else
+						haveCrashed = true;
+				}
 			}
+
+			if (haveTimedOut)
+				runSet.TimedOutBenchmarks.Add (benchmark);
+			if (haveCrashed)
+				runSet.CrashedBenchmarks.Add (benchmark);
 
 			// FIXME: implement pausetime
 			//if (pausetime)

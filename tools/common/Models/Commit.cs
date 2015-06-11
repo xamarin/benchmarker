@@ -25,7 +25,7 @@ namespace Benchmarker.Common.Models
 			if (CommitDate == null)
 				throw new Exception ("Cannot save a commit without a commit date");
 
-			var obj = new ParseObject ("Commit");
+			var obj = ParseInterface.NewParseObject ("Commit");
 			obj ["hash"] = Hash;
 			if (Branch != null)
 				obj ["branch"] = Branch;

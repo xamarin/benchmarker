@@ -18,8 +18,6 @@ namespace Benchmarker.Common.Models
 		List<Run> runs;
 		public List<Run> Runs { get { return runs; } }
 
-		public bool Timedout { get; set; }
-
 		public Result ()
 		{
 			runs = new List<Run> ();
@@ -48,7 +46,7 @@ namespace Benchmarker.Common.Models
 		public async Task UploadRunsToParse (ParseObject runSet) {
 			var b = await Benchmark.GetOrUploadToParse ();
 			foreach (var run in Runs) {
-				var obj = new ParseObject ("Run");
+				var obj = ParseInterface.NewParseObject ("Run");
 				obj ["benchmark"] = b;
 				obj ["runSet"] = runSet;
 				obj ["elapsedMilliseconds"] = run.WallClockTime.TotalMilliseconds;
