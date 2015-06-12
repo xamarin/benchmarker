@@ -142,13 +142,14 @@ var googleChartsStateComponents = [];
 function googleChartsDidLoad () {
 	if (googleChartsStateComponents === undefined)
 		return;
-	for (var i = 0; i < googleChartsStateComponents.length; ++i) {
-		var component = googleChartsStateComponents [i];
+	var components = googleChartsStateComponents;
+	googleChartsStateComponents = undefined;
+	for (var i = 0; i < components.length; ++i) {
+		var component = components [i];
 		if (component === undefined)
 			continue;
 		component.googleChartsLoaded ();
 	}
-	googleChartsStateComponents = undefined;
 }
 
 export function canUseGoogleCharts (): boolean {
