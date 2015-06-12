@@ -97,12 +97,12 @@ export class Controller {
 		this.checkAllDataLoaded ();
 	}
 
-	benchmarkNameForId (id: string) : ?string {
+	benchmarkNameForId (id: string) : (string | void) {
 		for (var i = 0; i < this.allBenchmarks.length; ++i) {
 			if (this.allBenchmarks [i].id === id)
 				return this.allBenchmarks [i].get ('name');
 		}
-		return null;
+		return undefined;
 	}
 
 	machineForId (id: string) : ParseObject {
