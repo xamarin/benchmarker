@@ -1,7 +1,10 @@
 #!/bin/bash
 
+JQ_JOIN="reduce .[] as \$item (\"\"; . + \"\n\" + \$item)"
+
 ARCH=amd64
 LABEL="debian-$ARCH"
+HOSTNAME=`uname -n`
 
 pushd `dirname "$0"` > /dev/null
 BENCHMARKER_ROOT=`pwd`
@@ -29,37 +32,59 @@ finish () {
 
 JENKINS_JSON="$TMP_DIR/jenkins.json"
 RUN_JSON="$TMP_DIR/run.json"
+BUILDS_TESTED_LIST="$TMP_DIR/builds-tested"
+BUILDS_ALL_LIST="$TMP_DIR/builds-all"
 
 while true ; do
 
     while true ; do
-	curl 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/api/json?pretty=true&depth=10&tree=lastCompletedBuild%5Burl,runs%5Burl,artifacts%5B*%5D,fingerprint%5Boriginal%5B*%5D%5D%5D%5D' >"$JENKINS_JSON"
+	# get all the builds we've tested from Parse
+	curl -X GET \
+	     -H "X-Parse-Application-Id: 7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES" \
+	     -H "X-Parse-REST-API-Key: xOHOwaDls0fcuMKLIH0nzaMKclLzCWllwClLej4d" \
+	     -G \
+	     --data-urlencode "where={\"buildURL\":{\"\$exists\":true},\"machine\":{\"\$inQuery\":{\"where\":{\"name\":\"$HOSTNAME\"},\"className\":\"Machine\"}}}" \
+	     https://api.parse.com/1/classes/RunSet | jq -r ".results | map(.buildURL) | sort | unique | $JQ_JOIN" >"$BUILDS_TESTED_LIST"
+	if [ $? -ne 0 ] ; then
+	    echo "Error: Cannot fetch JSON from Parse."
+	    sleep 60
+	    continue
+	fi
+
+	# get information on all builds Jenkins has built
+	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" >"$JENKINS_JSON" | jq ".allBuilds | map(select(.building | not))"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot fetch JSON from Jenkins."
 	    sleep 60
 	    continue
 	fi
 
-	cat "$JENKINS_JSON" | jq -r ".lastCompletedBuild.runs | map(select(.url | contains(\"label=$LABEL\"))) | add" >"$RUN_JSON"
+	# filter out the URLs from the list from Jenkins
+	cat "$JENKINS_JSON" | jq -r ".allBuilds | map(.url) | sort | unique | $JQ_JOIN" >"$BUILDS_ALL_LIST"
+	if [ $? -ne 0 ] ; then
+	    echo "Error: Cannot get all builds from JSON."
+	    sleep 60
+	    continue
+	fi
+
+	# get a list of all the runs we haven't yet tested
+	RUN_URL=`comm -2 -3 "$BUILDS_ALL_LIST" "$BUILDS_TESTED_LIST" | tail -n 1`
+	if [ "x$RUN_URL" = "x" ] ; then
+	    echo "We've tested all the builds.  Sleeping."
+	    sleep 300
+	    continue
+	fi
+
+	echo "Build to test is $RUN_URL"
+
+	cat "$JENKINS_JSON" | jq -r ".allBuilds | map(select(.url==\"$RUN_URL\")) | add" >"$RUN_JSON"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot get run from JSON."
 	    sleep 60
 	    continue
 	fi
 
-	RUN_URL=`cat "$RUN_JSON" | jq -r '.url'`
-	if [ $? -ne 0 ] ; then
-	    echo "Error: Cannot get URL from JSON."
-	    sleep 60
-	    continue
-	fi
-
-	if [ "x$LAST_RUN_URL" != "x$RUN_URL" ] ; then
-	    break
-	fi
-
-	echo "No new run - sleeping 5 minutes."
-	sleep 300
+	break
     done
 
     GIT_FETCH_ID=`cat "$RUN_JSON" | jq -r '.fingerprint | map (select(.original.name == "build-source-tarball-mono")) | add | .original.number'`
@@ -104,8 +129,6 @@ while true ; do
 	sleep 60
 	continue
     fi
-
-    LAST_RUN_URL="$RUN_URL"
 
 done
 
