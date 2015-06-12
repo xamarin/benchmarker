@@ -91,6 +91,27 @@ class Page extends React.Component {
 
 }
 
+function joinBenchmarkNames (controller: Object, benchmarks: (Array<Object> | void), prefix: string) : string {
+	if (benchmarks === undefined || benchmarks.length === 0)
+		return "";
+	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");
+}
+
+function tooltipForRunSet (controller: Object, runSet: Object) {
+	var commit = runSet.get ('commit');
+	var commitDateString = commit.get ('commitDate').toDateString ();
+	var branch = "";
+	if (commit.get ('branch') !== undefined)
+		branch = " (" + commit.get ('branch') + ")";
+	var startedAtString = runSet.get ('startedAt').toDateString ();
+	var hashString = commit.get ('hash').substring (0, 10);
+
+	var timedOutBenchmarks = joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
+	var crashedBenchmarks = joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
+
+	return hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString + timedOutBenchmarks + crashedBenchmarks;
+}
+
 class Chart extends xp_common.GoogleChartsStateComponent {
 
 	constructor (props) {
@@ -275,15 +296,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 					max = val;
 				++count;
 			}
-			var runSet = runSets [j];
-			var commit = runSet.get ('commit');
-			var commitDateString = commit.get ('commitDate').toDateString ();
-			var branch = "";
-			if (commit.get ('branch') !== undefined)
-				branch = " (" + commit.get ('branch') + ")";
-			var startedAtString = runSet.get ('startedAt').toDateString ();
-			var hashString = commit.get ('hash').substring (0, 10);
-			var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
+			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
 			table.addRow ([
 				j,
 				sumForRunSet / count,
