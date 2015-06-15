@@ -52,7 +52,7 @@ while true ; do
 	fi
 
 	# get information on all builds Jenkins has built
-	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" >"$JENKINS_JSON" | jq ".allBuilds | map(select(.building | not))"
+	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" | jq ".allBuilds | map(select(.building | not))" >"$JENKINS_JSON"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot fetch JSON from Jenkins."
 	    sleep 60
@@ -60,7 +60,7 @@ while true ; do
 	fi
 
 	# filter out the URLs from the list from Jenkins
-	cat "$JENKINS_JSON" | jq -r ".allBuilds | map(.url) | sort | unique | $JQ_JOIN" >"$BUILDS_ALL_LIST"
+	cat "$JENKINS_JSON" | jq -r "map(.url) | sort | unique | $JQ_JOIN" >"$BUILDS_ALL_LIST"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot get all builds from JSON."
 	    sleep 60
@@ -77,7 +77,7 @@ while true ; do
 
 	echo "Build to test is $RUN_URL"
 
-	cat "$JENKINS_JSON" | jq -r ".allBuilds | map(select(.url==\"$RUN_URL\")) | add" >"$RUN_JSON"
+	cat "$JENKINS_JSON" | jq -r "map(select(.url==\"$RUN_URL\")) | add" >"$RUN_JSON"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot get run from JSON."
 	    sleep 60
@@ -111,7 +111,7 @@ while true ; do
     BIN_URL="$RUN_URL/artifact/$BIN_PATH"
 
     COMMIT_SHA=`curl "https://jenkins.mono-project.com/job/build-source-tarball-mono/$GIT_FETCH_ID/pollingLog/pollingLog" | awk '/Latest remote/ { print $NF }'`
-    if [ $? -ne 0 ] ; then
+    if [ $? -ne 0 -o "x$COMMIT_SHA" = "x" ] ; then
 	echo "Error: Cannot get commit SHA."
 	sleep 60
 	continue
