@@ -1,4 +1,4 @@
-/* @flow weak */
+/* @flow */
 
 /* global google */
 
@@ -10,8 +10,8 @@ import React from 'react';
 
 class Controller extends xp_common.Controller {
 
-	initialMachineId: string;
-	initialConfigId: string;
+	initialMachineId: string | void;
+	initialConfigId: string | void;
 
 	constructor (machineId, configId) {
 		super ();

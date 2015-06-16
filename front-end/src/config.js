@@ -1,3 +1,5 @@
+/* @flow */
+
 "use strict";
 
 import * as xp_common from './common.js';
@@ -5,6 +7,8 @@ import * as xp_utils from './utils.js';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
+
+	configId: string | void;
 
 	constructor (configId) {
 		super ();

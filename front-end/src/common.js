@@ -33,10 +33,10 @@ export function start (started: () => void) {
 
 export class Controller {
 
-	allBenchmarks: Array<Object>;
-	allMachines: Array<Object>;
-	allRunSets: Array<Object>;
-	allConfigs: Array<Object>;
+	allBenchmarks: Array<ParseObject>;
+	allMachines: Array<ParseObject>;
+	allRunSets: Array<ParseObject>;
+	allConfigs: Array<ParseObject>;
 
 	constructor () {
 
@@ -334,11 +334,81 @@ export class MachineDescription extends React.Component {
 	}
 }
 
+export class RunSetSelector extends React.Component {
+
+	runSetSelected (event: Object) {
+		var selection = this.props.selection;
+		var runSetId = event.target.value;
+		console.log ("run set selected: " + runSetId);
+		var runSet = this.props.controller.runSetForId (runSetId);
+		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
+	}
+
+	render () : Object {
+		var selection = this.props.selection;
+		console.log (selection);
+
+		var machineId = undefined;
+		var runSetId = undefined;
+		var filteredRunSets = undefined;
+
+		if (selection.machine !== undefined)
+			machineId = selection.machine.id;
+
+		if (selection.runSet !== undefined)
+			runSetId = selection.runSet.id;
+
+		if (selection.machine !== undefined && selection.config !== undefined)
+			filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
+		else
+			filteredRunSets = [];
+
+		console.log (filteredRunSets);
+
+		function renderRunSetOption (rs) {
+			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
+		}
+
+		var config = selection.config === undefined
+			? undefined
+			: this.props.controller.configForId (selection.config.id);
+
+		var configSelector =
+			<ConfigSelector
+		controller={this.props.controller}
+		machine={selection.machine}
+		config={config}
+		onChange={this.props.onChange} />;
+		var runSetsSelect = filteredRunSets.length === 0
+			? <select size="6" disabled="true">
+			<option className="diagnostic">Please select a machine and config.</option>
+			</select>
+			: <select
+		size="6"
+		selectedIndex="-1"
+		value={runSetId}
+		onChange={this.runSetSelected.bind (this)}>
+			{filteredRunSets.map (renderRunSetOption)}
+		</select>;
+
+		console.log ("runSetId is " + runSetId);
+
+		return <div className="RunSetSelector">
+			{configSelector}
+			{runSetsSelect}
+			</div>;
+	}
+
+	getRunSet () : ParseObject {
+		return this.state.runSet;
+	}
+}
+
 export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
 
-export function pageParseQuery (makeQuery: () => Object, success: (results: Array<Object>) => void, error: (error: Object) => void) : void {
+export function pageParseQuery (makeQuery: () => Object, success: (results: Array<ParseObject>) => void, error: (error: Object) => void) : void {
 	function page (soFar: Array<Object>) {
 		var query = makeQuery ();
 		query.limit (1000).skip (soFar.length);

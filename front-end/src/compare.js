@@ -227,7 +227,7 @@ class RunSetSelectorList extends React.Component {
 		function renderSelector (selection, index) {
 			return <section>
 				<button onClick={this.removeSelector.bind (this, index)}>Remove</button>
-				<RunSetSelector
+				<xp_common.RunSetSelector
 			controller={this.props.controller}
 			selection={selection}
 			onChange={this.handleChange.bind (this, index)} />
@@ -237,76 +237,6 @@ class RunSetSelectorList extends React.Component {
 			{this.props.selections.map (renderSelector.bind (this))}
 			<footer><button onClick={this.addSelector.bind (this)}>Add Run Set</button></footer>
 			</div>;
-	}
-}
-
-class RunSetSelector extends React.Component {
-
-	runSetSelected (event) {
-		var selection = this.props.selection;
-		var runSetId = event.target.value;
-		console.log ("run set selected: " + runSetId);
-		var runSet = this.props.controller.runSetForId (runSetId);
-		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
-	}
-
-	render () {
-		var selection = this.props.selection;
-		console.log (selection);
-
-		var machineId = undefined;
-		var runSetId = undefined;
-		var filteredRunSets = undefined;
-
-		if (selection.machine !== undefined)
-			machineId = selection.machine.id;
-
-		if (selection.runSet !== undefined)
-			runSetId = selection.runSet.id;
-
-		if (selection.machine !== undefined && selection.config !== undefined)
-			filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
-		else
-			filteredRunSets = [];
-
-		console.log (filteredRunSets);
-
-		function renderRunSetOption (rs) {
-			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
-		}
-
-		var config = selection.config === undefined
-			? undefined
-			: this.props.controller.configForId (selection.config.id);
-
-		var configSelector =
-			<xp_common.ConfigSelector
-		controller={this.props.controller}
-		machine={selection.machine}
-		config={config}
-		onChange={this.props.onChange} />;
-		var runSetsSelect = filteredRunSets.length === 0
-			? <select size="6" disabled="true">
-			<option className="diagnostic">Please select a machine and config.</option>
-			</select>
-			: <select
-		size="6"
-		selectedIndex="-1"
-		value={runSetId}
-		onChange={this.runSetSelected.bind (this)}>
-			{filteredRunSets.map (renderRunSetOption)}
-		</select>;
-
-		console.log ("runSetId is " + runSetId);
-
-		return <div className="RunSetSelector">
-			{configSelector}
-			{runSetsSelect}
-			</div>;
-	}
-
-	getRunSet () {
-		return this.state.runSet;
 	}
 }
 
