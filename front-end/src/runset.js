@@ -119,8 +119,11 @@ class RunSetDescription extends React.Component {
 		var runsByBenchmarkName = xp_utils.partitionArrayByString (this.state.runs, r => this.props.controller.benchmarkNameForId (r.get ('benchmark').id));
 		var benchmarkNames = Object.keys (runsByBenchmarkName);
 		benchmarkNames.sort ();
+		var commitHash = this.props.runSet.get ('commit').get ('hash');
 
-		return <table>
+		return <div>
+			<div>Commit <a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></div>
+			<table>
 			{benchmarkNames.map (name => {
 				var runs = runsByBenchmarkName [name];
 				var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
@@ -128,7 +131,8 @@ class RunSetDescription extends React.Component {
 				var elapsedString = elapsed.join (", ");
 				return <tr><td>{name}</td><td>{elapsedString}</td></tr>;
 			})}
-		</table>;
+		</table>
+			</div>;
 	}
 }
 
