@@ -1,6 +1,6 @@
 # Stuff you should feel safe changing
 
-PAGES = compare config machine timeline
+PAGES = compare config machine timeline runset
 COMMON = common utils
 DEPS = babel-loader parse react
 STYLES = common compare style

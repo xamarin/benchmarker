@@ -49,3 +49,16 @@ export function updateArray<T> (arr: Array<T>, i: number, v: T) : Array<T> {
     newArr [i] = v;
     return newArr;
 }
+
+export function partitionArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : { [key: string]: Array<T> } {
+	var result = {};
+	for (var i = 0; i < arr.length; ++i) {
+		var val = arr [i];
+		var key = keyFunc (val);
+		var vals = result [key];
+		if (vals === undefined)
+			vals = result [key] = [];
+		vals.push (val);
+	}
+	return result;
+}
