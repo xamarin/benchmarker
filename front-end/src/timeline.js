@@ -190,7 +190,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		console.log (item);
 		var runSet = this.sortedRunSets [item.row];
 		console.log (runSet);
-		window.open (xp_common.githubCommitLink (runSet.get ('commit').get ('hash')));
+		window.open ('runset.html#' + runSet.id);
 	}
 
 	googleChartsLoaded () {
