@@ -429,3 +429,9 @@ export function pageParseQuery (makeQuery: () => Object, success: (results: Arra
 
 	page ([]);
 }
+
+export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<ParseObject> | void), prefix: string) : string {
+	if (benchmarks === undefined || benchmarks.length === 0)
+		return "";
+	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");
+}

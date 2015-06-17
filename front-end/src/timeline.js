@@ -91,13 +91,7 @@ class Page extends React.Component {
 
 }
 
-function joinBenchmarkNames (controller: Object, benchmarks: (Array<Object> | void), prefix: string) : string {
-	if (benchmarks === undefined || benchmarks.length === 0)
-		return "";
-	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");
-}
-
-function tooltipForRunSet (controller: Object, runSet: Object) {
+function tooltipForRunSet (controller: Controller, runSet: ParseObject) {
 	var commit = runSet.get ('commit');
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
@@ -106,8 +100,8 @@ function tooltipForRunSet (controller: Object, runSet: Object) {
 	var startedAtString = runSet.get ('startedAt').toDateString ();
 	var hashString = commit.get ('hash').substring (0, 10);
 
-	var timedOutBenchmarks = joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
-	var crashedBenchmarks = joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
+	var timedOutBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
+	var crashedBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
 
 	return hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString + timedOutBenchmarks + crashedBenchmarks;
 }

@@ -113,26 +113,52 @@ class RunSetDescription extends React.Component {
 	}
 
 	render () {
-		if (this.state.runs === undefined)
-			return <div className='diagnostic'>Loading&hellip;</div>;
+		var runSet = this.props.runSet;
+		var buildURL = runSet.get ('buildURL');
+		var buildLink;
+		var timedOutBenchmarks;
+		var crashedBenchmarks;
+		var table;
 
-		var runsByBenchmarkName = xp_utils.partitionArrayByString (this.state.runs, r => this.props.controller.benchmarkNameForId (r.get ('benchmark').id));
-		var benchmarkNames = Object.keys (runsByBenchmarkName);
-		benchmarkNames.sort ();
-		var commitHash = this.props.runSet.get ('commit').get ('hash');
+		if (buildURL !== undefined)
+			buildLink = [<dt>Build</dt>, <dd><a href={buildURL}>Link</a></dd>];
 
-		return <div>
-			<div>Commit <a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></div>
-			<table>
-			{benchmarkNames.map (name => {
-				var runs = runsByBenchmarkName [name];
-				var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
-				elapsed.sort ();
-				var elapsedString = elapsed.join (", ");
-				return <tr><td>{name}</td><td>{elapsedString}</td></tr>;
-			})}
-		</table>
-			</div>;
+		var timedOutString = xp_common.joinBenchmarkNames (this.props.controller, runSet.get ('timedOutBenchmarks'), "");
+		if (timedOutString !== "")
+			timedOutBenchmarks = [<dt>Timed out</dt>, <dd>{timedOutString}</dd>];
+
+		var crashedString = xp_common.joinBenchmarkNames (this.props.controller, runSet.get ('crashedBenchmarks'), "");
+		if (crashedString !== "")
+			crashedBenchmarks = [<dt>Crashed</dt>, <dd>{crashedString}</dd>];
+
+		if (this.state.runs === undefined) {
+			table = <div className='diagnostic'>Loading&hellip;</div>;
+		} else {
+			var runsByBenchmarkName = xp_utils.partitionArrayByString (this.state.runs, r => this.props.controller.benchmarkNameForId (r.get ('benchmark').id));
+			var benchmarkNames = Object.keys (runsByBenchmarkName);
+			benchmarkNames.sort ();
+			table = <table>
+				{benchmarkNames.map (name => {
+					var runs = runsByBenchmarkName [name];
+					var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
+					elapsed.sort ();
+					var elapsedString = elapsed.join (", ");
+					return <tr><td>{name}</td><td>{elapsedString}</td></tr>})}
+			</table>;
+		}
+
+		var commitHash = runSet.get ('commit').get ('hash');
+
+		return <div className="Description">
+			<dl>
+			<dt>Commit</dt>
+			<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>
+			{buildLink}
+		{timedOutBenchmarks}
+		{crashedBenchmarks}
+		</dl>
+		{table}
+		</div>;
 	}
 }
 
