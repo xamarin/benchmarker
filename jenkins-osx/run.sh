@@ -6,14 +6,17 @@ BENCHMARKER_ROOT=`dirname "$BENCHMARKER_ROOT"`
 popd > /dev/null
 
 GLOBAL_MONO=mono-sgen
-DEB_COMMON_URL="http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/mono-snapshot-common_00000010_all.deb"
+
+DEB_COMMON_URL=`lynx -dump -hiddenlinks=listonly -listonly http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/ | awk '$2 ~ /_all\.deb$/ { link = $2; } END { print link; }'`
 
 usage () {
     echo "Usage: run.sh [options]"
     echo "Options:"
     echo "    --config NAME	Configuration name"
     echo "    --commit SHA	Commit of the Mono package"
-    echo "    --build-url URL   URL of the build"
+    echo "    --build-url URL	URL of the build"
+    echo "    --install-only	Only install the package"
+    echo "    --benchmarks LIST	Only run specified benchmarks"
     echo "OSX options:"
     echo "    --pkg-file PATH	Mono installer .pkg file"
     echo "    --pkg-url URL	URL of Mono installer .pkg"
@@ -35,6 +38,11 @@ while [ "$1" != "" ]; do
 				;;
 	--build-url )		shift
 				BUILD_URL=$1
+				;;
+	--install-only )	INSTALL_ONLY=true
+				;;
+	--benchmarks )		shift
+				BENCHMARKS="--benchmarks $1"
 				;;
         --pkg-file )   	        shift
                        		MONO_PKG=$1
@@ -69,6 +77,11 @@ fi
 
 if [ "x$BUILD_URL" = "x" ] ; then
     echo "Error: No build URL given"
+    exit 1
+fi
+
+if [ "x$DEB_COMMON_URL" = "x" ] ; then
+    echo "Error: No URL for the common .deb package given"
     exit 1
 fi
 
@@ -227,6 +240,9 @@ init_linux () {
     echo Mono version is $VERSION
 
     MONO_ROOT="$INSTALL_ROOT/opt/$VERSION"
+
+    # FIXME: Do we need this on OSX, too?
+    sudo /bin/sed -i -e "s|/opt/|$INSTALL_ROOT/opt/|" "$MONO_ROOT/etc/mono/config"
 }
 
 OS=`uname`
@@ -242,7 +258,12 @@ esac
 
 MONO_PATH="$MONO_ROOT/bin/mono-sgen"
 
-"$GLOBAL_MONO" "$COMPARE_EXE" --commit "$COMMIT" --build-url "$BUILD_URL" --root "$MONO_ROOT" "$BENCHMARKER_ROOT/tests" "$BENCHMARKER_ROOT/benchmarks" "$CONFIG_PATH"
+if [ "x$INSTALL_ONLY" = "xtrue" ] ; then
+    echo "Mono is installed in $MONO_PATH"
+    exit
+fi
+
+"$GLOBAL_MONO" "$COMPARE_EXE" $BENCHMARKS --commit "$COMMIT" --build-url "$BUILD_URL" --root "$MONO_ROOT" "$BENCHMARKER_ROOT/tests" "$BENCHMARKER_ROOT/benchmarks" "$CONFIG_PATH"
 if [ $? -ne 0 ] ; then
     error Error running benchmarks
 fi
