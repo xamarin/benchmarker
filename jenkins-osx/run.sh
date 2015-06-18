@@ -243,6 +243,9 @@ init_linux () {
 
     # FIXME: Do we need this on OSX, too?
     sudo /bin/sed -i -e "s|/opt/|$INSTALL_ROOT/opt/|" "$MONO_ROOT/etc/mono/config"
+
+    # Directory for shadow copies
+    sudo /bin/rm -rf /tmp/nunit20
 }
 
 OS=`uname`
