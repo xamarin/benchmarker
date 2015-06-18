@@ -57,13 +57,20 @@ class Page extends React.Component {
 		super (props);
 		this.state = {
 			machine: this.props.initialSelection.machine,
-			config: this.props.initialSelection.config
+			config: this.props.initialSelection.config,
+			runSets: []
 		};
 	}
 
 	setState (newState) {
 		super.setState (newState);
 		this.props.onChange (newState);
+	}
+
+	runSetSelected (runSet) {
+		console.log (runSet);
+		window.open ('runset.html#' + runSet.id);
+		this.setState ({runSets: this.state.runSets.concat ([runSet])});
 	}
 
 	render () {
@@ -76,7 +83,13 @@ class Page extends React.Component {
 			chart = <Chart
 		controller={this.props.controller}
 		machine={this.state.machine}
-		config={this.state.config} />;
+		config={this.state.config}
+		runSetSelected={this.runSetSelected.bind (this)}
+			/>;
+
+		var comparisonChart;
+		if (this.state.runSets.length > 1)
+			comparisonChart = <xp_common.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
 
 		return <div>
 			<xp_common.ConfigSelector
@@ -85,6 +98,7 @@ class Page extends React.Component {
 				config={this.state.config}
 				onChange={this.setState.bind (this)} />
 			{chart}
+		{comparisonChart}
 		</div>;
 
 	}
@@ -115,7 +129,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 
 	invalidateState (machine, config) {
 
-		this.state = {};
+		this.table = undefined;
 
 		var runSetQuery = new Parse.Query (xp_common.RunSet);
 		runSetQuery
@@ -140,12 +154,14 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	}
 
 	componentWillReceiveProps (nextProps) {
+		if (this.props.machine === nextProps.machine && this.props.config === nextProps.config)
+			return;
 		this.invalidateState (nextProps.machine, nextProps.config);
 	}
 
 	render () {
 
-		if (this.state.table === undefined)
+		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
 		var options = {
@@ -170,7 +186,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		graphName='timelineChart'
 		chartClass={google.visualization.LineChart}
 		height={600}
-		table={this.state.table}
+		table={this.table}
 		options={options}
 		selectListener={this.selectListener.bind (this)} />;
 
@@ -183,8 +199,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		console.log ("selected");
 		console.log (item);
 		var runSet = this.sortedRunSets [item.row];
-		console.log (runSet);
-		window.open ('runset.html#' + runSet.id);
+		this.props.runSetSelected (runSet);
 	}
 
 	googleChartsLoaded () {
@@ -300,7 +315,8 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 			]);
 		}
 
-		this.setState ({table: table});
+		this.table = table;
+		this.forceUpdate ();
 	}
 }
 

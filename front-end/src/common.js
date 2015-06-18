@@ -418,11 +418,13 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		this.state = {};
 		this.runsByIndex = [];
 
-		var query = new Parse.Query (Run);
-		query.containedIn ('runSet', runSets)
-			.limit (10000);
-		query.find ({
-			success: results => {
+		pageParseQuery (
+			() => {
+				var query = new Parse.Query (Run);
+				query.containedIn ('runSet', runSets);
+				return query;
+			},
+			results => {
 				if (this.props.runSets !== runSets)
 					return;
 
@@ -441,10 +443,9 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 
 				this.runsLoaded ();
 			},
-			error: function (error) {
+			function (error) {
 				alert ("error loading runs: " + error);
-			}
-		});
+			});
 	}
 
 	componentWillReceiveProps (nextProps) {
@@ -482,7 +483,7 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 			commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
 		}
 
-		if (commonBenchmarkIds === undefined)
+		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length == 0)
 			return;
 
 		var dataArray = [];
