@@ -360,7 +360,7 @@ class Compare
 		} else {
 			var line = run.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
 			if (line == default (string) || !line.Contains (':'))
-				throw new InvalidDataException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
+				throw new FormatException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
 
 			var value = new string (line.Split (new char [] { ':' }, 2)
 				.ElementAt (1)
