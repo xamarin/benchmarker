@@ -62,3 +62,17 @@ export function partitionArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => str
 	}
 	return result;
 }
+
+export function sortArrayBy<T> (arr: Array<T>, keyFunc: (v: T) => Object) : Array<T> {
+	var copy = arr.slice (0);
+	copy.sort ((a, b) => {
+		var ka = keyFunc (a);
+		var kb = keyFunc (b);
+		if (ka < kb)
+			return -1;
+		if (kb < ka)
+			return 1;
+		return 0;
+	});
+	return copy;
+}

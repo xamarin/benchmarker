@@ -162,19 +162,41 @@ export class GoogleChart extends React.Component {
 	}
 
 	componentDidMount () {
-		this.drawCharts();
+		this.drawChart (this.props);
 	}
 
 	componentDidUpdate () {
-		this.drawCharts();
+		this.drawChart (this.props);
 	}
 
-	drawCharts () {
-		var ChartClass = this.props.chartClass;
-		var chart = new ChartClass (document.getElementById (this.props.graphName));
-		chart.draw (this.props.table, this.props.options);
-		if (this.props.selectListener !== undefined)
-			google.visualization.events.addListener (chart, 'select', this.props.selectListener.bind (null, chart));
+	componentWillReceiveProps (nextProps) {
+		if (this.shouldComponentUpdate (nextProps))
+			return;
+		console.log ("updating chart");
+		this.updateChart (nextProps);
+	}
+
+	shouldComponentUpdate (nextProps, nextState) {
+		if (this.props.chartClass !== nextProps.chartClass)
+			return true;
+		if (this.props.graphName !== nextProps.graphName)
+			return true;
+		if (this.props.height !== nextProps.height)
+			return true;
+		// FIXME: what do we do with the selectListener?
+		return false;
+	}
+
+	updateChart (props) {
+		this.chart.draw (props.table, props.options);
+		if (props.selectListener !== undefined)
+			google.visualization.events.addListener (this.chart, 'select', props.selectListener.bind (null, this.chart));
+	}
+
+	drawChart (props) {
+		var ChartClass = props.chartClass;
+		this.chart = new ChartClass (document.getElementById (props.graphName));
+		this.updateChart (props);
 	}
 }
 
@@ -415,7 +437,6 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 	}
 
 	invalidateState (runSets) {
-		this.state = {};
 		this.runsByIndex = [];
 
 		pageParseQuery (
@@ -486,6 +507,8 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length == 0)
 			return;
 
+		commonBenchmarkIds = xp_utils.sortArrayBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id));
+
 		var dataArray = [];
 
 		for (i = 0; i < commonBenchmarkIds.length; ++i) {
@@ -510,19 +533,40 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 
 		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
 
-		this.setState ({table: data, height: height});
+		this.table = data;
+		this.height = height;
+		this.forceUpdate ();
 	}
 
 	render () {
-		if (this.state.table === undefined)
+		if (this.table === undefined)
 			return <div className='diagnostic'>Loading&hellip;</div>;
 
-		var options = { orientation: 'vertical' };
+		var options = {
+			orientation: 'vertical',
+			chartArea: {height: '100%'},
+			animation: {
+				duration: 1000,
+				easing: 'out',
+			},
+			hAxis: {
+				gridlines: {
+					color: 'transparent'
+				},
+				baseline: 1.0,
+				textPosition: 'none'
+			},
+			vAxis: {
+				gridlines: {
+					color: 'transparent'
+				}
+			}
+		};
 		return <GoogleChart
 		graphName='compareChart'
 		chartClass={google.visualization.CandlestickChart}
-		height={this.state.height}
-		table={this.state.table}
+		height={800 /*{this.height}*/}
+		table={this.table}
 		options={options} />;
 	}
 }

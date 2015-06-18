@@ -185,7 +185,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		return <xp_common.GoogleChart
 		graphName='timelineChart'
 		chartClass={google.visualization.LineChart}
-		height={600}
+		height={300}
 		table={this.table}
 		options={options}
 		selectListener={this.selectListener.bind (this)} />;
