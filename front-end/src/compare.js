@@ -72,7 +72,7 @@ class Page extends React.Component {
 
 		var chart;
 		if (runSets.length > 1)
-			chart = <Chart controller={this.props.controller} runSets={runSets} />;
+			chart = <xp_common.ComparisonChart controller={this.props.controller} runSets={runSets} />;
 		else
 			chart = <div className='diagnostic'>Please select at least two run sets.</div>;
 
@@ -83,129 +83,6 @@ class Page extends React.Component {
 		onChange={this.setState.bind (this)} />
 			{chart}
 		</div>;
-	}
-}
-
-class Chart extends xp_common.GoogleChartsStateComponent {
-
-	constructor (props) {
-		console.log ("run set compare chart constructing");
-
-		super (props);
-
-		this.invalidateState (props.runSets);
-	}
-
-	invalidateState (runSets) {
-		this.state = {};
-
-		var query = new Parse.Query (xp_common.Run);
-		query.containedIn ('runSet', runSets)
-			.limit (10000);
-		query.find ({
-			success: results => {
-				if (this.props.runSets !== runSets)
-					return;
-
-				this.runsByIndex = [];
-
-				var runSetIndexById = {};
-				runSets.forEach ((rs, i) => {
-					this.runsByIndex [i] = [];
-					runSetIndexById [rs.id] = i;
-				});
-
-				results.forEach (r => {
-					var i = runSetIndexById [r.get ('runSet').id];
-					if (this.runsByIndex [i] === undefined)
-						this.runsByIndex [i] = [];
-					this.runsByIndex [i].push (r);
-				});
-
-				this.runsLoaded ();
-			},
-			error: function (error) {
-				alert ("error loading runs: " + error);
-			}
-		});
-	}
-
-	componentWillReceiveProps (nextProps) {
-		this.invalidateState (nextProps.runSets);
-	}
-
-	googleChartsLoaded () {
-		this.runsLoaded ();
-	}
-
-	runsLoaded () {
-		var i;
-
-		console.log ("run loaded");
-
-		if (!xp_common.canUseGoogleCharts ())
-			return;
-
-		for (i = 0; i < this.props.runSets.length; ++i) {
-			if (this.runsByIndex [i] === undefined)
-				return;
-		}
-
-		console.log ("all runs loaded");
-
-		var commonBenchmarkIds;
-
-		for (i = 0; i < this.props.runSets.length; ++i) {
-			var runs = this.runsByIndex [i];
-			var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
-			if (commonBenchmarkIds === undefined) {
-				commonBenchmarkIds = benchmarkIds;
-				continue;
-			}
-			commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
-		}
-
-		if (commonBenchmarkIds === undefined)
-			return;
-
-		var dataArray = [];
-
-		for (i = 0; i < commonBenchmarkIds.length; ++i) {
-			var benchmarkId = commonBenchmarkIds [i];
-			var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
-			var mean = undefined;
-			for (var j = 0; j < this.props.runSets.length; ++j) {
-				var filteredRuns = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
-				var range = xp_common.calculateRunsRange (filteredRuns);
-				if (mean === undefined) {
-					// FIXME: eventually we'll have more meaningful ranges
-					mean = range [1];
-				}
-				row = row.concat (xp_common.normalizeRange (mean, range));
-			}
-			dataArray.push (row);
-		}
-
-		var data = google.visualization.arrayToDataTable (dataArray, true);
-		for (i = 0; i < this.props.runSets.length; ++i)
-			data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
-
-		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
-
-		this.setState ({table: data, height: height});
-	}
-
-	render () {
-		if (this.state.table === undefined)
-			return <div className='diagnostic'>Loading&hellip;</div>;
-
-		var options = { orientation: 'vertical' };
-		return <xp_common.GoogleChart
-		graphName='compareChart'
-		chartClass={google.visualization.CandlestickChart}
-		height={this.state.height}
-		table={this.state.table}
-		options={options} />;
 	}
 }
 
