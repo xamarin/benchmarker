@@ -331,17 +331,10 @@ class Compare
 				plot.Series.Add (serie);
 			}
 
-			if (geomean) {
-				var geomeanserie = new ColumnSeries { Title = "geomean", LabelFormatString = "{0:F2}", StrokeThickness = 1 };
-
-				foreach (var v in benchmarks) {
-					geomeanserie.Items.Add (new ColumnItem {
-						Value = Math.Pow (v.NormalizedMeans.Aggregate (1d, (a, m) => m * a), 1d / v.NormalizedMeans.Length),
-						Color = OxyColors.Automatic,
-					});
-				}
-
-				plot.Series.Add (geomeanserie);
+			if (geomean && configs.Count() > 0) {
+				Console.WriteLine ("Geometric mean of normalized execution times for each configuration (lower is better):");
+				foreach (var config in configs)
+					Console.WriteLine ("{0}: {1}", config.Key.Name, Math.Pow (config.Aggregate (1d, (mul, c) => mul * c.NormalizedMean), 1d / config.Count()));
 			}
 
 			valueaxis.AbsoluteMinimum = valueaxis.Minimum = benchmarks.Aggregate (Double.MaxValue, (a, v) => Math.Min (a, v.NormalizedMeans.Zip (v.NormalizedErrors, (m, e) => m - e).Min ())) * 0.99;
@@ -360,7 +353,7 @@ class Compare
 		} else {
 			var line = run.Output.Split (Environment.NewLine.ToCharArray ()).Where (s => s.StartsWith (counter)).LastOrDefault ();
 			if (line == default (string) || !line.Contains (':'))
-				throw new InvalidDataException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
+				throw new FormatException (String.Format ("The value \"{0}\" passed with --counter is not a valid counter", counter));
 
 			var value = new string (line.Split (new char [] { ':' }, 2)
 				.ElementAt (1)
