@@ -576,25 +576,49 @@ export function githubCommitLink (commit: string) : string {
 }
 
 export function pageParseQuery (makeQuery: () => Object, success: (results: Array<ParseObject>) => void, error: (error: Object) => void) : void {
-	function page (soFar: Array<Object>) {
+    var limit = 1000;
+
+    function done (results) {
+		var values = [];
+		for(var key in results) {
+			var value = results [key];
+			values.push (value);
+		}
+		success (values);
+    }
+
+    function page (skip, earliest, previousResults, soFar) {
 		var query = makeQuery ();
-		query.limit (1000).skip (soFar.length);
+		query.limit (limit);
+		query.ascending ('createdAt');
+
+		if (skip >= 10000) {
+			skip = 0;
+			earliest = previousResults [previousResults.length - 1].createdAt;
+		}
+
+		query.skip (skip);
+		if (earliest !== undefined)
+			query.greaterThanOrEqualTo ('createdAt', earliest);
+
 		query.find ({
-			success: results => {
-				soFar = soFar.concat (results);
-				if (results.length == 1000) {
-					page (soFar);
-				} else {
-					success (soFar);
-				}
+			success: function (results) {
+				for (var i = 0; i < results.length; ++i)
+					soFar [results [i].id] = results [i];
+				if (results.length >= limit)
+					page (skip + limit, earliest, results, soFar);
+				else
+					done (soFar);
 			},
-			error: e => {
+			error: function (e) {
+				console.log ("Parse error:");
+				console.log (e);
 				error (e);
 			}
 		});
-	}
+    }
 
-	page ([]);
+    page (0, undefined, undefined, {});
 }
 
 export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<ParseObject> | void), prefix: string) : string {
