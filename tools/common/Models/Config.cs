@@ -259,7 +259,7 @@ namespace Benchmarker.Common.Models
 			return true;
 		}
 
-		public async Task<ParseObject> GetOrUploadToParse ()
+		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
 			var executable = Path.GetFileName (Mono);
 
@@ -282,7 +282,7 @@ namespace Benchmarker.Common.Models
 			obj ["monoExecutable"] = executable;
 			obj ["monoOptions"] = MonoOptions;
 			obj ["monoEnvironmentVariables"] = MonoEnvironmentVariables;
-			await obj.SaveAsync ();
+			saveList.Add (obj);
 			return obj;
 		}
 	}

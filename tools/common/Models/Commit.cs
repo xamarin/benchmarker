@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 using Parse;
 
 namespace Benchmarker.Common.Models
@@ -16,7 +17,7 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
-		public async Task<ParseObject> GetOrUploadToParse ()
+		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
 			var results = await ParseObject.GetQuery ("Commit").WhereEqualTo ("hash", Hash).FindAsync ();
 			if (results.Count () > 0)
@@ -33,7 +34,7 @@ namespace Benchmarker.Common.Models
 				obj ["mergeBaseHash"] = MergeBaseHash;
 			if (CommitDate != null)
 				obj ["commitDate"] = CommitDate;
-			await obj.SaveAsync ();
+			saveList.Add (obj);
 			return obj;
 		}
 

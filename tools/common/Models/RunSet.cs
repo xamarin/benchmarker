@@ -30,7 +30,7 @@ namespace Benchmarker.Common.Models
 			crashedBenchmarks = new List<Benchmark> ();
 		}
 
-		async Task<ParseObject> GetOrUploadMachineToParse ()
+		async Task<ParseObject> GetOrUploadMachineToParse (List<ParseObject> saveList)
 		{
 			Utsname utsname;
 			var res = Syscall.uname (out utsname);
@@ -50,23 +50,32 @@ namespace Benchmarker.Common.Models
 			var obj = ParseInterface.NewParseObject ("Machine");
 			obj ["name"] = hostname;
 			obj ["architecture"] = arch;
-			await obj.SaveAsync ();
+			saveList.Add (obj);
 			return obj;
 		}
 
-		static async Task<ParseObject[]> BenchmarkListToParseObjectArray (IList<Benchmark> l)
+		static async Task<ParseObject[]> BenchmarkListToParseObjectArray (IList<Benchmark> l, List<ParseObject> saveList)
 		{
 			var pos = new List<ParseObject> ();
 			foreach (var b in l)
-				pos.Add (await b.GetOrUploadToParse ());
+				pos.Add (await b.GetOrUploadToParse (saveList));
 			return pos.ToArray ();
 		}
 
 		public async Task<ParseObject> UploadToParse ()
 		{
-			var m = await GetOrUploadMachineToParse ();
-			var c = await Config.GetOrUploadToParse ();
-			var commit = await Commit.GetOrUploadToParse ();
+			var averages = new Dictionary<string, double> ();
+			foreach (var result in results) {
+				var avg = result.AverageWallClockTime;
+				if (avg == null)
+					continue;
+				averages [result.Benchmark.Name] = avg.Value.TotalMilliseconds;
+			}
+
+			var saveList = new List<ParseObject> ();
+			var m = await GetOrUploadMachineToParse (saveList);
+			var c = await Config.GetOrUploadToParse (saveList);
+			var commit = await Commit.GetOrUploadToParse (saveList);
 			var obj = ParseInterface.NewParseObject ("RunSet");
 			obj ["machine"] = m;
 			obj ["config"] = c;
@@ -74,16 +83,28 @@ namespace Benchmarker.Common.Models
 			obj ["buildURL"] = BuildURL;
 			obj ["startedAt"] = StartDateTime;
 			obj ["finishedAt"] = FinishDateTime;
+			obj ["elapsedTimeAverages"] = averages;
 
-			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks);
-			obj ["crashedBenchmarks"] = await BenchmarkListToParseObjectArray (crashedBenchmarks);
+			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks, saveList);
+			obj ["crashedBenchmarks"] = await BenchmarkListToParseObjectArray (crashedBenchmarks, saveList);
 
-			await obj.SaveAsync ();
+			Console.WriteLine ("uploading run set");
+
+			saveList.Add (obj);
+			await ParseObject.SaveAllAsync (saveList);
+			saveList.Clear ();
+
+			Console.WriteLine ("uploading runs");
+
 			foreach (var result in results) {
 				if (result.Config != Config)
 					throw new Exception ("Results must have the same config as their RunSets");
-				await result.UploadRunsToParse (obj);
+				await result.UploadRunsToParse (obj, saveList);
 			}
+			await ParseObject.SaveAllAsync (saveList);
+
+			Console.WriteLine ("done uploading");
+
 			return obj;
 		}
 	}

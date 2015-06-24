@@ -68,7 +68,7 @@ namespace Benchmarker.Common.Models
 
 		ParseObject parseObject;
 
-		public async Task<ParseObject> GetOrUploadToParse ()
+		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
 			if (parseObject != null)
 				return parseObject;
@@ -78,7 +78,7 @@ namespace Benchmarker.Common.Models
 				return results.First ();
 			var obj = ParseInterface.NewParseObject ("Benchmark");
 			obj ["name"] = Name;
-			await obj.SaveAsync ();
+			saveList.Add (obj);
 
 			parseObject = obj;
 
