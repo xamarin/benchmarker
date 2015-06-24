@@ -98,7 +98,7 @@ class Page extends React.Component {
 				config={this.state.config}
 				onChange={this.setState.bind (this)} />
 			{chart}
-		{comparisonChart}
+			{comparisonChart}
 		</div>;
 
 	}
@@ -127,32 +127,6 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		this.invalidateState (props.machine, props.config);
 	}
 
-	invalidateState (machine, config) {
-
-		this.table = undefined;
-
-		var runSetQuery = new Parse.Query (xp_common.RunSet);
-		runSetQuery
-			.equalTo ('machine', machine)
-			.equalTo ('config', config);
-		xp_common.pageParseQuery (
-			() => {
-				var runQuery = new Parse.Query (xp_common.Run);
-				runQuery.matchesQuery ('runSet', runSetQuery);
-				return runQuery;
-			},
-			results => {
-				if (machine !== this.props.machine || config !== this.props.config)
-					return;
-
-				this.allRuns = results;
-				this.runsLoaded ();
-			},
-			function (error) {
-				alert ("error loading runs: " + error);
-			});
-	}
-
 	componentWillReceiveProps (nextProps) {
 		if (this.props.machine === nextProps.machine && this.props.config === nextProps.config)
 			return;
@@ -160,7 +134,6 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	}
 
 	render () {
-
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -183,13 +156,12 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		};
 
 		return <xp_common.GoogleChart
-		graphName='timelineChart'
-		chartClass={google.visualization.LineChart}
-		height={300}
-		table={this.table}
-		options={options}
-		selectListener={this.selectListener.bind (this)} />;
-
+			graphName='timelineChart'
+			chartClass={google.visualization.LineChart}
+			height={300}
+			table={this.table}
+			options={options}
+			selectListener={this.selectListener.bind (this)} />;
 	}
 
 	selectListener (chart) {
@@ -203,23 +175,19 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 	}
 
 	googleChartsLoaded () {
-		this.runsLoaded ();
+		this.invalidateState (this.props.machine, this.props.config);
 	}
 
-	runsLoaded () {
-		var i = 0, j = 0;
-		var machine = this.props.machine;
-		var config = this.props.config;
-		var allRuns = this.allRuns;
+	invalidateState (machine, config) {
+		this.table = undefined;
 
-		if (this.allRuns === undefined)
-			return;
+		var i = 0, j = 0;
+		var allBenchmarks = this.props.controller.allBenchmarks;
+		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 
 		if (!xp_common.canUseGoogleCharts ())
 			return;
 
-		var allBenchmarks = this.props.controller.allBenchmarks;
-		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 		runSets.sort ((a, b) => {
 			var aDate = a.get ('commit').get ('commitDate');
 			var bDate = b.get ('commit').get ('commitDate');
@@ -233,41 +201,29 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		/* A table of run data. The rows are indexed by benchmark index, the
 		 * columns by sorted run set index.
 		 */
-		var runTable : Array<Array<Array<ParseObject>>> = [];
 		var runMetricsTable : Array<Array<number>> = [];
 
 		/* Get a row index from a benchmark ID. */
 		var benchmarkIndicesById = {};
 		for (i = 0; i < allBenchmarks.length; ++i) {
-			runTable.push ([]);
 			runMetricsTable.push ([]);
 			benchmarkIndicesById [allBenchmarks [i].id] = i;
 		}
 
 		/* Get a column index from a run set ID. */
 		var runSetIndicesById = {};
-		for (i = 0; i < runSets.length; ++i) {
-			for (j = 0; j < allBenchmarks.length; ++j)
-				runTable [j].push ([]);
+		for (i = 0; i < runSets.length; ++i)
 			runSetIndicesById [runSets [i].id] = i;
-		}
-
-		/* Partition allRuns by benchmark and run set. */
-		for (i = 0; i < allRuns.length; ++i) {
-			var run = allRuns [i];
-			var runIndex = runSetIndicesById [run.get ('runSet').id];
-			var benchmarkIndex = benchmarkIndicesById [run.get ('benchmark').id];
-			runTable [benchmarkIndex] [runIndex].push (run);
-		}
 
 		/* Compute the mean elapsed time for each. */
 		for (i = 0; i < allBenchmarks.length; ++i) {
 			for (j = 0; j < runSets.length; ++j) {
-				var runs = runTable [i] [j];
-				var sum = runs
-					.map (r => r.get ('elapsedMilliseconds'))
-					.reduce ((sumSoFar, time) => sumSoFar + time, 0);
-				runMetricsTable [i] [j] = sum / runs.length;
+				var benchmark = allBenchmarks [i];
+				var averages = runSets [j].get ('elapsedTimeAverages');
+				var avg = averages [benchmark.get ('name')];
+				if (avg === undefined)
+					continue;
+				runMetricsTable [i] [j] = avg;
 			}
 		}
 
