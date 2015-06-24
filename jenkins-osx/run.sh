@@ -91,7 +91,7 @@ if [ "x$SNAPSHOT_URL" != "x" ] ; then
 
     pushd "$TMP_DIR"
 
-    lynx -dump -hiddenlinks=listonly -listonly http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-20141101180830/ | awk '$1 ~ /[0-9]+\./ { print $2 }' >"snapshot-links"
+    lynx -dump -hiddenlinks=listonly -listonly "$SNAPSHOT_URL" | awk '$1 ~ /[0-9]+\./ { print $2 }' >"snapshot-links"
     if [ $? -ne 0 ] ; then
 	echo "Error: Could not get links from snapshot URL"
 	exit 1
