@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o pipefail
+
 JQ_JOIN="reduce .[] as \$item (\"\"; . + \"\n\" + \$item)"
 
 ARCH=amd64

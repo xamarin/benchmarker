@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -o pipefail
+
+ARCH=amd64
+
 pushd `dirname "$0"` > /dev/null
 BENCHMARKER_ROOT=`pwd`
 BENCHMARKER_ROOT=`dirname "$BENCHMARKER_ROOT"`
@@ -21,6 +25,8 @@ usage () {
     echo "    --pkg-file PATH	Mono installer .pkg file"
     echo "    --pkg-url URL	URL of Mono installer .pkg"
     echo "Debian options:"
+    echo "    --snapshot-url URL"
+    echo "			URL of a snapshot download directory"
     echo "    --deb-urls ASMURL BINURL"
     echo "			URLs of the .deb packages"
     echo "    --deb-common-url URL"
@@ -50,6 +56,9 @@ while [ "$1" != "" ]; do
         --pkg-url )            	shift
                            	MONO_PKG_URL=$1
                            	;;
+	--snapshot-url )	shift
+				SNAPSHOT_URL=$1
+				;;
 	--deb-urls )		shift
 				DEB_ASM_URL=$1
 				shift
@@ -68,6 +77,72 @@ done
 if [ "x$CONFIG_NAME" = "x" ] ; then
     echo "Error: No configuration name given"
     exit 1
+fi
+
+TMP_DIR="/tmp/benchmarker.$RANDOM$RANDOM"
+mkdir "$TMP_DIR"
+if [ $? -ne 0 ] ; then
+    echo "Error: Cannot create temporary directory $TMP_DIR"
+    exit 1
+fi
+
+if [ "x$SNAPSHOT_URL" != "x" ] ; then
+    BUILD_URL="$SNAPSHOT_URL"
+
+    pushd "$TMP_DIR"
+
+    lynx -dump -hiddenlinks=listonly -listonly http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-20141101180830/ | awk '$1 ~ /[0-9]+\./ { print $2 }' >"snapshot-links"
+    if [ $? -ne 0 ] ; then
+	echo "Error: Could not get links from snapshot URL"
+	exit 1
+    fi
+
+    DEBIAN_TAR_URL=`grep '\.debian\.tar\.bz2' "snapshot-links"`
+    if [ $? -ne 0 -o "x$DEBIAN_TAR_URL" = "x" ] ; then
+	echo "Error: Could not get .debian.tar.bz2 link from snapshot URL"
+	exit 1
+    fi
+
+    curl -o "$TMP_DIR/debian.tar.bz2" "$DEBIAN_TAR_URL"
+    if [ $? -ne 0 ] ; then
+	echo "Error: Could not fetch .debian.tar.bz2 from $DEBIAN_TAR_URL"
+	exit 1
+    fi
+
+
+    tar -jxvf "debian.tar.bz2"
+    if [ $? -ne 0 ] ; then
+	echo "Error: Could not untar debian.tar.bz2"
+	exit 1
+    fi
+
+    SHORT_COMMIT=`perl -n -e '/commit ID ([0-9a-f]+)/ && print $1' debian/changelog`
+    if [ $? -ne 0 ] ; then
+	echo "Error: Could not get commit ID from debian.tar.bz2"
+	exit 1
+    fi
+
+    DEB_ASM_URL=`grep '-assemblies' "snapshot-links"`
+    if [ $? -ne 0 -o "x$DEB_ASM_URL" = "x" ] ; then
+	echo "Error: Could not get assemblies package link from snapshot URL"
+	exit 1
+    fi
+
+    DEB_BIN_URL=`grep "$ARCH\.deb" "snapshot-links"`
+    if [ $? -ne 0 -o "x$DEB_BIN_URL" = "x" ] ; then
+	echo "Error: Could not get binary package link from snapshot URL"
+	exit 1
+    fi
+
+    rm -rf "debian.tar.bz2" "debian" "snapshot-links"
+
+    popd
+
+    COMMIT=`curl "https://api.github.com/repos/mono/mono/commits/$SHORT_COMMIT" | jq -r '.sha'`
+
+    echo "Commit $COMMIT"
+    echo "assemblies $DEB_ASM_URL"
+    echo "binary $DEB_BIN_URL"
 fi
 
 if [ "x$COMMIT" = "x" ] ; then
@@ -96,13 +171,6 @@ CONFIG_PATH="$BENCHMARKER_ROOT/configs/$CONFIG_NAME.conf"
 
 if [ ! -f "$CONFIG_PATH" ] ; then
     echo "Error: Cannot access config file $CONFIG_PATH"
-    exit 1
-fi
-
-TMP_DIR="/tmp/benchmarker.$RANDOM$RANDOM"
-mkdir "$TMP_DIR"
-if [ $? -ne 0 ] ; then
-    echo "Error: Cannot create temporary directory $TMP_DIR"
     exit 1
 fi
 
