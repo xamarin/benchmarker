@@ -2,8 +2,6 @@
 
 set -o pipefail
 
-ARCH=amd64
-
 pushd `dirname "$0"` > /dev/null
 BENCHMARKER_ROOT=`pwd`
 BENCHMARKER_ROOT=`dirname "$BENCHMARKER_ROOT"`
@@ -16,6 +14,7 @@ DEB_COMMON_URL=`lynx -dump -hiddenlinks=listonly -listonly http://jenkins.mono-p
 usage () {
     echo "Usage: run.sh [options]"
     echo "Options:"
+    echo "    --arch ARCH	Architecture name"
     echo "    --config NAME	Configuration name"
     echo "    --commit SHA	Commit of the Mono package"
     echo "    --build-url URL	URL of the build"
@@ -36,6 +35,9 @@ usage () {
 
 while [ "$1" != "" ]; do
     case $1 in
+	--arch )		shift
+				ARCH=$1
+				;;
 	--config )		shift
 				CONFIG_NAME=$1
 				;;
@@ -73,6 +75,11 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+if [ "x$ARCH" = "x" ] ; then
+    echo "Error: No architecture name given"
+    exit 1
+fi
 
 if [ "x$CONFIG_NAME" = "x" ] ; then
     echo "Error: No configuration name given"

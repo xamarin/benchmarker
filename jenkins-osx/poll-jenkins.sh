@@ -4,7 +4,26 @@ set -o pipefail
 
 JQ_JOIN="reduce .[] as \$item (\"\"; . + \"\n\" + \$item)"
 
-ARCH=amd64
+case `uname -m` in
+i*86)
+	ARCH=i386
+	;;
+x86_64)
+	ARCH=amd64
+	;;
+armv7*)
+	if [ -d "/lib/arm-linux-gnueabihf" ]; then
+		ARCH=armhf
+	else
+		ARCH=armel
+	fi
+	;;
+*)
+	echo "Error: Unsupported architecture"
+	exit 1
+	;;
+esac
+
 LABEL="debian-$ARCH"
 HOSTNAME=`uname -n`
 
@@ -125,7 +144,7 @@ while true ; do
     echo $GIT_FETCH_ID
     echo $COMMIT_SHA
 
-    "$BENCHMARKER_ROOT/jenkins-osx/run.sh" --config auto-sgen --commit "$COMMIT_SHA" --build-url "$RUN_URL" --deb-urls "$ASM_URL" "$BIN_URL"
+    "$BENCHMARKER_ROOT/jenkins-osx/run.sh" --arch $ARCH --config auto-sgen --commit "$COMMIT_SHA" --build-url "$RUN_URL" --deb-urls "$ASM_URL" "$BIN_URL"
     if [ $? -ne 0 ] ; then
 	echo "Error: Could not run benchmark."
 	sleep 60
