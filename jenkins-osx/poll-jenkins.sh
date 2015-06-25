@@ -115,13 +115,25 @@ while true ; do
 	continue
     fi
 
-    ASM_PATH=`cat "$RUN_JSON" | jq -r '.artifacts | map (.relativePath) | map(select(contains(".changes") | not)) | map(select(contains("assemblies")))[0]'`
-    if [ $? -ne 0 ] ; then
-	echo "Error: Cannot get assemblies package from JSON."
-	sleep 60
-	continue
+    if [ "x$ARCH" != "xamd64" ] ; then
+	AMD64_RUN_URL=`echo $RUN_URL | sed "s/$ARCH/amd64/"`
+
+	ASM_PATH=`curl "$AMD64_RUN_URL/api/json?pretty=true&tree=artifacts\[*\]" | jq -r '.artifacts | map (.relativePath) | map(select(contains(".changes") | not)) | map(select(contains("assemblies")))[0]'`
+	if [ $? -ne 0 ] ; then
+	    echo "Error: Cannot fetch ASSEMBLIES JSON from Jenkins."
+	    sleep 60
+	    continue
+	fi
+	ASM_URL="$AMD64_RUN_URL/artifact/$ASM_PATH"
+    else
+	ASM_PATH=`cat "$RUN_JSON" | jq -r '.artifacts | map (.relativePath) | map(select(contains(".changes") | not)) | map(select(contains("assemblies")))[0]'`
+	if [ $? -ne 0 ] || [ "x$ASM_PATH" = "xnull" ]  ; then
+	    echo "Error: Cannot get assemblies package from JSON."
+	    sleep 60
+	    continue
+	fi
+	ASM_URL="$RUN_URL/artifact/$ASM_PATH"
     fi
-    ASM_URL="$RUN_URL/artifact/$ASM_PATH"
 
     BIN_PATH=`cat "$RUN_JSON" | jq -r ".artifacts | map (.relativePath) | map(select(contains(\".changes\") | not)) | map(select(contains(\"$ARCH\")))[0]"`
     if [ $? -ne 0 ] ; then
