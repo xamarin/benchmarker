@@ -52,8 +52,12 @@ namespace Benchmarker.Common.Models
 				if (config.MonoOptions == null)
 					config.MonoOptions = new string[0];
 
-				if (config.MonoEnvironmentVariables == null)
-					config.MonoEnvironmentVariables = new Dictionary<string, string> ();
+				var newDict = new Dictionary<string, string> ();
+				if (config.MonoEnvironmentVariables != null) {
+					foreach (var kvp in config.MonoEnvironmentVariables)
+						newDict [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
+				}
+				config.MonoEnvironmentVariables = newDict;
 
 				if (String.IsNullOrEmpty (config.ResultsDirectory))
 					config.ResultsDirectory = "results";
