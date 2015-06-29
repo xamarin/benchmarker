@@ -15,13 +15,15 @@ namespace Benchmarker.Common
 		ProcessStartInfo info;
 		Config config;
 		Benchmark benchmark;
+		Machine machine;
 		string arguments;
 		int defaultTimeoutSeconds;
 
-		public Runner (string testsDirectory, Config _config, Benchmark _benchmark, int _timeoutSeconds)
+		public Runner (string testsDirectory, Config _config, Benchmark _benchmark, Machine _machine, int _timeoutSeconds)
 		{
 			config = _config;
 			benchmark = _benchmark;
+			machine = _machine;
 			defaultTimeoutSeconds = _timeoutSeconds;
 
 			info = config.NewProcessStartInfo ();
@@ -73,8 +75,16 @@ namespace Benchmarker.Common
 					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
 						profilesDirectory, profileFilename)) + info.Arguments;
 				}
-				
-				var timeout = benchmark.Timeout > 0 ? benchmark.Timeout : defaultTimeoutSeconds;
+
+				int timeout;
+				if (machine != null) {
+					if (machine.BenchmarkTimeouts != null && machine.BenchmarkTimeouts.ContainsKey (benchmark.Name))
+						timeout = machine.BenchmarkTimeouts [benchmark.Name];
+					else
+						timeout = machine.DefaultTimeout;
+				} else {
+					timeout = defaultTimeoutSeconds;
+				}
 
 				var sw = Stopwatch.StartNew ();
 

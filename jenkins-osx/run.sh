@@ -341,7 +341,7 @@ if [ "x$INSTALL_ONLY" = "xtrue" ] ; then
     exit
 fi
 
-"$GLOBAL_MONO" "$COMPARE_EXE" $BENCHMARKS --commit "$COMMIT" --build-url "$BUILD_URL" --root "$MONO_ROOT" "$BENCHMARKER_ROOT/tests" "$BENCHMARKER_ROOT/benchmarks" "$CONFIG_PATH"
+"$GLOBAL_MONO" "$COMPARE_EXE" $BENCHMARKS --commit "$COMMIT" --build-url "$BUILD_URL" --root "$MONO_ROOT" "$BENCHMARKER_ROOT/tests" "$BENCHMARKER_ROOT/benchmarks" "$BENCHMARKER_ROOT/machines" "$CONFIG_PATH"
 if [ $? -ne 0 ] ; then
     error Error running benchmarks
 fi
