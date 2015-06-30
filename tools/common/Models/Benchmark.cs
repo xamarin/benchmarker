@@ -15,7 +15,6 @@ namespace Benchmarker.Common.Models
 		public string Name { get; set; }
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
-		public int Timeout { get; set; }
 
 		public Benchmark ()
 		{

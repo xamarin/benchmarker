@@ -1,6 +1,5 @@
 {
   "Name": "msbiology",
   "TestDirectory": "MSBiology",
-  "CommandLine": ["TestRunner.exe"],
-  "Timeout": 360
+  "CommandLine": ["TestRunner.exe"]
 }

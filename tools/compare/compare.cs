@@ -16,7 +16,7 @@ class Compare
 		if (!String.IsNullOrEmpty (message))
 			Console.Error.WriteLine ("{0}\n", message);
 
-		Console.Error.WriteLine ("Usage:          [options] [--] <tests-dir> <benchmarks-dir> <config-file>");
+		Console.Error.WriteLine ("Usage:          [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <config-file>");
 		Console.Error.WriteLine ("Options:");
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
@@ -73,14 +73,17 @@ class Compare
 			}
 		}
 
-		if (args.Length - optindex != 3)
+		if (args.Length - optindex != 4)
 			UsageAndExit (null, 1);
 
 		var testsdir = args [optindex++];
 		var benchmarksdir = args [optindex++];
+		var machinesdir = args [optindex++];
 		var configfile = args [optindex++];
 
 		var config = Config.LoadFrom (configfile, rootFromCmdline);
+
+		var machine = Machine.LoadCurrentFrom (machinesdir);
 
 		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline));
 
@@ -109,7 +112,7 @@ class Compare
 
 			Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-			var runner = new Runner (testsdir, config, benchmark, timeout);
+			var runner = new Runner (testsdir, config, benchmark, machine, timeout);
 
 			var result = new Result {
 				DateTime = DateTime.Now,

@@ -36,6 +36,7 @@
     <Compile Include="Models\Commit.cs" />
     <Compile Include="Git\Repository.cs" />
     <Compile Include="ParseInterface.cs" />
+    <Compile Include="Models\Machine.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
