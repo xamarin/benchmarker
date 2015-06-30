@@ -100,6 +100,8 @@ class Compare
 			BuildURL = buildURL
 		};
 
+		var someSuccess = false;
+
 		foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
 			/* Run the benchmarks */
 			if (config.Count <= 0)
@@ -131,6 +133,7 @@ class Compare
 
 				if (run != null) {
 					result.Runs.Add (run);
+					someSuccess = true;
 				} else {
 					if (timedOut)
 						haveTimedOut = true;
@@ -152,6 +155,11 @@ class Compare
 		}
 
 		runSet.FinishDateTime = DateTime.Now;
+
+		if (!someSuccess) {
+			Console.WriteLine ("all runs failed.  not uploading.");
+			Environment.Exit (1);
+		}
 
 		Console.WriteLine ("uploading");
 		try {
