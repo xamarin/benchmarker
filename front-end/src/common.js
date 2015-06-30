@@ -40,41 +40,32 @@ export class Controller {
 
 	constructor () {
 
-		var machineQuery = new Parse.Query (Machine);
-		machineQuery.find ({
-			success: this.machinesLoaded.bind (this),
-			error: function (error) {
+		pageParseQuery (() => new Parse.Query (Machine),
+			this.machinesLoaded.bind (this),
+			function (error) {
 				alert ("error loading machines: " + error);
-			}
-		});
+			});
 
-		var runSetQuery = new Parse.Query (RunSet)
-			.include ('commit');
-		runSetQuery.find ({
-			success: this.runSetsLoaded.bind (this),
-			error: function (error) {
+		pageParseQuery (() => new Parse.Query (RunSet).include ('commit'),
+			this.runSetsLoaded.bind (this),
+			function (error) {
 				alert ("error loading run sets: " + error);
-			}
-		});
+			});
 
-		var configQuery = new Parse.Query (Config);
-		configQuery.find ({
-			success: this.configsLoaded.bind (this),
-			error: function (error) {
+		pageParseQuery (() => new Parse.Query (Config),
+			this.configsLoaded.bind (this),
+			function (error) {
 				alert ("error loading configs: " + error);
-			}
-		});
+			});
 
-		var benchmarkQuery = new Parse.Query (Benchmark);
-		benchmarkQuery.find ({
-			success: results => {
+		pageParseQuery (() => new Parse.Query (Benchmark),
+			results => {
 				this.allBenchmarks = results;
 				this.checkAllDataLoaded ();
 			},
-			error: function (error) {
+			function (error) {
 				alert ("error loading benchmarks: " + error);
-			}
-		});
+			});
 	}
 
 	allDataLoaded () {
