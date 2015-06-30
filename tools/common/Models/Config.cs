@@ -23,6 +23,8 @@ namespace Benchmarker.Common.Models
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
 		public string ResultsDirectory { get; set; }
 
+		Dictionary<string, string> processedMonoEnvironmentVariables;
+
 		public Config ()
 		{
 		}
@@ -52,12 +54,13 @@ namespace Benchmarker.Common.Models
 				if (config.MonoOptions == null)
 					config.MonoOptions = new string[0];
 
-				var newDict = new Dictionary<string, string> ();
-				if (config.MonoEnvironmentVariables != null) {
-					foreach (var kvp in config.MonoEnvironmentVariables)
-						newDict [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
-				}
-				config.MonoEnvironmentVariables = newDict;
+				if (config.MonoEnvironmentVariables == null)
+					config.MonoEnvironmentVariables = new Dictionary<string, string> ();
+
+				config.processedMonoEnvironmentVariables = new Dictionary<string, string> ();
+
+				foreach (var kvp in config.MonoEnvironmentVariables)
+					config.processedMonoEnvironmentVariables [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
 
 				if (String.IsNullOrEmpty (config.ResultsDirectory))
 					config.ResultsDirectory = "results";
@@ -82,7 +85,7 @@ namespace Benchmarker.Common.Models
 				info.FileName = Mono;
 			}
 
-			foreach (var env in MonoEnvironmentVariables)
+			foreach (var env in processedMonoEnvironmentVariables)
 				info.EnvironmentVariables.Add (env.Key, env.Value);
 		
 			return info;
