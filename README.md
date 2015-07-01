@@ -32,6 +32,9 @@ Each benchmark requires a `.benchmark` file. The files in the `benchmarks` direc
 
     brew install npm
     npm -g install webpack
+
+### Building
+
     make -C front-end
 
 ## Comparing directly
