@@ -41,13 +41,13 @@ Each benchmark requires a `.benchmark` file. The files in the `benchmarks` direc
 
 To compare two or more revisions and/or configurations directly, use `tools/compare.exe`:
 
-    ./compare.exe [parameters] [--] <tests-dir> <results-dir> <benchmarks-dir> <config-file> [<config-file>+]
+    ./compare.exe [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <config-file>
 
 Where:
 
   - `tests-dir`: path to tests directory
-  - `results-dir`: path to results directory
   - `benchmarks-dir`: path to benchmarks directory
+  - `machines-dir`: path to machines directory
   - `config-file`: path to a configuration file to run, there is one or more.
 
 Stores the graph to `graph.svg` in the current directory by default.
