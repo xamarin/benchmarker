@@ -18,6 +18,7 @@ namespace Benchmarker.Common.Models
 		public string Name { get; set; }
 		public int Count { get; set; }
 		public bool NoMono {get; set; }
+		public bool PrintEnv  {get; set; } = true;
 		public string Mono { get; set; }
 		public string[] MonoOptions { get; set; }
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
@@ -91,8 +92,11 @@ namespace Benchmarker.Common.Models
 			return info;
 		}
 
-		public static string PrintableEnvironmentVariables (ProcessStartInfo info)
+		public string PrintableEnvironmentVariables (ProcessStartInfo info)
 		{
+			if (!PrintEnv) {
+				return "";
+			}
 			var builder = new StringBuilder ();
 			foreach (DictionaryEntry entry in info.EnvironmentVariables) {
 				builder.Append (entry.Key.ToString ());

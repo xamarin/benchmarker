@@ -62,8 +62,8 @@ namespace Benchmarker.Common
 					Debug.Assert (profileFilename != null);
 				else
 					Debug.Assert (profileFilename == null);
-				
-				Console.Out.WriteLine ("\t$> {0} {1} {2}", Config.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
+
+				Console.Out.WriteLine ("\t$> {0} {1} {2}", config.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
 
 				/* Run with timing */
 				if (config.NoMono)
