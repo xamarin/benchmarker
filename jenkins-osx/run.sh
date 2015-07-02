@@ -35,43 +35,56 @@ usage () {
 
 while [ "$1" != "" ]; do
     case $1 in
-	--arch )		shift
-				ARCH=$1
-				;;
-	--config )		shift
-				CONFIG_NAME=$1
-				;;
-	--commit )		shift
-				COMMIT=$1
-				;;
-	--build-url )		shift
-				BUILD_URL=$1
-				;;
-	--install-only )	INSTALL_ONLY=true
-				;;
-	--benchmarks )		shift
-				BENCHMARKS="--benchmarks $1"
-				;;
-        --pkg-file )   	        shift
-                       		MONO_PKG=$1
-                          	;;
-        --pkg-url )            	shift
-                           	MONO_PKG_URL=$1
-                           	;;
-	--snapshot-url )	shift
-				SNAPSHOT_URL=$1
-				;;
-	--deb-urls )		shift
-				DEB_ASM_URL=$1
-				shift
-				DEB_BIN_URL=$1
-				;;
-	--deb-common-url )	shift
-				DEB_COMMON_URL=$1
-				;;
-        -h | --help )           usage 0
-                                ;;
-        * )                     usage 1
+        --arch )
+            shift
+            ARCH=$1
+            ;;
+        --config )
+            shift
+            CONFIG_NAME=$1
+            ;;
+        --commit )
+            shift
+            COMMIT=$1
+            ;;
+        --build-url )
+            shift
+            BUILD_URL=$1
+            ;;
+        --install-only )
+            INSTALL_ONLY=true
+            ;;
+        --benchmarks )
+            shift
+            BENCHMARKS="--benchmarks $1"
+            ;;
+        --pkg-file )
+            shift
+            MONO_PKG=$1
+            ;;
+        --pkg-url )
+            shift
+            MONO_PKG_URL=$1
+            ;;
+        --snapshot-url )
+            shift
+            SNAPSHOT_URL=$1
+            ;;
+        --deb-urls )
+            shift
+            DEB_ASM_URL=$1
+            shift
+            DEB_BIN_URL=$1
+            ;;
+        --deb-common-url )
+            shift
+            DEB_COMMON_URL=$1
+            ;;
+        -h | --help )
+            usage 0
+            ;;
+        * )
+            usage 1
     esac
     shift
 done
@@ -100,45 +113,45 @@ if [ "x$SNAPSHOT_URL" != "x" ] ; then
 
     lynx -dump -hiddenlinks=listonly -listonly "$SNAPSHOT_URL" | awk '$1 ~ /[0-9]+\./ { print $2 }' >"snapshot-links"
     if [ $? -ne 0 ] ; then
-	echo "Error: Could not get links from snapshot URL"
-	exit 1
+        echo "Error: Could not get links from snapshot URL"
+        exit 1
     fi
 
     DEBIAN_TAR_URL=`grep '\.debian\.tar\.bz2' "snapshot-links"`
     if [ $? -ne 0 -o "x$DEBIAN_TAR_URL" = "x" ] ; then
-	echo "Error: Could not get .debian.tar.bz2 link from snapshot URL"
-	exit 1
+        echo "Error: Could not get .debian.tar.bz2 link from snapshot URL"
+        exit 1
     fi
 
     curl -o "$TMP_DIR/debian.tar.bz2" "$DEBIAN_TAR_URL"
     if [ $? -ne 0 ] ; then
-	echo "Error: Could not fetch .debian.tar.bz2 from $DEBIAN_TAR_URL"
-	exit 1
+        echo "Error: Could not fetch .debian.tar.bz2 from $DEBIAN_TAR_URL"
+        exit 1
     fi
 
 
     tar -jxvf "debian.tar.bz2"
     if [ $? -ne 0 ] ; then
-	echo "Error: Could not untar debian.tar.bz2"
-	exit 1
+        echo "Error: Could not untar debian.tar.bz2"
+        exit 1
     fi
 
     SHORT_COMMIT=`perl -n -e '/commit ID ([0-9a-f]+)/ && print $1' debian/changelog`
     if [ $? -ne 0 ] ; then
-	echo "Error: Could not get commit ID from debian.tar.bz2"
-	exit 1
+        echo "Error: Could not get commit ID from debian.tar.bz2"
+        exit 1
     fi
 
     DEB_ASM_URL=`grep '-assemblies' "snapshot-links"`
     if [ $? -ne 0 -o "x$DEB_ASM_URL" = "x" ] ; then
-	echo "Error: Could not get assemblies package link from snapshot URL"
-	exit 1
+        echo "Error: Could not get assemblies package link from snapshot URL"
+        exit 1
     fi
 
     DEB_BIN_URL=`grep "$ARCH\.deb" "snapshot-links"`
     if [ $? -ne 0 -o "x$DEB_BIN_URL" = "x" ] ; then
-	echo "Error: Could not get binary package link from snapshot URL"
-	exit 1
+        echo "Error: Could not get binary package link from snapshot URL"
+        exit 1
     fi
 
     rm -rf "debian.tar.bz2" "debian" "snapshot-links"
@@ -185,23 +198,28 @@ ERROR=0
 
 finish () {
     if [ "$OS" = "Darwin" ] ; then
-	if [ $MOUNTED -ne 0 ] ; then
-	    diskutil umount force "$VOLPATH"
-	    if [ $? -ne 0 ] ; then
-		echo "Error: Cannot unmount disk image"
-		ERROR=1
-	    fi
-	fi
+        if [ $MOUNTED -ne 0 ] ; then
+            diskutil umount force "$VOLPATH"
+            if [ $? -ne 0 ] ; then
+                echo "Error: Cannot unmount disk image"
+                ERROR=1
+            fi
+        fi
     fi
 
     if [ "$OS" = "Linux" ] ; then
-	sudo /bin/rm -rf "$TMP_DIR"
+        sudo /bin/rm -rf "$TMP_DIR"
+        case "$ARCH" in
+            x86_64)
+                cleanup_linux_amd64
+                ;;
+        esac
     else
-	rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR"
     fi
     if [ $? -ne 0 ] ; then
-	echo "Error: Cannot delete temporary directory $TMP_DIR"
-	ERROR=1
+        echo "Error: Cannot delete temporary directory $TMP_DIR"
+        ERROR=1
     fi
 
     exit $ERROR
@@ -220,40 +238,40 @@ init_darwin () {
     MOUNTED=0
 
     if [ "x$MONO_PKG" = "x" -a "x$MONO_PKG_URL" = "x" ] ; then
-	echo "Error: No package file or URL given"
-	exit 1
+        echo "Error: No package file or URL given"
+        exit 1
     fi
 
     if [ "x$MONO_PKG" = "x" ] ; then
-	MONO_PKG="$TMP_DIR/installer.pkg"
-	curl -o "$MONO_PKG" "$MONO_URL"
-	if [ $? -ne 0 ] ; then
-	    error "Error: Could not download Mono package from $MONO_URL"
-	fi
+        MONO_PKG="$TMP_DIR/installer.pkg"
+        curl -o "$MONO_PKG" "$MONO_URL"
+        if [ $? -ne 0 ] ; then
+            error "Error: Could not download Mono package from $MONO_URL"
+        fi
     fi
 
     DMGPATH="$TMP_DIR/installation.dmg"
     hdiutil create "$DMGPATH" -volname "$VOLNAME" -size 1g -fs HFSX -attach
     if [ $? -ne 0 ] ; then
-	echo Error creating or mounting disk image
-	exit 1
+        echo Error creating or mounting disk image
+        exit 1
     fi
     MOUNTED=1
 
     sudo installer -package "$MONO_PKG" -target "$VOLPATH"
     if [ $? -ne 0 ] ; then
-	echo Error installing Mono package
-	ERROR=1
-	finish
+        echo Error installing Mono package
+        ERROR=1
+        finish
     fi
 
     VERSION=`ls "$VOLPATH/Library/Frameworks/Mono.framework/Versions" | grep -v Current`
     if [ $? -ne 0 ] ; then
-	error Error figuring out Mono version
+        error Error figuring out Mono version
     fi
 
     if [ `echo "$VERSION" | wc -w` -ne 1 ] ; then
-	error No unique Mono version in package
+        error No unique Mono version in package
     fi
 
     MONO_ROOT="$VOLPATH/Library/Frameworks/Mono.framework/Versions/$VERSION"
@@ -261,55 +279,55 @@ init_darwin () {
 
 init_linux () {
     if [ "x$DEB_ASM_URL" = "x" -o "x$DEB_BIN_URL" = "x" -o "x$DEB_COMMON_URL" = "x" ] ; then
-	error "Error: Debian package URLs not given"
+        error "Error: Debian package URLs not given"
     fi
 
     curl -o "$TMP_DIR/common.deb" "$DEB_COMMON_URL"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not download mono-snapshot-common package."
+        error "Error: Could not download mono-snapshot-common package."
     fi
 
     curl -o "$TMP_DIR/assemblies.deb" "$DEB_ASM_URL"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not download mono-snapshot-assemblies package."
+        error "Error: Could not download mono-snapshot-assemblies package."
     fi
 
     curl -o "$TMP_DIR/mono.deb" "$DEB_BIN_URL"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not download mono-snapshot package."
+        error "Error: Could not download mono-snapshot package."
     fi
 
     INSTALL_ROOT="$TMP_DIR/installation"
 
     mkdir -p "$INSTALL_ROOT/var/lib"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not create directory for dpkg."
+        error "Error: Could not create directory for dpkg."
     fi
 
     cp -a /var/lib/dpkg "$INSTALL_ROOT/var/lib/"
 
     sudo /usr/bin/dpkg --root="$INSTALL_ROOT" --unpack "$TMP_DIR/common.deb"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not install mono-snapshot-common package."
+        error "Error: Could not install mono-snapshot-common package."
     fi
 
     sudo /usr/bin/dpkg --root="$INSTALL_ROOT" --unpack "$TMP_DIR/assemblies.deb"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not install mono-snapshot-assemblies package."
+        error "Error: Could not install mono-snapshot-assemblies package."
     fi
 
     sudo /usr/bin/dpkg --root="$INSTALL_ROOT" --unpack "$TMP_DIR/mono.deb"
     if [ $? -ne 0 ] ; then
-	error "Error: Could not install mono-snapshot package."
+        error "Error: Could not install mono-snapshot package."
     fi
 
     VERSION=`ls "$INSTALL_ROOT/opt"`
     if [ $? -ne 0 ] ; then
-	error "Error: Nothing installed in /opt."
+        error "Error: Nothing installed in /opt."
     fi
 
     if [ `echo "$VERSION" | wc -w` -ne 1 ] ; then
-	error No unique Mono version in package
+        error No unique Mono version in package
     fi
 
     echo Mono version is $VERSION
@@ -323,15 +341,38 @@ init_linux () {
     sudo /bin/rm -rf /tmp/nunit20
 }
 
+function setup_linux_amd64 {
+    # disable intel turbo mode
+    (echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost) || error "only Intel CPUs supported"
+
+    # force C0 state
+    # cf. http://pm-blog.yarda.eu/2011/10/deeper-c-states-and-increased-latency.html
+    # it's important to keep the file descriptor alive during the benchmark runs.
+    # the old setting will be restored after closing the file descriptor.
+    sudo -b bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; done"
+}
+
+function cleanup_linux_amd64 {
+    sudo kill `sudo lsof -t /dev/cpu_dma_latency`
+}
+
 OS=`uname`
 case "$OS" in
-    Darwin )	init_darwin
-		;;
-    Linux )	init_linux
-		;;
-    * )		echo "Unsupported OS $OS"
-		exit 1
-		;;
+    Darwin )
+        init_darwin
+        ;;
+    Linux )
+        init_linux
+        case "$ARCH" in
+            x86_64)
+                setup_linux_amd64
+                ;;
+        esac
+        ;;
+    * )
+        echo "Unsupported OS $OS"
+        exit 1
+        ;;
 esac
 
 MONO_PATH="$MONO_ROOT/bin/mono-sgen"
