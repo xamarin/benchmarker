@@ -209,6 +209,11 @@ finish () {
 
     if [ "$OS" = "Linux" ] ; then
         sudo /bin/rm -rf "$TMP_DIR"
+        case "$ARCH" in
+            x86_64)
+                cleanup_linux_amd64
+                ;;
+        esac
     else
         rm -rf "$TMP_DIR"
     fi
@@ -336,6 +341,21 @@ init_linux () {
     sudo /bin/rm -rf /tmp/nunit20
 }
 
+function setup_linux_amd64 {
+    # disable intel turbo mode
+    (echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost) || error "only Intel CPUs supported"
+
+    # force C0 state
+    # cf. http://pm-blog.yarda.eu/2011/10/deeper-c-states-and-increased-latency.html
+    # it's important to keep the file descriptor alive during the benchmark runs.
+    # the old setting will be restored after closing the file descriptor.
+    sudo -b bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; done"
+}
+
+function cleanup_linux_amd64 {
+    sudo kill `sudo lsof -t /dev/cpu_dma_latency`
+}
+
 OS=`uname`
 case "$OS" in
     Darwin )
@@ -343,6 +363,11 @@ case "$OS" in
         ;;
     Linux )
         init_linux
+        case "$ARCH" in
+            x86_64)
+                setup_linux_amd64
+                ;;
+        esac
         ;;
     * )
         echo "Unsupported OS $OS"
