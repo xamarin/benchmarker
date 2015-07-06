@@ -106,7 +106,13 @@ namespace Benchmarker.Common
 					}
 
 					if (!success) {
-						process.Kill ();
+						Console.Out.WriteLine ("stdout:\n{0}", stdout.Result);
+						Console.Out.WriteLine ("stderr:\n{0}", stderr.Result);
+						try {
+							process.Kill ();
+						} catch (InvalidOperationException) {
+							// The process might have finished already, so we need to catch this.
+						}
 						return null;
 					}
 
@@ -116,7 +122,8 @@ namespace Benchmarker.Common
 						Error = stderr.Result,
 					};
 				}
-			} catch (Exception) {
+			} catch (Exception exc) {
+				Console.Out.WriteLine ("Exception: {0}", exc);
 				return null;
 			}
 		}
