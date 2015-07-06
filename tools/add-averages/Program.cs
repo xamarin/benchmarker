@@ -6,7 +6,7 @@ using Benchmarker.Common;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace addaverages
+namespace DbTool
 {
 	class MainClass
 	{
@@ -16,7 +16,7 @@ namespace addaverages
 			var limit = 100;
 			for (var skip = 0;; skip += limit) {
 				var query = makeQuery ().Limit (limit).Skip (skip);
-				Console.WriteLine ("skipping {0}", skip);
+				//Console.WriteLine ("skipping {0}", skip);
 				var page = await query.FindAsync ();
 				results = results.Concat (page);
 				if (page.Count () < limit)
@@ -44,7 +44,7 @@ namespace addaverages
 			await runSet.SaveAsync ();
 		}
 
-		static async Task Work ()
+		static async Task AddAverages ()
 		{
 			var runSets = await PageQuery (() => ParseObject.GetQuery ("RunSet"));
 			foreach (var runSet in runSets) {
@@ -55,6 +55,33 @@ namespace addaverages
 			Console.WriteLine ("got {0} run sets", runSets.Count ());
 		}
 
+		static async Task DeleteRunSet (string runSetId)
+		{
+			var runSets = await PageQuery (() => {
+				return ParseObject.GetQuery ("RunSet")
+					.WhereEqualTo ("objectId", runSetId);
+			});
+			if (runSets.Count () != 1)
+				throw new Exception ("Could not fetch run set");
+			var runSet = runSets.First ();
+			var runs = await PageQuery (() => {
+				return ParseObject.GetQuery ("Run")
+					.WhereEqualTo ("runSet", runSet);
+			});
+			Console.WriteLine ("deleting " + runs.Count () + " runs");
+			foreach (var run in runs)
+				await run.DeleteAsync ();
+			await runSet.DeleteAsync ();
+		}
+
+		static void UsageAndExit (bool success)
+		{
+			Console.WriteLine ("Usage:");
+			Console.WriteLine ("    DbTool.exe --add-averages");
+			Console.WriteLine ("    DbTool.exe --delete-run-set ID");
+			Environment.Exit (success ? 0 : 1);
+		}
+
 		public static void Main (string[] args)
 		{
 			if (!ParseInterface.Initialize ()) {
@@ -62,7 +89,17 @@ namespace addaverages
 				Environment.Exit (1);
 			}
 
-			AsyncContext.Run (() => Work ());
+			if (args.Length == 0)
+				UsageAndExit (true);
+
+			if (args [0] == "--add-averages") {
+				AsyncContext.Run (() => AddAverages ());
+			} else if (args [0] == "--delete-run-set") {
+				var runSet = args [1];
+				AsyncContext.Run (() => DeleteRunSet (runSet));
+			} else {
+				UsageAndExit (false);
+			}
 		}
 	}
 }
