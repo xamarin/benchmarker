@@ -348,17 +348,17 @@ init_linux () {
 function setup_noturbo {
     # disable intel turbo mode
     # FIXME: Don't output the 0 to stdout
-    (echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost) || error "only Intel CPUs supported"
+    (echo 0 | sudo /usr/bin/tee /sys/devices/system/cpu/cpufreq/boost) || error "only Intel CPUs supported"
 
     # force C0 state
     # cf. http://pm-blog.yarda.eu/2011/10/deeper-c-states-and-increased-latency.html
     # it's important to keep the file descriptor alive during the benchmark runs.
     # the old setting will be restored after closing the file descriptor.
-    sudo -b bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; do true; done"
+    sudo -b /bin/bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; do true; done"
 }
 
 function cleanup_noturbo {
-    sudo kill `sudo lsof -t /dev/cpu_dma_latency`
+    sudo /bin/kill `sudo /usr/bin/lsof -t /dev/cpu_dma_latency`
 }
 
 case "$OS" in
