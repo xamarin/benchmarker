@@ -4,6 +4,8 @@ set -o pipefail
 
 JQ_JOIN="reduce .[] as \$item (\"\"; . + \"\n\" + \$item)"
 
+CONFIG_NAME=auto-sgen
+
 case `uname -m` in
 i*86)
 	ARCH=i386
@@ -64,7 +66,7 @@ while true ; do
 	     -H "X-Parse-Application-Id: 7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES" \
 	     -H "X-Parse-REST-API-Key: xOHOwaDls0fcuMKLIH0nzaMKclLzCWllwClLej4d" \
 	     -G \
-	     --data-urlencode "where={\"buildURL\":{\"\$exists\":true},\"machine\":{\"\$inQuery\":{\"where\":{\"name\":\"$HOSTNAME\"},\"className\":\"Machine\"}}}" \
+	     --data-urlencode "where={\"buildURL\":{\"\$exists\":true},\"machine\":{\"\$inQuery\":{\"where\":{\"name\":\"$HOSTNAME\"},\"className\":\"Machine\"}},\"config\":{\"\$inQuery\":{\"where\":{\"name\":\"$CONFIG_NAME\"},\"className\":\"Config\"}}}" \
 	     https://api.parse.com/1/classes/RunSet | jq -r ".results | map(.buildURL) | sort | unique | $JQ_JOIN" >"$BUILDS_TESTED_LIST"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot fetch JSON from Parse."
@@ -73,7 +75,7 @@ while true ; do
 	fi
 
 	# get information on all builds Jenkins has built
-	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" | jq ".allBuilds | map(select(.result == \"SUCCESS\"))" >"$JENKINS_JSON"
+	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building,result\]" | jq ".allBuilds | map(select(.result == \"SUCCESS\"))" >"$JENKINS_JSON"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot fetch JSON from Jenkins."
 	    sleep 60
@@ -156,7 +158,7 @@ while true ; do
     echo $GIT_FETCH_ID
     echo $COMMIT_SHA
 
-    "$BENCHMARKER_ROOT/jenkins-osx/run.sh" --arch $ARCH --config auto-sgen --commit "$COMMIT_SHA" --build-url "$RUN_URL" --deb-urls "$ASM_URL" "$BIN_URL"
+    "$BENCHMARKER_ROOT/jenkins-osx/run.sh" --arch "$ARCH" --config "$CONFIG_NAME" --commit "$COMMIT_SHA" --build-url "$RUN_URL" --deb-urls "$ASM_URL" "$BIN_URL"
     if [ $? -ne 0 ] ; then
 	echo "Error: Could not run benchmark."
 	sleep 60
