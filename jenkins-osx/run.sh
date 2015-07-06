@@ -181,6 +181,24 @@ if [ ! -f "$CONFIG_PATH" ] ; then
     exit 1
 fi
 
+OS=`uname`
+if [ "$OS-$ARCH" = "Linux-amd64" ] ; then
+    DISABLE_TURBO=1
+else
+    DISABLE_TURBO=0
+fi
+
+DISABLE_TURBO_FROM_CONFIG=`jq 'if .DisableTurbo then 1 else 0 end' "$CONFIG_PATH"`
+if [ $? -ne 0 ] ; then
+    echo "Error: Cannot parse config file $CONFIG_PATH"
+    exit 1
+fi
+
+if [ "x$DISABLE_TURBO" != "x$DISABLE_TURBO_FROM_CONFIG" ] ; then
+    echo "Error: Disable turbo is not consistent"
+    exit 1
+fi
+
 ERROR=0
 
 finish () {
@@ -196,17 +214,16 @@ finish () {
 
     if [ "$OS" = "Linux" ] ; then
         sudo /bin/rm -rf "$TMP_DIR"
-        case "$ARCH" in
-            amd64)
-                cleanup_linux_amd64
-                ;;
-        esac
     else
 	rm -rf "$TMP_DIR"
     fi
     if [ $? -ne 0 ] ; then
 	echo "Error: Cannot delete temporary directory $TMP_DIR"
 	ERROR=1
+    fi
+
+    if [ "$DISABLE_TURBO" -ne 0 ] ; then
+	cleanup_noturbo
     fi
 
     exit $ERROR
@@ -328,39 +345,38 @@ init_linux () {
     sudo /bin/rm -rf /tmp/nunit20
 }
 
-function setup_linux_amd64 {
+function setup_noturbo {
     # disable intel turbo mode
+    # FIXME: Don't output the 0 to stdout
     (echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost) || error "only Intel CPUs supported"
 
     # force C0 state
     # cf. http://pm-blog.yarda.eu/2011/10/deeper-c-states-and-increased-latency.html
     # it's important to keep the file descriptor alive during the benchmark runs.
     # the old setting will be restored after closing the file descriptor.
-    sudo -b bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; done"
+    sudo -b bash -c "exec 3>/dev/cpu_dma_latency; echo -ne '\x00\x00\x00\x00' >&3; while sleep 60m; do true; done"
 }
 
-function cleanup_linux_amd64 {
+function cleanup_noturbo {
     sudo kill `sudo lsof -t /dev/cpu_dma_latency`
 }
 
-OS=`uname`
 case "$OS" in
     Darwin )
         init_darwin
         ;;
     Linux )
         init_linux
-        case "$ARCH" in
-            amd64)
-                setup_linux_amd64
-                ;;
-        esac
         ;;
     * )
         echo "Unsupported OS $OS"
         exit 1
         ;;
 esac
+
+if [ "$DISABLE_TURBO" -ne 0 ] ; then
+    setup_noturbo
+fi
 
 MONO_PATH="$MONO_ROOT/bin/mono-sgen"
 

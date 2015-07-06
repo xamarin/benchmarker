@@ -12,6 +12,9 @@ i*86)
 	;;
 x86_64)
 	ARCH=amd64
+	if [ `uname` = "Linux" ] ; then
+	    CONFIG_NAME="$CONFIG_NAME-noturbo"
+	fi
 	;;
 armv7*)
 	if [ -d "/lib/arm-linux-gnueabihf" ]; then
@@ -25,6 +28,29 @@ armv7*)
 	exit 1
 	;;
 esac
+
+usage () {
+    echo "Usage: poll-jenkins.sh [options]"
+    echo "Options:"
+    echo "    --config NAME	Configuration name"
+    exit $1
+}
+
+while [ "$1" != "" ]; do
+    case $1 in
+	--config )
+	    shift
+	    CONFIG_NAME=$1
+	    ;;
+        -h | --help )
+            usage 0
+            ;;
+        * )
+            usage 1
+	    ;;
+    esac
+    shift
+done
 
 LABEL="debian-$ARCH"
 HOSTNAME=`uname -n`
