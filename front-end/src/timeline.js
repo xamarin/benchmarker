@@ -219,24 +219,32 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 			var sumForRunSet = 0;
 			var count = 0;
 			var min = undefined;
+			var minName = undefined;
 			var max = undefined;
+			var maxName = undefined;
 			for (i = 0; i < allBenchmarks.length; ++i) {
 				var val = runMetricsTable [i] [j];
 				if (isNaN (val))
 					continue;
 				sumForRunSet += val;
-				if (min === undefined || val < min)
+				if (min === undefined || val < min) {
 					min = val;
-				if (max === undefined || val > max)
+					minName = allBenchmarks [i].get ('name');
+				}
+				if (max === undefined || val > max) {
 					max = val;
+					maxName = allBenchmarks [i].get ('name');
+				}
 				++count;
 			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
 			table.push ({
 				low: min,
+				lowName: minName,
 				high: max,
+				highName: maxName,
 				average: sumForRunSet / count,
-				commit: tooltip
+				tooltip: tooltip
 			});
 		}
 

@@ -262,7 +262,6 @@ export class AMChart extends React.Component {
 
 var timelineOptions = {
 				"type": "serial",
-				"categoryField": "commit",
 				"theme": "default",
 				"categoryAxis": {
 					"axisThickness": 0,
@@ -276,12 +275,20 @@ var timelineOptions = {
 				"trendLines": [],
 				"graphs": [
 					{
-						"hidden": true,
+						"balloonText": "[[lowName]]",
+						"bullet": "round",
+						"bulletAlpha": 0,
+						"lineColor": "#3498DB",
+						"lineThickness": 0,
 						"id": "low",
 						"title": "low",
 						"valueField": "low"
 					},
 					{
+						"balloonText": "[[highName]]",
+						"bullet": "round",
+						"bulletAlpha": 0,
+						"lineColor": "#3498DB",
 						"fillAlphas": 0.13,
 						"fillToGraph": "low",
 						"fillColors": "#3498DB",
@@ -291,8 +298,9 @@ var timelineOptions = {
 						"valueField": "high"
 					},
 					{
-						"balloonText": "[[category]]",
+						"balloonText": "[[tooltip]]",
 						"bullet": "round",
+						"bulletSize": 4,
 						"lineColor": "#3498DB",
 						"id": "average",
 						"title": "average",
