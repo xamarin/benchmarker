@@ -73,7 +73,7 @@ while true ; do
 	fi
 
 	# get information on all builds Jenkins has built
-	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" | jq ".allBuilds | map(select(.building | not))" >"$JENKINS_JSON"
+	curl "https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=$LABEL/api/json?pretty=true&tree=allBuilds\[fingerprint\[original\[*\]\],artifacts\[*\],url,building\]" | jq ".allBuilds | map(select(.result == \"SUCCESS\"))" >"$JENKINS_JSON"
 	if [ $? -ne 0 ] ; then
 	    echo "Error: Cannot fetch JSON from Jenkins."
 	    sleep 60
