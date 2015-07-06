@@ -197,7 +197,7 @@ finish () {
     if [ "$OS" = "Linux" ] ; then
         sudo /bin/rm -rf "$TMP_DIR"
         case "$ARCH" in
-            x86_64)
+            amd64)
                 cleanup_linux_amd64
                 ;;
         esac
@@ -351,7 +351,7 @@ case "$OS" in
     Linux )
         init_linux
         case "$ARCH" in
-            x86_64)
+            amd64)
                 setup_linux_amd64
                 ;;
         esac
