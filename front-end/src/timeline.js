@@ -137,40 +137,16 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
-		var options = {
-			vAxis: {
-				gridlines: {
-					color: 'transparent'
-				},
-				baseline: 1.0
-			},
-			hAxis: {
-				gridlines: {
-					color: 'transparent'
-				},
-				textPosition: 'none'
-			},
-			intervals: {
-				style: 'area',
-			}
-		};
-
-		return <xp_common.GoogleChart
+		return <xp_common.TimelineAMChart
 			graphName='timelineChart'
-			chartClass={google.visualization.LineChart}
 			height={300}
-			table={this.table}
-			options={options}
+			data={this.table}
 			selectListener={this.selectListener.bind (this)} />;
 	}
 
-	selectListener (chart) {
-		var item = chart.getSelection () [0];
-		if (item === undefined)
-			return;
-		console.log ("selected");
-		console.log (item);
-		var runSet = this.sortedRunSets [item.row];
+	selectListener (itemIndex) {
+		console.log ("selected ", itemIndex);
+		var runSet = this.sortedRunSets [itemIndex];
 		this.props.runSetSelected (runSet);
 	}
 
@@ -237,13 +213,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 			runMetricsTable [i] = runMetricsTable [i].map (time => time / normal);
 		}
 
-		var table = new google.visualization.DataTable ();
-
-		table.addColumn ({type: 'number', label: "Run Set Index"});
-		table.addColumn ({type: 'number', label: "Elapsed Time"});
-		table.addColumn ({type: 'number', role: 'interval'});
-		table.addColumn ({type: 'number', role: 'interval'});
-		table.addColumn ({type: 'string', role: 'tooltip'});
+		var table = [];
 
 		for (j = 0; j < runSets.length; ++j) {
 			var sumForRunSet = 0;
@@ -262,13 +232,12 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 				++count;
 			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
-			table.addRow ([
-				j,
-				sumForRunSet / count,
-				min,
-				max,
-				tooltip
-			]);
+			table.push ({
+				low: min,
+				high: max,
+				average: sumForRunSet / count,
+				commit: tooltip
+			});
 		}
 
 		this.table = table;

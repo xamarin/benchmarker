@@ -210,6 +210,123 @@ export class GoogleChartsStateComponent extends React.Component {
 	}
 }
 
+export class AMChart extends React.Component {
+	chart: Object;
+
+	render () {
+		return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
+	}
+
+	componentDidMount () {
+		console.log ("mounting chart")
+		this.drawChart (this.props);
+	}
+
+	componentWillUnmount () {
+		console.log ("unmounting chart")
+		this.chart.clear ();
+	}
+
+	shouldComponentUpdate (nextProps, nextState) {
+		if (this.props.graphName !== nextProps.graphName)
+			return true;
+		if (this.props.height !== nextProps.height)
+			return true;
+		if (this.props.options !== nextProps.options)
+			return true;
+		if (this.props.data !== nextProps.data)
+			return true;
+		// FIXME: what do we do with the selectListener?
+		return false;
+	}
+
+	componentDidUpdate () {
+		this.drawChart (this.props);
+	}
+
+	drawChart (props) {
+		console.log ("drawing");
+		if (this.chart === undefined) {
+			var options = {};
+			Object.keys (props.options).forEach (k => { options [k] = props.options [k] });
+			options.dataProvider = props.data;
+			this.chart = AmCharts.makeChart (props.graphName, options);
+			if (this.props.selectListener !== undefined)
+				this.chart.addListener ('clickGraphItem', e => { this.props.selectListener (e.index); });
+		} else {
+			this.chart.dataProvider = props.data;
+			this.chart.validateData ();
+		}
+	}
+}
+
+var timelineOptions = {
+				"type": "serial",
+				"categoryField": "commit",
+				"theme": "default",
+				"categoryAxis": {
+					"axisThickness": 0,
+					"gridThickness": 0,
+					"labelsEnabled": false,
+					"tickLength": 0
+				},
+				"chartScrollbar": {
+					"graph": "average"
+				},
+				"trendLines": [],
+				"graphs": [
+					{
+						"hidden": true,
+						"id": "low",
+						"title": "low",
+						"valueField": "low"
+					},
+					{
+						"fillAlphas": 0.13,
+						"fillToGraph": "low",
+						"fillColors": "#3498DB",
+						"id": "high",
+						"lineThickness": 0,
+						"title": "high",
+						"valueField": "high"
+					},
+					{
+						"balloonText": "[[category]]",
+						"bullet": "round",
+						"lineColor": "#3498DB",
+						"id": "average",
+						"title": "average",
+						"valueField": "average"
+					}
+				],
+				"guides": [],
+				"valueAxes": [
+					{
+						"baseValue": -13,
+						"id": "time",
+						"axisThickness": 0,
+						"fontSize": 12,
+						"gridAlpha": 0.07,
+						"title": "",
+						"titleFontSize": 0
+					}
+				],
+				"allLabels": [],
+				"balloon": {},
+				"titles": []
+			};
+
+export class TimelineAMChart extends React.Component {
+	render () {
+		return <AMChart
+			graphName={this.props.graphName}
+			height={this.props.height}
+			options={timelineOptions}
+			data={this.props.data}
+			selectListener={this.props.selectListener} />;
+	}
+}
+
 type Range = [number, number, number, number];
 
 export function calculateRunsRange (runs: Array<ParseObject>): Range {
