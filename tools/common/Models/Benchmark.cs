@@ -41,9 +41,17 @@ namespace Benchmarker.Common.Models
 
 		public static List<Benchmark> LoadAllFrom (string directory, string[] names)
 		{
-			return Directory.EnumerateFiles (directory)
-				.Where (f => f.EndsWith (".benchmark"))
-				.Where (f => names.Length == 0 ? true : names.Any (n => Path.GetFileNameWithoutExtension (f) == n))
+			var allPaths = Directory.EnumerateFiles (directory)
+				.Where (f => f.EndsWith (".benchmark"));
+			if (names != null) {
+				foreach (var name in names) {
+					if (!allPaths.Any (p => Path.GetFileNameWithoutExtension (p) == name))
+						return null;
+				}
+				allPaths = allPaths
+					.Where (f => names.Any (n => Path.GetFileNameWithoutExtension (f) == n));
+			}
+			return allPaths
 				.Select (f => Benchmark.LoadFrom (f))
 				.ToList ();
 		}

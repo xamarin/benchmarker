@@ -62,6 +62,15 @@ namespace Benchmarker.Common.Models
 			return pos.ToArray ();
 		}
 
+		public bool HasRuns {
+			get {
+				var count = 0;
+				foreach (var result in results)
+					count += result.Runs.Count;
+				return count > 0;
+			}
+		}
+
 		public async Task<ParseObject> UploadToParse ()
 		{
 			var averages = new Dictionary<string, double> ();
@@ -84,6 +93,7 @@ namespace Benchmarker.Common.Models
 			obj ["startedAt"] = StartDateTime;
 			obj ["finishedAt"] = FinishDateTime;
 			obj ["elapsedTimeAverages"] = averages;
+			obj ["failed"] = !HasRuns;
 
 			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks, saveList);
 			obj ["crashedBenchmarks"] = await BenchmarkListToParseObjectArray (crashedBenchmarks, saveList);

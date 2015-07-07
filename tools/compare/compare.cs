@@ -32,7 +32,7 @@ class Compare
 
 	public static void Main (string[] args)
 	{
-		var benchmarksnames = new string[0];
+		string[] benchmarkNames = null;
 		//var pausetime = false;
 		var timeout = -1;
 		string commitFromCmdline = null;
@@ -48,7 +48,11 @@ class Compare
 
 		for (; optindex < args.Length; ++optindex) {
 			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
-				benchmarksnames = args [++optindex].Split (',').Select (s => s.Trim ()).Union (benchmarksnames).ToArray ();
+				var newNames = args [++optindex].Split (',').Select (s => s.Trim ());
+				if (benchmarkNames == null)
+					benchmarkNames = newNames.ToArray ();
+				else
+					benchmarkNames = newNames.Union (benchmarkNames).ToArray ();
 			} else if (args [optindex] == "--commit") {
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
@@ -88,11 +92,11 @@ class Compare
 		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline));
 
 		if (commit == null) {
-			Console.WriteLine ("Could not get commit");
+			Console.WriteLine ("Error: Could not get commit");
 			Environment.Exit (1);
 		}
 		if (commit.CommitDate == null) {
-			Console.WriteLine ("Could not get a commit date.");
+			Console.WriteLine ("Error: Could not get a commit date.");
 			Environment.Exit (1);
 		}
 
@@ -105,7 +109,13 @@ class Compare
 
 		var someSuccess = false;
 
-		foreach (var benchmark in Benchmark.LoadAllFrom (benchmarksdir, benchmarksnames).OrderBy (b => b.Name)) {
+		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarkNames);
+		if (benchmarks == null) {
+			Console.WriteLine ("Error: Could not load all benchmarks.");
+			Environment.Exit (1);
+		}
+
+		foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
 			/* Run the benchmarks */
 			if (config.Count <= 0)
 				throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
@@ -159,16 +169,14 @@ class Compare
 
 		runSet.FinishDateTime = DateTime.Now;
 
-		if (!someSuccess) {
-			Console.WriteLine ("all runs failed.  not uploading.");
-			Environment.Exit (1);
-		}
+		if (!someSuccess)
+			Console.WriteLine ("all runs failed.");
 
 		Console.WriteLine ("uploading");
 		try {
 			AsyncContext.Run (() => runSet.UploadToParse ());
 		} catch (Exception exc) {
-			Console.WriteLine ("Failure uploading data: " + exc);
+			Console.WriteLine ("Error: Failure uploading data: " + exc);
 			Environment.Exit (1);
 		}
 		Console.WriteLine ("uploaded");
