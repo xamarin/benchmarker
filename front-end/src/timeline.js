@@ -92,7 +92,7 @@ class Page extends React.Component {
 			comparisonChart = <xp_common.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
 
 		return <div>
-			<xp_common.ConfigSelector
+			<xp_common.CombinedConfigSelector
 				controller={this.props.controller}
 				machine={this.state.machine}
 				config={this.state.config}

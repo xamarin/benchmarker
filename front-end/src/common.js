@@ -472,6 +472,60 @@ export class MachineDescription extends React.Component {
 	}
 }
 
+export class CombinedConfigSelector extends React.Component {
+	render () : Object {
+		function idsToString (ids) {
+			var machineId = ids [0];
+			var configId = ids [1];
+			if (machineId === undefined || configId === undefined)
+				return undefined;
+			return machineId + "+" + configId;
+		}
+
+		var combinations = this.props.controller.allRunSets.map (rs => [rs.get ('machine').id, rs.get ('config').id]);
+		var histogram = xp_utils.histogramByString (combinations, ids => idsToString (ids));
+
+		var userStringForIds = ids => {
+			var machine = this.props.controller.machineForId (ids [0]);
+			var config = this.props.controller.configForId (ids [1]);
+			return machine.get ('name') + " / " + config.get ('name');
+		};
+
+		histogram = xp_utils.sortArrayBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
+
+		function renderEntry (entry) {
+			var ids = entry [0];
+			var count = entry [1];
+			var string = idsToString (ids);
+			return <option
+				value={string}
+				key={string}>
+				{userStringForIds (ids) + "(" + count + ")"}
+			</option>;
+		}
+
+		var machineId = undefined;
+		if (this.props.machine !== undefined)
+			machineId = this.props.machine.id;
+		var configId = undefined;
+		if (this.props.config !== undefined)
+			configId = this.props.config.id;
+		var selectedValue = idsToString ([machineId, configId]);
+		return <div className="CombinedConfigSelector">
+			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
+			{histogram.map (renderEntry.bind (this))}
+		</select>
+			</div>;
+	}
+
+	combinationSelected (event: Object) {
+		var ids = event.target.value.split ("+");
+		var machine = this.props.controller.machineForId (ids [0]);
+		var config = this.props.controller.configForId (ids [1]);
+		this.props.onChange ({machine: machine, config: config});
+	}
+}
+
 export class RunSetSelector extends React.Component {
 
 	runSetSelected (event: Object) {

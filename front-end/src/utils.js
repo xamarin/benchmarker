@@ -30,6 +30,22 @@ export function uniqArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
 	return Object.keys (hash).map (k => hash [k]);
 }
 
+export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<[T, number]> {
+    var valueHash = {};
+    var countHash = {};
+    for (var i = 0; i < arr.length; ++i) {
+        var value = arr [i];
+        var key = keyFunc (value);
+        if (valueHash [key] !== undefined) {
+            countHash [key] += 1;
+        } else {
+            valueHash [key] = value;
+            countHash [key] = 1;
+        }
+    }
+    return Object.keys (valueHash).map (k => [valueHash [k], countHash [k]]);
+}
+
 export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
     var crr = [];
     for (var i = 0; i < arr.length; ++i) {
