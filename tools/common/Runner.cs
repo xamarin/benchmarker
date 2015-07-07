@@ -106,13 +106,13 @@ namespace Benchmarker.Common
 					}
 
 					if (!success) {
-						Console.Out.WriteLine ("stdout:\n{0}", stdout.Result);
-						Console.Out.WriteLine ("stderr:\n{0}", stderr.Result);
 						try {
 							process.Kill ();
 						} catch (InvalidOperationException) {
 							// The process might have finished already, so we need to catch this.
 						}
+						Console.Out.WriteLine ("stdout:\n{0}", stdout.Result);
+						Console.Out.WriteLine ("stderr:\n{0}", stderr.Result);
 						return null;
 					}
 
