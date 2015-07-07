@@ -103,11 +103,13 @@ class Page extends React.Component {
 					</td>
 					<td>
 						<xp_common.MachineDescription
-							machine={this.state.machine} />
+							machine={this.state.machine}
+							omitHeader={true} />
 					</td>
 					<td>
 						<xp_common.ConfigDescription
-							config={this.state.config} />
+							config={this.state.config}
+							omitHeader={true} />
 					</td>
 				</tr>
 			</table>

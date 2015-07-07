@@ -4,4 +4,5 @@
 
 .Timeline > table td {
     vertical-align: top;
+    width: 33%;
 }

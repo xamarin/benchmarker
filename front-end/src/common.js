@@ -423,6 +423,9 @@ export class ConfigDescription extends React.Component {
 		if (config === undefined)
 			return <div className="Description"></div>;
 
+		var header = this.props.omitHeader
+			? undefined
+			: <h1>{config.get ('name')}</h1>;
 		var mono = config.get ('monoExecutable');
 		var monoExecutable = mono === undefined
 			? <span className="diagnostic">No mono executable specified.</span>
@@ -440,7 +443,7 @@ export class ConfigDescription extends React.Component {
 			: <code>{options.join (' ')}</code>;
 
 		return <div className="Description">
-			<h1>{config.get ('name')}</h1>
+			{header}
 			<dl>
 			<dt>Mono Executable</dt>
 			<dd>{monoExecutable}</dd>
@@ -459,9 +462,12 @@ export class MachineDescription extends React.Component {
 
 		if (machine === undefined)
 			return <div className="Description"></div>;
+		var header = this.props.omitHeader
+			? undefined
+			: <h1>{machine.get ('name')}</h1>;
 
 		return <div className="Description">
-			<h1>{machine.get ('name')}</h1>
+			{header}
 			<dl>
 			<dt>Architecture</dt>
 			<dd>{machine.get ('architecture')}</dd>
