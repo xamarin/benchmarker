@@ -506,7 +506,7 @@ export class CombinedConfigSelector extends React.Component {
 			return <option
 				value={string}
 				key={string}>
-				{userStringForIds (ids) + "(" + count + ")"}
+				{userStringForIds (ids) + " (" + count + ")"}
 			</option>;
 		}
 
