@@ -91,12 +91,26 @@ class Page extends React.Component {
 		if (this.state.runSets.length > 1)
 			comparisonChart = <xp_common.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
 
-		return <div>
-			<xp_common.CombinedConfigSelector
-				controller={this.props.controller}
-				machine={this.state.machine}
-				config={this.state.config}
-				onChange={this.setState.bind (this)} />
+		return <div className="Timeline">
+			<table>
+				<tr>
+					<td>
+						<xp_common.CombinedConfigSelector
+							controller={this.props.controller}
+							machine={this.state.machine}
+							config={this.state.config}
+							onChange={this.setState.bind (this)} />
+					</td>
+					<td>
+						<xp_common.MachineDescription
+							machine={this.state.machine} />
+					</td>
+					<td>
+						<xp_common.ConfigDescription
+							config={this.state.config} />
+					</td>
+				</tr>
+			</table>
 			{chart}
 			{comparisonChart}
 		</div>;

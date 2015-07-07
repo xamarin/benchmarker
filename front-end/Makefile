@@ -3,7 +3,7 @@
 PAGES = compare config machine timeline runset
 COMMON = common utils
 DEPS = babel-loader parse react
-STYLES = common compare style
+STYLES = common compare style timeline
 
 # Sources and targets
 
