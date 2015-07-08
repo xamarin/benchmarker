@@ -59,3 +59,6 @@ build/$1.css : src/$1.css Makefile
 endef
 
 $(foreach STYLE,$(STYLES),$(eval $(call STYLE_RULE,$(STYLE))))
+
+flow :
+	( mv node_modules node_modules_save ; flow check ; ERR=$$? ; mv node_modules_save node_modules ; exit $$ERR )
