@@ -46,6 +46,10 @@ export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
     return Object.keys (valueHash).map (k => [valueHash [k], countHash [k]]);
 }
 
+export function histogramOfStrings (arr: Array<string>) : Array<[string, number]> {
+    return histogramByString (arr, x => x);
+}
+
 export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
     var crr = [];
     for (var i = 0; i < arr.length; ++i) {

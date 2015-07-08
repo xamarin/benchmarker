@@ -653,6 +653,55 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		this.runsLoaded ();
 	}
 
+	runSetLabels () {
+		var commitIds = this.props.runSets.map (rs => rs.get ('commit').id);
+		var commitHistogram = xp_utils.histogramOfStrings (commitIds);
+
+		var includeCommit = commitHistogram.length > 1;
+
+		var includeStartedAt = false;
+		for (var i = 0; i < commitHistogram.length; ++i) {
+			if (commitHistogram [i] [1] > 1)
+				includeStartedAt = true;
+		}
+
+		var machineIds = this.props.runSets.map (rs => rs.get ('machine').id);
+		var includeMachine = xp_utils.uniqStringArray (machineIds).length > 1;
+
+		var configIds = this.props.runSets.map (rs => rs.get ('config').id);
+		var includeConfigs = xp_utils.uniqStringArray (configIds).length > 1;
+
+		var formatRunSet = runSet => {
+			var str = "";
+			if (includeCommit) {
+				var commit = runSet.get ('commit');
+				str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
+			}
+			if (includeMachine) {
+				var machine = this.props.controller.machineForId (runSet.get ('machine').id);
+				if (str !== "")
+					str = str + "\n";
+				str = str + machine.get ('name');
+			}
+			if (includeConfigs) {
+				var config = this.props.controller.configForId (runSet.get ('config').id);
+				if (includeMachine)
+					str = str + " / ";
+				else if (str !== "")
+					str = str + "\n";
+				str = str + config.get ('name');
+			}
+			if (includeStartedAt) {
+				if (str !== "")
+					str = str + "\n";
+				str = str + runSet.get ('startedAt');
+			}
+			return str;
+		};
+
+		return this.props.runSets.map (formatRunSet);
+	}
+
 	runsLoaded () {
 		var i;
 
@@ -704,8 +753,10 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		}
 
 		var data = google.visualization.arrayToDataTable (dataArray, true);
-		for (i = 0; i < this.props.runSets.length; ++i)
-			data.setColumnLabel (1 + 4 * i, this.props.runSets [i].get ('startedAt'));
+
+		var labels = this.runSetLabels ();
+		for (i = 0; i < labels.length; ++i)
+			data.setColumnLabel (1 + 4 * i, labels [i]);
 
 		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
 
