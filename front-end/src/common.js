@@ -8,11 +8,11 @@ import * as xp_utils from './utils.js';
 import {Parse} from 'parse';
 import React from 'react';
 
-export var Benchmark;
-export var Config;
-export var Machine;
-export var Run;
-export var RunSet;
+export var Benchmark = Parse.Object.extend ('Benchmark');
+export var Config = Parse.Object.extend ('Config');
+export var Machine = Parse.Object.extend ('Machine');
+export var Run = Parse.Object.extend ('Run');
+export var RunSet = Parse.Object.extend ('RunSet');
 
 export function start (started: () => void) {
 	google.load ('visualization', '1.0', {
@@ -22,40 +22,34 @@ export function start (started: () => void) {
 
 	Parse.initialize('7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES', 'qnBBT97Mttqsvq3g9zghnBVn2iiHLAQvTzekUigm');
 
-	Benchmark = Parse.Object.extend ('Benchmark');
-	Config = Parse.Object.extend ('Config');
-	Machine = Parse.Object.extend ('Machine');
-	Run = Parse.Object.extend ('Run');
-	RunSet = Parse.Object.extend ('RunSet');
-
 	started ();
 }
 
 export class Controller {
 
-	allBenchmarks: Array<ParseObject>;
-	allMachines: Array<ParseObject>;
-	allRunSets: Array<ParseObject>;
-	allConfigs: Array<ParseObject>;
+	allBenchmarks: Array<Parse.Object>;
+	allMachines: Array<Parse.Object>;
+	allRunSets: Array<Parse.Object>;
+	allConfigs: Array<Parse.Object>;
 
 	constructor () {
 
-		pageParseQuery (() => new Parse.Query (Machine),
+		pageParseQuery (() => new Parse.Query ((Machine : Parse.Object)),
 			this.machinesLoaded.bind (this),
 			function (error) {
-				alert ("error loading machines: " + error);
+				alert ("error loading machines: " + error.toString ());
 			});
 
 		pageParseQuery (() => new Parse.Query (RunSet).notEqualTo ('failed', true).include ('commit'),
 			this.runSetsLoaded.bind (this),
 			function (error) {
-				alert ("error loading run sets: " + error);
+				alert ("error loading run sets: " + error.toString ());
 			});
 
 		pageParseQuery (() => new Parse.Query (Config),
 			this.configsLoaded.bind (this),
 			function (error) {
-				alert ("error loading configs: " + error);
+				alert ("error loading configs: " + error.toString ());
 			});
 
 		pageParseQuery (() => new Parse.Query (Benchmark),
@@ -64,25 +58,25 @@ export class Controller {
 				this.checkAllDataLoaded ();
 			},
 			function (error) {
-				alert ("error loading benchmarks: " + error);
+				alert ("error loading benchmarks: " + error.toString ());
 			});
 	}
 
 	allDataLoaded () {
 	}
 
-	machinesLoaded (results: Array<ParseObject>) {
+	machinesLoaded (results: Array<Parse.Object>) {
 		console.log ("machines loaded: " + results.length);
 		this.allMachines = results;
 		this.checkAllDataLoaded ();
 	}
 
-	configsLoaded (results: Array<ParseObject>) {
+	configsLoaded (results: Array<Parse.Object>) {
 		this.allConfigs = results;
 		this.checkAllDataLoaded ();
 	}
 
-	runSetsLoaded (results: Array<ParseObject>) {
+	runSetsLoaded (results: Array<Parse.Object>) {
 		console.log ("run sets loaded: " + results.length);
 		this.allRunSets = results;
 		this.checkAllDataLoaded ();
@@ -96,19 +90,19 @@ export class Controller {
 		return undefined;
 	}
 
-	machineForId (id: string) : ParseObject {
+	machineForId (id: string) : Parse.Object {
 		return xp_utils.find (this.allMachines, m => m.id === id);
 	}
 
-	configForId (id: string) : ParseObject {
+	configForId (id: string) : Parse.Object {
 		return xp_utils.find (this.allConfigs, m => m.id === id);
 	}
 
-	runSetForId (id: string) : ParseObject {
+	runSetForId (id: string) : Parse.Object {
 		return xp_utils.find (this.allRunSets, rs => rs.id === id);
 	}
 
-	runSetsForMachineAndConfig (machine: ParseObject, config: ParseObject) : Array<ParseObject> {
+	runSetsForMachineAndConfig (machine: Parse.Object, config: Parse.Object) : Array<Parse.Object> {
 		return this.allRunSets.filter (
 			rs =>
 				rs.get ('machine').id === machine.id &&
@@ -147,7 +141,19 @@ export function canUseGoogleCharts (): boolean {
 	return googleChartsStateComponents === undefined;
 }
 
-export class GoogleChart extends React.Component {
+type GoogleChartProps = {
+	graphName: string;
+	chartClass: any;
+	height: number;
+	table: Object;
+	options: Object;
+	selectListener: (chart: Object, event: Object) => void;
+}
+
+export class GoogleChart extends React.Component<GoogleChartProps, GoogleChartProps, void> {
+
+	chart: void | Object;
+
 	render () {
 		return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
 	}
@@ -160,14 +166,14 @@ export class GoogleChart extends React.Component {
 		this.drawChart (this.props);
 	}
 
-	componentWillReceiveProps (nextProps) {
+	componentWillReceiveProps (nextProps : any) {
 		if (this.shouldComponentUpdate (nextProps))
 			return;
 		console.log ("updating chart");
 		this.updateChart (nextProps);
 	}
 
-	shouldComponentUpdate (nextProps, nextState) {
+	shouldComponentUpdate (nextProps : GoogleChartProps, nextState : void) : boolean {
 		if (this.props.chartClass !== nextProps.chartClass)
 			return true;
 		if (this.props.graphName !== nextProps.graphName)
@@ -178,20 +184,23 @@ export class GoogleChart extends React.Component {
 		return false;
 	}
 
-	updateChart (props) {
-		this.chart.draw (props.table, props.options);
+	updateChart (props : GoogleChartProps) : void {
+		var chart = this.chart;
+		if (chart === undefined)
+			return;
+		chart.draw (props.table, props.options);
 		if (props.selectListener !== undefined)
-			google.visualization.events.addListener (this.chart, 'select', props.selectListener.bind (null, this.chart));
+			google.visualization.events.addListener (chart, 'select', props.selectListener.bind (null, chart));
 	}
 
-	drawChart (props) {
+	drawChart (props : GoogleChartProps) : void {
 		var ChartClass = props.chartClass;
 		this.chart = new ChartClass (document.getElementById (props.graphName));
 		this.updateChart (props);
 	}
 }
 
-export class GoogleChartsStateComponent extends React.Component {
+export class GoogleChartsStateComponent<P,S> extends React.Component<P,P,S> {
 	componentWillMount () {
 		if (googleChartsStateComponents === undefined)
 			return;
@@ -210,7 +219,15 @@ export class GoogleChartsStateComponent extends React.Component {
 	}
 }
 
-export class AMChart extends React.Component {
+type AMChartProps = {
+	graphName: string;
+	height: number;
+	data: Object;
+	options: Object;
+	selectListener: (index: number) => void;
+};
+
+export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	chart: Object;
 
 	render () {
@@ -227,7 +244,7 @@ export class AMChart extends React.Component {
 		this.chart.clear ();
 	}
 
-	shouldComponentUpdate (nextProps, nextState) {
+	shouldComponentUpdate (nextProps : AMChartProps, nextState : void) : boolean {
 		if (this.props.graphName !== nextProps.graphName)
 			return true;
 		if (this.props.height !== nextProps.height)
@@ -244,7 +261,7 @@ export class AMChart extends React.Component {
 		this.drawChart (this.props);
 	}
 
-	drawChart (props) {
+	drawChart (props : AMChartProps) {
 		console.log ("drawing");
 		if (this.chart === undefined) {
 			var options = {};
@@ -337,7 +354,7 @@ export class TimelineAMChart extends React.Component {
 
 type Range = [number, number, number, number];
 
-export function calculateRunsRange (runs: Array<ParseObject>): Range {
+export function calculateRunsRange (runs: Array<Parse.Object>): Range {
 	var min: number | void;
 	var max: number | void;
 	var sum = 0;
@@ -359,7 +376,7 @@ export function normalizeRange (mean: number, range: Range) : Range {
 	return range.map (x => x / mean);
 }
 
-export function hashForRunSets (runSets: Array<ParseObject>) : string {
+export function hashForRunSets (runSets: Array<Parse.Object>) : string {
 	var ids = runSets.map (o => o.id);
 	return ids.join ('+');
 }
@@ -480,11 +497,13 @@ export class MachineDescription extends React.Component {
 
 export class CombinedConfigSelector extends React.Component {
 	render () : Object {
-		function idsToString (ids) {
+		function idsToString (ids: [string, string]) : string {
 			var machineId = ids [0];
 			var configId = ids [1];
+			/*
 			if (machineId === undefined || configId === undefined)
 				return undefined;
+				*/
 			return machineId + "+" + configId;
 		}
 
@@ -516,7 +535,7 @@ export class CombinedConfigSelector extends React.Component {
 		var configId = undefined;
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
-		var selectedValue = idsToString ([machineId, configId]);
+		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString ([machineId, configId]);
 		return <div className="CombinedConfigSelector">
 			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
 			{histogram.map (renderEntry.bind (this))}
@@ -589,22 +608,29 @@ export class RunSetSelector extends React.Component {
 			{filteredRunSets.map (renderRunSetOption)}
 		</select>;
 
-		console.log ("runSetId is " + runSetId);
-
 		return <div className="RunSetSelector">
 			{configSelector}
 			{runSetsSelect}
 			</div>;
 	}
 
-	getRunSet () : ParseObject {
+	getRunSet () : Parse.Object {
 		return this.state.runSet;
 	}
 }
 
-export class ComparisonChart extends GoogleChartsStateComponent {
+type ComparisonChartProps = {
+	runSets: Array<Parse.Object>;
+	controller: Controller;
+}
 
-	constructor (props) {
+export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartProps, void> {
+
+	runsByIndex : Array<Array<Parse.Object>>;
+	table: Object;
+	height: string;
+
+	constructor (props : ComparisonChartProps) {
 		console.log ("run set compare chart constructing");
 
 		super (props);
@@ -612,7 +638,7 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		this.invalidateState (props.runSets);
 	}
 
-	invalidateState (runSets) {
+	invalidateState (runSets : Array<Parse.Object>) : void {
 		this.runsByIndex = [];
 
 		pageParseQuery (
@@ -641,11 +667,11 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 				this.runsLoaded ();
 			},
 			function (error) {
-				alert ("error loading runs: " + error);
+				alert ("error loading runs: " + error.toString ());
 			});
 	}
 
-	componentWillReceiveProps (nextProps) {
+	componentWillReceiveProps (nextProps : ComparisonChartProps) {
 		this.invalidateState (nextProps.runSets);
 	}
 
@@ -653,7 +679,7 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		this.runsLoaded ();
 	}
 
-	runSetLabels () {
+	runSetLabels () : Array<string> {
 		var commitIds = this.props.runSets.map (rs => rs.get ('commit').id);
 		var commitHistogram = xp_utils.histogramOfStrings (commitIds);
 
@@ -732,7 +758,7 @@ export class ComparisonChart extends GoogleChartsStateComponent {
 		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length == 0)
 			return;
 
-		commonBenchmarkIds = xp_utils.sortArrayBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id));
+		commonBenchmarkIds = xp_utils.sortArrayBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id) || "");
 
 		var dataArray = [];
 
@@ -802,7 +828,7 @@ export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
 
-export function pageParseQuery (makeQuery: () => Object, success: (results: Array<ParseObject>) => void, error: (error: Object) => void) : void {
+export function pageParseQuery (makeQuery: () => Object, success: (results: Array<Parse.Object>) => void, error: (error: Object) => void) : void {
     var limit = 1000;
 
     function done (results) {
@@ -845,10 +871,10 @@ export function pageParseQuery (makeQuery: () => Object, success: (results: Arra
 		});
     }
 
-    page (0, undefined, undefined, {});
+    page (0, undefined, [], {});
 }
 
-export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<ParseObject> | void), prefix: string) : string {
+export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<Parse.Object> | void), prefix: string) : string {
 	if (benchmarks === undefined || benchmarks.length === 0)
 		return "";
 	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");

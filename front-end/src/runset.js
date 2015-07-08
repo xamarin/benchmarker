@@ -104,7 +104,7 @@ class RunSetDescription extends React.Component {
 				this.setState ({runs: results});
 			},
 			function (error) {
-				alert ("error loading runs: " + error);
+				alert ("error loading runs: " + error.toString ());
 			});
 	}
 

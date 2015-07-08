@@ -121,7 +121,7 @@ class Page extends React.Component {
 
 }
 
-function tooltipForRunSet (controller: Controller, runSet: ParseObject) {
+function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
 	var commit = runSet.get ('commit');
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
@@ -137,6 +137,9 @@ function tooltipForRunSet (controller: Controller, runSet: ParseObject) {
 }
 
 class Chart extends xp_common.GoogleChartsStateComponent {
+
+	sortedRunSets : Array<Parse.Object>;
+	table : void | Array<Object>;
 
 	constructor (props) {
 		super (props);
