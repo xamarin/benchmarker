@@ -25,12 +25,15 @@ lint :
 .PHONY : clean
 clean :
 	@echo 'Cleaning...'
-	@rm -rf build/*
+	@rm -rf build
+
+build :
+	@mkdir -p build
 
 # Pages
 
 define PAGE_RULE
-build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js
+build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js build
 	@echo "Building page '$1'..."
 	@webpack --devtool=inline-source-map src/$1.js --output-file build/$1.js
 
@@ -52,7 +55,7 @@ $(foreach DEP,$(DEPS),$(eval $(call DEP_RULE,$(DEP))))
 # Styles
 
 define STYLE_RULE
-build/$1.css : src/$1.css Makefile
+build/$1.css : src/$1.css Makefile build
 	@echo "Building style '$1'..."
 	@cp -f src/$1.css build/$1.css
 
