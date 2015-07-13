@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if false
+
+using System;
 using System.Collections.Generic;
 using XamarinProfiler.Core;
 using XamarinProfiler.Core.Reader;
@@ -79,3 +81,5 @@ namespace Benchmarker.Common.LogProfiler
 		Variable = 1UL << 30,
 	}
 }
+
+#endif

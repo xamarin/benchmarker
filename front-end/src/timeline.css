@@ -1,0 +1,8 @@
+.Timeline > table {
+    width: 100%;
+}
+
+.Timeline > table td {
+    vertical-align: top;
+    width: 33%;
+}

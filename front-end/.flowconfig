@@ -1,0 +1,10 @@
+[ignore]
+.*/build/.*
+.*/node_modules_save/.*js
+
+[include]
+
+[libs]
+interfaces/
+
+[options]

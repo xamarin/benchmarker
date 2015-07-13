@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using Parse;
 
 namespace Benchmarker.Common.Models
 {
@@ -14,7 +15,6 @@ namespace Benchmarker.Common.Models
 		public string Name { get; set; }
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
-		public int Timeout { get; set; }
 
 		public Benchmark ()
 		{
@@ -41,9 +41,17 @@ namespace Benchmarker.Common.Models
 
 		public static List<Benchmark> LoadAllFrom (string directory, string[] names)
 		{
-			return Directory.EnumerateFiles (directory)
-				.Where (f => f.EndsWith (".benchmark"))
-				.Where (f => names.Length == 0 ? true : names.Any (n => Path.GetFileNameWithoutExtension (f) == n))
+			var allPaths = Directory.EnumerateFiles (directory)
+				.Where (f => f.EndsWith (".benchmark"));
+			if (names != null) {
+				foreach (var name in names) {
+					if (!allPaths.Any (p => Path.GetFileNameWithoutExtension (p) == name))
+						return null;
+				}
+				allPaths = allPaths
+					.Where (f => names.Any (n => Path.GetFileNameWithoutExtension (f) == n));
+			}
+			return allPaths
 				.Select (f => Benchmark.LoadFrom (f))
 				.ToList ();
 		}
@@ -64,6 +72,24 @@ namespace Benchmarker.Common.Models
 		{
 			return Name.GetHashCode ();
 		}
+
+		ParseObject parseObject;
+
+		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
+		{
+			if (parseObject != null)
+				return parseObject;
+
+			var results = await ParseObject.GetQuery ("Benchmark").WhereEqualTo ("name", Name).FindAsync ();
+			if (results.Count () > 0)
+				return results.First ();
+			var obj = ParseInterface.NewParseObject ("Benchmark");
+			obj ["name"] = Name;
+			saveList.Add (obj);
+
+			parseObject = obj;
+
+			return obj;
+		}
 	}
 }
-

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if false
+
+using System;
 using System.Collections.Generic;
 using XamarinProfiler.Core;
 using XamarinProfiler.Core.Reader;
@@ -27,46 +29,42 @@ namespace Benchmarker.Common.LogProfiler
 			if (!LogReader.OpenReader ())
 				return;
 
-			foreach (var buf in LogReader.ReadBuffer ()) {
-				foreach (var e in buf.Events) {
-					var countersdescevent = e as SampleCountersDescEvent;
-					if (countersdescevent != null) {
-						Counter counter;
+			foreach (var e in LogReader.ReadEvents ()) {
+				var countersdescevent = e as SampleCountersDescEvent;
+				if (countersdescevent != null) {
+					Counter counter;
 
-						foreach (var t in countersdescevent.Counters) {
-							Counters [counter = new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6)] = null;
+					foreach (var t in countersdescevent.Counters) {
+						Counters [counter = new Counter (t.Item1, t.Item2, t.Item3, t.Item4, t.Item5, t.Item6)] = null;
 
-							if (CountersDescription != null) {
-								CountersDescription (this, new CountersDescriptionEventArgs { Counter = counter });
-							}
+						if (CountersDescription != null) {
+							CountersDescription (this, new CountersDescriptionEventArgs { Counter = counter });
 						}
-
-						continue;
 					}
 
-					var countersevent = e as SampleCountersEvent;
-					if (countersevent != null) {
-						if (countersevent.Samples.Count == 0)
-							return;
-
-						foreach (var counter in new List<Counter> (Counters.Keys)) {
-							var value = countersevent.Samples.FirstOrDefault (v => v.Item1 == counter.Index);
-
-							if (value != null)
-								Counters [counter] = value.Item3;
-
-							if (CountersSample != null) {
-								CountersSample (this, new CountersSampleEventArgs {
-									Timestamp = TimeSpan.FromMilliseconds (countersevent.Timestamp), Counter = counter, Value = Counters [counter]
-								});
-							}
-						}
-
-						continue;
-					}
+					continue;
 				}
-				if (LogReader.IsStopping)
-					break;
+
+				var countersevent = e as SampleCountersEvent;
+				if (countersevent != null) {
+					if (countersevent.Samples.Count == 0)
+						return;
+
+					foreach (var counter in new List<Counter> (Counters.Keys)) {
+						var value = countersevent.Samples.FirstOrDefault (v => v.Item1 == counter.Index);
+
+						if (value != null)
+							Counters [counter] = value.Item3;
+
+						if (CountersSample != null) {
+							CountersSample (this, new CountersSampleEventArgs {
+								Timestamp = TimeSpan.FromMilliseconds (countersevent.Timestamp), Counter = counter, Value = Counters [counter]
+							});
+						}
+					}
+
+					continue;
+				}
 			}
 		}
 
@@ -83,3 +81,5 @@ namespace Benchmarker.Common.LogProfiler
 		}
 	}
 }
+
+#endif

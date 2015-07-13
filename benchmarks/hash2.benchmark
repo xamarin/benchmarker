@@ -1,0 +1,5 @@
+{
+  "Name": "hash2",
+  "TestDirectory": "shootout",
+  "CommandLine": ["hash2.exe", "1000000"]
+}

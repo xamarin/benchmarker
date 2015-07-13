@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using System.Diagnostics;
+using Parse;
+using System.Threading.Tasks;
 
 namespace Benchmarker.Common.Models
 {
@@ -13,8 +14,14 @@ namespace Benchmarker.Common.Models
 		public Benchmark Benchmark { get; set; }
 		public Config Config { get; set; }
 		public string Version { get; set; }
-		public Run[] Runs { get; set; }
-		public bool Timedout { get; set; }
+
+		List<Run> runs;
+		public List<Run> Runs { get { return runs; } }
+
+		public Result ()
+		{
+			runs = new List<Run> ();
+		}
 
 		public static Result LoadFrom (string filename)
 		{
@@ -30,11 +37,31 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
+		public TimeSpan? AverageWallClockTime {
+			get {
+				if (runs.Count == 0)
+					return null;
+				double doubleAverageTicks = runs.Average (run => run.WallClockTime.Ticks);
+				long longAverageTicks = Convert.ToInt64 (doubleAverageTicks);
+				return new TimeSpan(longAverageTicks);
+			}
+		}
+
 		public class Run {
 			public TimeSpan WallClockTime { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
 		}
+
+		public async Task UploadRunsToParse (ParseObject runSet, List<ParseObject> saveList) {
+			var b = await Benchmark.GetOrUploadToParse (saveList);
+			foreach (var run in Runs) {
+				var obj = ParseInterface.NewParseObject ("Run");
+				obj ["benchmark"] = b;
+				obj ["runSet"] = runSet;
+				obj ["elapsedMilliseconds"] = run.WallClockTime.TotalMilliseconds;
+				saveList.Add (obj);
+			}
+		}
 	}
 }
-

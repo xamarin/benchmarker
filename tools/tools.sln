@@ -7,9 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "common", "common\common.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "suite", "suite", "{3FF28327-5356-4932-B628-5C6E72127969}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "agent-mono", "suite\agent-mono\agent-mono.csproj", "{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "agent-collect", "suite\agent-collect\agent-collect.csproj", "{84CB327A-B2A8-432F-A443-5D423F021C65}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbTool", "add-averages\DbTool.csproj", "{13565BEF-4FE2-44EB-9882-F1FBC339E723}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +17,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Debug|x64.ActiveCfg = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Debug|x64.Build.0 = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Debug|x86.ActiveCfg = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Debug|x86.Build.0 = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Release|x64.ActiveCfg = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Release|x64.Build.0 = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Release|x86.ActiveCfg = Debug|x86
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F}.Release|x86.Build.0 = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Debug|x64.ActiveCfg = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Debug|x64.Build.0 = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Debug|x86.ActiveCfg = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Debug|x86.Build.0 = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x64.ActiveCfg = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x64.Build.0 = Debug|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x86.ActiveCfg = Release|x86
+		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x86.Build.0 = Release|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.ActiveCfg = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.Build.0 = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x86.ActiveCfg = Debug|x86
@@ -35,14 +33,6 @@ Global
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x64.Build.0 = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x86.ActiveCfg = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Release|x86.Build.0 = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Debug|x64.ActiveCfg = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Debug|x64.Build.0 = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Debug|x86.ActiveCfg = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Debug|x86.Build.0 = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Release|x64.ActiveCfg = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Release|x64.Build.0 = Debug|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Release|x86.ActiveCfg = Release|x86
-		{84CB327A-B2A8-432F-A443-5D423F021C65}.Release|x86.Build.0 = Release|x86
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x64.ActiveCfg = Debug|x64
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x64.Build.0 = Debug|x64
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Debug|x86.ActiveCfg = Debug|x64
@@ -53,8 +43,6 @@ Global
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x86.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{0D9D14AC-26A5-4610-A0CD-7F8FA5CCAB4F} = {3FF28327-5356-4932-B628-5C6E72127969}
-		{84CB327A-B2A8-432F-A443-5D423F021C65} = {3FF28327-5356-4932-B628-5C6E72127969}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		outputpath = .

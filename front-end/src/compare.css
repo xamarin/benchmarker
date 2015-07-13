@@ -1,0 +1,43 @@
+/* RunSetSelector */
+
+.RunSetSelector {
+	border: 1px solid black;
+	display: inline-block;
+	margin: 0 4px;
+	overflow: hidden;
+	padding: 0 4px;
+	vertical-align: top;
+	font-family: sans-serif;
+}
+
+.RunSetSelector > hr {
+	border: none;
+	border-bottom: 1px solid black;
+}
+
+.RunSetSelector > .ConfigSelector {
+	display: inline-block;
+}
+
+/* RunSetSelectorList */
+
+.RunSetSelectorList {
+	border: 1px solid black;
+	margin: 8px;
+	padding: 0 4px;
+}
+
+.RunSetSelectorList > footer, .RunSetSelectorList > section {
+	clear: both;
+	margin: 8px 0;
+	width: 100%;
+}
+
+.RunSetSelectorList > footer > button {
+	margin: 0 4px;
+}
+
+.RunSetSelectorList > section > button {
+	float: right;
+	margin: 0 4px 0 8px;
+}

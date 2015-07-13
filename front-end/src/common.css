@@ -1,0 +1,40 @@
+.diagnostic {
+	font-style: italic;
+}
+
+/* ConfigDescription, MachineDescription */
+
+.Description {
+	padding: 0 4px;
+	vertical-align: top;
+	font-family: sans-serif;
+}
+
+.Description > button {
+	margin-bottom: 8px;
+}
+
+.Description > dl > dd, .Description > dl > dt {
+	margin-bottom: 16px;
+}
+
+.Description > dl > dd {
+	margin-left: 16px;
+}
+
+.Description > dl > dt {
+	font-weight: bold;
+}
+
+/* ConfigSelector, RunSetSelector */
+
+.ConfigSelector > select, .RunSetSelector > select {
+	border: 1px solid black;
+	margin: 8px 4px;
+	height: 6em;
+}
+
+.ConfigSelector > select > option, .RunSetSelector > select > option {
+	font-family: sans-serif;
+	padding: 4px;
+}
