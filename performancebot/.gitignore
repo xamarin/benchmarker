@@ -5,3 +5,5 @@ credentials.py
 http.log
 twistd.log*
 twistd.pid
+debian-amd64_*/
+tmp/
