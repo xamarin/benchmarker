@@ -2,6 +2,9 @@
 
 set -e
 
+: ${EC2PBOTMASTERIP?"need to set master ip in EC2PBOTMASTERIP"}
+: ${BUILDBOTSLAVEPWD?"need to set slave password (configured in master instance) in BUILDBOTSLAVEPWD"}
+
 for i in "/usr/bin/dpkg" "/bin/cp" "/bin/rm"; do
     sudo -n "$i" --help &> /dev/null || (echo "/etc/sudoers must have the following line:" && echo "`whoami` `hostname` = (root) NOPASSWD: $i" && exit 1)
 done
@@ -21,6 +24,5 @@ source $HOME/slave/env/bin/activate
 cd $HOME/slave
 pip install buildbot-slave
 
-MASTERIP='10.0.24.86'
-buildslave create-slave slavedir $MASTERIP `hostname` shittyshit
+buildslave create-slave slavedir $EC2PBOTMASTERIP `hostname` $BUILDBOTSLAVEPWD
 buildslave start slavedir
