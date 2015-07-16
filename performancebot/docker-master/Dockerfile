@@ -6,7 +6,8 @@ RUN apt-get update
 RUN apt-get install -y \
         git \
         mono-xbuild \
-        mono-runtime \
+        libmono-microsoft-build-tasks-v4.0-4.0-cil \
+        mono-complete \
         nuget \
         python-dev \
         python-openssl \
