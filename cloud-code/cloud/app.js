@@ -55,7 +55,8 @@ app.get ('/requestCredentials', function (req, res) {
         res.type ('text/plain');
         res.send (githubRedirectEndpoint + querystring.stringify ({
             client_id: githubClientId,
-            state: obj.id
+            state: obj.id,
+            scope: 'read:org'
         }));
     }, function (error) {
         res.render ('hello', { message: "Error: " + JSON.stringify (error) });
@@ -70,8 +71,19 @@ app.get ('/oauthCallback', function (req, res) {
         return;
     }
 
-    // FIXME: add another secret here
-    res.render ('oauthConfirm', { key: data.state, state: data.state, code: data.code });
+    var query = new Parse.Query (CredentialsRequest);
+    Parse.Cloud.useMasterKey();
+    Parse.Promise.as ().then (function () {
+        return query.get (data.state);
+    }).then (function (credentialsRequest) {
+        res.render ('oauthConfirm', {
+            key: credentialsRequest.get ('key'),
+            state: data.state,
+            code: data.code
+        });
+    }, function (error) {
+        res.render ('hello', { message: "Error: " + JSON.stringify (error) });
+    });
 });
 
 app.post ('/oauthFollowup', function (req, res) {
