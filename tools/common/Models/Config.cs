@@ -21,6 +21,7 @@ namespace Benchmarker.Common.Models
 		public string Mono { get; set; }
 		public string[] MonoOptions { get; set; }
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
+		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
 		public string ResultsDirectory { get; set; }
 
 		Dictionary<string, string> processedMonoEnvironmentVariables;
@@ -40,6 +41,7 @@ namespace Benchmarker.Common.Models
 				if (config.NoMono) {
 					Debug.Assert (config.MonoOptions == null || config.MonoOptions.Length == 0);
 					Debug.Assert (config.MonoEnvironmentVariables == null || config.MonoEnvironmentVariables.Count == 0);
+					Debug.Assert (config.UnsavedMonoEnvironmentVariables == null || config.UnsavedMonoEnvironmentVariables.Count == 0);
 				}
 
 				if (String.IsNullOrEmpty (config.Mono)) {
@@ -56,10 +58,14 @@ namespace Benchmarker.Common.Models
 
 				if (config.MonoEnvironmentVariables == null)
 					config.MonoEnvironmentVariables = new Dictionary<string, string> ();
+				if (config.UnsavedMonoEnvironmentVariables == null)
+					config.UnsavedMonoEnvironmentVariables = new Dictionary<string, string> ();
 
 				config.processedMonoEnvironmentVariables = new Dictionary<string, string> ();
 
 				foreach (var kvp in config.MonoEnvironmentVariables)
+					config.processedMonoEnvironmentVariables [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
+				foreach (var kvp in config.UnsavedMonoEnvironmentVariables)
 					config.processedMonoEnvironmentVariables [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
 
 				if (String.IsNullOrEmpty (config.ResultsDirectory))

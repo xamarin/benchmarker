@@ -68,6 +68,7 @@ The new JSON results format is as follows:
     - `Mono`: path to the mono executable
     - `MonoOptions`: command line parameters to pass to the mono runtime
     - `MonoEnvironmentVariables`: environment variables to set to run the benchmark
+    - `UnsavedMonoEnvironmentVariables`: like `MonoEnvironmentVariables`, but not saved to the database
     - `ResultsDirectory`: path to the results directory, relative to the benchmarker repository root directory
   - `Version`: standard output when run with `--version` runtime command line parameter
   - `Timedout`: true if any of the run of the benchmark has timed out
