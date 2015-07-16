@@ -1,0 +1,25 @@
+FROM ubuntu:14.04
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+RUN echo "deb http://download.mono-project.com/repo/debian wheezy main" > /etc/apt/sources.list.d/mono-xamarin.list
+RUN echo "deb http://download.mono-project.com/repo/debian wheezy-apache24-compat main" >> /etc/apt/sources.list.d/mono-xamarin.list
+RUN apt-get update
+RUN apt-get install -y \
+        git \
+        mono-xbuild \
+        mono-runtime \
+        nuget \
+        python-dev \
+        python-openssl \
+        python-pip
+RUN pip install buildbot
+
+# web status of buildbot
+EXPOSE 8010
+# pb interface (used to connect slaves with master)
+EXPOSE 9989
+
+CMD (test -d /ebs || (echo "/ebs must be mounted" && exit 1)) && \
+    (test -d /ebs/pbot-master || git clone https://github.com/xamarin/benchmarker/ /ebs/pbot-master) && \
+    (test -f /ebs/pbot-master/performancebot/buildbot.tac || buildbot create-master /ebs/pbot-master/performancebot) && \
+    (buildbot start /ebs/pbot-master/performancebot || echo "WARNING!!! for first deployment 'make ec2-deploy' is required to run on your machine") && \
+    /bin/bash
