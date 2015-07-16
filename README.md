@@ -6,7 +6,7 @@
     nuget restore tools.sln
     xbuild
 
-[![Build Status](https://travis-ci.org/lewurm/benchmarker.svg?branch=master)](https://travis-ci.org/lewurm/benchmarker)
+[![Build Status](https://travis-ci.org/xamarin/benchmarker.svg?branch=master)](https://travis-ci.org/xamarin/benchmarker)
 
 ## Configs
 
