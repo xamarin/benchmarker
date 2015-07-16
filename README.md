@@ -6,6 +6,8 @@
     nuget restore tools.sln
     xbuild
 
+[![Build Status](https://travis-ci.org/lewurm/benchmarker.svg?branch=master)](https://travis-ci.org/lewurm/benchmarker)
+
 ## Configs
 
 Each Mono configuration requires a `.conf` file.  The files in the `configs` directory are examples. The JSON structure is as follows:
