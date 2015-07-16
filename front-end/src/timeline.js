@@ -235,7 +235,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		var table = [];
 
 		for (j = 0; j < runSets.length; ++j) {
-			var sumForRunSet = 0;
+			var prodForRunSet = 1.0;
 			var count = 0;
 			var min = undefined;
 			var minName = undefined;
@@ -245,7 +245,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 				var val = runMetricsTable [i] [j];
 				if (isNaN (val))
 					continue;
-				sumForRunSet += val;
+				prodForRunSet *= val;
 				if (min === undefined || val < min) {
 					min = val;
 					minName = allBenchmarks [i].get ('name');
@@ -262,7 +262,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 				lowName: minName,
 				high: max,
 				highName: maxName,
-				average: sumForRunSet / count,
+				geomean: Math.pow (prodForRunSet, 1.0 / count),
 				tooltip: tooltip
 			});
 		}
