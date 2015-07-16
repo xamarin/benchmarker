@@ -319,10 +319,11 @@ var timelineOptions = {
 						"bullet": "round",
 						"bulletSize": 4,
 						"lineColor": "#3498DB",
-						"id": "average",
-						"title": "average",
-						"valueField": "average"
+						"id": "geomean",
+						"title": "geomean",
+						"valueField": "geomean"
 					}
+
 				],
 				"guides": [],
 				"valueAxes": [
