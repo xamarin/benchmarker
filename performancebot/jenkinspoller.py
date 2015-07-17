@@ -3,7 +3,7 @@ from twisted.python import log
 from twisted.internet import defer, reactor
 from twisted.web.client import getPage
 
-from buildbot.status.builder import SUCCESS
+from buildbot.status.builder import SUCCESS, FAILURE
 
 from buildbot.process.buildstep import BuildStep, LoggingBuildStep
 from buildbot.changes import base
@@ -130,16 +130,25 @@ class MonoJenkinsPoller(base.PollingChangeSource):
 
 
 
-def _mkRequestJenkinsAllBuilds(baseUrl, platform):
-    return getPage('%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],artifacts[*],url,building,result]' % (baseUrl, platform))
+def _mkRequestJenkinsAllBuilds(baseUrl, platform, logger):
+    url = '%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],artifacts[*],url,building,result]' % (baseUrl, platform)
+    if logger:
+        logger("request: " + str(url))
+    return getPage(url)
 
-def _mkRequestJenkinsSingleBuild(buildUrl):
-    return getPage((buildUrl + "/api/json?pretty=true").encode('ascii', 'ignore'))
+def _mkRequestJenkinsSingleBuild(buildUrl, logger):
+    url = (buildUrl + "/api/json?pretty=true").encode('ascii', 'ignore')
+    if logger:
+        logger("request: " + str(url))
+    return getPage(url)
 
-def _mkRequestMonoCommonSnapshot():
-    return getPage(monoCommonSnapshotsUrl)
+def _mkRequestMonoCommonSnapshot(logger):
+    url = monoCommonSnapshotsUrl
+    if logger:
+        logger("request: " + str(url))
+    return getPage(url)
 
-def _mkRequestParse(hostname, config_name):
+def _mkRequestParse(hostname, config_name, logger):
     headers = credentials.getParseHeaders()
     query = ('where={' +
                 '"buildURL":{"$exists":true},' +
@@ -161,13 +170,16 @@ def _mkRequestParse(hostname, config_name):
                 '}' +
             '}')
     params = urllib.quote(query, '=')
-    return getPage('https://api.parse.com/1/classes/RunSet?%s' % params, headers = headers)
+    url = 'https://api.parse.com/1/classes/RunSet?%s' % params
+    if logger:
+        logger("request: " + str(url))
+    return getPage(url, headers = headers)
 
 @defer.inlineCallbacks
 def _getNewJenkinChanges(jenkinsBaseUrl, platform, hostname, config_name):
-    jenkinsRequest = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform)
+    jenkinsRequest = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform, None)
     jenkinsJson = json.loads(jenkinsRequest)
-    parseRequest = yield _mkRequestParse(hostname, config_name)
+    parseRequest = yield _mkRequestParse(hostname, config_name, None)
     parseJson = json.loads(parseRequest)
 
     def _filterBuildURLsJenkins(j):
@@ -180,7 +192,7 @@ def _getNewJenkinChanges(jenkinsBaseUrl, platform, hostname, config_name):
 
     result = []
     for b in buildsToDo:
-        buildDetailsRequest = yield _mkRequestJenkinsSingleBuild(b)
+        buildDetailsRequest = yield _mkRequestJenkinsSingleBuild(b, None)
         buildDetailsJson = json.loads(buildDetailsRequest)
         result.append({
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
@@ -217,10 +229,25 @@ class BuildURLToPropertyStep(LoggingBuildStep):
 
 class FetchJenkinsBuildDetails(BuildStep):
     def __init__(self, *args, **kwargs):
-        BuildStep.__init__(self, *args, **kwargs)
+        BuildStep.__init__(self, haltOnFailure = True, flunkOnFailure = True, *args, **kwargs)
 
     def start(self):
-        self.doRequest()
+        stdoutlogger = self.addLog("stdio").addStdout
+        self.logger = lambda msg: stdoutlogger(msg + "\n")
+        d = self.doRequest()
+        d.addCallbacks(self._finished_ok, self._finished_failure)
+
+    def _finished_ok(self, res):
+        log.msg("FetchJenkinsBuildDetails success")
+        self.finished(SUCCESS)
+        return res
+
+    def _finished_failure(self, res):
+        errmsg = "FetchJenkinsBuildDetails failed: %s" % str(res)
+        log.msg(errmsg)
+        self.logger(errmsg)
+        self.finished(FAILURE)
+        return None
 
     @defer.inlineCallbacks
     def doRequest(self):
@@ -228,11 +255,10 @@ class FetchJenkinsBuildDetails(BuildStep):
         platform = self.getProperty('platform')
         assert buildUrl is not None, "property should be there! :-("
         log.msg("before fetching meta data")
-        urls = yield _doFetchBuild(buildUrl, platform)
+        urls = yield _doFetchBuild(buildUrl, platform, self.logger)
         for propName, filename in urls.items():
             log.msg('adding: ' + str((propName, filename)))
             self.setProperty(propName, filename)
-        self.finished(SUCCESS)
 
 
 from HTMLParser import HTMLParser
@@ -248,16 +274,16 @@ class MyHTMLParser(HTMLParser):
                     self.commonDeb = value
 
 @defer.inlineCallbacks
-def _doFetchBuild(buildUrl, platform):
+def _doFetchBuild(buildUrl, platform, logger):
     result = {}
 
-    monoCommonRequest = yield _mkRequestMonoCommonSnapshot()
+    monoCommonRequest = yield _mkRequestMonoCommonSnapshot(logger)
     parser = MyHTMLParser()
     parser.feed(monoCommonRequest)
     assert parser.commonDeb is not None, 'no common debian package found :-('
     result['deb_common_url'] = monoCommonSnapshotsUrl + '/' + parser.commonDeb
 
-    request = yield _mkRequestJenkinsSingleBuild(buildUrl)
+    request = yield _mkRequestJenkinsSingleBuild(buildUrl, logger)
     buildJson = json.loads(request)
     artifacts = buildJson['artifacts']
     verify = 0
@@ -273,14 +299,17 @@ def _doFetchBuild(buildUrl, platform):
     assert verify == 2, 'verify is: ' + str(verify) + ', but should be 2. result: ' + str(result)
 
     # get git revision from jenkins
-    requestAll = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform)
+    requestAll = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform, logger)
     jsonAll = json.loads(requestAll)
     gitrev = None
     for i in [i for i in jsonAll['allBuilds'] if i['url'].encode('ascii', 'ignore') == buildUrl]:
         for fp in i['fingerprint']:
             if fp['original']['name'] == 'build-source-tarball-mono':
                 assert gitrev is None, "should set gitrev only once"
-                pollLog = yield getPage(monoSourceTarballUrl + str(fp['original']['number']) + '/pollingLog/pollingLog')
+                url = monoSourceTarballUrl + str(fp['original']['number']) + '/pollingLog/pollingLog'
+                if logger:
+                    logger("request: " + str(url))
+                pollLog = yield getPage(url)
                 regexgitrev = re.compile("Latest remote head revision on [a-zA-Z/]+ is: (?P<gitrev>[0-9a-fA-F]+)")
                 m = regexgitrev.search(pollLog)
                 assert m is not None
@@ -300,7 +329,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def testFetchSingleJob():
-        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1352/', 'debian-amd64')
+        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1352/', 'debian-amd64', None)
         for k, v in results.items():
             print "%s: %s" % (k, v)
 
