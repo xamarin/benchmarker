@@ -142,6 +142,12 @@ def _mkRequestJenkinsSingleBuild(buildUrl, logger):
         logger("request: " + str(url))
     return getPage(url)
 
+def _mkRequestJenkinsSingleBuildS3(buildUrl, logger):
+    url = (buildUrl + "/s3").encode('ascii', 'ignore')
+    if logger:
+        logger("request: " + str(url))
+    return getPage(url)
+
 def _mkRequestMonoCommonSnapshot(logger):
     url = monoCommonSnapshotsUrl
     if logger:
@@ -262,7 +268,7 @@ class FetchJenkinsBuildDetails(BuildStep):
 
 
 from HTMLParser import HTMLParser
-class MyHTMLParser(HTMLParser):
+class HTMLParserMonoCommon(HTMLParser):
     def __init__(self, *args, **kwargs):
         self.commonDeb = None
         HTMLParser.__init__(self, *args, **kwargs)
@@ -273,30 +279,38 @@ class MyHTMLParser(HTMLParser):
                 if name == 'href' and value.endswith('_all.deb'):
                     self.commonDeb = value
 
+class HTMLParserS3Artifacts(HTMLParser):
+    def __init__(self, result, buildUrl, *args, **kwargs):
+        self.result = result
+        self.buildUrl = buildUrl
+        HTMLParser.__init__(self, *args, **kwargs)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for name, path in attrs:
+                if not(name == 'href' and path.startswith('download')):
+                    continue
+                if not('.changes' not in path and '-latest' not in path):
+                    continue
+                if '-assemblies' in path:
+                    self.result['deb_asm_url'] = self.buildUrl + '/s3/' + path
+                else:
+                    self.result['deb_bin_url'] = self.buildUrl + '/s3/' + path
+
 @defer.inlineCallbacks
 def _doFetchBuild(buildUrl, platform, logger):
     result = {}
 
     monoCommonRequest = yield _mkRequestMonoCommonSnapshot(logger)
-    parser = MyHTMLParser()
-    parser.feed(monoCommonRequest)
-    assert parser.commonDeb is not None, 'no common debian package found :-('
-    result['deb_common_url'] = monoCommonSnapshotsUrl + '/' + parser.commonDeb
+    parsermono = HTMLParserMonoCommon()
+    parsermono.feed(monoCommonRequest)
+    assert parsermono.commonDeb is not None, 'no common debian package found :-('
+    result['deb_common_url'] = monoCommonSnapshotsUrl + '/' + parsermono.commonDeb
 
-    request = yield _mkRequestJenkinsSingleBuild(buildUrl, logger)
-    buildJson = json.loads(request)
-    artifacts = buildJson['artifacts']
-    verify = 0
-    for a in artifacts:
-        relPath = a['relativePath']
-        if '.changes' not in relPath and '-latest' not in relPath:
-            if '-assemblies' in relPath:
-                result['deb_asm_url'] = buildUrl + '/artifact/' + relPath
-            else:
-                result['deb_bin_url'] = buildUrl + '/artifact/' + relPath
-            verify += 1
-
-    assert verify == 2, 'verify is: ' + str(verify) + ', but should be 2. result: ' + str(result)
+    s3artifacts = yield _mkRequestJenkinsSingleBuildS3(buildUrl, logger)
+    parsers3 = HTMLParserS3Artifacts(result, buildUrl)
+    parsers3.feed(s3artifacts)
+    assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
 
     # get git revision from jenkins
     requestAll = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform, logger)
@@ -329,7 +343,10 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def testFetchSingleJob():
-        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1352/', 'debian-amd64', None)
+        def _logger(msg):
+            print msg
+
+        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1392/', 'debian-amd64', _logger)
         for k, v in results.items():
             print "%s: %s" % (k, v)
 
