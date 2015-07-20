@@ -2,8 +2,13 @@
 
 set -e
 
-: ${EC2PBOTMASTERIP?"need to set master ip in EC2PBOTMASTERIP"}
-: ${BUILDBOTSLAVEPWD?"need to set slave password (configured in master instance) in BUILDBOTSLAVEPWD"}
+if [ $# -ne 2 ]; then
+    echo "./bootSlave.sh <masterhost> <slavepwd>"
+    exit 1
+fi
+
+EC2PBOTMASTERIP="$1"
+BUILDBOTSLAVEPWD="$2"
 
 for i in "/usr/bin/dpkg" "/bin/cp" "/bin/rm"; do
     sudo -n "$i" --help &> /dev/null || (echo "/etc/sudoers must have the following line:" && echo "`whoami` `hostname` = (root) NOPASSWD: $i" && exit 1)
