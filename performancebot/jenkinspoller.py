@@ -19,17 +19,18 @@ monoCommonSnapshotsUrl = 'http://jenkins.mono-project.com/repo/debian/pool/main/
 monoSourceTarballUrl = 'https://jenkins.mono-project.com/job/build-source-tarball-mono/'
 
 class MonoJenkinsPoller(base.PollingChangeSource):
-    compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'pollInterval']
+    compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'pollInterval', 'fakeRepoUrl']
     parent = None
     working = False
 
-    db_class_name = "MonoJenkinsPoller"
-
-    def __init__(self, url, platform, hostname, config_name, pollInterval=300):
+    def __init__(self, url, fakeRepoUrl, platform, hostname, config_name, pollInterval=300):
         self.url = url
+        self.fakeRepoUrl = fakeRepoUrl
         self.platform = platform
         self.hostname = hostname
         self.config_name = config_name
+        self.db_class_name = "MonoJenkinsPoller-%s-%s-%s" % (platform, hostname, config_name)
+
 
         base.PollingChangeSource.__init__(self, pollInterval = pollInterval, pollAtLaunch = True)
 
@@ -121,7 +122,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
                     category = None,
                     codebase = change['codebase'],
                     project = '',
-                    repository = self.url,
+                    repository = self.fakeRepoUrl,
                     src=u'jenkins')
             yield self._setCurrentRev(change['revision'], oid)
         if change_list:
@@ -204,7 +205,7 @@ def _getNewJenkinChanges(jenkinsBaseUrl, platform, hostname, config_name):
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
             'revision': buildDetailsJson['number'],
             'url': buildDetailsJson['url'],
-            'codebase': 'mono-jenkins',
+            'codebase': 'mono-jenkins-%s-%s-%s' % (platform, hostname, config_name),
             'when': buildDetailsJson['timestamp']
         })
 
@@ -220,7 +221,8 @@ propertyName_jenkinsBuildURL = 'jenkins-buildURL'
 propertyName_jenkinsGitCommit = 'jenkins-gitCommit'
 
 class BuildURLToPropertyStep(LoggingBuildStep):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, baseUrl, *args, **kwargs):
+        self.baseUrl = baseUrl
         LoggingBuildStep.__init__(self, name = "buildURL2prop", haltOnFailure = True, *args, **kwargs)
 
     def start(self):
@@ -228,8 +230,7 @@ class BuildURLToPropertyStep(LoggingBuildStep):
         platform = self.getProperty('platform')
         assert 'jenkins' in self.build.sources[0].repository, "unexpected repositories: " + reduce(lambda x,y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
         buildNr = self.build.sources[0].revision
-        repository = self.build.sources[0].repository
-        self.setProperty(propertyName_jenkinsBuildURL, repository + '/label=' + platform + '/' + buildNr + '/')
+        self.setProperty(propertyName_jenkinsBuildURL, self.baseUrl + '/label=' + platform + '/' + buildNr + '/')
         self.finished(SUCCESS)
 
 
