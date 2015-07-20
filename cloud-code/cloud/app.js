@@ -30,8 +30,8 @@ app.get('/hello', function(req, res) {
   res.render('hello', { message: 'Congrats, you just set up your app!' });
 });
 
-app.get ('/requestCredentials', function (req, res) {
-    var data = req.query;
+app.post ('/requestCredentials', function (req, res) {
+    var data = req.body;
 
     if (!(data && data.service && data.key && data.secret)) {
         res.render ('hello', { message: 'Must have service, key, and secret.' });
@@ -136,11 +136,12 @@ app.post ('/oauthFollowup', function (req, res) {
     });
 });
 
-app.get ('/getCredentials', function (req, res) {
-    var data = req.query;
+app.post ('/getCredentials', function (req, res) {
+    var data = req.body;
     var credentialsRequest;
     var credentialsResponse;
     var credentials;
+    var contentType;
 
     var requestQuery = new Parse.Query (CredentialsRequest);
     var responseQuery = new Parse.Query (CredentialsResponse);
@@ -170,11 +171,13 @@ app.get ('/getCredentials', function (req, res) {
         if (!credentialsResponse.get ('success'))
             return Parse.Promise.error ('Request not successful.');
 
-        credentials = 'Supersecret credentials';
+        var credentialsObject = { username: 'benchmarker', password: 'WhammyJammy' };
+        credentials = JSON.stringify (credentialsObject);
+        contentType = 'application/json';
 
         return destroyRequestAndResponse (credentialsRequest, credentialsResponse);
     }).then (function () {
-        res.type ('text/plain');
+        res.type (contentType);
         res.send (credentials);
     }, function (error) {
         res.render ('hello', { message: "Error: " + JSON.stringify (error) });
