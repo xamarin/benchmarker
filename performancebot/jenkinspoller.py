@@ -281,22 +281,24 @@ class HTMLParserMonoCommon(HTMLParser):
                     self.commonDeb = value
 
 class HTMLParserS3Artifacts(HTMLParser):
-    def __init__(self, result, buildUrl, *args, **kwargs):
+    def __init__(self, result, buildUrl, getPath, *args, **kwargs):
         self.result = result
         self.buildUrl = buildUrl
+        self.getPath = getPath
         HTMLParser.__init__(self, *args, **kwargs)
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'a':
-            for name, path in attrs:
-                if not(name == 'href' and path.startswith('download')):
-                    continue
-                if not('.changes' not in path and '-latest' not in path):
-                    continue
-                if '-assemblies' in path:
-                    self.result['deb_asm_url'] = self.buildUrl + '/s3/' + path
-                else:
-                    self.result['deb_bin_url'] = self.buildUrl + '/s3/' + path
+        if tag != 'a':
+            return
+
+        for name, path in attrs:
+            if name != 'href':
+                continue
+            if not path.startswith('download'):
+                continue
+            if '.changes' in path or '-latest' in path:
+                continue
+            self.getPath(self, path)
 
 @defer.inlineCallbacks
 def _doFetchBuild(buildUrl, platform, logger):
@@ -308,9 +310,23 @@ def _doFetchBuild(buildUrl, platform, logger):
     assert parsermono.commonDeb is not None, 'no common debian package found :-('
     result['deb_common_url'] = monoCommonSnapshotsUrl + '/' + parsermono.commonDeb
 
-    s3artifacts = yield _mkRequestJenkinsSingleBuildS3(buildUrl, logger)
-    parsers3 = HTMLParserS3Artifacts(result, buildUrl)
-    parsers3.feed(s3artifacts)
+    # get assemblies package always from debian-amd64 builder.
+    amd64BuildUrl = buildUrl.replace(platform, 'debian-amd64')
+    s3assembly = yield _mkRequestJenkinsSingleBuildS3(amd64BuildUrl, logger)
+    def _getAssemblies(s, path):
+        if '-assemblies' in path:
+            s.result['deb_asm_url'] = s.buildUrl + '/s3/' + path
+    parserassembly = HTMLParserS3Artifacts(result, amd64BuildUrl, _getAssemblies)
+    parserassembly.feed(s3assembly)
+
+    # get bin package from arch specific builder
+    s3bin = yield _mkRequestJenkinsSingleBuildS3(buildUrl, logger)
+    def _getBin(s, path):
+        if '-assemblies' not in path:
+            s.result['deb_bin_url'] = s.buildUrl + '/s3/' + path
+    parserassembly = HTMLParserS3Artifacts(result, buildUrl, _getBin)
+    parserassembly.feed(s3bin)
+
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
 
     # get git revision from jenkins
@@ -343,16 +359,34 @@ if __name__ == '__main__':
             print "stopping..."
 
     @defer.inlineCallbacks
-    def testFetchSingleJob():
+    def testFetchSingleJobDebianARM():
         def _logger(msg):
             print msg
 
-        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1392/', 'debian-amd64', _logger)
+        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
         for k, v in results.items():
             print "%s: %s" % (k, v)
 
     @defer.inlineCallbacks
-    def testGetChanges():
+    def testGetChangesDebianARM():
+        changeList = yield _getNewJenkinChanges(monoBaseUrl, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
+
+        print ""
+        print "URLs to process:"
+        for u in sorted(changeList):
+            print u
+
+    @defer.inlineCallbacks
+    def testFetchSingleJobDebianAMD64():
+        def _logger(msg):
+            print msg
+
+        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1403/', 'debian-amd64', _logger)
+        for k, v in results.items():
+            print "%s: %s" % (k, v)
+
+    @defer.inlineCallbacks
+    def testGetChangesDebianAMD64():
         changeList = yield _getNewJenkinChanges(monoBaseUrl, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
 
         print ""
@@ -362,8 +396,10 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def runTests():
-        t1 = yield testFetchSingleJob()
-        t2 = yield testGetChanges()
+        t2 = yield testGetChangesDebianARM()
+        t1 = yield testFetchSingleJobDebianARM()
+        t4 = yield testGetChangesDebianAMD64()
+        t3 = yield testFetchSingleJobDebianAMD64()
         stopMe()
 
     runTests()
