@@ -3,6 +3,7 @@ from buildbot.process.properties import Interpolate
 from buildbot.steps.shell import ShellCommand
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.transfer import FileDownload
+from buildbot.steps.source import git
 
 class DebianMonoBuildFactory(BuildFactory):
     def __init__(self, *args, **kwargs):
@@ -17,9 +18,9 @@ class DebianMonoBuildFactory(BuildFactory):
             Interpolate('pwd && ' +
             'mkdir -p %s && ' % self.masterWorkDir() +
             'cd %s && ' % self.masterWorkDir() +
-            'git clone --depth 1 -b feature-parse https://github.com/xamarin/benchmarker && ' +
+            'git clone --depth 1 -b master https://github.com/xamarin/benchmarker && ' +
             'cd benchmarker/tools && nuget restore tools.sln && xbuild && ' +
-            'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/ && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)')
+            'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)')
         ])
         self.addStep(s)
 
@@ -31,25 +32,24 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(ShellCommand(name = 'debug2', command = ['ls', '-lha', 'benchmarker'], workdir = '.'))
         self.addStep(MasterShellCommand(name = "cleanup", command = ['rm', '-rf', Interpolate(self.masterWorkDir())]))
 
-    # def cloneBenchmarker(self):
-    #     s = git.Git(
-    #         repourl = 'https://github.com/xamarin/benchmarker/',
-    #         workdir = 'benchmarker',
-    #         branch = 'feature-parse',
-    #         mode = 'full',
-    #         method = 'clobber',
-    #         shallow = True,
-    #         codebase = 'benchmarker',
-    #         haltOnFailure = True
-    #     )
-    #     self.addStep(s)
+    def cloneBenchmarker(self):
+        s = git.Git(
+            repourl = 'https://github.com/xamarin/benchmarker/',
+            workdir = 'benchmarker',
+            branch = 'master',
+            mode = 'incremental',
+            # shallow = True,
+            codebase = 'benchmarker',
+            haltOnFailure = True
+        )
+        self.addStep(s)
 
     def wipe(self):
         self.addStep(
             ShellCommand(
                 name = "wipe",
                 description = "wipe build dir",
-                command = ['bash', '-c', 'sudo /bin/rm -rf *'],
+                command = ['bash', '-c', 'sudo /bin/rm -rf build'],
                 workdir = '.',
                 alwaysRun = True
             )
