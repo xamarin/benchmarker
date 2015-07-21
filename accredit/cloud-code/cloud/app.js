@@ -30,9 +30,7 @@ app.get('/hello', function(req, res) {
   res.render('hello', { message: 'Congrats, you just set up your app!' });
 });
 
-app.post ('/requestCredentials', function (req, res) {
-    var data = req.body;
-
+var requestCredentialsHandler = function (data, res) {
     if (!(data && data.service && data.key && data.secret)) {
         res.render ('hello', { message: 'Must have service, key, and secret.' });
         return;
@@ -43,15 +41,21 @@ app.post ('/requestCredentials', function (req, res) {
         return;
     }
 
-    // FIXME: Ensure there's no entry with that key already.
+    // Ensure there's no entry with that key already.
+    var requestQuery = new Parse.Query (CredentialsRequest);
+    requestQuery.equalTo ('key', data.key);
 
-    var credentialsRequest = new CredentialsRequest ();
-    credentialsRequest.setACL (restrictedAcl);
-    credentialsRequest.set ('service', data.service);
-    credentialsRequest.set ('key', data.key);
-    credentialsRequest.set ('secret', data.secret);
+    requestQuery.find ({ useMasterKey: true }).then (function (results) {
+        if (results.length > 0)
+            return Parse.Promise.error ('Key already exists');
 
-    credentialsRequest.save (null, { useMasterKey: true }).then (function (obj) {
+        var credentialsRequest = new CredentialsRequest ();
+        credentialsRequest.setACL (restrictedAcl);
+        credentialsRequest.set ('service', data.service);
+        credentialsRequest.set ('key', data.key);
+        credentialsRequest.set ('secret', data.secret);
+        return credentialsRequest.save (null, { useMasterKey: true });
+    }).then (function (obj) {
         res.type ('text/plain');
         res.send (githubRedirectEndpoint + querystring.stringify ({
             client_id: githubClientId,
@@ -61,6 +65,17 @@ app.post ('/requestCredentials', function (req, res) {
     }, function (error) {
         res.render ('hello', { message: "Error: " + JSON.stringify (error) });
     });
+};
+
+// Only for debugging!
+/*
+app.get ('/requestCredentials', function (req, res) {
+    return requestCredentialsHandler (req.query, res);
+});
+*/
+
+app.post ('/requestCredentials', function (req, res) {
+    return requestCredentialsHandler (req.body, res);
 });
 
 app.get ('/oauthCallback', function (req, res) {
