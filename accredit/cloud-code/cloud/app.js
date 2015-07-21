@@ -201,6 +201,38 @@ app.post ('/getCredentials', function (req, res) {
     });
 });
 
+var cleanupCredentialsJob = function (params, status) {
+    console.log ("cleanup job: " + JSON.stringify (params));
+
+    var now = new Date ();
+    var before = new Date (now.getTime () - 5 * 60 * 1000);
+    var query;
+    if (params.table == 'request')
+         query = new Parse.Query (CredentialsRequest);
+     else
+         query = new Parse.Query (CredentialsResponse);
+    query.lessThan ("createdAt", before);
+
+    query.find ({ useMasterKey: true }).then (function (results) {
+        console.log ("found " + results.length + " old objects");
+        if (results.length > 0)
+            return Parse.Object.destroyAll (results, { useMasterKey: true });
+        return Parse.Promise.as ();
+    }).then (function () {
+        status.success ("Credentials cleaned up!");
+    }, function (error) {
+        status.error ("Error cleaning up credentials: " + JSON.stringify (error));
+    });
+};
+
+Parse.Cloud.job ("cleanupCredentialRequests", function (request, status) {
+    return cleanupCredentialsJob ({ table: 'request' }, status);
+});
+
+Parse.Cloud.job ("cleanupCredentialResponses", function (request, status) {
+    return cleanupCredentialsJob ({ table: 'response' }, status);
+});
+
 /**
  * This function is called when GitHub redirects the user back after
  *   authorization.  It calls back to GitHub to validate and exchange the code
