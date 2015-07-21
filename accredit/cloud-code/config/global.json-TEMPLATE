@@ -1,0 +1,14 @@
+{
+  "global": {
+    "parseVersion": "1.4.2"
+  },
+  "applications": {
+    "accredit": {
+      "applicationId": "<PARSE APP ID>",
+      "masterKey": "<PARSE MASTER KEY>"
+    },
+    "_default": {
+      "link": "accredit"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sample App</title>
+  </head>
+  <body>
+    <h1>Confirm</h1>
+    <p>Key <%= key %></p>
+    <form action="/oauthFollowup" method="POST">
+        <input type="hidden" name="code" value="<%= code %>"></input>
+        <input type="hidden" name="state" value="<%= state %>"></input>
+        <input type="submit" value="Yes!"></input>
+    </form>
+  </body>
+</html>
