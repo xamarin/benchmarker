@@ -27,3 +27,6 @@ results-test
 results.jon
 results.old
 results.pre-json
+
+accredit/cloud-code/cloud/credentials.js
+accredit/cloud-code/config/global.json

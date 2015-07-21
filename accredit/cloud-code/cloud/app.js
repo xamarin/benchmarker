@@ -2,15 +2,13 @@
 // These two lines are required to initialize Express in Cloud Code.
 var  express = require('express');
 var querystring = require('querystring');
+var credentials = require ('cloud/credentials');
 app = express();
 
 var githubRedirectEndpoint = 'https://github.com/login/oauth/authorize?';
 var githubValidateEndpoint = 'https://github.com/login/oauth/access_token';
 var githubUserEndpoint = 'https://api.github.com/user';
 var githubUserOrgsEndpoint = 'https://api.github.com/user/orgs';
-
-var githubClientId = '6f1489f7dfb98d5ae423';
-var githubClientSecret = 'bd100b747f6bfe0ca2005603ba3d189032d798d8';
 
 var CredentialsRequest = Parse.Object.extend ("CredentialsRequest");
 var CredentialsResponse = Parse.Object.extend ("CredentialsResponse");
@@ -58,7 +56,7 @@ var requestCredentialsHandler = function (data, res) {
     }).then (function (obj) {
         res.type ('text/plain');
         res.send (githubRedirectEndpoint + querystring.stringify ({
-            client_id: githubClientId,
+            client_id: credentials.githubClientId,
             state: obj.id,
             scope: 'read:org'
         }));
@@ -240,8 +238,8 @@ Parse.Cloud.job ("cleanupCredentialResponses", function (request, status) {
  */
 var getGitHubAccessToken = function(code) {
   var body = querystring.stringify({
-    client_id: githubClientId,
-    client_secret: githubClientSecret,
+    client_id: credentials.githubClientId,
+    client_secret: credentials.githubClientSecret,
     code: code
   });
   return Parse.Cloud.httpRequest({

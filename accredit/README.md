@@ -20,7 +20,7 @@ various services.
 To initiate a request for credentials, the client - the program,
 acting on the user's behalf - does a POST request to
 
-    https://benchmarker.parseapp.com/requestCredentials
+    https://accredit.parseapp.com/requestCredentials
 
 It provides three arguments:
 
@@ -30,7 +30,7 @@ It provides three arguments:
 
 The request will return a `text/plain` document containing the URL of
 a GitHub OAuth endpoint which the client then opens in the user's
-browser.  The user authorizes the "Xamarin Benchmarker" app on GitHub
+browser.  The user authorizes the "Xamarin Accredit" app on GitHub
 and is then redirected back to an Accredit URL that requires an
 additional confirmation from the user, asking them to make sure that
 this request is done on their behalf, and that the key matches the one
@@ -42,8 +42,8 @@ verifies that the user is trusted - because they belong to the
 `CredentialsResponse` table on Parse is generated:
 
     curl -X GET \
-            -H "X-Parse-Application-Id: 7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES" \
-            -H "X-Parse-REST-API-Key: xOHOwaDls0fcuMKLIH0nzaMKclLzCWllwClLej4d" \
+            -H "X-Parse-Application-Id: RAePvLdkN2IHQNZRckrVXzeshpFZTgYif8qu5zuh" \
+            -H "X-Parse-REST-API-Key: TCq5qEY6Crgr63SHHftQFqEO3PF9fHXdSX65MkLt" \
             -G \
             https://api.parse.com/1/classes/CredentialsResponse
     
@@ -63,7 +63,7 @@ The client queries this table for an entry with `key` being the key it
 generated, and once the entry is there and `success` is `true`, it
 does a POST request to
 
-    https://benchmarker.parseapp.com/getCredentials
+    https://accredit.parseapp.com/getCredentials
 
 with the arguments
 
@@ -92,3 +92,9 @@ click on the Accredit acknowledgment button it would be able to do a
 `requestCredentials` call first, then go through OAuth, automatically
 acknowledge, and then call `getCredentials` to acquire credentials
 illicitly.
+
+## Setup
+
+There are a few files in the repository named `xxx-TEMPLATE`.  Copy
+those files, removing the `-TEMPLATE` prefix, and insert the required
+application keys.
