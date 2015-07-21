@@ -32,6 +32,7 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(ShellCommand(name = 'unpack benchmarker', command = ['tar', 'xf', 'benchmarker.tar.gz'], workdir = '.'))
         self.addStep(ShellCommand(name = 'debug2', command = ['ls', '-lha', 'benchmarker'], workdir = '.'))
         self.addStep(MasterShellCommand(name = "cleanup", command = ['rm', '-rf', Interpolate(self.masterWorkDir())]))
+        self.addStep(FileDownload('parse.pw', 'parse.pw', workdir = 'benchmarker'))
 
     def cloneBenchmarker(self):
         s = git.Git(
