@@ -14,6 +14,17 @@ export var Machine = Parse.Object.extend ('Machine');
 export var Run = Parse.Object.extend ('Run');
 export var RunSet = Parse.Object.extend ('RunSet');
 
+export var xamarinColors = {
+	"blue": [ "#91E2F4", "#4FCAE6", "#1FAECE", "#3192B3", "#2C7797" ],
+	"teal": [ "#A3EBE1", "#7AD5C9", "#44B8A8", "#38A495", "#278E80" ],
+	"green": [ "#CFEFA7", "#B3E770", "#91CA47", "#6FA22E", "#5A8622" ],
+	"violet": [ "#CEC0EC", "#B5A1E0", "#9378CD", "#7E68C2", "#614CA0" ],
+	"red": [ "#F8C6BB", "#F69781", "#F56D4F", "#E2553D", "#BC3C26" ],
+	"amber": [ "#F7E28B", "#F9D33C", "#F1C40F", "#F0B240", "#E7963B" ],
+	"gray": [ "#ECF0F1", "#D1D9DD", "#ADB7BE", "#9AA4AB", "#76828A" ],
+	"asphalt": [ "#889DB5", "#66819E", "#365271", "#2B3E50", "#1C2B39" ]
+};
+
 export function start (started: () => void) {
 	google.load ('visualization', '1.0', {
 		packages: ['corechart'],
@@ -295,7 +306,7 @@ var timelineOptions = {
 						"balloonText": "[[lowName]]",
 						"bullet": "round",
 						"bulletAlpha": 0,
-						"lineColor": "#3498DB",
+						"lineColor": xamarinColors.blue [2],
 						"lineThickness": 0,
 						"id": "low",
 						"title": "low",
@@ -305,10 +316,10 @@ var timelineOptions = {
 						"balloonText": "[[highName]]",
 						"bullet": "round",
 						"bulletAlpha": 0,
-						"lineColor": "#3498DB",
+						"lineColor": xamarinColors.blue [2],
 						"fillAlphas": 0.13,
 						"fillToGraph": "low",
-						"fillColors": "#3498DB",
+						"fillColors": xamarinColors.blue [2],
 						"id": "high",
 						"lineThickness": 0,
 						"title": "high",
@@ -318,7 +329,8 @@ var timelineOptions = {
 						"balloonText": "[[tooltip]]",
 						"bullet": "round",
 						"bulletSize": 4,
-						"lineColor": "#3498DB",
+						"lineColor": xamarinColors.blue [2],
+						"lineColorField": "lineColor",
 						"id": "geomean",
 						"title": "geomean",
 						"valueField": "geomean"

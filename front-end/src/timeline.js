@@ -136,6 +136,17 @@ function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
 	return hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString + timedOutBenchmarks + crashedBenchmarks;
 }
 
+function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
+	var timedOutOrCrashedBenchmarks = runSet.get ('timedOutBenchmarks').concat (runSet.get ('crashedBenchmarks'));
+	for (var i = 0; i < timedOutOrCrashedBenchmarks.length; ++i) {
+		var benchmark = timedOutOrCrashedBenchmarks [i];
+		var name = controller.benchmarkNameForId (benchmark.id);
+		if (!(name in runSet.get ('elapsedTimeAverages')))
+			return true;
+	}
+	return false;
+}
+
 class Chart extends xp_common.GoogleChartsStateComponent {
 
 	sortedRunSets : Array<Parse.Object>;
@@ -257,13 +268,15 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 				++count;
 			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
+			var broken = runSetIsBroken (this.props.controller, runSets [j]);
 			table.push ({
 				low: min,
 				lowName: minName,
 				high: max,
 				highName: maxName,
 				geomean: Math.pow (prodForRunSet, 1.0 / count),
-				tooltip: tooltip
+				tooltip: tooltip,
+				lineColor: (broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2])
 			});
 		}
 
