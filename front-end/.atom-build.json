@@ -1,0 +1,12 @@
+{
+    "name": "make",
+    "cmd": "make",
+    "args": [ "-j8" ],
+    "targets": {
+        "flow": {
+            "cmd": "make",
+            "args": [ "flow" ],
+            "errorMatch": "^(?<file>[^.\\n]+\\.js):(?<line>\\d+):(?<col>\\d+)"
+        }
+    }
+}
