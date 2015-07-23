@@ -228,8 +228,14 @@ class BuildURLToPropertyStep(LoggingBuildStep):
     def start(self):
         # label=debian-amd64/1348/
         platform = self.getProperty('platform')
-        assert 'jenkins' in self.build.sources[0].repository, "unexpected repositories: " + reduce(lambda x,y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
-        buildNr = self.build.sources[0].revision
+        jenkinsSourceBase = None
+        for i in self.build.sources:
+            if 'jenkins' in i.repository:
+                assert jenkinsSourceBase is None
+                jenkinsSourceBase = i
+
+        assert jenkinsSourceBase is not None, "no jenkins source base found: " + reduce(lambda x,y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
+        buildNr = jenkinsSourceBase.revision
         self.setProperty(propertyName_jenkinsBuildURL, self.baseUrl + '/label=' + platform + '/' + buildNr + '/')
         self.finished(SUCCESS)
 
