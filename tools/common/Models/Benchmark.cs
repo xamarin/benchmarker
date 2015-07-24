@@ -16,6 +16,8 @@ namespace Benchmarker.Common.Models
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
 
+		ParseObject parseObject;
+
 		public Benchmark ()
 		{
 		}
@@ -73,7 +75,18 @@ namespace Benchmarker.Common.Models
 			return Name.GetHashCode ();
 		}
 
-		ParseObject parseObject;
+		public static async Task<Benchmark> FromId (string id)
+		{
+			var obj = await ParseObject.GetQuery ("Benchmark").GetAsync (id);
+			if (obj == null)
+				throw new Exception ("Could not fetch benchmark.");
+
+			var benchmark = new Benchmark {
+				Name = obj.Get<string> ("name")
+			};
+
+			return benchmark;
+		}
 
 		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{

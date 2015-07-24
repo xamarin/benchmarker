@@ -36,7 +36,7 @@ namespace DbTool
 			Console.WriteLine ("run set {0} has {1} runs {2} benchmarks", runSet.ObjectId, runs.Count (), benchmarkNames.Count ());
 			var averages = new Dictionary <string, double> ();
 			foreach (var name in benchmarkNames) {
-				var avg = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => (double)(long)r ["elapsedMilliseconds"]).Average ();
+				var avg = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => ParseInterface.NumberAsDouble (r ["elapsedMilliseconds"])).Average ();
 				Console.WriteLine ("benchmark {0} average {1}", name, avg);
 				averages [name] = avg;
 			}

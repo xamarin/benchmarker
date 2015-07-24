@@ -116,5 +116,14 @@ namespace Benchmarker.Common
 			obj.ACL = defaultACL;
 			return obj;
 		}
+
+		public static double NumberAsDouble (object o)
+		{
+			if (o.GetType () == typeof (long))
+				return (double)(long)o;
+			if (o.GetType () == typeof (double))
+				return (double)o;
+			throw new Exception ("Number is neither double nor long.");
+		}
 	}
 }

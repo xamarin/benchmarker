@@ -23,6 +23,7 @@ class Compare
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit          the hash of the commit being tested");
+		Console.Error.WriteLine ("        --run-set-id      The Parse ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url       the URL of the binary build");
 		Console.Error.WriteLine ("        --root            will be substituted for $ROOT in the config");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
@@ -38,6 +39,7 @@ class Compare
 		string commitFromCmdline = null;
 		string rootFromCmdline = null;
 		string buildURL = null;
+		string runSetId = null;
 
 		var optindex = 0;
 
@@ -57,6 +59,8 @@ class Compare
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
 				buildURL = args [++optindex];
+			} else if (args [optindex] == "--run-set-id") {
+				runSetId = args [++optindex];
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
@@ -100,12 +104,22 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		var runSet = new RunSet {
-			StartDateTime = DateTime.Now,
-			Config = config,
-			Commit = commit,
-			BuildURL = buildURL
-		};
+		RunSet runSet;
+		if (runSetId != null) {
+			runSet = AsyncContext.Run (() => RunSet.FromId (runSetId, config, commit, buildURL));
+			if (runSet == null) {
+				Console.WriteLine ("Error: Could not get run set.");
+				Environment.Exit (1);
+			}
+			// FIXME: check we're on the same machine
+		} else {
+			runSet = new RunSet {
+				StartDateTime = DateTime.Now,
+				Config = config,
+				Commit = commit,
+				BuildURL = buildURL
+			};
+		}
 
 		var someSuccess = false;
 

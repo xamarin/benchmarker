@@ -24,6 +24,12 @@ namespace Benchmarker.Common.Models
 		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
 		public string ResultsDirectory { get; set; }
 
+		public string MonoExecutable {
+			get {
+				return Path.GetFileName (Mono);
+			}
+		}
+
 		Dictionary<string, string> processedMonoEnvironmentVariables;
 
 		public Config ()
@@ -272,17 +278,26 @@ namespace Benchmarker.Common.Models
 			return true;
 		}
 
+		public bool EqualToParseObject (ParseObject o) {
+			if (Name != o.Get<string> ("name"))
+				return false;
+			if (MonoExecutable != o.Get<string> ("monoExecutable"))
+				return false;
+			if (!OptionsEqual (MonoOptions, o ["monoOptions"] as IEnumerable<object>))
+				return false;
+			if (!EnvironmentVariablesEqual (MonoEnvironmentVariables, o ["monoEnvironmentVariables"] as IDictionary<string, object>))
+				return false;
+			return true;
+		}
+
 		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
-			var executable = Path.GetFileName (Mono);
-
 			var results = await ParseObject.GetQuery ("Config")
 				.WhereEqualTo ("name", Name)
-				.WhereEqualTo ("monoExecutable", executable)
+				.WhereEqualTo ("monoExecutable", MonoExecutable)
 				.FindAsync ();
 			foreach (var o in results) {
-				if (OptionsEqual (MonoOptions, o ["monoOptions"] as IEnumerable<object>)
-				    && EnvironmentVariablesEqual (MonoEnvironmentVariables, o ["monoEnvironmentVariables"] as IDictionary<string, object>)) {
+				if (EqualToParseObject (o)) {
 					Console.WriteLine ("found config " + o.ObjectId);
 					return o;
 				}
@@ -292,7 +307,7 @@ namespace Benchmarker.Common.Models
 
 			var obj = ParseInterface.NewParseObject ("Config");
 			obj ["name"] = Name;
-			obj ["monoExecutable"] = executable;
+			obj ["monoExecutable"] = MonoExecutable;
 			obj ["monoOptions"] = MonoOptions;
 			obj ["monoEnvironmentVariables"] = MonoEnvironmentVariables;
 			saveList.Add (obj);
