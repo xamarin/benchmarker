@@ -23,7 +23,8 @@ class Compare
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit          the hash of the commit being tested");
-		Console.Error.WriteLine ("        --run-set-id      The Parse ID of the run set to amend");
+		Console.Error.WriteLine ("        --create-run-set  just create a run set, don't run any benchmarks");
+		Console.Error.WriteLine ("        --run-set-id      the Parse ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url       the URL of the binary build");
 		Console.Error.WriteLine ("        --root            will be substituted for $ROOT in the config");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
@@ -40,6 +41,7 @@ class Compare
 		string rootFromCmdline = null;
 		string buildURL = null;
 		string runSetId = null;
+		bool justCreateRunSet = false;
 
 		var optindex = 0;
 
@@ -59,6 +61,8 @@ class Compare
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
 				buildURL = args [++optindex];
+			} else if (args [optindex] == "--create-run-set") {
+				justCreateRunSet = true;
 			} else if (args [optindex] == "--run-set-id") {
 				runSetId = args [++optindex];
 			} else if (args [optindex] == "--root") {
@@ -79,6 +83,11 @@ class Compare
 			} else {
 				break;
 			}
+		}
+
+		if (justCreateRunSet && runSetId != null) {
+			Console.Error.WriteLine ("Error: --create-run-set and --run-set-id are incompatible.");
+			Environment.Exit (1);
 		}
 
 		if (args.Length - optindex != 4)
@@ -111,7 +120,6 @@ class Compare
 				Console.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
 			}
-			// FIXME: check we're on the same machine
 		} else {
 			runSet = new RunSet {
 				StartDateTime = DateTime.Now,
@@ -121,74 +129,77 @@ class Compare
 			};
 		}
 
-		var someSuccess = false;
+		if (!justCreateRunSet) {
+			var someSuccess = false;
 
-		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarkNames);
-		if (benchmarks == null) {
-			Console.WriteLine ("Error: Could not load all benchmarks.");
-			Environment.Exit (1);
-		}
-
-		foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
-			/* Run the benchmarks */
-			if (config.Count <= 0)
-				throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
-
-			Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
-
-			var runner = new Runner (testsdir, config, benchmark, machine, timeout);
-
-			var result = new Result {
-				DateTime = DateTime.Now,
-				Benchmark = benchmark,
-				Config = config,
-			};
-
-			var haveTimedOut = false;
-			var haveCrashed = false;
-
-			for (var i = 0; i < config.Count + 1; ++i) {
-				bool timedOut;
-
-				Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
-
-				var run = runner.Run (out timedOut);
-
-				// skip first one
-				if (i == 0)
-					continue;
-
-				if (run != null) {
-					result.Runs.Add (run);
-					someSuccess = true;
-				} else {
-					if (timedOut)
-						haveTimedOut = true;
-					else
-						haveCrashed = true;
-				}
+			var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarkNames);
+			if (benchmarks == null) {
+				Console.WriteLine ("Error: Could not load all benchmarks.");
+				Environment.Exit (1);
 			}
 
-			if (haveTimedOut)
-				runSet.TimedOutBenchmarks.Add (benchmark);
-			if (haveCrashed)
-				runSet.CrashedBenchmarks.Add (benchmark);
+			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
+				/* Run the benchmarks */
+				if (config.Count <= 0)
+					throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
 
-			// FIXME: implement pausetime
-			//if (pausetime)
-			//	throw new NotImplementedException ();
+				Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-			runSet.Results.Add (result);
+				var runner = new Runner (testsdir, config, benchmark, machine, timeout);
+
+				var result = new Result {
+					DateTime = DateTime.Now,
+					Benchmark = benchmark,
+					Config = config,
+				};
+
+				var haveTimedOut = false;
+				var haveCrashed = false;
+
+				for (var i = 0; i < config.Count + 1; ++i) {
+					bool timedOut;
+
+					Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
+
+					var run = runner.Run (out timedOut);
+
+					// skip first one
+					if (i == 0)
+						continue;
+
+					if (run != null) {
+						result.Runs.Add (run);
+						someSuccess = true;
+					} else {
+						if (timedOut)
+							haveTimedOut = true;
+						else
+							haveCrashed = true;
+					}
+				}
+
+				if (haveTimedOut)
+					runSet.TimedOutBenchmarks.Add (benchmark);
+				if (haveCrashed)
+					runSet.CrashedBenchmarks.Add (benchmark);
+
+				// FIXME: implement pausetime
+				//if (pausetime)
+				//	throw new NotImplementedException ();
+
+				runSet.Results.Add (result);
+			}
+
+			if (!someSuccess)
+				Console.WriteLine ("all runs failed.");
 		}
-
+		
 		runSet.FinishDateTime = DateTime.Now;
-
-		if (!someSuccess)
-			Console.WriteLine ("all runs failed.");
 
 		Console.WriteLine ("uploading");
 		try {
-			AsyncContext.Run (() => runSet.UploadToParse ());
+			var parseObject = AsyncContext.Run (() => runSet.UploadToParse ());
+			Console.WriteLine ("{{ \"runSetId\": \"{0}\" }}", parseObject.ObjectId);
 		} catch (Exception exc) {
 			Console.WriteLine ("Error: Failure uploading data: " + exc);
 			Environment.Exit (1);

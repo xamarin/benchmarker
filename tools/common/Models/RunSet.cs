@@ -147,8 +147,9 @@ namespace Benchmarker.Common.Models
 				obj ["commit"] = commit;
 				obj ["buildURL"] = BuildURL;
 				obj ["startedAt"] = StartDateTime;
-				obj ["finishedAt"] = FinishDateTime;
 			}
+
+			obj ["finishedAt"] = FinishDateTime;
 
 			obj ["failed"] = averages.Count == 0;
 			obj ["elapsedTimeAverages"] = averages;
