@@ -59,6 +59,7 @@ namespace Benchmarker.Common.Models
 			var obj = ParseInterface.NewParseObject ("Machine");
 			obj ["name"] = hostname;
 			obj ["architecture"] = arch;
+			obj ["isDedicated"] = false;
 			saveList.Add (obj);
 			return obj;
 		}
@@ -120,6 +121,8 @@ namespace Benchmarker.Common.Models
 
 		public async Task<ParseObject> UploadToParse ()
 		{
+			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
+
 			Dictionary<string, double> averages = new Dictionary<string, double> ();
 
 			if (parseObject != null) {
