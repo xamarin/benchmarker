@@ -148,7 +148,9 @@ class Compare
 			}
 
 			if (justListBenchmarks) {
-				Console.Out.WriteLine ("Available benchmarks: " + string.Join (",", benchmarks.OrderBy (b => b.Name).Select (b => b.Name)));
+				foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
+					Console.Out.WriteLine (benchmark.Name);
+				}
 				Environment.Exit (0);
 			}
 
