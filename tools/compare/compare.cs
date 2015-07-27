@@ -21,6 +21,7 @@ class Compare
 		Console.Error.WriteLine ("        --help            display this help");
 		Console.Error.WriteLine ("    -b, --benchmarks      benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                             ex: -b ahcbench,db,message,raytracer2");
+		Console.Error.WriteLine ("    -l, --list-benchmarks list all available benchmarks");
 		Console.Error.WriteLine ("    -t, --timeout         execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit          the hash of the commit being tested");
 		Console.Error.WriteLine ("        --create-run-set  just create a run set, don't run any benchmarks");
@@ -42,6 +43,7 @@ class Compare
 		string buildURL = null;
 		string runSetId = null;
 		bool justCreateRunSet = false;
+		bool justListBenchmarks = false;
 
 		var optindex = 0;
 
@@ -57,6 +59,8 @@ class Compare
 					benchmarkNames = newNames.ToArray ();
 				else
 					benchmarkNames = newNames.Union (benchmarkNames).ToArray ();
+			} else if (args [optindex] == "-l" || args [optindex] == "--list-benchmarks") {
+				justListBenchmarks = true;
 			} else if (args [optindex] == "--commit") {
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
@@ -87,6 +91,11 @@ class Compare
 
 		if (justCreateRunSet && runSetId != null) {
 			Console.Error.WriteLine ("Error: --create-run-set and --run-set-id are incompatible.");
+			Environment.Exit (1);
+		}
+
+		if (justListBenchmarks && benchmarkNames != null) {
+			Console.Error.WriteLine ("Error: -b/--benchmarks and -l/--list-benchmarks are incompatible.");
 			Environment.Exit (1);
 		}
 
@@ -136,6 +145,13 @@ class Compare
 			if (benchmarks == null) {
 				Console.WriteLine ("Error: Could not load all benchmarks.");
 				Environment.Exit (1);
+			}
+
+			if (justListBenchmarks) {
+				foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
+					Console.Out.WriteLine (benchmark.Name);
+				}
+				Environment.Exit (0);
 			}
 
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {

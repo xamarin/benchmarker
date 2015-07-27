@@ -42,10 +42,10 @@
       <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
     </Reference>
     <Reference Include="Parse.NetFx45">
-      <HintPath>..\packages\parse.1.5.2\lib\net45\Parse.NetFx45.dll</HintPath>
+      <HintPath>..\packages\parse.1.5.0\lib\net45\Parse.NetFx45.dll</HintPath>
     </Reference>
     <Reference Include="Parse">
-      <HintPath>..\packages\parse.1.5.2\lib\net45\Parse.dll</HintPath>
+      <HintPath>..\packages\parse.1.5.0\lib\net45\Parse.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
