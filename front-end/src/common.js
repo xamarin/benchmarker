@@ -1,6 +1,7 @@
 /* @flow */
 
 /* global google */
+/* global AmCharts */
 
 "use strict";
 
@@ -43,7 +44,7 @@ export class Controller {
 	allRunSets: Array<Parse.Object>;
 	allConfigs: Array<Parse.Object>;
 
-	constructor () {
+	loadAsync () {
 
 		pageParseQuery (() => new Parse.Query ((Machine : Parse.Object)),
 			this.machinesLoaded.bind (this),
@@ -211,7 +212,7 @@ export class GoogleChart extends React.Component<GoogleChartProps, GoogleChartPr
 	}
 }
 
-export class GoogleChartsStateComponent<P,S> extends React.Component<P,P,S> {
+export class GoogleChartsStateComponent<P, S> extends React.Component<P, P, S> {
 	componentWillMount () {
 		if (googleChartsStateComponents === undefined)
 			return;
@@ -246,12 +247,12 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	}
 
 	componentDidMount () {
-		console.log ("mounting chart")
+		console.log ("mounting chart");
 		this.drawChart (this.props);
 	}
 
 	componentWillUnmount () {
-		console.log ("unmounting chart")
+		console.log ("unmounting chart");
 		this.chart.clear ();
 	}
 
@@ -276,7 +277,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 		console.log ("drawing");
 		if (this.chart === undefined) {
 			var options = {};
-			Object.keys (props.options).forEach (k => { options [k] = props.options [k] });
+			Object.keys (props.options).forEach (k => { options [k] = props.options [k]; });
 			options.dataProvider = props.data;
 			this.chart = AmCharts.makeChart (props.graphName, options);
 			if (this.props.selectListener !== undefined)
@@ -511,13 +512,7 @@ export class MachineDescription extends React.Component {
 export class CombinedConfigSelector extends React.Component {
 	render () : Object {
 		function idsToString (ids: [string, string]) : string {
-			var machineId = ids [0];
-			var configId = ids [1];
-			/*
-			if (machineId === undefined || configId === undefined)
-				return undefined;
-				*/
-			return machineId + "+" + configId;
+			return ids [0] + "+" + ids [1];
 		}
 
 		var combinations = this.props.controller.allRunSets.map (rs => [rs.get ('machine').id, rs.get ('config').id]);
@@ -578,12 +573,8 @@ export class RunSetSelector extends React.Component {
 		var selection = this.props.selection;
 		console.log (selection);
 
-		var machineId = undefined;
 		var runSetId = undefined;
 		var filteredRunSets = undefined;
-
-		if (selection.machine !== undefined)
-			machineId = selection.machine.id;
 
 		if (selection.runSet !== undefined)
 			runSetId = selection.runSet.id;
@@ -768,7 +759,7 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 			commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
 		}
 
-		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length == 0)
+		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
 			return;
 
 		commonBenchmarkIds = xp_utils.sortArrayBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id) || "");

@@ -37,6 +37,7 @@ function started () {
 	if (window.location.hash)
 		configId = window.location.hash.substring (1);
 	var controller = new Controller (configId);
+	controller.loadAsync ();
 }
 
 xp_common.start (started);

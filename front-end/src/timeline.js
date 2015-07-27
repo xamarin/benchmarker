@@ -1,7 +1,5 @@
 /* @flow */
 
-/* global google */
-
 "use strict";
 
 import * as xp_common from './common.js';
@@ -296,6 +294,7 @@ function started () {
 		}
 	}
 	var controller = new Controller (machineId, configId);
+	controller.loadAsync ();
 }
 
 xp_common.start (started);

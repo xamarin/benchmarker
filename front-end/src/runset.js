@@ -1,7 +1,5 @@
 /* @flow */
 
-/* global google */
-
 "use strict";
 
 import * as xp_utils from './utils.js';
@@ -99,7 +97,7 @@ class RunSetDescription extends React.Component {
 				return query;
 			},
 			results => {
-				if (runSet != this.props.runSet)
+				if (runSet !== this.props.runSet)
 					return;
 				this.setState ({runs: results});
 			},
@@ -143,7 +141,8 @@ class RunSetDescription extends React.Component {
 					var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
 					elapsed.sort ();
 					var elapsedString = elapsed.join (", ");
-					return <tr><td>{name}</td><td>{elapsedString}</td></tr>})}
+					return <tr><td>{name}</td><td>{elapsedString}</td></tr>;
+				})}
 			</table>;
 		}
 
@@ -167,6 +166,7 @@ function started () {
 	if (window.location.hash)
 		startupRunSetId = window.location.hash.substring (1);
 	var controller = new Controller (startupRunSetId);
+	controller.loadAsync ();
 }
 
 xp_common.start (started);

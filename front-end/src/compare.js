@@ -1,12 +1,9 @@
 /* @flow */
 
-/* global google */
-
 "use strict";
 
 import * as xp_utils from './utils.js';
 import * as xp_common from './common.js';
-import {Parse} from 'parse';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
@@ -122,6 +119,7 @@ function started () {
 	if (window.location.hash)
 		startupRunSetIds = window.location.hash.substring (1).split ('+');
 	var controller = new Controller (startupRunSetIds);
+	controller.loadAsync ();
 }
 
 xp_common.start (started);

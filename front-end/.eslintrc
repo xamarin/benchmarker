@@ -5,7 +5,11 @@
     // I write for browser
     "browser": true,
     // in CommonJS
-//    "node": true
+    "node": true
+  },
+  "plugins": ["react"],
+  "ecmaFeatures": {
+      "jsx": true
   },
   // To give you an idea how to override rule options:
   "rules": {
@@ -19,6 +23,8 @@
     "comma-dangle": [0],
     "no-loop-func": [0],
     "camelcase": [0],
+    "no-unused-vars": [2, {"args": "none"}],
+    "no-undef-init": [0],
     "global-strict": [0]
 //    "eol-last": [0],
 //    "no-mixed-requires": [0],
