@@ -135,7 +135,9 @@ function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
 }
 
 function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
-	var timedOutOrCrashedBenchmarks = runSet.get ('timedOutBenchmarks').concat (runSet.get ('crashedBenchmarks'));
+	var timedOutBenchmarks = runSet.get ('timedOutBenchmarks') || [];
+	var crashedBenchmarks = runSet.get ('crashedBenchmarks') || [];
+	var timedOutOrCrashedBenchmarks = timedOutBenchmarks.concat (crashedBenchmarks);
 	for (var i = 0; i < timedOutOrCrashedBenchmarks.length; ++i) {
 		var benchmark = timedOutOrCrashedBenchmarks [i];
 		var name = controller.benchmarkNameForId (benchmark.id);
