@@ -47,11 +47,6 @@ class Compare
 
 		var optindex = 0;
 
-		if (!ParseInterface.Initialize ()) {
-			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
-			Environment.Exit (1);
-		}
-
 		for (; optindex < args.Length; ++optindex) {
 			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
 				var newNames = args [++optindex].Split (',').Select (s => s.Trim ());
@@ -107,6 +102,24 @@ class Compare
 		var machinesdir = args [optindex++];
 		var configfile = args [optindex++];
 
+		var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarkNames);
+		if (benchmarks == null) {
+			Console.WriteLine ("Error: Could not load all benchmarks.");
+			Environment.Exit (1);
+		}
+
+		if (justListBenchmarks) {
+			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
+				Console.Out.WriteLine (benchmark.Name);
+			}
+			Environment.Exit (0);
+		}
+
+		if (!ParseInterface.Initialize ()) {
+			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
+			Environment.Exit (1);
+		}
+
 		var config = Config.LoadFrom (configfile, rootFromCmdline);
 
 		var machine = Machine.LoadCurrentFrom (machinesdir);
@@ -140,19 +153,6 @@ class Compare
 
 		if (!justCreateRunSet) {
 			var someSuccess = false;
-
-			var benchmarks = Benchmark.LoadAllFrom (benchmarksdir, benchmarkNames);
-			if (benchmarks == null) {
-				Console.WriteLine ("Error: Could not load all benchmarks.");
-				Environment.Exit (1);
-			}
-
-			if (justListBenchmarks) {
-				foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
-					Console.Out.WriteLine (benchmark.Name);
-				}
-				Environment.Exit (0);
-			}
 
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
 				/* Run the benchmarks */
