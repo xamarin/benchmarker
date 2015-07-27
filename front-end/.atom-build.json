@@ -7,6 +7,11 @@
             "cmd": "make",
             "args": [ "flow" ],
             "errorMatch": "^(?<file>[^.\\n]+\\.js):(?<line>\\d+):(?<col>\\d+)"
+        },
+        "lint": {
+            "cmd": "make",
+            "args": [ "lint" ],
+            "errorMatch": "^(?<file>[^:\\n]+): line (?<line>\\d+), col (?<col>\\d+), "
         }
     }
 }

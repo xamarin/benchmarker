@@ -20,7 +20,7 @@ all : $(PAGE_TARGETS) $(STYLE_TARGETS)
 .PHONY : lint
 lint :
 	@echo 'Linting...'
-	@eslint src
+	@eslint -f compact src
 
 .PHONY : clean
 clean :
