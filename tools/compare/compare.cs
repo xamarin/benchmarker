@@ -43,7 +43,7 @@ class Compare
 		string buildURL = null;
 		string runSetId = null;
 		bool justCreateRunSet = false;
-		bool justListBenchmarks = true;
+		bool justListBenchmarks = false;
 
 		var optindex = 0;
 
