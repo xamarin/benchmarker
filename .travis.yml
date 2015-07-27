@@ -1,2 +1,8 @@
 language: csharp
+before_script:
+    - npm i -g eslint
+    - npm i -g babel-eslint
+    - npm i -g eslint-plugin-react
+    - make -C front-end
+    - make -C front-end lint
 solution: tools/tools.sln
