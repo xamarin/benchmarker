@@ -9,7 +9,9 @@ from buildbot.process.buildstep import BuildStep, LoggingBuildStep
 from buildbot.changes import base
 from buildbot.util import epoch2datetime
 
+#pylint: disable=F0401
 import credentials
+#pylint: enable=F0401
 import json
 import re
 import urllib
