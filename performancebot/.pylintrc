@@ -9,10 +9,8 @@
 #   W0613 = Unused argument
 #   W0232 = Class has no __init__ method
 #   R0903 = Too few public methods
-#   C0301 = Line too long
 #   R0913 = Too many arguments
 #   C0103 = Invalid name
-#   R0914 = Too many local variables
 
 # PyLint's module importation is unreliable
 #   F0401 = Unable to import module
@@ -21,8 +19,11 @@
 # Already an error when wildcard imports are used
 #   W0614 = Unused import from wildcard
 
-# Sometimes disabled depending on how bad a module is
-#   C0111 = Missing docstring
 
+# C0301 = Line too long
+# C0111 = Missing docstring
+# W0110: map/filter on lambda could be replaced by comprehension
+# W0141: Used builtin function %r
+# R0914 = Too many local variables
 # Disable the message(s) with the given id(s).
-disable=C0301
+disable=C0301,C0111,W0110,W0141,R0914

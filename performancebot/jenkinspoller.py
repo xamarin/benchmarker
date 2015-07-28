@@ -217,8 +217,8 @@ def ppJson(j):
     print(json.dumps(j, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
-propertyName_jenkinsBuildURL = 'jenkins-buildURL'
-propertyName_jenkinsGitCommit = 'jenkins-gitCommit'
+PROPERTYNAME_JENKINSBUILDURL = 'jenkins-buildURL'
+PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 
 class BuildURLToPropertyStep(LoggingBuildStep):
     def __init__(self, baseUrl, *args, **kwargs):
@@ -236,7 +236,7 @@ class BuildURLToPropertyStep(LoggingBuildStep):
 
         assert jenkinsSourceBase is not None, "no jenkins source base found: " + reduce(lambda x,y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
         buildNr = jenkinsSourceBase.revision
-        self.setProperty(propertyName_jenkinsBuildURL, self.baseUrl + '/label=' + platform + '/' + buildNr + '/')
+        self.setProperty(PROPERTYNAME_JENKINSBUILDURL, self.baseUrl + '/label=' + platform + '/' + buildNr + '/')
         self.finished(SUCCESS)
 
 
@@ -264,7 +264,7 @@ class FetchJenkinsBuildDetails(BuildStep):
 
     @defer.inlineCallbacks
     def doRequest(self):
-        buildUrl = self.getProperty(propertyName_jenkinsBuildURL)
+        buildUrl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
         platform = self.getProperty('platform')
         assert buildUrl is not None, "property should be there! :-("
         log.msg("before fetching meta data")
@@ -352,7 +352,7 @@ def _doFetchBuild(buildUrl, platform, logger):
                 assert m is not None
                 gitrev = m.group('gitrev')
     assert gitrev is not None, "parsing gitrev failed"
-    result[propertyName_jenkinsGitCommit] = gitrev
+    result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
 
     defer.returnValue(result)
 

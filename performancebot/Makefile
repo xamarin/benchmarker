@@ -8,7 +8,7 @@ DEBUGSHELL:=-x
 
 PBOTMASTERROOT:=/ebs/pbot-master/performancebot
 REMOTEHOST=ubuntu@$(EC2PBOTMASTERIP)
-PYTHONFILES:=master.cfg credentials.py jenkinspoller.py monofactory.py monosteps.py slack.py
+PYTHONFILES:=master.cfg jenkinspoller.py monofactory.py monosteps.py slack.py
 
 # check that there is only a given number of docker containers are running, that ensures we're interacting with the correct one.
 CONTAINERCHECK=check() { test `ssh $(REMOTEHOST) "docker ps -q | wc -l"` -eq $$1 || (echo "more than $$1 container is running on the ec2 instance"; exit 1) }; check
@@ -42,7 +42,7 @@ ec2-follow-log:
 	ssh $(REMOTEHOST) 'tail -f $(PBOTMASTERROOT)/twistd.log'
 
 # deploy buildbot configuration from this working directory and reconfig buildbot instance; if reconfig fails, the old configuration is restored
-ec2-deploy: $(PYTHONFILES) forcec0state.sh parse.pw public_html templates
+ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh parse.pw public_html templates
 	@$(CONTAINERCHECK) 1
 	ssh $(REMOTEHOST) 'mkdir -p /ebs/tmp'
 	scp -r $^ $(REMOTEHOST):/ebs/tmp/
