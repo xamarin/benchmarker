@@ -5,40 +5,40 @@ from buildbot.status.builder import SUCCESS
 from twisted.python import log
 
 class ParsingShellCommand(ShellCommand):
-    def __init__(self, parseRules={}, maxTime = 3 * 3600, *args, **kwargs):
-        self.parseRules = parseRules
-        for k, v in parseRules.items():
-            assert '<' + k + '>' in v.pattern
+    def __init__(self, parse_rules=None, *args, **kwargs):
+        self.parse_rules = parse_rules if parse_rules is not None else {}
+        for prop_name, regex in self.parse_rules.items():
+            assert '<' + prop_name + '>' in regex.pattern
 
-        ShellCommand.__init__(self, flunkOnFailure = True, maxTime = maxTime, *args, **kwargs)
+        ShellCommand.__init__(self, flunkOnFailure=True, *args, **kwargs)
 
     def evaluateCommand(self, cmd):
         result = ShellCommand.evaluateCommand(self, cmd)
-        self._parseResult(cmd, result)
+        self._parse_result(cmd, result)
         return result
 
-    def _parseResult(self, cmd, result):
-        for propertyName, regex in self.parseRules.items():
+    def _parse_result(self, cmd, _):
+        for prop_name, regex in self.parse_rules.items():
             results = []
-            for logText in cmd.logs.values():
-                for match in regex.finditer(logText.getText()):
-                    v = match.group(propertyName)
-                    log.msg("found " + str(propertyName) + ": " + str(v))
-                    results.append(v)
-            existingValue = self.getProperty(propertyName)
-            assert existingValue is None, 'property has already value: ' + str(existingValue) + ', trying to replace it with: ' + str(results)
+            for log_text in cmd.logs.values():
+                for match in regex.finditer(log_text.getText()):
+                    value = match.group(prop_name)
+                    log.msg("found " + str(prop_name) + ": " + str(value))
+                    results.append(value)
+            existing_value = self.getProperty(prop_name)
+            assert existing_value is None, 'property has already value: ' + str(existing_value) + ', trying to replace it with: ' + str(results)
             assert len(results) == 1, 'more than one match: ' + str(results)
-            log.msg("ParsingShellCommand: " + propertyName + " <= " + str(results[0]))
-            self.setProperty(propertyName, results[0], 'ParsingShellCommand')
+            log.msg("ParsingShellCommand: " + prop_name + " <= " + str(results[0]))
+            self.setProperty(prop_name, results[0], 'ParsingShellCommand')
 
 
 class PutPropertiesStep(LoggingBuildStep):
     def __init__(self, properties, *args, **kwargs):
         self.properties = properties
-        LoggingBuildStep.__init__(self, name = 'putproperties', *args, **kwargs)
+        LoggingBuildStep.__init__(self, name='putproperties', *args, **kwargs)
 
     def start(self):
-        for k, v in self.properties.items():
-            self.setProperty(k, v)
+        for prop_name, value in self.properties.items():
+            self.setProperty(prop_name, value)
         self.finished(SUCCESS)
 
