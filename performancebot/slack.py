@@ -2,7 +2,7 @@ import json
 import requests
 
 from buildbot.status.base import StatusReceiverMultiService
-from buildbot.status.builder import Results, SUCCESS
+from buildbot.status.builder import Results, SUCCESS, EXCEPTION, RETRY
 
 
 class StatusPush(StatusReceiverMultiService):
@@ -44,8 +44,13 @@ class StatusPush(StatusReceiverMultiService):
             payload['username'] = self.username
         if self.channel:
             payload['channel'] = self.channel
+
         if result == SUCCESS:
-            payload['icon_emoji'] = ':sunglasses:'
+            payload['icon_emoji'] = ':doge:'
+        elif result == EXCEPTION:
+            payload['icon_emoji'] = ':collision:'
+        elif result == RETRY:
+            payload['icon_emoji'] = ':feet:'
         else:
             payload['icon_emoji'] = ':skull:'
 
