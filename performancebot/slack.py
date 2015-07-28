@@ -7,18 +7,18 @@ from buildbot.status.builder import Results, SUCCESS, EXCEPTION, RETRY
 
 class StatusPush(StatusReceiverMultiService):
 
-    def __init__(self, url, username=None, channel=None, localhost_replace=False, **kwargs):
-        StatusReceiverMultiService.__init__(self)
+    def __init__(self, url, username=None, channel=None, localhost_replace=False, *args, **kwargs):
         self.url = url
         self.username = username
         self.channel = channel
         self.localhost_replace = localhost_replace
+        self.master_status = None
+        StatusReceiverMultiService.__init__(self, *args, **kwargs)
 
     def setServiceParent(self, parent):
         StatusReceiverMultiService.setServiceParent(self, parent)
         self.master_status = self.parent
         self.master_status.subscribe(self)
-        self.master = self.master_status.master
 
     def disownServiceParent(self):
         self.master_status.unsubscribe(self)
@@ -27,11 +27,15 @@ class StatusPush(StatusReceiverMultiService):
         #     w.unsubscribe(self)
         return StatusReceiverMultiService.disownServiceParent(self)
 
+    #pylint: disable=W0613
     def builderAdded(self, name, builder):
         return self  # subscribe to this builder
+    #pylint: enable=W0613
 
     def buildFinished(self, builderName, build, result):
+        #pylint: disable=E1101
         url = self.master_status.getURLForThing(build)
+        #pylint: enable=E1101
         if self.localhost_replace:
             url = url.replace("//localhost:8010", "//%s" % self.localhost_replace)
 
