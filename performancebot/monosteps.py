@@ -7,6 +7,9 @@ from twisted.python import log
 class ParsingShellCommand(ShellCommand):
     def __init__(self, parseRules={}, maxTime = 3 * 3600, *args, **kwargs):
         self.parseRules = parseRules
+        for k, v in parseRules.items():
+            assert '<' + k + '>' in v.pattern
+
         ShellCommand.__init__(self, flunkOnFailure = True, maxTime = maxTime, *args, **kwargs)
 
     def evaluateCommand(self, cmd):
@@ -19,7 +22,9 @@ class ParsingShellCommand(ShellCommand):
             results = []
             for logText in cmd.logs.values():
                 for match in regex.finditer(logText.getText()):
-                    results.append(match.group(0))
+                    v = match.group(propertyName)
+                    log.msg("found " + str(propertyName) + ": " + str(v))
+                    results.append(v)
             existingValue = self.getProperty(propertyName)
             assert existingValue is None, 'property has already value: ' + str(existingValue) + ', trying to replace it with: ' + str(results)
             assert len(results) == 1, 'more than one match: ' + str(results)
