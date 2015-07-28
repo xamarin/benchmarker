@@ -23,8 +23,8 @@ class StatusPush(StatusReceiverMultiService):
     def disownServiceParent(self):
         self.master_status.unsubscribe(self)
         self.master_status = None
-        for w in self.watched:
-            w.unsubscribe(self)
+        # for w in self.watched:
+        #     w.unsubscribe(self)
         return StatusReceiverMultiService.disownServiceParent(self)
 
     def builderAdded(self, name, builder):
