@@ -14,40 +14,39 @@ import json
 import re
 import urllib
 
-monoBaseUrl = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono'
-monoCommonSnapshotsUrl = 'http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/'
-monoSourceTarballUrl = 'https://jenkins.mono-project.com/job/build-source-tarball-mono/'
+MONOBASEURL = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono'
+MONOCOMMONSNAPSHOTSURL = 'http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/'
+MONOSOURCETARBALLURL = 'https://jenkins.mono-project.com/job/build-source-tarball-mono/'
 
 class MonoJenkinsPoller(base.PollingChangeSource):
-    compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'pollInterval', 'fakeRepoUrl']
+    compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'fake_repo_url']
     parent = None
     working = False
 
-    def __init__(self, url, fakeRepoUrl, platform, hostname, config_name, pollInterval=300):
+    def __init__(self, url, fake_repo_url, platform, hostname, config_name, *args, **kwargs):
         self.url = url
-        self.fakeRepoUrl = fakeRepoUrl
+        self.fake_repo_url = fake_repo_url
         self.platform = platform
         self.hostname = hostname
         self.config_name = config_name
         self.db_class_name = "MonoJenkinsPoller-%s-%s-%s" % (platform, hostname, config_name)
 
-
-        base.PollingChangeSource.__init__(self, pollInterval = pollInterval, pollAtLaunch = True)
+        base.PollingChangeSource.__init__(self, pollAtLaunch=True, *args, **kwargs)
 
         self.branch = None
 
     def describe(self):
-        return ("Getting changes from MonoJenkins %s" % str(self.url))
+        return "Getting changes from MonoJenkins %s" % str(self.url)
 
     def poll(self):
         if self.working:
             log.msg("Not polling because last poll is still working")
         else:
             self.working = True
-            d = _getNewJenkinChanges(self.url, self.platform, self.hostname, self.config_name)
-            d.addCallback(self._process_changes)
-            d.addCallbacks(self._finished_ok, self._finished_failure)
-            return d
+            dfrd = _get_new_jenkins_changes(self.url, self.platform, self.hostname, self.config_name)
+            dfrd.addCallback(self._process_changes)
+            dfrd.addCallbacks(self._finished_ok, self._finished_failure)
+            return dfrd
 
     def _finished_ok(self, res):
         assert self.working
@@ -62,101 +61,101 @@ class MonoJenkinsPoller(base.PollingChangeSource):
         self.working = False
         return None
 
-    def _getStateObjectId(self):
+    def _get_state_object_id(self):
         """Return a deferred for object id in state db.
         """
         return self.master.db.state.getObjectId(
             '#'.join((self.platform, self.hostname, self.config_name)), self.db_class_name)
 
-    def _getCurrentRev(self):
+    def _get_current_rev(self):
         """Return a deferred for object id in state db and current numeric rev.
 
         If never has been set, current rev is None.
         """
-        d = self._getStateObjectId()
+        dfrd = self._get_state_object_id()
 
         def oid_cb(oid):
-            d = self.master.db.state.getState(oid, 'current_rev', None)
+            dfrd = self.master.db.state.getState(oid, 'current_rev', None)
 
-            def addOid(cur):
+            def add_oid(cur):
                 if cur is not None:
                     return oid, int(cur)
                 return oid, cur
-            d.addCallback(addOid)
-            return d
-        d.addCallback(oid_cb)
-        return d
+            dfrd.addCallback(add_oid)
+            return dfrd
+        dfrd.addCallback(oid_cb)
+        return dfrd
 
-    def _setCurrentRev(self, rev, oid=None):
+    def _set_current_rev(self, rev, oid=None):
         """Return a deferred to set current revision in persistent state.
 
         oid is self's id for state db. It can be passed to avoid a db lookup."""
 
         if oid is None:
-            d = self._getStateObjectId()
+            dfrd = self._get_state_object_id()
         else:
-            d = defer.succeed(oid)
+            dfrd = defer.succeed(oid)
 
         def set_in_state(obj_id):
             return self.master.db.state.setState(obj_id, 'current_rev', rev)
-        d.addCallback(set_in_state)
+        dfrd.addCallback(set_in_state)
 
-        return d
+        return dfrd
 
     @defer.inlineCallbacks
     def _process_changes(self, change_list):
         for change in change_list:
-            oid, lastRev = yield self._getCurrentRev()
-            if int(change['revision']) <= int(lastRev if lastRev is not None else 0):
-                log.msg('not adding: #' + str(change['revision']) + ' (last one: #' + str(lastRev) + ')')
+            oid, last_rev = yield self._get_current_rev()
+            if int(change['revision']) <= int(last_rev if last_rev is not None else 0):
+                log.msg('not adding: #' + str(change['revision']) + ' (last one: #' + str(last_rev) + ')')
                 continue
             log.msg('adding change:' + str(change))
             yield self.master.addChange(
-                    author = change['who'],
-                    revision = change['revision'],
-                    files = [],
-                    comments = "",
-                    revlink = change['url'],
-                    when_timestamp = epoch2datetime(int(change['when']) / 1000),
-                    branch = None,
-                    category = None,
-                    codebase = change['codebase'],
-                    project = '',
-                    repository = self.fakeRepoUrl,
-                    src=u'jenkins')
-            yield self._setCurrentRev(change['revision'], oid)
-        if change_list:
-            self.lastChange = change_list[-1]["revision"]
+                author=change['who'],
+                revision=change['revision'],
+                files=[],
+                comments="",
+                revlink=change['url'],
+                when_timestamp=epoch2datetime(int(change['when']) / 1000),
+                branch=None,
+                category=None,
+                codebase=change['codebase'],
+                project='',
+                repository=self.fake_repo_url,
+                src=u'jenkins'
+            )
+            yield self._set_current_rev(change['revision'], oid)
 
 
 
 
-def _mkRequestJenkinsAllBuilds(baseUrl, platform, logger):
-    url = '%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],artifacts[*],url,building,result]' % (baseUrl, platform)
+def _mk_request_jenkins_all_builds(base_url, platform, logger):
+    url = '%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],artifacts[*],url,building,result]' % (base_url, platform)
     if logger:
         logger("request: " + str(url))
     return getPage(url)
 
-def _mkRequestJenkinsSingleBuild(buildUrl, logger):
-    url = (buildUrl + "/api/json?pretty=true").encode('ascii', 'ignore')
+def _mk_request_jenkins_build(build_url, logger):
+    url = (build_url + "/api/json?pretty=true").encode('ascii', 'ignore')
     if logger:
         logger("request: " + str(url))
     return getPage(url)
 
-def _mkRequestJenkinsSingleBuildS3(buildUrl, logger):
-    url = (buildUrl + "/s3").encode('ascii', 'ignore')
+def _mk_request_jenkins_build_s3(build_url, logger):
+    url = (build_url + "/s3").encode('ascii', 'ignore')
     if logger:
         logger("request: " + str(url))
     return getPage(url)
 
-def _mkRequestMonoCommonSnapshot(logger):
-    url = monoCommonSnapshotsUrl
+def _mk_request_mono_common(logger):
+    url = MONOCOMMONSNAPSHOTSURL
     if logger:
         logger("request: " + str(url))
     return getPage(url)
 
-def _mkRequestParse(hostname, config_name, logger):
+def _mk_request_parse(hostname, config_name, logger):
     headers = credentials.getParseHeaders()
+    #pylint: disable=C0330
     query = ('where={' +
                 '"buildURL":{"$exists":true},' +
                 '"machine":{' +
@@ -176,79 +175,83 @@ def _mkRequestParse(hostname, config_name, logger):
                     '}' +
                 '}' +
             '}')
+    #pylint: enable=C0330
     params = urllib.quote(query, '=')
     url = 'https://api.parse.com/1/classes/RunSet?%s' % params
     if logger:
         logger("request: " + str(url))
-    return getPage(url, headers = headers)
+    return getPage(url, headers=headers)
 
 @defer.inlineCallbacks
-def _getNewJenkinChanges(jenkinsBaseUrl, platform, hostname, config_name):
-    jenkinsRequest = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform, None)
-    jenkinsJson = json.loads(jenkinsRequest)
-    parseRequest = yield _mkRequestParse(hostname, config_name, None)
-    parseJson = json.loads(parseRequest)
+def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
+    jenkins_request = yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)
+    jenkins_json = json.loads(jenkins_request)
+    parse_request = yield _mk_request_parse(hostname, config_name, None)
+    parse_json = json.loads(parse_request)
 
-    def _filterBuildURLsJenkins(j):
+    def _filter_build_urls_jenkins(j):
         return sorted([i['url'].encode('ascii', 'ignore') for i in j['allBuilds'] if i['result'] == 'SUCCESS'])
 
-    def _filterBuildURLsParse(j):
+    def _filter_build_urls_parse(j):
         return sorted([i['buildURL'].encode('ascii', 'ignore') for i in j['results'] if i.has_key('buildURL') and i['buildURL'] is not None])
 
-    buildsToDo = list(set(_filterBuildURLsJenkins(jenkinsJson)) - set(_filterBuildURLsParse(parseJson)))
+    builds_todo = list(set(_filter_build_urls_jenkins(jenkins_json)) - set(_filter_build_urls_parse(parse_json)))
 
     result = []
-    for b in buildsToDo:
-        buildDetailsRequest = yield _mkRequestJenkinsSingleBuild(b, None)
-        buildDetailsJson = json.loads(buildDetailsRequest)
+    for build in builds_todo:
+        build_details_request = yield _mk_request_jenkins_build(build, None)
+        build_details_json = json.loads(build_details_request)
         result.append({
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
-            'revision': buildDetailsJson['number'],
-            'url': buildDetailsJson['url'],
+            'revision': build_details_json['number'],
+            'url': build_details_json['url'],
             'codebase': 'mono-jenkins-%s-%s-%s' % (platform, hostname, config_name),
-            'when': buildDetailsJson['timestamp']
+            'when': build_details_json['timestamp']
         })
 
-    defer.returnValue(sorted(result, key = lambda k: k['revision']))
+    defer.returnValue(sorted(result, key=lambda k: k['revision']))
 
 
 
-def ppJson(j):
-    print(json.dumps(j, sort_keys=True, indent=4, separators=(',', ': ')))
+def debug_pp_json(j):
+    print json.dumps(j, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 PROPERTYNAME_JENKINSBUILDURL = 'jenkins-buildURL'
 PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 
 class BuildURLToPropertyStep(LoggingBuildStep):
-    def __init__(self, baseUrl, *args, **kwargs):
-        self.baseUrl = baseUrl
-        LoggingBuildStep.__init__(self, name = "buildURL2prop", haltOnFailure = True, *args, **kwargs)
+    def __init__(self, base_url, *args, **kwargs):
+        self.base_url = base_url
+        LoggingBuildStep.__init__(self, name="buildURL2prop", haltOnFailure=True, *args, **kwargs)
 
     def start(self):
         # label=debian-amd64/1348/
         platform = self.getProperty('platform')
-        jenkinsSourceBase = None
+        jenkins_source_base = None
         for i in self.build.sources:
             if 'jenkins' in i.repository:
-                assert jenkinsSourceBase is None
-                jenkinsSourceBase = i
+                assert jenkins_source_base is None
+                jenkins_source_base = i
 
-        assert jenkinsSourceBase is not None, "no jenkins source base found: " + reduce(lambda x,y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
-        buildNr = jenkinsSourceBase.revision
-        self.setProperty(PROPERTYNAME_JENKINSBUILDURL, self.baseUrl + '/label=' + platform + '/' + buildNr + '/')
+        assert jenkins_source_base is not None, "no jenkins source base found: " + reduce(lambda x, y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
+        build_nr = jenkins_source_base.revision
+        self.setProperty(PROPERTYNAME_JENKINSBUILDURL, self.base_url + '/label=' + platform + '/' + build_nr + '/')
         self.finished(SUCCESS)
 
 
 class FetchJenkinsBuildDetails(BuildStep):
     def __init__(self, *args, **kwargs):
-        BuildStep.__init__(self, haltOnFailure = True, flunkOnFailure = True, *args, **kwargs)
+        self.logger = None
+        BuildStep.__init__(self, haltOnFailure=True, flunkOnFailure=True, *args, **kwargs)
 
     def start(self):
+        #pylint: disable=E1101
         stdoutlogger = self.addLog("stdio").addStdout
+        #pylint: enable=E1101
         self.logger = lambda msg: stdoutlogger(msg + "\n")
-        d = self.doRequest()
-        d.addCallbacks(self._finished_ok, self._finished_failure)
+        dfrd = self._do_request()
+        dfrd.addCallbacks(self._finished_ok, self._finished_failure)
 
     def _finished_ok(self, res):
         log.msg("FetchJenkinsBuildDetails success")
@@ -263,34 +266,34 @@ class FetchJenkinsBuildDetails(BuildStep):
         return None
 
     @defer.inlineCallbacks
-    def doRequest(self):
-        buildUrl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
+    def _do_request(self):
+        build_url = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
         platform = self.getProperty('platform')
-        assert buildUrl is not None, "property should be there! :-("
+        assert build_url is not None, "property should be there! :-("
         log.msg("before fetching meta data")
-        urls = yield _doFetchBuild(buildUrl, platform, self.logger)
-        for propName, filename in urls.items():
-            log.msg('adding: ' + str((propName, filename)))
-            self.setProperty(propName, filename)
+        urls = yield _do_fetch_build(build_url, platform, self.logger)
+        for prop_name, filename in urls.items():
+            log.msg('adding: ' + str((prop_name, filename)))
+            self.setProperty(prop_name, filename)
 
 
 from HTMLParser import HTMLParser
 class HTMLParserMonoCommon(HTMLParser):
     def __init__(self, *args, **kwargs):
-        self.commonDeb = None
+        self.common_deb = None
         HTMLParser.__init__(self, *args, **kwargs)
 
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             for name, value in attrs:
                 if name == 'href' and value.endswith('_all.deb'):
-                    self.commonDeb = value
+                    self.common_deb = value
 
 class HTMLParserS3Artifacts(HTMLParser):
-    def __init__(self, result, buildUrl, getPath, *args, **kwargs):
+    def __init__(self, result, build_url, get_path, *args, **kwargs):
         self.result = result
-        self.buildUrl = buildUrl
-        self.getPath = getPath
+        self.build_url = build_url
+        self.get_path = get_path
         HTMLParser.__init__(self, *args, **kwargs)
 
     def handle_starttag(self, tag, attrs):
@@ -304,53 +307,53 @@ class HTMLParserS3Artifacts(HTMLParser):
                 continue
             if '.changes' in path or '-latest' in path:
                 continue
-            self.getPath(self, path)
+            self.get_path(self, path)
 
 @defer.inlineCallbacks
-def _doFetchBuild(buildUrl, platform, logger):
+def _do_fetch_build(build_url, platform, logger):
     result = {}
 
-    monoCommonRequest = yield _mkRequestMonoCommonSnapshot(logger)
+    mono_common_request = yield _mk_request_mono_common(logger)
     parsermono = HTMLParserMonoCommon()
-    parsermono.feed(monoCommonRequest)
-    assert parsermono.commonDeb is not None, 'no common debian package found :-('
-    result['deb_common_url'] = monoCommonSnapshotsUrl + '/' + parsermono.commonDeb
+    parsermono.feed(mono_common_request)
+    assert parsermono.common_deb is not None, 'no common debian package found :-('
+    result['deb_common_url'] = MONOCOMMONSNAPSHOTSURL + '/' + parsermono.common_deb
 
     # get assemblies package always from debian-amd64 builder.
-    amd64BuildUrl = buildUrl.replace(platform, 'debian-amd64')
-    s3assembly = yield _mkRequestJenkinsSingleBuildS3(amd64BuildUrl, logger)
-    def _getAssemblies(s, path):
+    amd64build_url = build_url.replace(platform, 'debian-amd64')
+    s3assembly = yield _mk_request_jenkins_build_s3(amd64build_url, logger)
+    def _get_assemblies(parser, path):
         if '-assemblies' in path:
-            s.result['deb_asm_url'] = s.buildUrl + '/s3/' + path
-    parserassembly = HTMLParserS3Artifacts(result, amd64BuildUrl, _getAssemblies)
+            parser.result['deb_asm_url'] = parser.build_url + '/s3/' + path
+    parserassembly = HTMLParserS3Artifacts(result, amd64build_url, _get_assemblies)
     parserassembly.feed(s3assembly)
 
     # get bin package from arch specific builder
-    s3bin = yield _mkRequestJenkinsSingleBuildS3(buildUrl, logger)
-    def _getBin(s, path):
+    s3bin = yield _mk_request_jenkins_build_s3(build_url, logger)
+    def _get_bin(parser, path):
         if '-assemblies' not in path:
-            s.result['deb_bin_url'] = s.buildUrl + '/s3/' + path
-    parserassembly = HTMLParserS3Artifacts(result, buildUrl, _getBin)
+            parser.result['deb_bin_url'] = parser.build_url + '/s3/' + path
+    parserassembly = HTMLParserS3Artifacts(result, build_url, _get_bin)
     parserassembly.feed(s3bin)
 
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
 
     # get git revision from jenkins
-    requestAll = yield _mkRequestJenkinsAllBuilds(monoBaseUrl, platform, logger)
-    jsonAll = json.loads(requestAll)
+    request_all = yield _mk_request_jenkins_all_builds(MONOBASEURL, platform, logger)
+    json_all = json.loads(request_all)
     gitrev = None
-    for i in [i for i in jsonAll['allBuilds'] if i['url'].encode('ascii', 'ignore') == buildUrl]:
-        for fp in i['fingerprint']:
-            if fp['original']['name'] == 'build-source-tarball-mono':
+    for i in [i for i in json_all['allBuilds'] if i['url'].encode('ascii', 'ignore') == build_url]:
+        for fingerprint in i['fingerprint']:
+            if fingerprint['original']['name'] == 'build-source-tarball-mono':
                 assert gitrev is None, "should set gitrev only once"
-                url = monoSourceTarballUrl + str(fp['original']['number']) + '/pollingLog/pollingLog'
+                url = MONOSOURCETARBALLURL + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
                 if logger:
                     logger("request: " + str(url))
-                pollLog = yield getPage(url)
+                poll_log = yield getPage(url)
                 regexgitrev = re.compile("Latest remote head revision on [a-zA-Z/]+ is: (?P<gitrev>[0-9a-fA-F]+)")
-                m = regexgitrev.search(pollLog)
-                assert m is not None
-                gitrev = m.group('gitrev')
+                match = regexgitrev.search(poll_log)
+                assert match is not None
+                gitrev = match.group('gitrev')
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
 
@@ -359,55 +362,57 @@ def _doFetchBuild(buildUrl, platform, logger):
 
 # for testing/debugging
 if __name__ == '__main__':
-    def stopMe():
+    def stop_me():
+        #pylint: disable=E1101
         if reactor.running:
             reactor.stop()
             print "stopping..."
+        #pylint: enable=E1101
 
     @defer.inlineCallbacks
-    def testFetchSingleJobDebianARM():
+    def test_fetch_build_debarm():
         def _logger(msg):
             print msg
 
-        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
-        for k, v in results.items():
-            print "%s: %s" % (k, v)
+        results = yield _do_fetch_build('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
+        for key, value in results.items():
+            print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
-    def testGetChangesDebianARM():
-        changeList = yield _getNewJenkinChanges(monoBaseUrl, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
-
+    def test_get_changes_debian_arm():
+        change_list = yield _get_new_jenkins_changes(MONOBASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
         print ""
         print "URLs to process:"
-        for u in sorted(changeList):
-            print u
+        for url in sorted(change_list):
+            print url
 
     @defer.inlineCallbacks
-    def testFetchSingleJobDebianAMD64():
+    def test_fetch_build_debamd64():
         def _logger(msg):
             print msg
 
-        results = yield _doFetchBuild('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1403/', 'debian-amd64', _logger)
-        for k, v in results.items():
-            print "%s: %s" % (k, v)
+        results = yield _do_fetch_build('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1403/', 'debian-amd64', _logger)
+        for key, value in results.items():
+            print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
-    def testGetChangesDebianAMD64():
-        changeList = yield _getNewJenkinChanges(monoBaseUrl, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
-
+    def test_get_changes_debian_amd64():
+        change_list = yield _get_new_jenkins_changes(MONOBASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
-        for u in sorted(changeList):
-            print u
+        for url in sorted(change_list):
+            print url
 
     @defer.inlineCallbacks
-    def runTests():
-        t2 = yield testGetChangesDebianARM()
-        t1 = yield testFetchSingleJobDebianARM()
-        t4 = yield testGetChangesDebianAMD64()
-        t3 = yield testFetchSingleJobDebianAMD64()
-        stopMe()
+    def run_tests():
+        _ = yield test_get_changes_debian_arm()
+        _ = yield test_fetch_build_debarm()
+        _ = yield test_get_changes_debian_amd64()
+        _ = yield test_fetch_build_debamd64()
+        stop_me()
 
-    runTests()
+    run_tests()
+    #pylint: disable=E1101
     reactor.run()
+    #pylint: enable=E1101
 

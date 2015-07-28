@@ -20,10 +20,14 @@
 #   W0614 = Unused import from wildcard
 
 
-# C0301 = Line too long
-# C0111 = Missing docstring
+# C0301: Line too long
+# C0111: Missing docstring
 # W0110: map/filter on lambda could be replaced by comprehension
 # W0141: Used builtin function %r
-# R0914 = Too many local variables
+# E0202: An attribute defined in %s line %s hides this method Used when a class defines a method which is hidden by an instance attribute from an ancestor class or set by some client code.
+# W0511: Don't warn for TODO/FIXME
+# R0914: Too many local variables
+# R0902: Too many instance attributes
+# R0913: Too many arguments
 # Disable the message(s) with the given id(s).
-disable=C0301,C0111,W0110,W0141,R0914
+disable=C0301,C0111,W0110,W0141,R0914,E0202,W0511,R0902,R0913
