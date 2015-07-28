@@ -33,7 +33,7 @@ class StatusPush(StatusReceiverMultiService):
     def buildFinished(self, builderName, build, result):
         url = self.master_status.getURLForThing(build)
         if self.localhost_replace:
-            url = url.replace("//localhost", "//%s" % self.localhost_replace)
+            url = url.replace("//localhost:8010", "//%s" % self.localhost_replace)
 
         message = "%s - %s - <%s>" % \
             (builderName, Results[result].upper(), url)
