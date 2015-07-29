@@ -72,18 +72,26 @@ class Page extends React.Component {
 	}
 
 	render () {
-
 		var chart;
+		var benchmarkChartList;
+		var selected = this.state.machine !== undefined && this.state.config !== undefined;
 
-		if (this.state.machine === undefined || this.state.config === undefined)
-			chart = <div className="diagnostic">Please select a machine and config.</div>;
-		else
+		if (selected) {
 			chart = <AllBenchmarksChart
-		controller={this.props.controller}
-		machine={this.state.machine}
-		config={this.state.config}
-		runSetSelected={this.runSetSelected.bind (this)}
-			/>;
+				graphName={'allBenchmarksChart'}
+				controller={this.props.controller}
+				machine={this.state.machine}
+				config={this.state.config}
+				runSetSelected={this.runSetSelected.bind (this)}
+				/>;
+			benchmarkChartList = <BenchmarkChartList
+				controller={this.props.controller}
+				machine={this.state.machine}
+				config={this.state.config}
+				/>;
+		} else {
+			chart = <div className="diagnostic">Please select a machine and config.</div>;
+		}
 
 		var comparisonChart;
 		if (this.state.runSets.length > 1)
@@ -113,10 +121,9 @@ class Page extends React.Component {
 			</table>
 			{chart}
 			{comparisonChart}
+			{benchmarkChartList}
 		</div>;
-
 	}
-
 }
 
 function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
@@ -147,14 +154,17 @@ function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
 	return false;
 }
 
-class TimelineChart extends xp_common.GoogleChartsStateComponent {
+class TimelineChart extends React.Component {
 
 	sortedRunSets : Array<Parse.Object>;
 	table : void | Array<Object>;
 
 	constructor (props) {
 		super (props);
-		this.invalidateState (props.machine, props.config);
+	}
+
+	componentWillMount () {
+		this.invalidateState (this.props.machine, this.props.config);
 	}
 
 	componentWillReceiveProps (nextProps) {
@@ -168,7 +178,7 @@ class TimelineChart extends xp_common.GoogleChartsStateComponent {
 			return <div className="diagnostic">Loading&hellip;</div>;
 
 		return <xp_common.TimelineAMChart
-			graphName='timelineChart'
+			graphName={this.props.graphName}
 			height={300}
 			data={this.table}
 			selectListener={this.selectListener.bind (this)} />;
@@ -294,6 +304,66 @@ class AllBenchmarksChart extends TimelineChart {
 		}
 
 		this.table = table;
+	}
+}
+
+class BenchmarkChart extends TimelineChart {
+	computeTable () {
+		var runSets = this.sortedRunSets;
+		var j = 0;
+
+		var table = [];
+
+		for (j = 0; j < runSets.length; ++j) {
+			var runSet = runSets [j];
+			var average = runSet.get ('elapsedTimeAverages') [this.props.benchmark];
+			if (average === undefined)
+				continue;
+			var tooltip = tooltipForRunSet (this.props.controller, runSet);
+			table.push ({
+				geomean: average,
+				tooltip: tooltip
+			});
+		}
+
+		this.table = table;
+	}
+}
+
+class BenchmarkChartList extends React.Component {
+	constructor (props) {
+		super (props);
+		this.state = { isExpanded: false };
+	}
+
+	render () {
+		if (!this.state.isExpanded) {
+			return <div onClick={this.expand.bind (this)}>Show benchmarks</div>;
+		}
+
+		var benchmarks = this.props.controller.allEnabledBenchmarks ();
+		var charts = [];
+
+		var charts = benchmarks.map (b => {
+			var name = b.get ('name');
+			var key = 'benchmarkChart_' + name;
+			return <div key={key}>
+				<h3>{name}</h3>
+				<BenchmarkChart
+				graphName={key}
+				controller={this.props.controller}
+				machine={this.props.machine}
+				config={this.props.config}
+				benchmark={name}
+				/>
+				</div>;
+		});
+
+		return <div>{charts}</div>;
+	}
+
+	expand () {
+		this.setState ({ isExpanded: true });
 	}
 }
 

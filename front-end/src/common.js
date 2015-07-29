@@ -300,74 +300,74 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	}
 }
 
-var timelineOptions = {
-				"type": "serial",
-				"theme": "default",
-				"categoryAxis": {
-					"axisThickness": 0,
-					"gridThickness": 0,
-					"labelsEnabled": false,
-					"tickLength": 0
-				},
-				"chartScrollbar": {
-					"graph": "average"
-				},
-				"trendLines": [],
-				"graphs": [
-					{
-						"balloonText": "[[lowName]]",
-						"bullet": "round",
-						"bulletAlpha": 0,
-						"lineColor": xamarinColors.blue [2],
-						"lineThickness": 0,
-						"id": "low",
-						"title": "low",
-						"valueField": "low"
-					},
-					{
-						"balloonText": "[[highName]]",
-						"bullet": "round",
-						"bulletAlpha": 0,
-						"lineColor": xamarinColors.blue [2],
-						"fillAlphas": 0.13,
-						"fillToGraph": "low",
-						"fillColors": xamarinColors.blue [2],
-						"id": "high",
-						"lineThickness": 0,
-						"title": "high",
-						"valueField": "high"
-					},
-					{
-						"balloonText": "[[tooltip]]",
-						"bullet": "round",
-						"bulletSize": 4,
-						"lineColor": xamarinColors.blue [2],
-						"lineColorField": "lineColor",
-						"id": "geomean",
-						"title": "geomean",
-						"valueField": "geomean"
-					}
-
-				],
-				"guides": [],
-				"valueAxes": [
-					{
-						"baseValue": -13,
-						"id": "time",
-						"axisThickness": 0,
-						"fontSize": 12,
-						"gridAlpha": 0.07,
-						"title": "",
-						"titleFontSize": 0
-					}
-				],
-				"allLabels": [],
-				"balloon": {},
-				"titles": []
-			};
-
 export class TimelineAMChart extends React.Component {
 	render () {
+		var timelineOptions = {
+						"type": "serial",
+						"theme": "default",
+						"categoryAxis": {
+							"axisThickness": 0,
+							"gridThickness": 0,
+							"labelsEnabled": false,
+							"tickLength": 0
+						},
+						"chartScrollbar": {
+							"graph": "average"
+						},
+						"trendLines": [],
+						"graphs": [
+							{
+								"balloonText": "[[lowName]]",
+								"bullet": "round",
+								"bulletAlpha": 0,
+								"lineColor": xamarinColors.blue [2],
+								"lineThickness": 0,
+								"id": "low",
+								"title": "low",
+								"valueField": "low"
+							},
+							{
+								"balloonText": "[[highName]]",
+								"bullet": "round",
+								"bulletAlpha": 0,
+								"lineColor": xamarinColors.blue [2],
+								"fillAlphas": 0.13,
+								"fillToGraph": "low",
+								"fillColors": xamarinColors.blue [2],
+								"id": "high",
+								"lineThickness": 0,
+								"title": "high",
+								"valueField": "high"
+							},
+							{
+								"balloonText": "[[tooltip]]",
+								"bullet": "round",
+								"bulletSize": 4,
+								"lineColor": xamarinColors.blue [2],
+								"lineColorField": "lineColor",
+								"id": "geomean",
+								"title": "geomean",
+								"valueField": "geomean"
+							}
+
+						],
+						"guides": [],
+						"valueAxes": [
+							{
+								"baseValue": -13,
+								"id": "time",
+								"axisThickness": 0,
+								"fontSize": 12,
+								"gridAlpha": 0.07,
+								"title": "",
+								"titleFontSize": 0
+							}
+						],
+						"allLabels": [],
+						"balloon": {},
+						"titles": []
+					};
+
 		return <AMChart
 			graphName={this.props.graphName}
 			height={this.props.height}
