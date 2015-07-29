@@ -188,7 +188,7 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		this.table = undefined;
 
 		var i = 0, j = 0;
-		var allBenchmarks = this.props.controller.allBenchmarks;
+		var allBenchmarks = this.props.controller.allEnabledBenchmarks ();
 		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 
 		if (!xp_common.canUseGoogleCharts ())

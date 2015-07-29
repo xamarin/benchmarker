@@ -138,10 +138,14 @@ class RunSetDescription extends React.Component {
 			table = <table>
 				{benchmarkNames.map (name => {
 					var runs = runsByBenchmarkName [name];
+					var benchmark = this.props.controller.benchmarkForId (runs [0].get ('benchmark').id);
+					var disabled = "";
+					if (benchmark.get ('disabled'))
+						disabled = " (disabled)";
 					var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
 					elapsed.sort ();
 					var elapsedString = elapsed.join (", ");
-					return <tr><td>{name}</td><td>{elapsedString}</td></tr>;
+					return <tr><td>{name + disabled}</td><td>{elapsedString}</td></tr>;
 				})}
 			</table>;
 		}

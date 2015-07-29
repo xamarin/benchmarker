@@ -94,12 +94,23 @@ export class Controller {
 		this.checkAllDataLoaded ();
 	}
 
-	benchmarkNameForId (id: string) : (string | void) {
+	allEnabledBenchmarks () : Array<Parse.Object> {
+		return this.allBenchmarks.filter (b => !b.get ('disabled'));
+	}
+
+	benchmarkForId (id: string) : (Parse.Object | void) {
 		for (var i = 0; i < this.allBenchmarks.length; ++i) {
 			if (this.allBenchmarks [i].id === id)
-				return this.allBenchmarks [i].get ('name');
+				return this.allBenchmarks [i];
 		}
 		return undefined;
+	}
+
+	benchmarkNameForId (id: string) : (string | void) {
+		var benchmark = this.benchmarkForId (id);
+		if (benchmark === undefined)
+			return undefined;
+		return benchmark.get ('name');
 	}
 
 	machineForId (id: string) : Parse.Object {
