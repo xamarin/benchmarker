@@ -78,7 +78,7 @@ class Page extends React.Component {
 		if (this.state.machine === undefined || this.state.config === undefined)
 			chart = <div className="diagnostic">Please select a machine and config.</div>;
 		else
-			chart = <Chart
+			chart = <AllBenchmarksChart
 		controller={this.props.controller}
 		machine={this.state.machine}
 		config={this.state.config}
@@ -147,7 +147,7 @@ function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
 	return false;
 }
 
-class Chart extends xp_common.GoogleChartsStateComponent {
+class TimelineChart extends xp_common.GoogleChartsStateComponent {
 
 	sortedRunSets : Array<Parse.Object>;
 	table : void | Array<Object>;
@@ -184,15 +184,16 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		this.invalidateState (this.props.machine, this.props.config);
 	}
 
+	computeTable () {
+	}
+
 	invalidateState (machine, config) {
 		this.table = undefined;
 
-		var i = 0, j = 0;
-		var allBenchmarks = this.props.controller.allEnabledBenchmarks ();
-		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
-
 		if (!xp_common.canUseGoogleCharts ())
 			return;
+
+		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 
 		runSets.sort ((a, b) => {
 			var aDate = a.get ('commit').get ('commitDate');
@@ -203,6 +204,18 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		});
 
 		this.sortedRunSets = runSets;
+
+		this.computeTable ();
+
+		this.forceUpdate ();
+	}
+}
+
+class AllBenchmarksChart extends TimelineChart {
+	computeTable () {
+		var runSets = this.sortedRunSets;
+		var i = 0, j = 0;
+		var allBenchmarks = this.props.controller.allEnabledBenchmarks ();
 
 		/* A table of run data. The rows are indexed by benchmark index, the
 		 * columns by sorted run set index.
@@ -281,7 +294,6 @@ class Chart extends xp_common.GoogleChartsStateComponent {
 		}
 
 		this.table = table;
-		this.forceUpdate ();
 	}
 }
 
