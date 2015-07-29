@@ -92,7 +92,7 @@ namespace Benchmarker.Common
 				// Xamarin Performance
 				InitializeParse ("7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES", "FwqUX9gNQP5HmP16xDcZRoh0jJRCDvdoDpv8L87p");
 
-				var user = AsyncContext.Run (() => ParseUser.LogInAsync (credentials.Username, credentials.Password));
+				var user = AsyncContext.Run (() => ParseInterface.RunWithRetry (() => ParseUser.LogInAsync (credentials.Username, credentials.Password)));
 				//Console.WriteLine ("LogInAsync");
 
 				Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
@@ -103,9 +103,7 @@ namespace Benchmarker.Common
 
 				defaultACL = acl;
 			} catch (Exception e) {
-				while (e.InnerException != null)
-					e = e.InnerException;
-				Console.WriteLine ("Exception : {0}", e.Message);
+				Console.WriteLine ("Exception when initializing Parse API: {0}", e);
 				return false;
 			}
 			return true;
