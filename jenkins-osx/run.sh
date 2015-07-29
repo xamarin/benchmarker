@@ -248,9 +248,9 @@ init_darwin () {
 
     if [ "x$MONO_PKG" = "x" ] ; then
 	MONO_PKG="$TMP_DIR/installer.pkg"
-	curl -o "$MONO_PKG" "$MONO_URL"
+	curl -o "$MONO_PKG" "$MONO_PKG_URL"
 	if [ $? -ne 0 ] ; then
-	    error "Error: Could not download Mono package from $MONO_URL"
+	    error "Error: Could not download Mono package from $MONO_PKG_URL"
 	fi
     fi
 
