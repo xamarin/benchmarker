@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Benchmarker.Common.Models;
 
 namespace Benchmarker.Common
@@ -21,6 +22,7 @@ namespace Benchmarker.Common
 			ParseQuery<ParseObject> query = ParseObject.GetQuery ("CredentialsResponse").WhereEqualTo ("key", key);
 			while (true) {
 				var task = query.FirstOrDefaultAsync ();
+				//Console.WriteLine ("FindOrDefaultAsync CredentialsResponse");
 				task.Wait ();
 
 				var result = task.Result;
@@ -91,6 +93,7 @@ namespace Benchmarker.Common
 				InitializeParse ("7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES", "FwqUX9gNQP5HmP16xDcZRoh0jJRCDvdoDpv8L87p");
 
 				var user = AsyncContext.Run (() => ParseUser.LogInAsync (credentials.Username, credentials.Password));
+				//Console.WriteLine ("LogInAsync");
 
 				Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
 
@@ -124,6 +127,33 @@ namespace Benchmarker.Common
 			if (o.GetType () == typeof (double))
 				return (double)o;
 			throw new Exception ("Number is neither double nor long.");
+		}
+
+		public async static Task RunWithRetry (Func<Task> run, int numTries = 3) {
+			for (var i = 0; i < numTries - 1; ++i) {
+				try {
+					await run ();
+					return;
+				} catch (Exception exc) {
+					var seconds = (i == 0) ? 10 : 60 * i;
+					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
+					await Task.Delay (seconds * 1000);
+				}
+			}
+			await run ();
+		}
+
+		public async static Task<T> RunWithRetry<T> (Func<Task<T>> run, int numTries = 3) {
+			for (var i = 0; i < numTries - 1; ++i) {
+				try {
+					return await run ();
+				} catch (Exception exc) {
+					var seconds = (i == 0) ? 10 : 60 * i;
+					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
+					await Task.Delay (seconds * 1000);
+				}
+			}
+			return await run ();
 		}
 	}
 }

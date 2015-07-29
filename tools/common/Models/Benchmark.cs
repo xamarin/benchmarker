@@ -16,7 +16,7 @@ namespace Benchmarker.Common.Models
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
 
-		ParseObject parseObject;
+		static Dictionary<string, ParseObject> nameToParseObject;
 
 		public Benchmark ()
 		{
@@ -75,32 +75,47 @@ namespace Benchmarker.Common.Models
 			return Name.GetHashCode ();
 		}
 
+		static async Task FetchBenchmarks ()
+		{
+			if (nameToParseObject != null)
+				return;
+
+			nameToParseObject = new Dictionary<string, ParseObject> ();
+			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Benchmark").FindAsync ());
+			//Console.WriteLine ("FindAsync Benchmark");
+			foreach (var o in results)
+				nameToParseObject [o.Get<string> ("name")] = o;
+		}
+
 		public static async Task<Benchmark> FromId (string id)
 		{
-			var obj = await ParseObject.GetQuery ("Benchmark").GetAsync (id);
-			if (obj == null)
-				throw new Exception ("Could not fetch benchmark.");
+			await FetchBenchmarks ();
 
-			var benchmark = new Benchmark {
-				Name = obj.Get<string> ("name")
-			};
+			foreach (var kvp in nameToParseObject) {
+				if (kvp.Value.ObjectId == id) {
+					var benchmark = new Benchmark {
+						Name = kvp.Value.Get<string> ("name")
+					};
 
-			return benchmark;
+					return benchmark;
+				}
+			}
+
+			throw new Exception ("Could not fetch benchmark.");
 		}
 
 		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
-			if (parseObject != null)
-				return parseObject;
+			await FetchBenchmarks ();
 
-			var results = await ParseObject.GetQuery ("Benchmark").WhereEqualTo ("name", Name).FindAsync ();
-			if (results.Count () > 0)
-				return results.First ();
+			if (nameToParseObject.ContainsKey (Name))
+				return nameToParseObject [Name];
+
 			var obj = ParseInterface.NewParseObject ("Benchmark");
 			obj ["name"] = Name;
 			saveList.Add (obj);
 
-			parseObject = obj;
+			nameToParseObject [Name] = obj;
 
 			return obj;
 		}

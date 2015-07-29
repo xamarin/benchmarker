@@ -19,7 +19,8 @@ namespace Benchmarker.Common.Models
 
 		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
-			var results = await ParseObject.GetQuery ("Commit").WhereEqualTo ("hash", Hash).FindAsync ();
+			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Commit").WhereEqualTo ("hash", Hash).FindAsync ());
+			//Console.WriteLine ("FindAsync Commit");
 			if (results.Count () > 0)
 				return results.First ();
 

@@ -207,7 +207,7 @@ namespace Benchmarker.Common.Models
 			var github = GitHubClient;
 			Octokit.Commit gitHubCommit = null;
 			try {
-				gitHubCommit = await github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash);
+				gitHubCommit = await ParseInterface.RunWithRetry (() => github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash));
 			} catch (Octokit.NotFoundException) {
 				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
 			}
@@ -292,10 +292,11 @@ namespace Benchmarker.Common.Models
 
 		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
 		{
-			var results = await ParseObject.GetQuery ("Config")
+			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Config")
 				.WhereEqualTo ("name", Name)
 				.WhereEqualTo ("monoExecutable", MonoExecutable)
-				.FindAsync ();
+				.FindAsync ());
+			//Console.WriteLine ("FindAsync Config");
 			foreach (var o in results) {
 				if (EqualToParseObject (o)) {
 					Console.WriteLine ("found config " + o.ObjectId);
