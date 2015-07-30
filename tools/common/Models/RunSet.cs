@@ -18,6 +18,7 @@ namespace Benchmarker.Common.Models
 		public Config Config { get; set; }
 		public Commit Commit { get; set; }
 		public string BuildURL { get; set; }
+		public string LogURL { get; set; }
 
 		List<Benchmark> timedOutBenchmarks;
 		public List<Benchmark> TimedOutBenchmarks { get { return timedOutBenchmarks; } }
@@ -81,7 +82,7 @@ namespace Benchmarker.Common.Models
 			return pos.ToArray ();
 		}
 
-		public static async Task<RunSet> FromId (string id, Config config, Commit commit, string buildURL)
+		public static async Task<RunSet> FromId (string id, Config config, Commit commit, string buildURL, string logURL)
 		{
 			var obj = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("RunSet").GetAsync (id));
 			//Console.WriteLine ("GetAsync RunSet");
@@ -92,7 +93,8 @@ namespace Benchmarker.Common.Models
 				parseObject = obj,
 				StartDateTime = obj.Get<DateTime> ("startedAt"),
 				FinishDateTime = obj.Get<DateTime> ("finishedAt"),
-				BuildURL = obj.Get<string> ("buildURL")
+				BuildURL = obj.Get<string> ("buildURL"),
+				LogURL = logURL
 			};
 
 			var configObj = obj.Get<ParseObject> ("config");
@@ -126,12 +128,19 @@ namespace Benchmarker.Common.Models
 		{
 			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
 
-			Dictionary<string, double> averages = new Dictionary<string, double> ();
+			var averages = new Dictionary<string, double> ();
+			var logURLs = new Dictionary<string, string> ();
 
 			if (parseObject != null) {
 				var originalAverages = parseObject.Get<Dictionary<string, object>> ("elapsedTimeAverages");
 				foreach (var kvp in originalAverages)
 					averages [kvp.Key] = ParseInterface.NumberAsDouble (kvp.Value);
+
+				var originalLogURLs = parseObject.Get<Dictionary<string, object>> ("logURLs");
+				if (originalLogURLs != null) {
+					foreach (var kvp in originalLogURLs)
+						logURLs [kvp.Key] = (string)kvp.Value;
+				}
 			}
 
 			foreach (var result in results) {
@@ -139,6 +148,17 @@ namespace Benchmarker.Common.Models
 				if (avg == null)
 					continue;
 				averages [result.Benchmark.Name] = avg.Value.TotalMilliseconds;
+			}
+
+			if (LogURL != null) {
+				string defaultURL;
+				logURLs.TryGetValue ("*", out defaultURL);
+				if (defaultURL == null) {
+					logURLs ["*"] = LogURL;
+				} else if (defaultURL != LogURL) {
+					foreach (var result in results)
+						logURLs [result.Benchmark.Name] = LogURL;
+				}
 			}
 
 			var saveList = new List<ParseObject> ();
@@ -159,6 +179,7 @@ namespace Benchmarker.Common.Models
 
 			obj ["failed"] = averages.Count == 0;
 			obj ["elapsedTimeAverages"] = averages;
+			obj ["logURLs"] = logURLs;
 
 			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks, saveList);
 			obj ["crashedBenchmarks"] = await BenchmarkListToParseObjectArray (crashedBenchmarks, saveList);

@@ -27,6 +27,7 @@ class Compare
 		Console.Error.WriteLine ("        --create-run-set  just create a run set, don't run any benchmarks");
 		Console.Error.WriteLine ("        --run-set-id      the Parse ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url       the URL of the binary build");
+		Console.Error.WriteLine ("        --log-url         the URL where the log files will be accessible");
 		Console.Error.WriteLine ("        --root            will be substituted for $ROOT in the config");
 		// Console.Error.WriteLine ("    -p, --pause-time       benchmark garbage collector pause times; value : true / false");
 
@@ -41,6 +42,7 @@ class Compare
 		string commitFromCmdline = null;
 		string rootFromCmdline = null;
 		string buildURL = null;
+		string logURL = null;
 		string runSetId = null;
 		bool justCreateRunSet = false;
 		bool justListBenchmarks = false;
@@ -60,6 +62,8 @@ class Compare
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
 				buildURL = args [++optindex];
+			} else if (args [optindex] == "--log-url") {
+				logURL = args [++optindex];
 			} else if (args [optindex] == "--create-run-set") {
 				justCreateRunSet = true;
 			} else if (args [optindex] == "--run-set-id") {
@@ -137,7 +141,7 @@ class Compare
 
 		RunSet runSet;
 		if (runSetId != null) {
-			runSet = AsyncContext.Run (() => RunSet.FromId (runSetId, config, commit, buildURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (runSetId, config, commit, buildURL, logURL));
 			if (runSet == null) {
 				Console.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -147,7 +151,8 @@ class Compare
 				StartDateTime = DateTime.Now,
 				Config = config,
 				Commit = commit,
-				BuildURL = buildURL
+				BuildURL = buildURL,
+				LogURL = logURL
 			};
 		}
 
