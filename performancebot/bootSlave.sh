@@ -32,5 +32,5 @@ source $HOME/slave/env/bin/activate
 cd $HOME/slave
 pip install buildbot-slave
 
-buildslave create-slave slavedir $EC2PBOTMASTERIP `hostname` $BUILDBOTSLAVEPWD
+buildslave create-slave --keepalive 45 slavedir $EC2PBOTMASTERIP `hostname` $BUILDBOTSLAVEPWD
 buildslave start slavedir
