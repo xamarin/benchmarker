@@ -342,8 +342,6 @@ class BenchmarkChartList extends React.Component {
 		}
 
 		var benchmarks = this.props.controller.allEnabledBenchmarks ();
-		var charts = [];
-
 		var charts = benchmarks.map (b => {
 			var name = b.get ('name');
 			var key = 'benchmarkChart_' + name;
