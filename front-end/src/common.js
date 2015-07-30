@@ -179,7 +179,7 @@ export class GoogleChart extends React.Component<GoogleChartProps, GoogleChartPr
 	}
 
 	componentWillReceiveProps (nextProps : any) {
-		if (this.shouldComponentUpdate (nextProps))
+		if (this.shouldComponentUpdate (nextProps, undefined))
 			return;
 		console.log ("updating chart");
 		this.updateChart (nextProps);
