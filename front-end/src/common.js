@@ -300,7 +300,14 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	}
 }
 
-export class TimelineAMChart extends React.Component {
+type TimelineAMChartProps = {
+	graphName: string;
+	height: number;
+	data: Object;
+	selectListener: (index: number) => void;
+};
+
+export class TimelineAMChart extends React.Component<TimelineAMChartProps, TimelineAMChartProps, void> {
 	render () {
 		var timelineOptions = {
 						"type": "serial",
@@ -406,7 +413,19 @@ export function hashForRunSets (runSets: Array<Parse.Object>) : string {
 	return ids.join ('+');
 }
 
-export class ConfigSelector extends React.Component {
+type MachineConfigSelection = {
+	machine: Parse.Object | void;
+	config: Parse.Object | void;
+}
+
+type ConfigSelectorProps = {
+	controller: Controller;
+	machine: Parse.Object | void;
+	config: Parse.Object | void;
+	onChange: (selection: MachineConfigSelection) => void;
+};
+
+export class ConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
 	render () : Object {
 		function renderMachineOption (machine) {
 			return <option
@@ -439,10 +458,14 @@ export class ConfigSelector extends React.Component {
 	}
 
 	openMachineDescription () {
+		if (this.props.machine === undefined)
+			return;
 		window.open ('machine.html#' + this.props.machine.id);
 	}
 
 	openConfigDescription () {
+		if (this.props.config === undefined)
+			return;
 		window.open ('config.html#' + this.props.config.id);
 	}
 
@@ -458,7 +481,12 @@ export class ConfigSelector extends React.Component {
 
 }
 
-export class ConfigDescription extends React.Component {
+type ConfigDescriptionProps = {
+	config: Parse.Object | void;
+	omitHeader: boolean;
+};
+
+export class ConfigDescription extends React.Component<ConfigDescriptionProps, ConfigDescriptionProps, void> {
 	render () : Object {
 		var config = this.props.config;
 
@@ -498,7 +526,12 @@ export class ConfigDescription extends React.Component {
 	}
 }
 
-export class MachineDescription extends React.Component {
+type MachineDescriptionProps = {
+	machine: Parse.Object | void;
+	omitHeader: boolean;
+};
+
+export class MachineDescription extends React.Component<MachineDescriptionProps, MachineDescriptionProps, void> {
 	render () : Object {
 		var machine = this.props.machine;
 
@@ -520,7 +553,7 @@ export class MachineDescription extends React.Component {
 	}
 }
 
-export class CombinedConfigSelector extends React.Component {
+export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
 	render () : Object {
 		function idsToString (ids: [string, string]) : string {
 			return ids [0] + "+" + ids [1];
@@ -570,7 +603,19 @@ export class CombinedConfigSelector extends React.Component {
 	}
 }
 
-export class RunSetSelector extends React.Component {
+type RunSetSelection = {
+	machine: Parse.Object | void;
+	config: Parse.Object | void;
+	runSet: Parse.Object | void;
+}
+
+type RunSetSelectorProps = {
+	controller: Controller;
+	selection: RunSetSelection;
+	onChange: (selection: RunSetSelection) => void;
+};
+
+export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, void> {
 
 	runSetSelected (event: Object) {
 		var selection = this.props.selection;
@@ -578,6 +623,10 @@ export class RunSetSelector extends React.Component {
 		console.log ("run set selected: " + runSetId);
 		var runSet = this.props.controller.runSetForId (runSetId);
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
+	}
+
+	configSelected (selection: MachineConfigSelection) {
+		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: undefined});
 	}
 
 	render () : Object {
@@ -608,7 +657,7 @@ export class RunSetSelector extends React.Component {
 		controller={this.props.controller}
 		machine={selection.machine}
 		config={config}
-		onChange={this.props.onChange} />;
+		onChange={this.configSelected.bind (this)} />;
 		var runSetsSelect = undefined;
 		if (filteredRunSets === undefined) {
 			runSetsSelect = <select size="6" disabled="true">
@@ -631,10 +680,6 @@ export class RunSetSelector extends React.Component {
 			{configSelector}
 			{runSetsSelect}
 			</div>;
-	}
-
-	getRunSet () : Parse.Object {
-		return this.state.runSet;
 	}
 }
 

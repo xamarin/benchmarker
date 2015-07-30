@@ -1,5 +1,9 @@
+declare class AmEvent {
+    index: number;
+}
+
 declare class AmChart {
-    
+    addListener (eventName: string, handler: (e: AmEvent) => void) : void;
 }
 
 declare class AmCharts {
