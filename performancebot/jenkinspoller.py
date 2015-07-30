@@ -33,7 +33,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
         self.config_name = config_name
         self.db_class_name = "MonoJenkinsPoller-%s-%s-%s" % (platform, hostname, config_name)
 
-        base.PollingChangeSource.__init__(self, pollAtLaunch=True, *args, **kwargs)
+        base.PollingChangeSource.__init__(self, pollAtLaunch=False, *args, **kwargs)
 
         self.branch = None
 
