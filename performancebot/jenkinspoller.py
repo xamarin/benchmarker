@@ -13,7 +13,7 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
-from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT
+from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTY_NAME_JENKINS_BUILD
 import re
 import urllib
 
@@ -231,8 +231,12 @@ class BuildURLToPropertyStep(LoggingBuildStep):
                 assert jenkins_source_base is None
                 jenkins_source_base = i
 
-        assert jenkins_source_base is not None, "no jenkins source base found: " + reduce(lambda x, y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
-        build_nr = jenkins_source_base.revision
+        build_nr = None
+        if jenkins_source_base is None:
+            build_nr = self.getProperty(FORCE_PROPERTY_NAME_JENKINS_BUILD)
+        else:
+            build_nr = jenkins_source_base.revision
+        assert build_nr is not None, "no jenkins source base found: " + reduce(lambda x, y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
         self.setProperty(PROPERTYNAME_JENKINSBUILDURL, self.base_url + '/label=' + platform + '/' + build_nr + '/')
         self.finished(SUCCESS)
 
@@ -269,6 +273,9 @@ class FetchJenkinsBuildDetails(BuildStep):
         assert build_url is not None, "property should be there! :-("
         log.msg("before fetching meta data")
         urls = yield _do_fetch_build(build_url, platform, self.logger)
+        if self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT) is None:
+            gitrev = yield _do_fetch_gitrev(build_url, platform, self.logger)
+            urls.epxand(gitrev)
         for prop_name, filename in urls.items():
             log.msg('adding: ' + str((prop_name, filename)))
             self.setProperty(prop_name, filename)
@@ -334,6 +341,12 @@ def _do_fetch_build(build_url, platform, logger):
     parserassembly.feed(s3bin)
 
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
+    defer.returnValue(result)
+
+
+@defer.inlineCallbacks
+def _do_fetch_gitrev(build_url, platform, logger):
+    result = {}
 
     # get git revision from jenkins
     request_all = yield _mk_request_jenkins_all_builds(MONOBASEURL, platform, logger)
@@ -353,9 +366,7 @@ def _do_fetch_build(build_url, platform, logger):
                 gitrev = match.group('gitrev')
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
-
     defer.returnValue(result)
-
 
 # for testing/debugging
 if __name__ == '__main__':

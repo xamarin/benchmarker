@@ -6,6 +6,7 @@ PROPERTYNAME_SKIP_BENCHS = 'skip_benchs'
 PROPERTYNAME_JENKINSBUILDURL = 'jenkins-buildURL'
 PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 
+FORCE_PROPERTY_NAME_JENKINS_BUILD = 'force-jenkins-build'
 
 JENKINS_URL = 'https://jenkins.mono-project.com'
 
