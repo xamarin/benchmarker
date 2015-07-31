@@ -129,6 +129,7 @@ namespace Benchmarker.Common.Models
 			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
 
 			var averages = new Dictionary<string, double> ();
+			var variances = new Dictionary<string, double> ();
 			var logURLs = new Dictionary<string, string> ();
 
 			if (parseObject != null) {
@@ -144,10 +145,13 @@ namespace Benchmarker.Common.Models
 			}
 
 			foreach (var result in results) {
-				var avg = result.AverageWallClockTime;
-				if (avg == null)
-					continue;
-				averages [result.Benchmark.Name] = avg.Value.TotalMilliseconds;
+				var avgAndVariance = result.AverageAndVarianceWallClockTimeMilliseconds;
+				var avg = avgAndVariance.Item1;
+				var variance = avgAndVariance.Item2;
+				if (avg.HasValue)
+					averages [result.Benchmark.Name] = avg.Value;
+				if (variance.HasValue)
+					variances [result.Benchmark.Name] = variance.Value;
 			}
 
 			if (LogURL != null) {
@@ -179,6 +183,7 @@ namespace Benchmarker.Common.Models
 
 			obj ["failed"] = averages.Count == 0;
 			obj ["elapsedTimeAverages"] = averages;
+			obj ["elapsedTimeVariances"] = variances;
 			obj ["logURLs"] = logURLs;
 
 			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks, saveList);

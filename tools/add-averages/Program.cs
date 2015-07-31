@@ -35,12 +35,25 @@ namespace DbTool
 			var benchmarkNames = runs.Select (r => (string) (((ParseObject)r ["benchmark"]) ["name"])).Distinct ();
 			Console.WriteLine ("run set {0} has {1} runs {2} benchmarks", runSet.ObjectId, runs.Count (), benchmarkNames.Count ());
 			var averages = new Dictionary <string, double> ();
+			var variances = new Dictionary <string, double> ();
 			foreach (var name in benchmarkNames) {
-				var avg = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => ParseInterface.NumberAsDouble (r ["elapsedMilliseconds"])).Average ();
-				Console.WriteLine ("benchmark {0} average {1}", name, avg);
+				var numbers = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => ParseInterface.NumberAsDouble (r ["elapsedMilliseconds"])).ToArray ();
+				var avg = numbers.Average ();
 				averages [name] = avg;
+				double variance = -1;
+				if (numbers.Length > 1) {
+					var sum = 0.0;
+					foreach (var v in numbers) {
+						var diff = v - avg;
+						sum += diff * diff;
+					}
+					variance = sum / (numbers.Length - 1);
+					variances [name] = variance;
+				}
+				Console.WriteLine ("benchmark {0} average {1} variance {2}", name, avg, variance);
 			}
 			runSet ["elapsedTimeAverages"] = averages;
+			runSet ["elapsedTimeVariances"] = variances;
 			await runSet.SaveAsync ();
 		}
 
@@ -48,7 +61,7 @@ namespace DbTool
 		{
 			var runSets = await PageQuery (() => ParseObject.GetQuery ("RunSet"));
 			foreach (var runSet in runSets) {
-				if (runSet.ContainsKey ("elapsedTimeAverages"))
+				if (runSet.ContainsKey ("elapsedTimeAverages") && runSet.ContainsKey ("elapsedTimeVariances"))
 					continue;
 				await FixRunSet (runSet);
 			}
