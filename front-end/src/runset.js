@@ -114,12 +114,22 @@ class RunSetDescription extends React.Component {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
 		var buildLink;
+		var logURLs = runSet.get ('logURLs');
+		var logLinks;
 		var timedOutBenchmarks;
 		var crashedBenchmarks;
 		var table;
 
 		if (buildURL !== undefined)
 			buildLink = [<dt>Build</dt>, <dd><a href={buildURL}>Link</a></dd>];
+
+		if (logURLs !== undefined) {
+			logLinks = [<dt>Logs</dt>];
+			for (var key in logURLs) {
+				var url = logURLs[key];
+				logLinks.push(<dd>{key}: <a href={url}>{url}</a></dd>);
+			}
+		}
 
 		var timedOutString = xp_common.joinBenchmarkNames (this.props.controller, runSet.get ('timedOutBenchmarks'), "");
 		if (timedOutString !== "")
@@ -157,6 +167,7 @@ class RunSetDescription extends React.Component {
 			<dt>Commit</dt>
 			<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>
 			{buildLink}
+			{logLinks}
 		{timedOutBenchmarks}
 		{crashedBenchmarks}
 		</dl>
