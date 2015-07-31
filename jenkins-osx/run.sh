@@ -2,19 +2,41 @@
 
 set -o pipefail
 
+# check dependencies
+if which -s lynx ; then
+    true
+else
+    echo "Error: `lynx` not installed."
+    exit 1
+fi
+
+if which -s jq ; then
+    true
+else
+    echo "Error: `jq` not installed."
+    exit 1
+fi
+
+GLOBAL_MONO=mono-sgen
+
+if which -s "$GLOBAL_MONO" ; then
+    true
+else
+    echo "Error: `$GLOBAL_MONO` not installed."
+    exit 1
+fi
+
 pushd `dirname "$0"` > /dev/null
 BENCHMARKER_ROOT=`pwd`
 BENCHMARKER_ROOT=`dirname "$BENCHMARKER_ROOT"`
 popd > /dev/null
 
-GLOBAL_MONO=mono-sgen
-
-DEB_COMMON_URL=`lynx -dump -hiddenlinks=listonly -listonly http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/ | awk '$2 ~ /_all\.deb$/ { link = $2; } END { print link; }'`
+CONFIG_NAME=default-sgen
 
 usage () {
     echo "Usage: run.sh [options]"
+    echo ""
     echo "Options:"
-    echo "    --arch ARCH	Architecture name"
     echo "    --config NAME	Configuration name"
     echo "    --commit SHA	Commit of the Mono package"
     echo "    --build-url URL	URL of the build"
@@ -35,9 +57,6 @@ usage () {
 
 while [ "$1" != "" ]; do
     case $1 in
-	--arch )		shift
-				ARCH=$1
-				;;
 	--config )		shift
 				CONFIG_NAME=$1
 				;;
@@ -76,15 +95,25 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ "x$ARCH" = "x" ] ; then
-    echo "Error: No architecture name given"
-    exit 1
-fi
-
-if [ "x$CONFIG_NAME" = "x" ] ; then
-    echo "Error: No configuration name given"
-    exit 1
-fi
+case `uname -m` in
+i*86)
+	ARCH=i386
+	;;
+x86_64)
+	ARCH=amd64
+	;;
+armv7*)
+	if [ -d "/lib/arm-linux-gnueabihf" ]; then
+		ARCH=armhf
+	else
+		ARCH=armel
+	fi
+	;;
+*)
+	echo "Error: Unsupported architecture"
+	exit 1
+	;;
+esac
 
 TMP_DIR="/tmp/benchmarker.$RANDOM$RANDOM"
 mkdir "$TMP_DIR"
@@ -158,12 +187,7 @@ if [ "x$COMMIT" = "x" ] ; then
 fi
 
 if [ "x$BUILD_URL" = "x" ] ; then
-    echo "Error: No build URL given"
-    exit 1
-fi
-
-if [ "x$DEB_COMMON_URL" = "x" ] ; then
-    echo "Error: No URL for the common .deb package given"
+    echo "Error: No build URL given.  We require this as documentation and for reproducability."
     exit 1
 fi
 
@@ -177,7 +201,7 @@ fi
 CONFIG_PATH="$BENCHMARKER_ROOT/configs/$CONFIG_NAME.conf"
 
 if [ ! -f "$CONFIG_PATH" ] ; then
-    echo "Error: Cannot access config file $CONFIG_PATH"
+    echo "Error: Cannot access config file `$CONFIG_PATH`."
     exit 1
 fi
 
@@ -284,6 +308,15 @@ init_darwin () {
 init_linux () {
     if [ "x$DEB_ASM_URL" = "x" -o "x$DEB_BIN_URL" = "x" -o "x$DEB_COMMON_URL" = "x" ] ; then
 	error "Error: Debian package URLs not given"
+    fi
+
+    if [ "x$DEB_COMMON_URL" = "x" ] ; then
+	MONO_SNAPSHOT_COMMON_URL="http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/"
+	DEB_COMMON_URL=`lynx -dump -hiddenlinks=listonly -listonly "$MONO_SNAPSHOT_COMMON_URL" | awk '$2 ~ /_all\.deb$/ { link = $2; } END { print link; }'`
+	if [ "x$DEB_COMMON_URL" = "x" ] ; then
+	    echo "Error: Could not find .deb common package at $MONO_SNAPSHOT_COMMON_URL"
+	    exit 1
+	fi
     fi
 
     curl -o "$TMP_DIR/common.deb" "$DEB_COMMON_URL"

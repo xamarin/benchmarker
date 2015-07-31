@@ -127,12 +127,14 @@ namespace Benchmarker.Common
 			throw new Exception ("Number is neither double nor long.");
 		}
 
-		public async static Task RunWithRetry (Func<Task> run, int numTries = 3) {
+		public async static Task RunWithRetry (Func<Task> run, Type acceptedException = null, int numTries = 3) {
 			for (var i = 0; i < numTries - 1; ++i) {
 				try {
 					await run ();
 					return;
 				} catch (Exception exc) {
+					if (acceptedException != null && acceptedException.IsAssignableFrom (exc.GetType ()))
+						throw exc;
 					var seconds = (i == 0) ? 10 : 60 * i;
 					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
 					await Task.Delay (seconds * 1000);
@@ -141,11 +143,13 @@ namespace Benchmarker.Common
 			await run ();
 		}
 
-		public async static Task<T> RunWithRetry<T> (Func<Task<T>> run, int numTries = 3) {
+		public async static Task<T> RunWithRetry<T> (Func<Task<T>> run, Type acceptedException = null, int numTries = 3) {
 			for (var i = 0; i < numTries - 1; ++i) {
 				try {
 					return await run ();
 				} catch (Exception exc) {
+					if (acceptedException != null && acceptedException.IsAssignableFrom (exc.GetType ()))
+						throw exc;
 					var seconds = (i == 0) ? 10 : 60 * i;
 					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
 					await Task.Delay (seconds * 1000);

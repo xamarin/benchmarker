@@ -15,6 +15,8 @@ namespace Benchmarker.Common.Models
 {
 	public class Config
 	{
+		const string rootVarString = "$ROOT";
+
 		public string Name { get; set; }
 		public int Count { get; set; }
 		public bool NoMono {get; set; }
@@ -22,7 +24,6 @@ namespace Benchmarker.Common.Models
 		public string[] MonoOptions { get; set; }
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
 		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
-		public string ResultsDirectory { get; set; }
 
 		public string MonoExecutable {
 			get {
@@ -36,13 +37,29 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
+		static void ExpandRootInEnvironmentVariables (Dictionary<string, string> processedEnvVars, Dictionary<string, string> unexpandedEnvVars, string root)
+		{
+			foreach (var kvp in unexpandedEnvVars) {
+				var key = kvp.Key;
+				var unexpandedValue = kvp.Value;
+				if (unexpandedValue.Contains (rootVarString)) {
+					if (root != null)
+						processedEnvVars [key] = unexpandedValue.Replace (rootVarString, root);
+					else
+						throw new InvalidDataException ("Configuration requires a root directory.");
+				} else {
+					processedEnvVars [key] = unexpandedValue;
+				}
+			}
+		}
+
 		public static Config LoadFrom (string filename, string root)
 		{
 			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
 				var config = JsonConvert.DeserializeObject<Config> (reader.ReadToEnd ());
 
 				if (String.IsNullOrEmpty (config.Name))
-					throw new InvalidDataException ("Name");
+					throw new InvalidDataException ("Configuration does not have a `Name`.");
 
 				if (config.NoMono) {
 					Debug.Assert (config.MonoOptions == null || config.MonoOptions.Length == 0);
@@ -53,7 +70,9 @@ namespace Benchmarker.Common.Models
 				if (String.IsNullOrEmpty (config.Mono)) {
 					config.Mono = String.Empty;
 				} else if (root != null) {
-					config.Mono = config.Mono.Replace ("$ROOT", root);
+					config.Mono = config.Mono.Replace (rootVarString, root);
+				} else if (config.Mono.Contains (rootVarString)) {
+					throw new InvalidDataException ("Configuration requires a root directory.");
 				}
 
 				if (config.Count < 1)
@@ -68,14 +87,8 @@ namespace Benchmarker.Common.Models
 					config.UnsavedMonoEnvironmentVariables = new Dictionary<string, string> ();
 
 				config.processedMonoEnvironmentVariables = new Dictionary<string, string> ();
-
-				foreach (var kvp in config.MonoEnvironmentVariables)
-					config.processedMonoEnvironmentVariables [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
-				foreach (var kvp in config.UnsavedMonoEnvironmentVariables)
-					config.processedMonoEnvironmentVariables [kvp.Key] = kvp.Value.Replace ("$ROOT", root);
-
-				if (String.IsNullOrEmpty (config.ResultsDirectory))
-					config.ResultsDirectory = "results";
+				ExpandRootInEnvironmentVariables (config.processedMonoEnvironmentVariables, config.MonoEnvironmentVariables, root);
+				ExpandRootInEnvironmentVariables (config.processedMonoEnvironmentVariables, config.UnsavedMonoEnvironmentVariables, root);
 
 				return config;
 			}
@@ -127,7 +140,7 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public async Task<Commit> GetCommit (string optionalCommitHash)
+		public async Task<Commit> GetCommit (string optionalCommitHash, string optionalGitRepoDir)
 		{
 			if (NoMono) {
 				// FIXME: return a dummy commit
@@ -177,7 +190,8 @@ namespace Benchmarker.Common.Models
 			}
 
 			try {
-				var repo = new Repository (Path.GetDirectoryName (Mono));
+				var gitRepoDir = optionalGitRepoDir ?? Path.GetDirectoryName (Mono);
+				var repo = new Repository (gitRepoDir);
 				var gitHash = repo.RevParse (commit.Hash);
 				if (gitHash == null) {
 					Console.WriteLine ("Could not get commit " + commit.Hash + " from repository");
@@ -207,7 +221,7 @@ namespace Benchmarker.Common.Models
 			var github = GitHubClient;
 			Octokit.Commit gitHubCommit = null;
 			try {
-				gitHubCommit = await ParseInterface.RunWithRetry (() => github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash));
+				gitHubCommit = await ParseInterface.RunWithRetry (() => github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash), typeof (Octokit.NotFoundException));
 			} catch (Octokit.NotFoundException) {
 				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
 			}
