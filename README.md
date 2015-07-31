@@ -24,8 +24,8 @@ lower-level `compare.exe`.
 
 #### From a package
 
-`run.sh` requires at least three pieces of information, two of which
-serve as documentation and for reproducibility:
+`tools/run.sh` requires at least three pieces of information, two of
+which serve as documentation and for reproducibility:
 
 - The file or URL of the Mono package you want to benchmark
 - The URL of the build page for that package
@@ -33,9 +33,9 @@ serve as documentation and for reproducibility:
 
 Example, on OS X:
 
-    ./run.sh --commit 2d4f6b344205b410f21a3470d4152d78a28964d1 \
-	         --build-url 'https://wrench.internalx.com/Wrench/ViewLane.aspx?lane_id=1972&host_id=148&revision_id=580021' \
-			 --pkg-url 'http://storage.bos.internalx.com/mono-mac-4.2.0-pre2-branch/2d/2d4f6b344205b410f21a3470d4152d78a28964d1/MonoFramework-MRE-4.2.0.22.macos10.xamarin.x86.pkg'
+    ./tools/run.sh --commit 2d4f6b344205b410f21a3470d4152d78a28964d1 \
+                   --build-url 'https://wrench.internalx.com/Wrench/ViewLane.aspx?lane_id=1972&host_id=148&revision_id=580021' \
+                   --pkg-url 'http://storage.bos.internalx.com/mono-mac-4.2.0-pre2-branch/2d/2d4f6b344205b410f21a3470d4152d78a28964d1/MonoFramework-MRE-4.2.0.22.macos10.xamarin.x86.pkg'
 
 It will ask for your password when it tries to install the package.
 The package is installed in a temporary disk image, so your system
