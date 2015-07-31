@@ -13,12 +13,9 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
+from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT
 import re
 import urllib
-
-MONOBASEURL = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono'
-MONOCOMMONSNAPSHOTSURL = 'http://jenkins.mono-project.com/repo/debian/pool/main/m/mono-snapshot-common/'
-MONOSOURCETARBALLURL = 'https://jenkins.mono-project.com/job/build-source-tarball-mono/'
 
 class MonoJenkinsPoller(base.PollingChangeSource):
     compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'fake_repo_url']
@@ -219,9 +216,6 @@ def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
 def debug_pp_json(j):
     print json.dumps(j, sort_keys=True, indent=4, separators=(',', ': '))
 
-
-PROPERTYNAME_JENKINSBUILDURL = 'jenkins-buildURL'
-PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 
 class BuildURLToPropertyStep(LoggingBuildStep):
     def __init__(self, base_url, *args, **kwargs):

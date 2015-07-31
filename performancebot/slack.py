@@ -37,7 +37,7 @@ class StatusPush(StatusReceiverMultiService):
         url = self.master_status.getURLForThing(build)
         #pylint: enable=E1101
         if self.localhost_replace:
-            url = url.replace("//localhost:8010", "//%s" % self.localhost_replace)
+            url = url.replace("http://localhost:8010", self.localhost_replace)
 
         message = "%s - %s - <%s>" % \
             (builderName, Results[result].upper(), url)
