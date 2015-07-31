@@ -106,10 +106,11 @@ class MonoJenkinsPoller(base.PollingChangeSource):
 
     @defer.inlineCallbacks
     def _process_changes(self, change_list):
+        not_added = []
         for change in change_list:
             oid, last_rev = yield self._get_current_rev()
             if int(change['revision']) <= int(last_rev if last_rev is not None else 0):
-                log.msg('not adding: #' + str(change['revision']) + ' (last one: #' + str(last_rev) + ')')
+                not_added.append('#' + str(change['revision']))
                 continue
             log.msg('adding change:' + str(change))
             yield self.master.addChange(
@@ -127,8 +128,8 @@ class MonoJenkinsPoller(base.PollingChangeSource):
                 src=u'jenkins'
             )
             yield self._set_current_rev(change['revision'], oid)
-
-
+        if not_added:
+            log.msg('not added: ' + str(not_added))
 
 
 def _mk_request_jenkins_all_builds(base_url, platform, logger):
