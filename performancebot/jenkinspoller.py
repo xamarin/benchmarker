@@ -275,7 +275,8 @@ class FetchJenkinsBuildDetails(BuildStep):
         urls = yield _do_fetch_build(build_url, platform, self.logger)
         if self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT) is None:
             gitrev = yield _do_fetch_gitrev(build_url, platform, self.logger)
-            urls.epxand(gitrev)
+            for key, value in gitrev.items():
+                urls[key] = value
         for prop_name, filename in urls.items():
             log.msg('adding: ' + str((prop_name, filename)))
             self.setProperty(prop_name, filename)
