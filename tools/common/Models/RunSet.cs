@@ -137,6 +137,10 @@ namespace Benchmarker.Common.Models
 				foreach (var kvp in originalAverages)
 					averages [kvp.Key] = ParseInterface.NumberAsDouble (kvp.Value);
 
+				var originalVariances = parseObject.Get<Dictionary<string, object>> ("elapsedTimeVariances");
+				foreach (var kvp in originalVariances)
+					variances [kvp.Key] = ParseInterface.NumberAsDouble (kvp.Value);
+
 				var originalLogURLs = parseObject.Get<Dictionary<string, object>> ("logURLs");
 				if (originalLogURLs != null) {
 					foreach (var kvp in originalLogURLs)
