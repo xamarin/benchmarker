@@ -13,7 +13,7 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
-from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTY_NAME_JENKINS_BUILD
+from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTYNAME_JENKINS_BUILD
 import re
 import urllib
 
@@ -233,7 +233,7 @@ class BuildURLToPropertyStep(LoggingBuildStep):
 
         build_nr = None
         if jenkins_source_base is None:
-            build_nr = self.getProperty(FORCE_PROPERTY_NAME_JENKINS_BUILD)
+            build_nr = self.getProperty(FORCE_PROPERTYNAME_JENKINS_BUILD)
         else:
             build_nr = jenkins_source_base.revision
         assert build_nr is not None, "no jenkins source base found: " + reduce(lambda x, y: str(x.repository) + ', ' + str(y.repository), self.build.sources)
