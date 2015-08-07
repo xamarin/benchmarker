@@ -150,12 +150,10 @@ namespace Benchmarker.Common.Models
 
 			foreach (var result in results) {
 				var avgAndVariance = result.AverageAndVarianceWallClockTimeMilliseconds;
-				var avg = avgAndVariance.Item1;
-				var variance = avgAndVariance.Item2;
-				if (avg.HasValue)
-					averages [result.Benchmark.Name] = avg.Value;
-				if (variance.HasValue)
-					variances [result.Benchmark.Name] = variance.Value;
+				if (avgAndVariance == null)
+					continue;
+				averages [result.Benchmark.Name] = avgAndVariance.Item1;
+				variances [result.Benchmark.Name] = avgAndVariance.Item2;
 			}
 
 			if (LogURL != null) {

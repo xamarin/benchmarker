@@ -37,24 +37,22 @@ namespace Benchmarker.Common.Models
 			}
 		}
 
-		public Tuple<double?, double?> AverageAndVarianceWallClockTimeMilliseconds {
+		public Tuple<double, double> AverageAndVarianceWallClockTimeMilliseconds {
 			get {
 				if (runs.Count == 0)
-					return Tuple.Create<double?, double?> (null, null);
+					return null;
 				
 				var timesInMs = runs.Select (run => run.WallClockTime.TotalMilliseconds).ToArray ();
 				var avg = timesInMs.Average ();
-				if (runs.Count < 2)
-					return Tuple.Create<double?, double?> (avg, null);
-				
+
 				var sum = 0.0;
 				foreach (var v in timesInMs) {
 					var diff = v - avg;
 					sum += diff * diff;
 				}
-				var variance = sum / (runs.Count - 1);
+				var variance = sum / runs.Count;
 
-				return Tuple.Create<double?, double?> (avg, variance);
+				return Tuple.Create<double, double> (avg, variance);
 			}
 		}
 

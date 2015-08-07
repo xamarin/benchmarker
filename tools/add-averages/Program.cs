@@ -40,16 +40,13 @@ namespace DbTool
 				var numbers = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => ParseInterface.NumberAsDouble (r ["elapsedMilliseconds"])).ToArray ();
 				var avg = numbers.Average ();
 				averages [name] = avg;
-				double variance = -1;
-				if (numbers.Length > 1) {
-					var sum = 0.0;
-					foreach (var v in numbers) {
-						var diff = v - avg;
-						sum += diff * diff;
-					}
-					variance = sum / (numbers.Length - 1);
-					variances [name] = variance;
+				var sum = 0.0;
+				foreach (var v in numbers) {
+					var diff = v - avg;
+					sum += diff * diff;
 				}
+				var variance = sum / numbers.Length;
+				variances [name] = variance;
 				Console.WriteLine ("benchmark {0} average {1} variance {2}", name, avg, variance);
 			}
 			runSet ["elapsedTimeAverages"] = averages;
@@ -61,8 +58,14 @@ namespace DbTool
 		{
 			var runSets = await PageQuery (() => ParseObject.GetQuery ("RunSet"));
 			foreach (var runSet in runSets) {
-				if (runSet.ContainsKey ("elapsedTimeAverages") && runSet.ContainsKey ("elapsedTimeVariances"))
-					continue;
+				if (runSet.ContainsKey ("elapsedTimeAverages") && runSet.ContainsKey ("elapsedTimeVariances")) {
+					var averages = runSet.Get<Dictionary<string, object>> ("elapsedTimeAverages");
+					var variances = runSet.Get<Dictionary<string, object>> ("elapsedTimeVariances");
+					var averagesKeys = new SortedSet<string> (averages.Keys);
+					var variancesKeys = new SortedSet<string> (variances.Keys);
+					if (averagesKeys.SetEquals (variancesKeys))
+						continue;
+				}
 				await FixRunSet (runSet);
 			}
 			Console.WriteLine ("got {0} run sets", runSets.Count ());
