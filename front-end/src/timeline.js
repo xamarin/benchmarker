@@ -317,11 +317,21 @@ class BenchmarkChart extends TimelineChart {
 		for (j = 0; j < runSets.length; ++j) {
 			var runSet = runSets [j];
 			var average = runSet.get ('elapsedTimeAverages') [this.props.benchmark];
+			var variance = runSet.get ('elapsedTimeVariances') [this.props.benchmark];
 			if (average === undefined)
 				continue;
+			var low = undefined;
+			var high = undefined;
+			if (variance !== undefined) {
+				var stdDev = Math.sqrt (variance);
+				low = average - stdDev;
+				high = average + stdDev;
+			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSet);
 			table.push ({
 				geomean: average,
+				low: low,
+				high: high,
 				tooltip: tooltip
 			});
 		}
