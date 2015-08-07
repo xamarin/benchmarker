@@ -1,11 +1,13 @@
 ﻿using System;
 using Parse;
 using Nito.AsyncEx;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Benchmarker.Common.Models;
 
 namespace Benchmarker.Common
@@ -156,6 +158,23 @@ namespace Benchmarker.Common
 				}
 			}
 			return await run ();
+		}
+
+		public static async Task<IEnumerable<T>> PageQueryWithRetry<T> (Func<ParseQuery<T>> makeQuery) where T : ParseObject
+		{
+			List<T> results = new List<T> ();
+			var limit = 100;
+			for (var skip = 0;; skip += limit) {
+				var page = await RunWithRetry (() => {
+					var query = makeQuery ().Limit (limit).Skip (skip);
+					//Console.WriteLine ("skipping {0}", skip);
+					return query.FindAsync ();
+				});
+				results.AddRange (page);
+				if (page.Count () < limit)
+					break;
+			}
+			return results;
 		}
 	}
 }
