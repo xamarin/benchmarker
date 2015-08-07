@@ -6,7 +6,7 @@ from twisted.web.client import getPage
 from twisted.internet import defer, reactor
 
 from buildbot.process.buildstep import LoggingBuildStep
-from buildbot.status.builder import SUCCESS
+from buildbot.status.builder import SUCCESS, SKIPPED
 
 class CheckRetryStep(LoggingBuildStep):
     def __init__(self, *args, **kwargs):
@@ -14,19 +14,24 @@ class CheckRetryStep(LoggingBuildStep):
 
     @defer.inlineCallbacks
     def do_request(self):
-        buildername = self.getProperty('buildername')
-        buildernumber = self.getProperty('buildnumber')
-        buildurl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
-        gitcommit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
-        #pylint: disable=E1101
-        logger = self.addLog("stdio").addStdout
-        #pylint: enable=E1101
-        log.msg("check-retry: before yielding")
-        run_set_id, executed_benchs = yield check_retry(BUILDBOT_URL, buildername, buildernumber, buildurl, gitcommit, lambda msg: logger(msg + "\n"))
-        if run_set_id is not None and executed_benchs is not []:
-            self.setProperty(PROPERTYNAME_RUNSETID, run_set_id)
-            self.setProperty(PROPERTYNAME_SKIP_BENCHS, executed_benchs)
-        self.finished(SUCCESS)
+        forced = self.getProperty('reason')
+        if forced is not None:
+            log.msg("forced job, no retry check.")
+            self.finished(SKIPPED)
+        else:
+            buildername = self.getProperty('buildername')
+            buildernumber = self.getProperty('buildnumber')
+            buildurl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
+            gitcommit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
+            #pylint: disable=E1101
+            logger = self.addLog("stdio").addStdout
+            #pylint: enable=E1101
+            log.msg("check-retry: before yielding")
+            run_set_id, executed_benchs = yield check_retry(BUILDBOT_URL, buildername, buildernumber, buildurl, gitcommit, lambda msg: logger(msg + "\n"))
+            if run_set_id is not None and executed_benchs is not []:
+                self.setProperty(PROPERTYNAME_RUNSETID, run_set_id)
+                self.setProperty(PROPERTYNAME_SKIP_BENCHS, executed_benchs)
+            self.finished(SUCCESS)
 
     def start(self):
         self.do_request()
