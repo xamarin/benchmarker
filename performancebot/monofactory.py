@@ -48,6 +48,7 @@ class DebianMonoBuildFactory(BuildFactory):
 
     def benchmarker_on_master(self):
         step = MasterShellCommand(
+            name="build benchmarker",
             command=[
                 'bash', '-x', '-c',
                 Interpolate(
@@ -60,6 +61,17 @@ class DebianMonoBuildFactory(BuildFactory):
                     'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
                 )
                 ]
+        )
+        self.addStep(step)
+
+    def export_benchmark_list(self):
+        step = MasterShellCommand(
+            name="list benchmarks",
+            command=[
+                'bash', '-c', Interpolate(
+                    'mono %s/benchmarker/tools/compare.exe --list-benchmarks | ' % MASTERWORKDIR +
+                    'tee benchmark-%(prop:buildername)s.list')
+            ]
         )
         self.addStep(step)
 
