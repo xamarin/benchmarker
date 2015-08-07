@@ -24,7 +24,7 @@ class DebianMonoBuildFactory(BuildFactory):
         BuildFactory.__init__(self, *args, **kwargs)
 
     def add_expanding_step(self, closure):
-        self.addStep(ExpandingStep(closure))
+        self.steps.append(ExpandingStep(closure))
 
     def newBuild(self, requests):
         """Create a new Build instance.
