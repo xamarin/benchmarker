@@ -273,7 +273,8 @@ class FetchJenkinsBuildDetails(BuildStep):
         assert build_url is not None, "property should be there! :-("
         log.msg("before fetching meta data")
         urls = yield _do_fetch_build(build_url, platform, self.logger)
-        if self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT) is None:
+        git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
+        if git_commit is None or git_commit == "":
             gitrev = yield _do_fetch_gitrev(build_url, platform, self.logger)
             for key, value in gitrev.items():
                 urls[key] = value

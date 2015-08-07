@@ -26,7 +26,8 @@ class ParsingShellCommand(ShellCommand):
                     log.msg("found " + str(prop_name) + ": " + str(value))
                     results.append(value)
             existing_value = self.getProperty(prop_name)
-            assert existing_value is None, 'property has already value: ' + str(existing_value) + ', trying to replace it with: ' + str(results)
+            if existing_value is not None:
+                log.msg("overriding " + str(prop_name) + ", old value is: " + str(existing_value) + ", new value: " + str(results[0]))
             assert len(results) == 1, 'more than one match: ' + str(results)
             log.msg("ParsingShellCommand: " + prop_name + " <= " + str(results[0]))
             self.setProperty(prop_name, results[0], 'ParsingShellCommand')
