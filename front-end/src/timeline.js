@@ -3,6 +3,7 @@
 "use strict";
 
 import * as xp_common from './common.js';
+import * as xp_utils from './utils.js';
 import {Parse} from 'parse';
 import React from 'react';
 
@@ -352,6 +353,7 @@ class BenchmarkChartList extends React.Component {
 		}
 
 		var benchmarks = this.props.controller.allEnabledBenchmarks ();
+		benchmarks = xp_utils.sortArrayBy (benchmarks, b => b.get ('name'));
 		var charts = benchmarks.map (b => {
 			var name = b.get ('name');
 			var key = 'benchmarkChart_' + name;
