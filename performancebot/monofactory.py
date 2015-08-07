@@ -1,3 +1,4 @@
+from buildbot import interfaces
 from buildbot.process.factory import BuildFactory
 from buildbot.process.properties import Interpolate
 from buildbot.steps.shell import ShellCommand
@@ -7,9 +8,43 @@ from buildbot.steps.source import git
 
 MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
 
+
+class ExpandingStep(object):
+    def __init__(self, closure):
+        self.closure = closure
+
+    #pylint: disable=C0103
+    def buildStep(self):
+        return self
+    #pylint: enable=C0103
+
+
 class DebianMonoBuildFactory(BuildFactory):
     def __init__(self, *args, **kwargs):
         BuildFactory.__init__(self, *args, **kwargs)
+
+    def add_expanding_step(self, closure):
+        self.addStep(ExpandingStep(closure))
+
+    def newBuild(self, requests):
+        """Create a new Build instance.
+
+        @param requests: a list of buildrequest dictionaries describing what is
+        to be built
+        """
+        build_class = self.buildClass(requests)
+        build_class.useProgress = self.useProgress
+        build_class.workdir = self.workdir
+
+        generated_steps = []
+        for step in self.steps:
+            if isinstance(step, ExpandingStep):
+                for gstep in step.closure(self):
+                    generated_steps.append(interfaces.IBuildStepFactory(gstep))
+            else:
+                generated_steps.append(step)
+        build_class.setStepFactories(generated_steps)
+        return build_class
 
     def benchmarker_on_master(self):
         step = MasterShellCommand(
