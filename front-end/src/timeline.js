@@ -1,4 +1,5 @@
 /* @flow */
+/*global jQuery:false */
 
 "use strict";
 
@@ -126,7 +127,7 @@ class Page extends React.Component {
 	}
 }
 
-function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
+function tooltipForRunSet (controller: Controller, runSet: Parse.Object, d) {
 	var commit = runSet.get ('commit');
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
@@ -134,6 +135,16 @@ function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
 		branch = " (" + commit.get ('branch') + ")";
 	var startedAtString = runSet.get ('startedAt').toDateString ();
 	var hashString = commit.get ('hash').substring (0, 10);
+
+	var githubAPI = "https://api.github.com/repos/mono/mono/git/commits/" + commit.get ('hash') + "?access_token=181a6b50343efa0e414da79f4d6c2d80b17aa5ff";
+	jQuery.getJSON (githubAPI, function (data) {
+		d.tooltip = hashString + "\n" +
+		data.author.name + "\n" +
+		data.message + "\n" +
+		branch + "\n" +
+		"Committed on " + commitDateString + "\n" +
+		"Ran on " + startedAtString + timedOutBenchmarks + crashedBenchmarks;
+	});
 
 	var timedOutBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
 	var crashedBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
@@ -290,17 +301,17 @@ class AllBenchmarksChart extends TimelineChart {
 				}
 				++count;
 			}
-			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
-			var broken = runSetIsBroken (this.props.controller, runSets [j]);
-			table.push ({
+			var d = {
 				low: min,
 				lowName: minName,
 				high: max,
 				highName: maxName,
-				geomean: Math.pow (prodForRunSet, 1.0 / count),
-				tooltip: tooltip,
-				lineColor: (broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2])
-			});
+				geomean: Math.pow (prodForRunSet, 1.0 / count)
+			};
+			d.tooltip = tooltipForRunSet (this.props.controller, runSets [j], d);
+			var broken = runSetIsBroken (this.props.controller, runSets [j]);
+			d.lineColor = broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2];
+			table.push (d);
 		}
 
 		this.table = table;
@@ -327,13 +338,13 @@ class BenchmarkChart extends TimelineChart {
 				low = average - stdDev;
 				high = average + stdDev;
 			}
-			var tooltip = tooltipForRunSet (this.props.controller, runSet);
-			table.push ({
+			var d = {
 				geomean: average,
 				low: low,
-				high: high,
-				tooltip: tooltip
-			});
+				high: high
+			};
+			d.tooltip = tooltipForRunSet (this.props.controller, runSet, d);
+			table.push (d);
 		}
 
 		this.table = table;
