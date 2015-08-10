@@ -5,11 +5,15 @@ using Nito.AsyncEx;
 using Benchmarker.Common;
 using System.Linq;
 using System.Collections.Generic;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace DbTool
 {
 	class MainClass
 	{
+		static string SlackHooksUrl;
+
 		static async Task FixRunSet (ParseObject runSet)
 		{
 			var runs = await ParseInterface.PageQueryWithRetry (() => {
@@ -91,6 +95,63 @@ namespace DbTool
 			return runsForRunSetId [id];
 		}
 
+		static async Task MakePostRequest (string RequestUrl, MultipartFormDataContent Content)
+		{
+			var httpClient = new HttpClient ();
+
+			var response = await httpClient.PostAsync (RequestUrl, Content);
+			if (response.StatusCode != System.Net.HttpStatusCode.OK)
+				throw new Exception ("HTTP response is not 200 OK");
+		}
+
+		static async Task SendSlackMessage (string text, string channel, string username, string iconEmoji)
+		{
+			var payload = new Dictionary<string, string> {
+				{ "text",  text },
+				{ "channel", channel },
+				{ "username",  username },
+				{ "icon_emoji", iconEmoji }
+			};
+
+			var form = new MultipartFormDataContent ();
+			form.Add (new StringContent (JsonConvert.SerializeObject (payload)), "payload");
+
+			await MakePostRequest (SlackHooksUrl, form);
+		}
+
+		static string SlackCommitString (ParseObject commit)
+		{
+			var hash = commit.Get<string> ("hash");
+			var url = "https://github.com/mono/mono/commit/" + hash;
+			return "<" + url + "|" + hash + ">";
+		}
+
+		static async Task<bool> WarnIfNecessary (List<ParseObject> benchmarksToWarn, List<object> warnedBenchmarks,
+			bool faster, ParseObject commit, ParseObject previousCommit, ParseObject machine, ParseObject config)
+		{
+			var newlyWarned = benchmarksToWarn.Where (b => !warnedBenchmarks.Any (wb => ((ParseObject)wb).ObjectId == b.ObjectId)).ToList ();
+			if (newlyWarned.Count == 0)
+				return false;
+			warnedBenchmarks.AddRange (newlyWarned);
+
+			string benchmarksString;
+			var names = newlyWarned.Select (b => b.Get<string> ("name")).ToList ();
+			if (names.Count == 1) {
+				benchmarksString = String.Format ("benchmark `{0}`", names [0]);
+			} else if (names.Count == 2) {
+				benchmarksString = String.Format ("benchmarks `{0}` and `{1}`", names [0], names [1]);
+			} else {
+				var allButLast = names.GetRange (0, names.Count - 1).Select (n => String.Format ("`{0}`", n));
+				benchmarksString = String.Format ("benchmarks {0}, and `{1}`", String.Join (", ", allButLast), names.Last ());
+			}
+			var message = String.Format ("The {0} got {1} between commits {2} and {3} on <http://xamarin.github.io/benchmarker/front-end/timeline.html#{4}+{5}|{6}>.",
+				benchmarksString, (faster ? "faster" : "slower"), SlackCommitString (previousCommit), SlackCommitString (commit),
+				machine.ObjectId, config.ObjectId, machine.Get<string> ("architecture"));
+			await SendSlackMessage (message, "#performance-bots", faster ? "goodbot" : "badbot", faster ? ":thumbsup:" : ":red_circle:");
+			//Console.WriteLine (message);
+			return newlyWarned.Count > 0;
+		}
+
 		static async Task FindRegressions (string machineId, string configId)
 		{
 			const int baselineWindowSize = 5;
@@ -160,6 +221,9 @@ namespace DbTool
 				var commitHash = testRunSet.Get<ParseObject> ("commit").Get<string> ("hash");
 				Console.WriteLine ("{0} {1}", testRunSet.ObjectId, commitHash);
 
+				var fasterBenchmarks = new List<ParseObject> ();
+				var slowerBenchmarks = new List<ParseObject> ();
+
 				foreach (var kvp in benchmarkCounts) {
 					var name = kvp.Key;
 					if (kvp.Value < baselineWindowSize)
@@ -174,6 +238,7 @@ namespace DbTool
 					var runs = testRuns.Where (o => o.Get<ParseObject> ("benchmark").Get<string> ("name") == name).ToList ();
 					if (runs.Count < 5)
 						continue;
+					var benchmark = runs [0].Get<ParseObject> ("benchmark");
 					var numOutliersFaster = 0;
 					var numOutliersSlower = 0;
 					foreach (var run in runs) {
@@ -186,9 +251,11 @@ namespace DbTool
 					if (numOutliersFaster > runs.Count * 3 / 4) {
 						Console.WriteLine ("+ regression in {0}: {1}/{2}", name, numOutliersFaster, runs.Count);
 						lastWarningIndex [name] = i;
+						fasterBenchmarks.Add (benchmark);
 					} else if (numOutliersSlower > runs.Count * 3 / 4) {
 						Console.WriteLine ("- regression in {0}: {1}/{2}", name, numOutliersSlower, runs.Count);
 						lastWarningIndex [name] = i;
+						slowerBenchmarks.Add (benchmark);
 					}
 					/*
 					else if (numOutliersFaster == 0 && numOutliersSlower == 0) {
@@ -199,7 +266,54 @@ namespace DbTool
 					*/
 				}
 
+				if (fasterBenchmarks.Count != 0 || slowerBenchmarks.Count != 0) {
+					var warnings = await ParseInterface.PageQueryWithRetry (() => {
+						return ParseObject.GetQuery ("RegressionWarnings")
+							.WhereEqualTo ("runSet", testRunSet);
+					});
+
+					if (warnings.Count () > 1)
+						throw new Exception ("There is more than one RegressionWarning for run set " + testRunSet.ObjectId);
+					
+					ParseObject warning = null;
+					if (warnings.Count () == 1)
+						warning = warnings.First ();
+					
+					var warnedFasterBenchmarks = new List<object> ();
+					var warnedSlowerBenchmarks = new List<object> ();
+					if (warning != null) {
+						warnedFasterBenchmarks = warning.Get<List<object>> ("fasterBenchmarks");
+						warnedSlowerBenchmarks = warning.Get<List<object>> ("slowerBenchmarks");
+					}
+
+					var commit = testRunSet.Get<ParseObject> ("commit");
+					var previousCommit = sortedRunSets [i - 1].Get<ParseObject> ("commit");
+					var warnedAnyFaster = await WarnIfNecessary (fasterBenchmarks, warnedFasterBenchmarks, true, commit, previousCommit, machine, config);
+					var warnedAnySlower = await WarnIfNecessary (slowerBenchmarks, warnedSlowerBenchmarks, false, commit, previousCommit, machine, config);
+					var warnedAny = warnedAnyFaster || warnedAnySlower;
+
+					if (warnedAny) {
+						if (warning == null) {
+							warning = ParseInterface.NewParseObject ("RegressionWarnings");
+							warning ["runSet"] = testRunSet;
+						}
+
+						warning ["fasterBenchmarks"] = warnedFasterBenchmarks;
+						warning ["slowerBenchmarks"] = warnedSlowerBenchmarks;
+
+						await ParseInterface.RunWithRetry (() => warning.SaveAsync ());
+					}
+				}
+
 				await Task.Delay (1000);
+			}
+		}
+
+		static void InitializeParseInterface ()
+		{
+			if (!ParseInterface.Initialize ()) {
+				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
+				Environment.Exit (1);
 			}
 		}
 
@@ -214,22 +328,23 @@ namespace DbTool
 
 		public static void Main (string[] args)
 		{
-			if (!ParseInterface.Initialize ()) {
-				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
-				Environment.Exit (1);
-			}
-
 			if (args.Length == 0)
 				UsageAndExit (true);
 
 			if (args [0] == "--add-averages") {
+				InitializeParseInterface ();
 				AsyncContext.Run (() => AddAverages ());
 			} else if (args [0] == "--delete-run-set") {
 				var runSet = args [1];
+				InitializeParseInterface ();
 				AsyncContext.Run (() => DeleteRunSet (runSet));
 			} else if (args [0] == "--find-regressions") {
 				var machineId = args [1];
 				var configId = args [2];
+				var credentials = Accredit.GetCredentials ("regressionSlack");
+				SlackHooksUrl = credentials ["hooksURL"].ToString ();
+				Console.WriteLine ("slack hooks URL: {0}", SlackHooksUrl);
+				InitializeParseInterface ();
 				AsyncContext.Run (() => FindRegressions (machineId, configId));
 			} else {
 				UsageAndExit (false);
