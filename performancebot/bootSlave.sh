@@ -11,7 +11,7 @@ EC2PBOTMASTERIP="$1"
 BUILDBOTSLAVEPWD="$2"
 
 for i in "/usr/bin/dpkg" "/bin/cp" "/bin/rm"; do
-    sudo -n "$i" --help &> /dev/null || (echo "/etc/sudoers must have the following line:" && echo "`whoami` `hostname` = (root) NOPASSWD: $i" && exit 1)
+    sudo -k -n "$i" --help &> /dev/null || (echo "/etc/sudoers must have the following line:" && echo "`whoami` `hostname` = (root) NOPASSWD: $i" && exit 1)
 done
 
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
