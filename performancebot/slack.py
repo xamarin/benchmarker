@@ -45,7 +45,7 @@ class StatusPush(StatusReceiverMultiService):
             'text': message
         }
         if self.username:
-            payload['username'] = self.username
+            payload['username'] = self.username + '-' + str(result)
         if self.channel:
             payload['channel'] = self.channel
 
