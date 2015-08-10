@@ -97,7 +97,7 @@ namespace Benchmarker.Common
 				var user = AsyncContext.Run (() => ParseInterface.RunWithRetry (() => ParseUser.LogInAsync (credentials.Username, credentials.Password)));
 				//Console.WriteLine ("LogInAsync");
 
-				Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
+				//Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
 
 				var acl = new ParseACL (user);
 				acl.PublicReadAccess = true;
