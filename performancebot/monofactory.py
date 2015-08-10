@@ -5,6 +5,7 @@ from buildbot.steps.shell import ShellCommand
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
+from buildbot.status.builder import SUCCESS
 
 MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
 
@@ -75,6 +76,21 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def update_config_file(self):
+        step = MasterShellCommand(
+            name='cp config',
+            command=[
+                'bash',
+                '-c',
+                Interpolate(
+                    'cp -v %s/benchmarker/configs/' % MASTERWORKDIR +
+                    '%(prop:config_name)s.conf ../configs'
+                )
+            ]
+        )
+        self.addStep(step)
+
+
     def upload_benchmarker(self):
         self.addStep(FileDownload(Interpolate('%s/benchmarker.tar.gz' % MASTERWORKDIR), 'benchmarker.tar.gz', workdir='.'))
 
@@ -107,3 +123,61 @@ class DebianMonoBuildFactory(BuildFactory):
             )
         )
 
+
+
+def disable_intel_turbo_steps():
+    steps = []
+    steps.append(
+        ShellCommand(
+            name="disableintelturbo",
+            command=['bash', '-c', '(echo 0 | sudo /usr/bin/tee /sys/devices/system/cpu/cpufreq/boost) || (echo "only supported on Intel CPUs" && exit 1)'],
+            haltOnFailure=True
+        )
+    )
+
+    class AlwaysSuccessShellCommand(ShellCommand):
+        def __init__(self, *args, **kwargs):
+            ShellCommand.__init__(self, *args, **kwargs)
+
+        def finished(self, _):
+            ShellCommand.finished(self, SUCCESS)
+
+    # cf. http://pm-blog.yarda.eu/2011/10/deeper-c-states-and-increased-latency.html
+    # by keeping the file descriptor alive, we make sure that this setting is used.
+    # after closing the file descriptor, the old setting will be restored by the
+    # kernel module.
+    steps.append(FileDownload('forcec0state.sh', 'forcec0state.sh'))
+
+    # `setsid' is used in to escape the process group, otherwise it will be
+    # killed by the timeout logic of AlwaysSuccessShellCommand. since the
+    # parent process gets killed by it, we always force it to be
+    # successful. (I wish there would be a nicer way to do it).
+    steps.append(AlwaysSuccessShellCommand(
+        name="forceC0state",
+        command=['sudo', '-b', '/bin/bash', '-c', 'setsid bash -x ./forcec0state.sh'],
+        haltOnFailure=False,
+        flunkOnFailure=False,
+        timeout=5
+    ))
+
+    return steps
+
+def reset_intel_turbo_steps():
+    steps = []
+    steps.append(
+        ShellCommand(
+            name="enableturbo",
+            command=['bash', '-c', '(echo 1 | sudo /usr/bin/tee /sys/devices/system/cpu/cpufreq/boost) || (echo "only supported on Intel CPUs" && exit 1)'],
+            haltOnFailure=True,
+            alwaysRun=True
+        )
+    )
+    steps.append(
+        ShellCommand(
+            name="releaseNoTurboFP",
+            command=['bash', '-c', 'sudo /bin/kill `sudo /usr/bin/lsof -t /dev/cpu_dma_latency`'],
+            haltOnFailure=True,
+            alwaysRun=True
+        )
+    )
+    return steps
