@@ -19,7 +19,7 @@ echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /
 echo "deb http://download.mono-project.com/repo/debian wheezy-apache24-compat main" | sudo tee -a /etc/apt/sources.list.d/mono-xamarin.list
 sudo apt-get update
 
-sudo apt-get install python-pip python-dev mono-runtime mono-devel
+sudo apt-get install python-pip python-dev mono-runtime mono-devel git-core
 sudo pip install virtualenv
 
 # cleanup previous instance
