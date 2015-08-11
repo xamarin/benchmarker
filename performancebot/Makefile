@@ -42,7 +42,7 @@ ec2-follow-log:
 	ssh $(REMOTEHOST) 'tail -f $(PBOTMASTERROOT)/twistd.log'
 
 # deploy buildbot configuration from this working directory and reconfig buildbot instance; if reconfig fails, the old configuration is restored
-ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh parse.pw public_html templates
+ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh benchmarkerCredentials public_html templates
 	@$(CONTAINERCHECK) 1
 	ssh $(REMOTEHOST) 'mkdir -p /ebs/tmp'
 	scp -r $^ $(REMOTEHOST):/ebs/tmp/

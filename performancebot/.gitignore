@@ -7,4 +7,4 @@ twistd.log*
 twistd.pid
 debian-amd64_*/
 tmp/
-parse.pw
+benchmarkerCredentials
