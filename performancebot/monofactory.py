@@ -84,7 +84,7 @@ class DebianMonoBuildFactory(BuildFactory):
                 '-c',
                 Interpolate(
                     'cp -v %s/benchmarker/configs/' % MASTERWORKDIR +
-                    '%(prop:config_name)s.conf ../configs'
+                    '*.conf ../configs/'
                 )
             ]
         )
