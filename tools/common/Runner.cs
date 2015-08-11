@@ -136,17 +136,5 @@ namespace Benchmarker.Common
 		{
 			return Run (null, null, out timedOut);
 		}
-
-		public ProfileResult.Run ProfilerRun (string profilesDirectory, string profileFilename, out bool timedOut)
-		{
-			var run = Run (profilesDirectory, profileFilename, out timedOut);
-			if (run == null)
-				return null;
-
-			return new ProfileResult.Run {
-				WallClockTime = run.WallClockTime,
-				ProfilerOutput = profileFilename
-			};
-		}
 	}
 }

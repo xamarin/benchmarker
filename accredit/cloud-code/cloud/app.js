@@ -10,6 +10,7 @@ var githubValidateEndpoint = 'https://github.com/login/oauth/access_token';
 var githubUserEndpoint = 'https://api.github.com/user';
 var githubUserOrgsEndpoint = 'https://api.github.com/user/orgs';
 
+var Credentials = Parse.Object.extend ("Credentials");
 var CredentialsRequest = Parse.Object.extend ("CredentialsRequest");
 var CredentialsResponse = Parse.Object.extend ("CredentialsResponse");
 
@@ -34,22 +35,27 @@ var requestCredentialsHandler = function (data, res) {
         return;
     }
 
-    if (data.service !== 'benchmarker') {
-        res.render ('hello', { message: 'Unknown service.' });
-        return;
-    }
+    var credentialsObject;
 
-    // Ensure there's no entry with that key already.
-    var requestQuery = new Parse.Query (CredentialsRequest);
-    requestQuery.equalTo ('key', data.key);
+    var credentialsQuery = new Parse.Query (Credentials);
+    credentialsQuery.equalTo ('service', data.service);
 
-    requestQuery.find ({ useMasterKey: true }).then (function (results) {
+    credentialsQuery.find ({ useMasterKey: true }).then (function (results) {
+        if (results.length === 0)
+            return Parse.Promise.error ('Service does not exist');
+        credentialsObject = results [0];
+
+        // Ensure there's no entry with that key already.
+        var requestQuery = new Parse.Query (CredentialsRequest);
+        requestQuery.equalTo ('key', data.key);
+        return requestQuery.find ({ useMasterKey: true });
+    }).then (function (results) {
         if (results.length > 0)
             return Parse.Promise.error ('Key already exists');
 
         var credentialsRequest = new CredentialsRequest ();
         credentialsRequest.setACL (restrictedAcl);
-        credentialsRequest.set ('service', data.service);
+        credentialsRequest.set ('credentials', credentialsObject);
         credentialsRequest.set ('key', data.key);
         credentialsRequest.set ('secret', data.secret);
         return credentialsRequest.save (null, { useMasterKey: true });
@@ -61,6 +67,7 @@ var requestCredentialsHandler = function (data, res) {
             scope: 'read:org'
         }));
     }, function (error) {
+        // FIXME: Don't handle errors with an OK response
         res.render ('hello', { message: "Error: " + JSON.stringify (error) });
     });
 };
@@ -153,8 +160,8 @@ app.post ('/getCredentials', function (req, res) {
     var data = req.body;
     var credentialsRequest;
     var credentialsResponse;
-    var credentials;
-    var contentType;
+    var responseString;
+    var responseContentType;
 
     var requestQuery = new Parse.Query (CredentialsRequest);
     var responseQuery = new Parse.Query (CredentialsResponse);
@@ -165,7 +172,7 @@ app.post ('/getCredentials', function (req, res) {
         return;
     }
 
-    requestQuery.equalTo ('key', data.key);
+    requestQuery.equalTo ('key', data.key).include ('credentials');
     responseQuery.equalTo ('key', data.key);
 
     Parse.Promise.as ().then (function () {
@@ -184,14 +191,14 @@ app.post ('/getCredentials', function (req, res) {
         if (!credentialsResponse.get ('success'))
             return Parse.Promise.error ('Request not successful.');
 
-        var credentialsObject = { username: 'benchmarker', password: 'WhammyJammy' };
-        credentials = JSON.stringify (credentialsObject);
-        contentType = 'application/json';
+        var credentialsObject = credentialsRequest.get ('credentials');
+        responseString = credentialsObject.get ('responseString');
+        responseContentType = credentialsObject.get ('responseContentType');
 
         return destroyRequestAndResponse (credentialsRequest, credentialsResponse);
     }).then (function () {
-        res.type (contentType);
-        res.send (credentials);
+        res.type (responseContentType);
+        res.send (responseString);
     }, function (error) {
         res.render ('hello', { message: "Error: " + JSON.stringify (error) });
 

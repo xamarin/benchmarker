@@ -23,13 +23,10 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.94.0\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.94.0\build\net45\System.Data.SQLite.Core.targets')" />
   <ItemGroup>
-    <Compile Include="HttpClient.cs" />
     <Compile Include="Models\Benchmark.cs" />
     <Compile Include="Models\Config.cs" />
-    <Compile Include="Models\Revision.cs" />
     <Compile Include="LogProfiler\Reader.cs" />
     <Compile Include="Models\Result.cs" />
-    <Compile Include="Models\ProfileResult.cs" />
     <Compile Include="LogProfiler\Counter.cs" />
     <Compile Include="Runner.cs" />
     <Compile Include="Models\RunSet.cs" />
@@ -37,7 +34,7 @@
     <Compile Include="Git\Repository.cs" />
     <Compile Include="ParseInterface.cs" />
     <Compile Include="Models\Machine.cs" />
-    <Compile Include="Models\Credentials.cs" />
+    <Compile Include="Accredit.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

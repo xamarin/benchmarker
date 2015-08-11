@@ -47,6 +47,9 @@
     <Reference Include="Parse">
       <HintPath>..\packages\parse.1.5.0\lib\net45\Parse.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
