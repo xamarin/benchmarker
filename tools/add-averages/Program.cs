@@ -343,7 +343,6 @@ namespace DbTool
 				var configId = args [2];
 				var credentials = Accredit.GetCredentials ("regressionSlack");
 				SlackHooksUrl = credentials ["hooksURL"].ToString ();
-				Console.WriteLine ("slack hooks URL: {0}", SlackHooksUrl);
 				InitializeParseInterface ();
 				AsyncContext.Run (() => FindRegressions (machineId, configId));
 			} else {
