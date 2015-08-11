@@ -33,4 +33,4 @@ cd $HOME/slave
 pip install buildbot-slave
 
 buildslave create-slave --keepalive 45 slavedir $EC2PBOTMASTERIP `hostname` $BUILDBOTSLAVEPWD
-buildslave start slavedir
+buildslave start --nodaemon slavedir
