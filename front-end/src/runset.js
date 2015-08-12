@@ -163,15 +163,17 @@ class RunSetDescription extends React.Component {
 		var commitHash = runSet.get ('commit').get ('hash');
 
 		return <div className="Description">
+			<p><a href={"index.html#" + runSet.id}>Compare</a></p>
 			<dl>
-			<dt>Commit</dt>
-			<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>
-			{buildLink}
-			{logLinks}
-		{timedOutBenchmarks}
-		{crashedBenchmarks}
-		</dl>
-		{table}
+				<dt>Commit</dt>
+				<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>
+				{buildLink}
+				{logLinks}
+				{timedOutBenchmarks}
+				{crashedBenchmarks}
+				<dt>Elapsed Times</dt>
+				<dd>{table}</dd>
+			</dl>
 		</div>;
 	}
 }
