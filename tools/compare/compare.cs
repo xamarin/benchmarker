@@ -158,6 +158,8 @@ class Compare
 			Environment.Exit (0);
 		}
 
+		Config.InitializeGitHubClient ();
+
 		if (!ParseInterface.Initialize ()) {
 			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
 			Environment.Exit (1);

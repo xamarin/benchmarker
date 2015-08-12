@@ -2,6 +2,7 @@
 using System.IO;
 using System.Diagnostics;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using Parse;
 using System.Threading.Tasks;
@@ -129,15 +130,14 @@ namespace Benchmarker.Common.Models
 		}
 
 		static Octokit.GitHubClient gitHubClient;
-		static Octokit.GitHubClient GitHubClient {
-			get {
-				if (gitHubClient == null) {
-					gitHubClient = new Octokit.GitHubClient (new Octokit.ProductHeaderValue ("XamarinBenchmark"));
-					if (gitHubClient == null)
-						throw new Exception ("Could not instantiate GitHub client");
-				}
-				return gitHubClient;
-			}
+
+		public static void InitializeGitHubClient () {
+			gitHubClient = new Octokit.GitHubClient (new Octokit.ProductHeaderValue ("XamarinBenchmark"));
+			if (gitHubClient == null)
+				throw new Exception ("Could not instantiate GitHub client");
+
+			var creds = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
+			gitHubClient.Credentials = new Octokit.Credentials (creds);
 		}
 
 		public async Task<Commit> GetCommit (string optionalCommitHash, string optionalGitRepoDir)
@@ -218,10 +218,9 @@ namespace Benchmarker.Common.Models
 				Console.WriteLine ("Could not get git repository");
 			}
 
-			var github = GitHubClient;
 			Octokit.Commit gitHubCommit = null;
 			try {
-				gitHubCommit = await ParseInterface.RunWithRetry (() => github.GitDatabase.Commit.Get ("mono", "mono", commit.Hash), typeof (Octokit.NotFoundException));
+				gitHubCommit = await ParseInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", commit.Hash), typeof (Octokit.NotFoundException));
 			} catch (Octokit.NotFoundException) {
 				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
 			}
