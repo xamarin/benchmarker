@@ -128,11 +128,12 @@ app.get ('/oauthCallback', function (req, res) {
     var query = new Parse.Query (CredentialsRequest);
     Parse.Cloud.useMasterKey();
     Parse.Promise.as ().then (function () {
-        return query.get (data.state);
+        return query.include ('credentials').get (data.state);
     }).then (function (credentialsRequest) {
         // FIXME: Make this nicer
         res.render ('oauthConfirm', {
             key: credentialsRequest.get ('key'),
+            service: credentialsRequest.get ('credentials').get ('service'),
             state: data.state,
             code: data.code
         });
