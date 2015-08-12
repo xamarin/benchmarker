@@ -467,3 +467,30 @@ export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<P
 		return "";
 	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");
 }
+
+type NavigationProps = {
+	currentPage: string;
+}
+
+export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
+
+	render () {
+		var classFor = (page) =>
+			this.props.currentPage === page ? 'selected' : 'deselected';
+		return <div className="Navigation">
+			<ul>
+				<li
+					title="Compare the results of multiple run sets"
+					className={classFor ('compare')}>
+					<a href="index.html">Compare</a>
+				</li>
+				<li
+					title="View a timeline of all benchmarks"
+					className={classFor ('timeline')}>
+					<a href="timeline.html">Timeline</a>
+				</li>
+			</ul>
+		</div>;
+	}
+
+}

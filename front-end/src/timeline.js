@@ -100,6 +100,7 @@ class Page extends React.Component {
 			comparisonChart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
 
 		return <div className="Timeline">
+			<xp_common.Navigation currentPage="timeline" />
 			<table>
 				<tr>
 					<td>

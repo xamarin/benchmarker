@@ -75,10 +75,11 @@ class Page extends React.Component {
 			chart = <div className='diagnostic'>Please select at least two run sets.</div>;
 
 		return <div>
+			<xp_common.Navigation currentPage="compare" />
 			<RunSetSelectorList
-		controller={this.props.controller}
-		selections={this.state.selections}
-		onChange={this.setState.bind (this)} />
+				controller={this.props.controller}
+				selections={this.state.selections}
+				onChange={this.setState.bind (this)} />
 			{chart}
 		</div>;
 	}
