@@ -185,8 +185,7 @@ app.post ('/oauthFollowup', function (req, res) {
         credentialsResponse.set ('success', true);
         return credentialsResponse.save (null, { useMasterKey: true });
     }).then (function (obj) {
-        // FIXME: Make a nice page
-        res.render ('hello', { message: "id: " + obj.id });
+        res.render ('approved');
     }, function (error) {
         // FIXME: More appropriate error codes
         res.send (400, "Error: " + JSON.stringify (error));
