@@ -1,0 +1,26 @@
+{
+    "rules": {
+        "indent": [
+            2,
+            4
+        ],
+        "curly": [0],
+        "no-wrap-func": [0],
+        "quotes": [
+            0
+        ],
+        "linebreak-style": [
+            2,
+            "unix"
+        ],
+        "semi": [
+            2,
+            "always"
+        ],
+        "no-spaced-func": [0]
+    },
+    "env": {
+        "node": true
+    },
+    "extends": "eslint:recommended"
+}

@@ -11,4 +11,5 @@ before_script:
     - npm i -g eslint-plugin-react
     - make -C front-end
     - make -C front-end lint
+    - make -C accredit/cloud-code lint
 solution: tools/tools.sln

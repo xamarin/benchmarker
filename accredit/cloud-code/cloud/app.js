@@ -1,13 +1,15 @@
+"use strict";
+
+/* global Parse */
 
 // These two lines are required to initialize Express in Cloud Code.
-var  express = require('express');
+var express = require('express');
 var querystring = require('querystring');
 var credentials = require ('cloud/credentials');
-app = express();
+var app = express();
 
 var githubRedirectEndpoint = 'https://github.com/login/oauth/authorize?';
 var githubValidateEndpoint = 'https://github.com/login/oauth/access_token';
-var githubUserEndpoint = 'https://api.github.com/user';
 var githubUserOrgsEndpoint = 'https://api.github.com/user/orgs';
 
 var Credentials = Parse.Object.extend ("Credentials");
@@ -22,6 +24,51 @@ restrictedAcl.setPublicWriteAccess (false);
 app.set('views', 'cloud/views');  // Specify the folder to find templates
 app.set('view engine', 'ejs');    // Set the template engine
 app.use(express.bodyParser());    // Middleware for reading request body
+
+/**
+ * This function is called when GitHub redirects the user back after
+ *   authorization.  It calls back to GitHub to validate and exchange the code
+ *   for an access token.
+ */
+var getGitHubAccessToken = function (code) {
+    var body = querystring.stringify({
+        'client_id': credentials.githubClientId,
+        'client_secret': credentials.githubClientSecret,
+        'code': code
+    });
+    return Parse.Cloud.httpRequest({
+        method: 'POST',
+        url: githubValidateEndpoint,
+        headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Parse.com Cloud Code'
+        },
+        body: body
+    });
+};
+
+var getGitHubEndpoint = function (endpoint, accessToken) {
+    return Parse.Cloud.httpRequest({
+        method: 'GET',
+        url: endpoint,
+        params: { 'access_token': accessToken },
+        headers: {
+            'User-Agent': 'Parse.com Cloud Code'
+        }
+    });
+};
+
+var destroyRequestAndResponse = function (credentialsRequest, credentialsResponse) {
+    var promises = [];
+
+    if (credentialsRequest !== undefined)
+        promises.push (credentialsRequest.destroy ());
+
+    if (credentialsResponse !== undefined)
+        promises.push (credentialsResponse.destroy ());
+
+    return Parse.Promise.when (promises);
+};
 
 var requestCredentialsHandler = function (data, res) {
     if (!(data && data.service && data.key && data.secret)) {
@@ -56,9 +103,9 @@ var requestCredentialsHandler = function (data, res) {
     }).then (function (obj) {
         res.type ('text/plain');
         res.send (githubRedirectEndpoint + querystring.stringify ({
-            client_id: credentials.githubClientId,
-            state: obj.id,
-            scope: 'read:org'
+            'client_id': credentials.githubClientId,
+            'state': obj.id,
+            'scope': 'read:org'
         }));
     }, function (error) {
         // FIXME: More appropriate error codes
@@ -98,7 +145,6 @@ app.get ('/oauthCallback', function (req, res) {
 app.post ('/oauthFollowup', function (req, res) {
     var data = req.body;
     var token;
-    var userData;
     var credentialsRequest;
 
     if (!(data && data.code && data.state)) {
@@ -109,7 +155,7 @@ app.post ('/oauthFollowup', function (req, res) {
     var query = new Parse.Query (CredentialsRequest);
     Parse.Cloud.useMasterKey();
     Parse.Promise.as ().then (function () {
-      return query.get (data.state);
+        return query.get (data.state);
     }).then (function (obj) {
         credentialsRequest = obj;
         return getGitHubAccessToken (data.code);
@@ -199,19 +245,16 @@ app.post ('/getCredentials', function (req, res) {
 });
 
 var cleanupCredentialsJob = function (params, status) {
-    console.log ("cleanup job: " + JSON.stringify (params));
-
     var now = new Date ();
     var before = new Date (now.getTime () - 5 * 60 * 1000);
     var query;
-    if (params.table == 'request')
-         query = new Parse.Query (CredentialsRequest);
-     else
-         query = new Parse.Query (CredentialsResponse);
+    if (params.table === 'request')
+        query = new Parse.Query (CredentialsRequest);
+    else
+        query = new Parse.Query (CredentialsResponse);
     query.lessThan ("createdAt", before);
 
     query.find ({ useMasterKey: true }).then (function (results) {
-        console.log ("found " + results.length + " old objects");
         if (results.length > 0)
             return Parse.Object.destroyAll (results, { useMasterKey: true });
         return Parse.Promise.as ();
@@ -229,75 +272,6 @@ Parse.Cloud.job ("cleanupCredentialRequests", function (request, status) {
 Parse.Cloud.job ("cleanupCredentialResponses", function (request, status) {
     return cleanupCredentialsJob ({ table: 'response' }, status);
 });
-
-/**
- * This function is called when GitHub redirects the user back after
- *   authorization.  It calls back to GitHub to validate and exchange the code
- *   for an access token.
- */
-var getGitHubAccessToken = function(code) {
-  var body = querystring.stringify({
-    client_id: credentials.githubClientId,
-    client_secret: credentials.githubClientSecret,
-    code: code
-  });
-  return Parse.Cloud.httpRequest({
-    method: 'POST',
-    url: githubValidateEndpoint,
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'Parse.com Cloud Code'
-    },
-    body: body
-  });
-}
-
-var getGitHubEndpoint = function (endpoint, accessToken) {
-    return Parse.Cloud.httpRequest({
-      method: 'GET',
-      url: endpoint,
-      params: { access_token: accessToken },
-      headers: {
-        'User-Agent': 'Parse.com Cloud Code'
-      }
-    });
-}
-
-var getGitHubUserDetails = function(accessToken) {
-    return getGitHubEndpoint (githubUserEndpoint, accessToken);
-}
-
-var destroyRequestAndResponse = function (credentialsRequest, credentialsResponse) {
-    var promises = [];
-
-    if (credentialsRequest !== undefined) {
-        console.log ("destroying request");
-        promises.push (credentialsRequest.destroy ());
-    } else {
-        console.log ("no request");
-    }
-
-    if (credentialsResponse !== undefined) {
-        console.log ("destroying response");
-        promises.push (credentialsResponse.destroy ());
-    } else {
-        console.log ("no response");
-    }
-
-    return Parse.Promise.when (promises);
-}
-
-// // Example reading from the request query string of an HTTP get request.
-// app.get('/test', function(req, res) {
-//   // GET http://example.parseapp.com/test?message=hello
-//   res.send(req.query.message);
-// });
-
-// // Example reading from the request body of an HTTP post request.
-// app.post('/test', function(req, res) {
-//   // POST http://example.parseapp.com/test (with request body "message=hello")
-//   res.send(req.body.message);
-// });
 
 // Attach the Express app to Cloud Code.
 app.listen();
