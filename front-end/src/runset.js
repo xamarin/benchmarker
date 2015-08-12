@@ -123,7 +123,7 @@ class RunSetDescription extends React.Component {
 		if (buildURL !== undefined)
 			buildLink = [<dt>Build</dt>, <dd><a href={buildURL}>Link</a></dd>];
 
-		if (logURLs !== undefined) {
+		if (logURLs !== undefined && Object.keys (logURLs).length !== 0) {
 			logLinks = [<dt>Logs</dt>];
 			for (var key in logURLs) {
 				var url = logURLs[key];
