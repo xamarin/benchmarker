@@ -25,7 +25,7 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 var requestCredentialsHandler = function (data, res) {
     if (!(data && data.service && data.key && data.secret)) {
-        res.render ('hello', { message: 'Must have service, key, and secret.' });
+        res.send (400, "Error: Missing service, key, or secret.");
         return;
     }
 
@@ -61,17 +61,10 @@ var requestCredentialsHandler = function (data, res) {
             scope: 'read:org'
         }));
     }, function (error) {
-        // FIXME: Don't handle errors with an OK response
-        res.render ('hello', { message: "Error: " + JSON.stringify (error) });
+        // FIXME: More appropriate error codes
+        res.send (400, "Error: " + JSON.stringify (error));
     });
 };
-
-// Only for debugging!
-/*
-app.get ('/requestCredentials', function (req, res) {
-    return requestCredentialsHandler (req.query, res);
-});
-*/
 
 app.post ('/requestCredentials', function (req, res) {
     return requestCredentialsHandler (req.body, res);
@@ -81,7 +74,7 @@ app.get ('/oauthCallback', function (req, res) {
     var data = req.query;
 
     if (!(data && data.code && data.state)) {
-        res.render ('hello', { message: 'Something went wrong.'});
+        res.send (400, "Error: Missing code or state.");
         return;
     }
 
@@ -90,13 +83,15 @@ app.get ('/oauthCallback', function (req, res) {
     Parse.Promise.as ().then (function () {
         return query.get (data.state);
     }).then (function (credentialsRequest) {
+        // FIXME: Make this nicer
         res.render ('oauthConfirm', {
             key: credentialsRequest.get ('key'),
             state: data.state,
             code: data.code
         });
     }, function (error) {
-        res.render ('hello', { message: "Error: " + JSON.stringify (error) });
+        // FIXME: More appropriate error codes
+        res.send (400, "Error: " + JSON.stringify (error));
     });
 });
 
@@ -107,7 +102,7 @@ app.post ('/oauthFollowup', function (req, res) {
     var credentialsRequest;
 
     if (!(data && data.code && data.state)) {
-        res.render ('hello', { message: 'Something went wrong: ' + JSON.stringify (data) });
+        res.send (400, "Error: Missing code or state.");
         return;
     }
 
@@ -144,9 +139,11 @@ app.post ('/oauthFollowup', function (req, res) {
         credentialsResponse.set ('success', true);
         return credentialsResponse.save (null, { useMasterKey: true });
     }).then (function (obj) {
+        // FIXME: Make a nice page
         res.render ('hello', { message: "id: " + obj.id });
     }, function (error) {
-        res.render ('hello', { message: "Error: " + JSON.stringify (error) });
+        // FIXME: More appropriate error codes
+        res.send (400, "Error: " + JSON.stringify (error));
     });
 });
 
@@ -162,7 +159,7 @@ app.post ('/getCredentials', function (req, res) {
     Parse.Cloud.useMasterKey ();
 
     if (!(data && data.key && data.secret)) {
-        res.render ('hello', { message: 'Must have key and secret.' });
+        res.send (400, "Error: Missing key or secret.");
         return;
     }
 
@@ -194,7 +191,8 @@ app.post ('/getCredentials', function (req, res) {
         res.type (responseContentType);
         res.send (responseString);
     }, function (error) {
-        res.render ('hello', { message: "Error: " + JSON.stringify (error) });
+        // FIXME: More appropriate error codes
+        res.send (400, "Error: " + JSON.stringify (error));
 
         return destroyRequestAndResponse (credentialsRequest, credentialsResponse);
     });
