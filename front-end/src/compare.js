@@ -72,15 +72,19 @@ class Page extends React.Component {
 		if (runSets.length > 1)
 			chart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={runSets} />;
 		else
-			chart = <div className='diagnostic'>Please select at least two run sets.</div>;
+			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 
-		return <div>
-			<xp_common.Navigation currentPage="compare" />
-			<RunSetSelectorList
-				controller={this.props.controller}
-				selections={this.state.selections}
-				onChange={this.setState.bind (this)} />
-			{chart}
+		return <div class="ComparePage">
+			<header>
+				<xp_common.Navigation currentPage="compare" />
+			</header>
+			<article>
+				<RunSetSelectorList
+					controller={this.props.controller}
+					selections={this.state.selections}
+					onChange={this.setState.bind (this)} />
+				{chart}
+			</article>
 		</div>;
 	}
 }
@@ -104,10 +108,10 @@ class RunSetSelectorList extends React.Component {
 			return <section>
 				<button onClick={this.removeSelector.bind (this, index)}>Remove</button>
 				<xp_common.RunSetSelector
-			controller={this.props.controller}
-			selection={selection}
-			onChange={this.handleChange.bind (this, index)} />
-				</section>;
+					controller={this.props.controller}
+					selection={selection}
+					onChange={this.handleChange.bind (this, index)} />
+			</section>;
 		}
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector.bind (this))}

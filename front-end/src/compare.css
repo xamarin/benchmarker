@@ -1,43 +1,59 @@
+/* ComparePage */
+
+.ComparePage > article {
+	margin: 16px;
+}
+
 /* RunSetSelector */
 
 .RunSetSelector {
-	border: 1px solid black;
-	display: inline-block;
-	margin: 0 4px;
-	overflow: hidden;
-	padding: 0 4px;
-	vertical-align: top;
+	display: block;
 	font-family: sans-serif;
+	margin-bottom: 4px;
+	vertical-align: top;
+	overflow: hidden; /* BFC */
 }
 
-.RunSetSelector > hr {
-	border: none;
-	border-bottom: 1px solid black;
-}
-
-.RunSetSelector > .ConfigSelector {
-	display: inline-block;
+.RunSetSelector > select {
+	display: block;
+	margin: 8px;
 }
 
 /* RunSetSelectorList */
 
 .RunSetSelectorList {
-	border: 1px solid black;
-	margin: 8px;
-	padding: 0 4px;
+	float: left;
+	margin: 0 16px;
+	width: 320px;
 }
 
-.RunSetSelectorList > footer, .RunSetSelectorList > section {
+.RunSetSelectorList > section {
+	background: #D1D9DD;
+	border-radius: 3px;
 	clear: both;
-	margin: 8px 0;
+}
+
+.RunSetSelectorList > footer {
+	clear: both;
 	width: 100%;
 }
 
 .RunSetSelectorList > footer > button {
-	margin: 0 4px;
+	float: right;
+	margin: 16px 0;
 }
 
 .RunSetSelectorList > section > button {
 	float: right;
-	margin: 0 4px 0 8px;
+}
+
+.RunSetSelectorList > footer > button, .RunSetSelectorList > section > button {
+	height: 32px;
+}
+
+/* ComparisonChart */
+
+.ComparisonChart {
+	vertical-align: top;
+	overflow: hidden; /* BFC */
 }

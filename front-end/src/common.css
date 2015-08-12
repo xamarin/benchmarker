@@ -8,6 +8,17 @@ body {
 	font-style: italic;
 }
 
+.DiagnosticBlock {
+	margin: 16px;
+	overflow: hidden; /* BFC */
+	text-align: center;
+}
+
+label {
+	font-size: small;
+	margin: 8px;
+}
+
 /* ConfigDescription, MachineDescription */
 
 .Description {
@@ -32,17 +43,16 @@ body {
 	font-weight: bold;
 }
 
-/* ConfigSelector, RunSetSelector */
+/* ConfigSelector */
 
-.ConfigSelector > select, .RunSetSelector > select {
-	border: 1px solid black;
-	margin: 8px 4px;
-	height: 6em;
+.ConfigSelector {
+	width: 100%;
+	margin: 8px 0;
 }
 
-.ConfigSelector > select > option, .RunSetSelector > select > option {
-	font-family: sans-serif;
-	padding: 4px;
+.ConfigSelector > select {
+	display: block;
+	margin: 8px;
 }
 
 /* Navigation */
@@ -68,7 +78,7 @@ body {
 .Navigation > ul > li > a {
 	color: #BDC3C7;
 	display: inline-block;
-	padding: 1em;
+	padding: 16px;
 	text-decoration: none;
 }
 
@@ -77,7 +87,14 @@ body {
 	color: #2C3E50;
 }
 
-.Navigation > ul > li.deselected > a:hover {
+.Navigation > ul > li.deselected > a:focus, .Navigation > ul > li.deselected > a:hover {
 	color: #FFFFFF;
 	background: #3A526A;
+}
+
+/* GoogleChart */
+
+.GoogleChart {
+	overflow: hidden; /* BFC */
+	margin: 16px;
 }

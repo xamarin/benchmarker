@@ -177,13 +177,15 @@ export class ConfigSelector extends React.Component<ConfigSelectorProps, ConfigS
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
 		return <div className="ConfigSelector">
+			<label>Machine</label>
 			<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
-			{this.props.controller.allMachines.map (renderMachineOption.bind (this))}
-		</select>
+				{this.props.controller.allMachines.map (renderMachineOption.bind (this))}
+			</select>
+			<label>Config</label>
 			<select size="6" value={configId} onChange={this.configSelected.bind (this)}>
-			{this.props.controller.allConfigs.map (renderConfigOption.bind (this))}
-		</select>
-			</div>;
+				{this.props.controller.allConfigs.map (renderConfigOption.bind (this))}
+			</select>
+		</div>;
 	}
 
 	openMachineDescription () {
@@ -407,6 +409,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		}
 		return <div className="RunSetSelector">
 			{configSelector}
+			<label>Run Set</label>
 			{runSetsSelect}
 			</div>;
 	}

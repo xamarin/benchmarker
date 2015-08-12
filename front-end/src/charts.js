@@ -52,7 +52,11 @@ export class GoogleChart extends React.Component<GoogleChartProps, GoogleChartPr
 	chart: void | Object;
 
 	render () {
-		return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
+		return React.DOM.div({
+			className: 'GoogleChart',
+			id: this.props.graphName,
+			style: {height: this.props.height}
+		});
 	}
 
 	componentDidMount () {
@@ -337,11 +341,12 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 			}
 		};
 		return <GoogleChart
-		graphName='compareChart'
-		chartClass={google.visualization.CandlestickChart}
-		height={800 /*{this.height}*/}
-		table={this.table}
-		options={options} />;
+			graphName="compareChart"
+			className="ComparisonChart"
+			chartClass={google.visualization.CandlestickChart}
+			height={800 /*{this.height}*/}
+			table={this.table}
+			options={options} />;
 	}
 }
 
