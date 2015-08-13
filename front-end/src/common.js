@@ -154,64 +154,6 @@ type ConfigSelectorProps = {
 	onChange: (selection: MachineConfigSelection) => void;
 };
 
-export class ConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
-	render () : Object {
-		function renderMachineOption (machine) {
-			return <option
-				value={machine.id}
-				key={machine.id}
-				onDoubleClick={this.openMachineDescription.bind (this)}
-				>{machine.get ('name')}</option>;
-		}
-		function renderConfigOption (config) {
-			return <option
-				value={config.id}
-				key={config.id}
-				onDoubleClick={this.openConfigDescription.bind (this)}
-				>{config.get ('name')}</option>;
-		}
-		var machineId = undefined;
-		if (this.props.machine !== undefined)
-			machineId = this.props.machine.id;
-		var configId = undefined;
-		if (this.props.config !== undefined)
-			configId = this.props.config.id;
-		return <div className="ConfigSelector">
-			<label>Machine</label>
-			<select size="6" value={machineId} onChange={this.machineSelected.bind (this)}>
-				{this.props.controller.allMachines.map (renderMachineOption.bind (this))}
-			</select>
-			<label>Config</label>
-			<select size="6" value={configId} onChange={this.configSelected.bind (this)}>
-				{this.props.controller.allConfigs.map (renderConfigOption.bind (this))}
-			</select>
-		</div>;
-	}
-
-	openMachineDescription () {
-		if (this.props.machine === undefined)
-			return;
-		window.open ('machine.html#' + this.props.machine.id);
-	}
-
-	openConfigDescription () {
-		if (this.props.config === undefined)
-			return;
-		window.open ('config.html#' + this.props.config.id);
-	}
-
-	machineSelected (event: Object) {
-		var machine = this.props.controller.machineForId (event.target.value);
-		this.props.onChange ({machine: machine, config: this.props.config});
-	}
-
-	configSelected (event: Object) {
-		var config = this.props.controller.configForId (event.target.value);
-		this.props.onChange ({machine: this.props.machine, config: config});
-	}
-
-}
-
 type ConfigDescriptionProps = {
 	config: Parse.Object | void;
 	omitHeader: boolean;
