@@ -185,7 +185,7 @@ app.post ('/oauthFollowup', function (req, res) {
         credentialsResponse.set ('key', credentialsRequest.get ('key'));
         credentialsResponse.set ('success', true);
         return credentialsResponse.save (null, { useMasterKey: true });
-    }).then (function (obj) {
+    }).then (function (/*obj*/) {
         res.render ('approved');
     }, function (error) {
         // FIXME: More appropriate error codes
