@@ -126,6 +126,36 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def build_mono(self):
+        self.addStep(
+            ShellCommand(
+                name='autogen.sh',
+                command=['./autogen.sh'],
+                workdir='mono'
+            )
+        )
+        self.addStep(
+            ShellCommand(
+                name='configure',
+                command=['bash', '-c', './configure --prefix=$PWD/build'],
+                workdir='mono'
+            )
+        )
+        self.addStep(
+            ShellCommand(
+                name='make',
+                command=['make', '-j4', 'V=1'],
+                workdir='mono'
+            )
+        )
+        self.addStep(
+            ShellCommand(
+                name='make install',
+                command=['make', 'install'],
+                workdir='mono'
+            )
+        )
+
     def wipe(self):
         self.addStep(
             ShellCommand(
