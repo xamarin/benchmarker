@@ -483,14 +483,14 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 		return <div className="Navigation">
 			<ul>
 				<li
-					title="Compare the results of multiple run sets"
-					className={classFor ('compare')}>
-					<a href="index.html">Compare</a>
-				</li>
-				<li
 					title="View a timeline of all benchmarks"
 					className={classFor ('timeline')}>
-					<a href="timeline.html">Timeline</a>
+					<a href="index.html">Timeline</a>
+				</li>
+				<li
+					title="Compare the results of multiple run sets"
+					className={classFor ('compare')}>
+					<a href="compare.html">Compare</a>
 				</li>
 			</ul>
 		</div>;
