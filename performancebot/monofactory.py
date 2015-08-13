@@ -114,6 +114,18 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def clone_mono(self):
+        step = git.Git(
+            repourl='https://github.com/mono/mono/',
+            workdir='mono',
+            branch='master',
+            mode='incremental',
+            # shallow=True,
+            codebase='mono',
+            haltOnFailure=True
+        )
+        self.addStep(step)
+
     def wipe(self):
         self.addStep(
             ShellCommand(
