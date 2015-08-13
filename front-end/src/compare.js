@@ -4,6 +4,7 @@
 
 import * as xp_utils from './utils.js';
 import * as xp_common from './common.js';
+import * as xp_charts from './charts.js';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
@@ -69,7 +70,7 @@ class Page extends React.Component {
 
 		var chart;
 		if (runSets.length > 1)
-			chart = <xp_common.ComparisonChart controller={this.props.controller} runSets={runSets} />;
+			chart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={runSets} />;
 		else
 			chart = <div className='diagnostic'>Please select at least two run sets.</div>;
 
@@ -122,4 +123,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+xp_charts.start (started);

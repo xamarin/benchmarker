@@ -4,6 +4,7 @@
 
 import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
+import * as xp_charts from './charts.js';
 import {Parse} from 'parse';
 import React from 'react';
 
@@ -96,7 +97,7 @@ class Page extends React.Component {
 
 		var comparisonChart;
 		if (this.state.runSets.length > 1)
-			comparisonChart = <xp_common.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
+			comparisonChart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
 
 		return <div className="Timeline">
 			<table>
@@ -178,7 +179,7 @@ class TimelineChart extends React.Component {
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
-		return <xp_common.TimelineAMChart
+		return <xp_charts.TimelineAMChart
 			graphName={this.props.graphName}
 			height={300}
 			data={this.table}
@@ -201,7 +202,7 @@ class TimelineChart extends React.Component {
 	invalidateState (machine, config) {
 		this.table = undefined;
 
-		if (!xp_common.canUseGoogleCharts ())
+		if (!xp_charts.canUseGoogleCharts ())
 			return;
 
 		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
@@ -391,4 +392,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+xp_charts.start (started);
