@@ -353,7 +353,6 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 type AMChartProps = {
 	graphName: string;
 	height: number;
-	data: Object;
 	options: Object;
 	selectListener: (index: number) => void;
 };
@@ -382,8 +381,6 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			return true;
 		if (this.props.options !== nextProps.options)
 			return true;
-		if (this.props.data !== nextProps.data)
-			return true;
 		// FIXME: what do we do with the selectListener?
 		return false;
 	}
@@ -395,14 +392,10 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	drawChart (props : AMChartProps) {
 		console.log ("drawing");
 		if (this.chart === undefined) {
-			var options = {};
-			Object.keys (props.options).forEach (k => { options [k] = props.options [k]; });
-			options.dataProvider = props.data;
-			this.chart = AmCharts.makeChart (props.graphName, options);
+			this.chart = AmCharts.makeChart (props.graphName, props.options);
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener ('clickGraphItem', e => { this.props.selectListener (e.index); });
 		} else {
-			this.chart.dataProvider = props.data;
 			this.chart.validateData ();
 		}
 	}
@@ -480,14 +473,14 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, Timel
 						],
 						"allLabels": [],
 						"balloon": {},
-						"titles": []
+						"titles": [],
+                        "dataProvider": this.props.data
 					};
 
 		return <AMChart
 			graphName={this.props.graphName}
 			height={this.props.height}
 			options={timelineOptions}
-			data={this.props.data}
 			selectListener={this.props.selectListener} />;
 	}
 }
