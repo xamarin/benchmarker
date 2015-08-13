@@ -1,7 +1,7 @@
 # Stuff you should feel safe changing
 
 PAGES = compare config machine timeline runset
-COMMON = common utils
+COMMON = common utils charts
 DEPS = babel-loader parse react
 STYLES = common compare style timeline
 
