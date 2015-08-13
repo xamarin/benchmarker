@@ -71,7 +71,7 @@ class DebianMonoBuildFactory(BuildFactory):
             command=[
                 'bash', '-c', Interpolate(
                     'mono %s/benchmarker/tools/compare.exe --list-benchmarks | ' % MASTERWORKDIR +
-                    'tee benchmark-%(prop:buildername)s.list')
+                    'tee benchmarks.list')
             ]
         )
         self.addStep(step)
