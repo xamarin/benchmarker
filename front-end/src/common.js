@@ -286,12 +286,12 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
 	render () : Object {
-		function idsToString (ids: [string, string]) : string {
-			return ids [0] + "+" + ids [1];
+		function idsToString (machine, config) : string {
+			return machine + "+" + config;
 		}
 
 		var combinations = this.props.controller.allRunSets.map (rs => [rs.get ('machine').id, rs.get ('config').id]);
-		var histogram = xp_utils.histogramByString (combinations, ids => idsToString (ids));
+		var histogram = xp_utils.histogramByString (combinations, ids => idsToString (ids [0], ids [1]));
 
 		var userStringForIds = ids => {
 			var machine = this.props.controller.machineForId (ids [0]);
@@ -300,16 +300,43 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		};
 
 		histogram = xp_utils.sortArrayBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
+		console.log (histogram);
+
+		var machines = {};
+		for (var i = 0; i < histogram.length; ++i) {
+			var machineId = histogram [i] [0] [0];
+			var configId = histogram [i] [0] [1];
+			var count = histogram [i] [1];
+			var machine = this.props.controller.machineForId (machineId).get ('name');
+			var config = this.props.controller.configForId (configId).get ('name');
+			machines [machine] = machines [machine] || [];
+			machines [machine].push ({
+				configId: configId,
+				configName: config,
+				count: count,
+				machineId: machineId,
+				machineName: machine,
+			});
+		}
+
+		console.log (machines);
 
 		function renderEntry (entry) {
-			var ids = entry [0];
-			var count = entry [1];
-			var string = idsToString (ids);
+			console.log ('rendering entry');
+			console.log (entry);
+			var string = idsToString (entry.machineId, entry.configId);
+			console.log ('string: ' + string);
 			return <option
 				value={string}
 				key={string}>
-				{userStringForIds (ids) + " (" + count + ")"}
+				{entry.configName} ({entry.count})
 			</option>;
+		}
+
+		function renderGroup (machines, machine) {
+			return <optgroup label={machine}>
+				{xp_utils.sortArrayBy (machines [machine], x => -x.count).map (renderEntry.bind (this))}
+			</optgroup>;
 		}
 
 		var machineId = undefined;
@@ -318,12 +345,13 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var configId = undefined;
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
-		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString ([machineId, configId]);
+		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString (machineId, configId);
 		return <div className="CombinedConfigSelector">
+			<label>Machine &amp; Config</label>
 			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
-			{histogram.map (renderEntry.bind (this))}
-		</select>
-			</div>;
+				{Object.keys (machines).map (renderGroup.bind (this, machines))}
+			</select>
+		</div>;
 	}
 
 	combinationSelected (event: Object) {
