@@ -384,11 +384,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			: this.props.controller.configForId (selection.config.id);
 
 		var configSelector =
-			<ConfigSelector
-		controller={this.props.controller}
-		machine={selection.machine}
-		config={config}
-		onChange={this.configSelected.bind (this)} />;
+			<CombinedConfigSelector
+				controller={this.props.controller}
+				machine={selection.machine}
+				config={config}
+				onChange={this.configSelected.bind (this)} />;
 		var runSetsSelect = undefined;
 		if (filteredRunSets === undefined) {
 			runSetsSelect = <select size="6" disabled="true">

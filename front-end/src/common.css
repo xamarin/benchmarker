@@ -43,14 +43,14 @@ label {
 	font-weight: bold;
 }
 
-/* ConfigSelector */
+/* ConfigSelector, CombinedConfigSelector */
 
-.ConfigSelector {
+.ConfigSelector, .CombinedConfigSelector {
 	width: 100%;
 	margin: 8px 0;
 }
 
-.ConfigSelector > select {
+.ConfigSelector > select, .CombinedConfigSelector > select {
 	display: block;
 	margin: 8px;
 }
