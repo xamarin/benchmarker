@@ -7,6 +7,8 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS
+
 MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
 
 
@@ -156,6 +158,7 @@ class DebianMonoBuildFactory(BuildFactory):
             )
         )
 
+
     def wipe(self):
         self.addStep(
             ShellCommand(
@@ -225,3 +228,67 @@ def reset_intel_turbo_steps():
         )
     )
     return steps
+
+
+def gen_guard_benchmark_run(benchmark):
+    def _benchmark_retry(benchmark, step):
+        if not step.build.getProperties().has_key(PROPERTYNAME_SKIP_BENCHS):
+            return True
+        executed_benchmarks = step.build.getProperties().getProperty(PROPERTYNAME_SKIP_BENCHS)
+        if executed_benchmarks is None:
+            return True
+        assert isinstance(executed_benchmarks, list), "it is: " + str(executed_benchmarks)
+        return benchmark not in executed_benchmarks
+
+    def _benchmark_filter(benchmark, step):
+        if not step.build.getProperties().has_key(PROPERTYNAME_FILTER_BENCHS):
+            return True
+        filter_benchmarks = step.build.getProperties().getProperty(PROPERTYNAME_FILTER_BENCHS)
+        if filter_benchmarks is None or len(filter_benchmarks) == 0:
+            return True
+        return benchmark in filter_benchmarks.split(',')
+
+    # scopes in python are stupid.
+    return lambda s: _benchmark_retry(benchmark, s) and _benchmark_filter(benchmark, s)
+
+
+def benchmark_step(benchmark_name, commit_renderer, build_log_args, root_renderer):
+    steps = []
+    cmd1 = ['mono',
+            'tools/compare.exe',
+            '--benchmarks', benchmark_name,
+            '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
+            '--root', root_renderer()
+           ]
+    cmd2 = ['--commit', commit_renderer(),
+            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
+            'tests/',
+            'benchmarks/',
+            'machines/',
+            Interpolate('configs/%(prop:config_name)s.conf')
+           ]
+    steps.append(
+        ShellCommand(
+            name=benchmark_name,
+            description="benchmark " + benchmark_name,
+            command=cmd1 + build_log_args + cmd2,
+            timeout=45*60,
+            doStepIf=gen_guard_benchmark_run(benchmark_name),
+            workdir='benchmarker'
+        )
+    )
+    return steps
+
+
+from buildbot.interfaces import IRenderable
+from zope.interface import implements
+
+class DetermineMonoRevision(object):
+    implements(IRenderable)
+    #pylint: disable=C0103,R0201
+    def getRenderingFor(self, props):
+        if props.hasProperty('got_revision'):
+            return props['got_revision']['mono']
+        return "failed revision lookup"
+    #pylint: enable=C0103,R0201
+
