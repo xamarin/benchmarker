@@ -143,6 +143,7 @@ class DebianMonoBuildFactory(BuildFactory):
                 workdir='mono'
             )
         )
+        self.addStep(ShellCommand(name='ccache stats', command=['ccache', '-s']))
         self.addStep(
             ShellCommand(
                 name='make',
@@ -157,6 +158,7 @@ class DebianMonoBuildFactory(BuildFactory):
                 workdir='mono'
             )
         )
+        self.addStep(ShellCommand(name='ccache stats', command=['ccache', '-s']))
 
 
     def wipe(self):

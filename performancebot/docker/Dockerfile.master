@@ -15,6 +15,7 @@ RUN apt-get install -y \
         automake \
         gettext \
         mono-xbuild \
+        ccache \
         libmono-microsoft-build-tasks-v4.0-4.0-cil \
         mono-complete \
         nuget \

@@ -7,4 +7,5 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
+export PATH="/usr/lib/ccache:$PATH"
 cd /tmp/benchmarker/performancebot && bash -x bootSlave.sh "$1" "$2"
