@@ -144,6 +144,52 @@ function normalizeRange (mean: number, range: Range) : Range {
 	return range.map (x => x / mean);
 }
 
+function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (Array<Array<string | number>> | void) {
+    for (var i = 0; i < runSets.length; ++i) {
+        if (runsByIndex [i] === undefined)
+            return;
+    }
+
+    console.log ("all runs loaded");
+
+    var commonBenchmarkIds;
+
+    for (i = 0; i < runSets.length; ++i) {
+        var runs = runsByIndex [i];
+        var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
+        if (commonBenchmarkIds === undefined) {
+            commonBenchmarkIds = benchmarkIds;
+            continue;
+        }
+        commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
+    }
+
+    if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
+        return;
+
+	commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => controller.benchmarkNameForId (id) || "");
+
+    var dataArray = [];
+
+    for (i = 0; i < commonBenchmarkIds.length; ++i) {
+        var benchmarkId = commonBenchmarkIds [i];
+        var row = [controller.benchmarkNameForId (benchmarkId)];
+        var mean = undefined;
+        for (var j = 0; j < runSets.length; ++j) {
+            var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
+            var range = calculateRunsRange (filteredRuns);
+            if (mean === undefined) {
+                // FIXME: eventually we'll have more meaningful ranges
+                mean = range [1];
+            }
+            row = row.concat (normalizeRange (mean, range));
+        }
+        dataArray.push (row);
+    }
+
+    return dataArray;
+}
+
 type ComparisonChartProps = {
 	runSets: Array<Parse.Object>;
 	controller: xp_common.Controller;
@@ -261,55 +307,17 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 		if (!canUseGoogleCharts ())
 			return;
 
-		for (i = 0; i < this.props.runSets.length; ++i) {
-			if (this.runsByIndex [i] === undefined)
-				return;
-		}
-
-		console.log ("all runs loaded");
-
-		var commonBenchmarkIds;
-
-		for (i = 0; i < this.props.runSets.length; ++i) {
-			var runs = this.runsByIndex [i];
-			var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
-			if (commonBenchmarkIds === undefined) {
-				commonBenchmarkIds = benchmarkIds;
-				continue;
-			}
-			commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
-		}
-
-		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
-			return;
-
-		commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id) || "");
-
-		var dataArray = [];
-
-		for (i = 0; i < commonBenchmarkIds.length; ++i) {
-			var benchmarkId = commonBenchmarkIds [i];
-			var row = [this.props.controller.benchmarkNameForId (benchmarkId)];
-			var mean = undefined;
-			for (var j = 0; j < this.props.runSets.length; ++j) {
-				var filteredRuns = this.runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
-				var range = calculateRunsRange (filteredRuns);
-				if (mean === undefined) {
-					// FIXME: eventually we'll have more meaningful ranges
-					mean = range [1];
-				}
-				row = row.concat (normalizeRange (mean, range));
-			}
-			dataArray.push (row);
-		}
+        var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
+        if (dataArray === undefined)
+            return;
 
 		var data = google.visualization.arrayToDataTable (dataArray, true);
 
 		var labels = this.runSetLabels ();
-		for (i = 0; i < labels.length; ++i)
+		for (var i = 0; i < labels.length; ++i)
 			data.setColumnLabel (1 + 4 * i, labels [i]);
 
-		var height = (35 + (15 * this.props.runSets.length) * commonBenchmarkIds.length) + "px";
+		var height = (35 + (15 * this.props.runSets.length) * dataArray.length) + "px";
 
 		this.table = data;
 		this.height = height;
