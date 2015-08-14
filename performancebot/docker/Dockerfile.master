@@ -9,6 +9,11 @@ RUN echo "deb http://download.mono-project.com/repo/debian wheezy-apache24-compa
 RUN apt-get update
 RUN apt-get install -y \
         git \
+        build-essential \
+        autoconf \
+        libtool \
+        automake \
+        gettext \
         mono-xbuild \
         libmono-microsoft-build-tasks-v4.0-4.0-cil \
         mono-complete \
