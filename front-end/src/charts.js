@@ -283,7 +283,7 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 		if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
 			return;
 
-		commonBenchmarkIds = xp_utils.sortArrayBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id) || "");
+		commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => this.props.controller.benchmarkNameForId (id) || "");
 
 		var dataArray = [];
 

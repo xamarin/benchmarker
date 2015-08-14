@@ -241,7 +241,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return machine.get ('name') + " / " + config.get ('name');
 		};
 
-		histogram = xp_utils.sortArrayBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
+		histogram = xp_utils.sortArrayLexicographicallyBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
 		console.log (histogram);
 
 		var machines = {};
@@ -277,7 +277,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 
 		function renderGroup (machines, machine) {
 			return <optgroup label={machine}>
-				{xp_utils.sortArrayBy (machines [machine], x => -x.count).map (renderEntry.bind (this))}
+				{xp_utils.sortArrayNumericallyBy (machines [machine], x => -x.count).map (renderEntry.bind (this))}
 			</optgroup>;
 		}
 

@@ -83,8 +83,21 @@ export function partitionArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => str
 	return result;
 }
 
-// FIXME: keyFunc should be (((v: T) => string) | ((v: T) => number))
-export function sortArrayBy<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<T> {
+export function sortArrayLexicographicallyBy<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<T> {
+	var copy = arr.slice (0);
+	copy.sort ((a, b) => {
+		var ka = keyFunc (a);
+		var kb = keyFunc (b);
+		if (ka < kb)
+			return -1;
+		if (kb < ka)
+			return 1;
+		return 0;
+	});
+	return copy;
+}
+
+export function sortArrayNumericallyBy<T> (arr: Array<T>, keyFunc: (v: T) => number) : Array<T> {
 	var copy = arr.slice (0);
 	copy.sort ((a, b) => {
 		var ka = keyFunc (a);

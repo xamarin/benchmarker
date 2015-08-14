@@ -355,7 +355,7 @@ class BenchmarkChartList extends React.Component {
 		}
 
 		var benchmarks = this.props.controller.allEnabledBenchmarks ();
-		benchmarks = xp_utils.sortArrayBy (benchmarks, b => b.get ('name'));
+		benchmarks = xp_utils.sortArrayLexicographicallyBy (benchmarks, b => b.get ('name'));
 		var charts = benchmarks.map (b => {
 			var name = b.get ('name');
 			var key = 'benchmarkChart_' + name;
