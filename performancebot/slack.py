@@ -33,9 +33,14 @@ class StatusPush(StatusReceiverMultiService):
     #pylint: enable=W0613
 
     def buildFinished(self, builderName, build, result):
-        #pylint: disable=E1101
-        url = self.master_status.getURLForThing(build)
-        #pylint: enable=E1101
+        url = None
+        try:
+            #pylint: disable=E1101
+            url = self.master_status.getURLForThing(build)
+            #pylint: enable=E1101
+        except AttributeError:
+            return
+
         if self.localhost_replace:
             url = url.replace("http://localhost:8010", self.localhost_replace)
 
