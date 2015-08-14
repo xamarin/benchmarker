@@ -190,6 +190,56 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
     return dataArray;
 }
 
+function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Object>) : Array<string> {
+    var commitIds = runSets.map (rs => rs.get ('commit').id);
+    var commitHistogram = xp_utils.histogramOfStrings (commitIds);
+
+    var includeCommit = commitHistogram.length > 1;
+
+    var includeStartedAt = false;
+    for (var i = 0; i < commitHistogram.length; ++i) {
+        if (commitHistogram [i] [1] > 1)
+            includeStartedAt = true;
+    }
+
+    var machineIds = runSets.map (rs => rs.get ('machine').id);
+    var includeMachine = xp_utils.uniqStringArray (machineIds).length > 1;
+
+    var configIds = runSets.map (rs => rs.get ('config').id);
+    var includeConfigs = xp_utils.uniqStringArray (configIds).length > 1;
+
+    var formatRunSet = runSet => {
+        var str = "";
+        if (includeCommit) {
+            var commit = runSet.get ('commit');
+            str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
+        }
+        if (includeMachine) {
+            var machine = controller.machineForId (runSet.get ('machine').id);
+            if (str !== "")
+                str = str + "\n";
+            str = str + machine.get ('name');
+        }
+        if (includeConfigs) {
+            var config = controller.configForId (runSet.get ('config').id);
+            if (includeMachine)
+                str = str + " / ";
+            else if (str !== "")
+                str = str + "\n";
+            str = str + config.get ('name');
+        }
+        if (includeStartedAt) {
+            if (str !== "")
+                str = str + "\n";
+            str = str + runSet.get ('startedAt');
+        }
+        return str;
+    };
+
+    return runSets.map (formatRunSet);
+}
+
+
 type ComparisonChartProps = {
 	runSets: Array<Parse.Object>;
 	controller: xp_common.Controller;
@@ -250,55 +300,6 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 		this.runsLoaded ();
 	}
 
-	runSetLabels () : Array<string> {
-		var commitIds = this.props.runSets.map (rs => rs.get ('commit').id);
-		var commitHistogram = xp_utils.histogramOfStrings (commitIds);
-
-		var includeCommit = commitHistogram.length > 1;
-
-		var includeStartedAt = false;
-		for (var i = 0; i < commitHistogram.length; ++i) {
-			if (commitHistogram [i] [1] > 1)
-				includeStartedAt = true;
-		}
-
-		var machineIds = this.props.runSets.map (rs => rs.get ('machine').id);
-		var includeMachine = xp_utils.uniqStringArray (machineIds).length > 1;
-
-		var configIds = this.props.runSets.map (rs => rs.get ('config').id);
-		var includeConfigs = xp_utils.uniqStringArray (configIds).length > 1;
-
-		var formatRunSet = runSet => {
-			var str = "";
-			if (includeCommit) {
-				var commit = runSet.get ('commit');
-				str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
-			}
-			if (includeMachine) {
-				var machine = this.props.controller.machineForId (runSet.get ('machine').id);
-				if (str !== "")
-					str = str + "\n";
-				str = str + machine.get ('name');
-			}
-			if (includeConfigs) {
-				var config = this.props.controller.configForId (runSet.get ('config').id);
-				if (includeMachine)
-					str = str + " / ";
-				else if (str !== "")
-					str = str + "\n";
-				str = str + config.get ('name');
-			}
-			if (includeStartedAt) {
-				if (str !== "")
-					str = str + "\n";
-				str = str + runSet.get ('startedAt');
-			}
-			return str;
-		};
-
-		return this.props.runSets.map (formatRunSet);
-	}
-
 	runsLoaded () {
 		var i;
 
@@ -313,7 +314,7 @@ export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartP
 
 		var data = google.visualization.arrayToDataTable (dataArray, true);
 
-		var labels = this.runSetLabels ();
+		var labels = runSetLabels (this.props.controller, this.props.runSets);
 		for (var i = 0; i < labels.length; ++i)
 			data.setColumnLabel (1 + 4 * i, labels [i]);
 
