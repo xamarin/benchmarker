@@ -135,9 +135,16 @@ function calculateRunsRange (runs: Array<Parse.Object>): Range {
 		sum += v;
 	}
 	var mean = sum / runs.length;
+    sum = 0;
+    for (i = 0; i < runs.length; ++i) {
+        var v = runs [i].get ('elapsedMilliseconds');
+        var diff = v - mean;
+        sum += diff * diff;
+    }
+    var stddev = Math.sqrt (sum) / runs.length;
 	if (min === undefined || max === undefined)
 		min = max = 0;
-	return [min, mean, mean, max];
+	return [min, mean - stddev, mean + stddev, max];
 }
 
 function normalizeRange (mean: number, range: Range) : Range {
