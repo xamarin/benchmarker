@@ -44,7 +44,10 @@ function rangeMean (range: Range) : number {
 	return (range [1] + range [2]) / 2;
 }
 
-function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (Array<Array<string | number>> | void) {
+type BenchmarkRow = Array<string | number>;
+type DataArray = Array<BenchmarkRow>;
+
+function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (DataArray | void) {
     for (var i = 0; i < runSets.length; ++i) {
         if (runsByIndex [i] === undefined)
             return;
@@ -86,6 +89,20 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
     }
 
     return dataArray;
+}
+
+function rangeInBenchmarkRow (row: BenchmarkRow, runSetIndex: number) : Range {
+	return row.slice (1 + runSetIndex * 4, 1 + (runSetIndex + 1) * 4);
+}
+
+// FIXME: use geometric mean
+function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
+	var sum = 0;
+	for (var i = 0; i < dataArray.length; ++i) {
+		var range = rangeInBenchmarkRow (dataArray [i], runSetIndex);
+		sum += rangeMean (range);
+	}
+	return sum / dataArray.length;
 }
 
 function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Object>) : Array<string> {
@@ -194,6 +211,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
             this.chart.dataProvider = this.props.options.dataProvider;
             this.chart.valueAxes [0].minimum = this.props.options.valueAxes [0].minimum;
             this.chart.valueAxes [0].maximum = this.props.options.valueAxes [0].maximum;
+			this.chart.valueAxes [0].guides = this.props.options.valueAxes [0].guides;
 			this.chart.validateData ();
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
@@ -217,6 +235,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     dataProvider: Array<Object>;
     min: number | void;
     max: number | void;
+	guides: Array<Object>;
 
     constructor (props : ComparisonAMChartProps) {
         super (props);
@@ -271,17 +290,19 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
             return;
 
         var graphs = [];
+		var guides = [];
         var dataProvider = [];
 
         var labels = runSetLabels (this.props.controller, this.props.runSets);
 
         for (var i = 0; i < this.props.runSets.length; ++i) {
             var runSet = this.props.runSets [i];
-            var name = runSet.get ('name');
+			var label = labels [i];
+			var avg = runSetMean (dataArray, i);
             var stdDevBar = {
                 "fillAlphas": 1,
 				"lineAlpha": 0,
-                "title": labels [i],
+                "title": label,
                 "type": "column",
                 "openField": "stdlow" + i,
                 "closeField": "stdhigh" + i,
@@ -299,13 +320,20 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 "visibleInLegend": false,
                 "newStack": true
             };
+			var guide = {
+				"value": avg,
+				"balloonText": label,
+				"lineThickness": 3
+			};
 			if (this.props.runSets.length <= xp_common.xamarinColorsOrder.length) {
 				var colors = xp_common.xamarinColors [xp_common.xamarinColorsOrder [i]];
 				stdDevBar ["fillColors"] = colors [2];
 				errorBar ["lineColor"] = colors [2];
+				guide ["lineColor"] = colors [2];
 			}
             graphs.push (errorBar);
             graphs.push (stdDevBar);
+			guides.push (guide);
         }
 
         var min, max;
@@ -313,7 +341,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
             var row = dataArray [i];
             var entry = { "benchmark": row [0] };
             for (var j = 0; j < this.props.runSets.length; ++j) {
-                var range = row.slice (1 + j * 4, 1 + (j+1) * 4);
+				var range = rangeInBenchmarkRow (row, j);
                 var lowhighavg = (range [0] + range [3]) / 2;
                 entry ["stdlow" + j] = range [1];
                 entry ["stdhigh" + j] = range [2];
@@ -339,6 +367,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
         this.min = min;
         this.max = max;
         this.graphs = graphs;
+		this.guides = guides;
         this.dataProvider = dataProvider;
         this.forceUpdate ();
     }
@@ -369,7 +398,8 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                     "axisAlpha": 0,
                     "stackType": "regular",
                     "minimum": this.min,
-                    "maximum": this.max
+                    "maximum": this.max,
+					"guides": this.guides
                 }
             ],
             "allLabels": [],
