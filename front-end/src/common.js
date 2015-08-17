@@ -100,10 +100,10 @@ export class Controller {
 		return undefined;
 	}
 
-	benchmarkNameForId (id: string) : (string | void) {
+	benchmarkNameForId (id: string) : string {
 		var benchmark = this.benchmarkForId (id);
 		if (benchmark === undefined)
-			return undefined;
+			return "*unknown*";
 		return benchmark.get ('name');
 	}
 

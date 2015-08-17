@@ -44,13 +44,13 @@ function rangeMean (range: Range) : number {
 	return (range [1] + range [2]) / 2;
 }
 
-type BenchmarkRow = Array<string | number>;
+type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
 function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (DataArray | void) {
     for (var i = 0; i < runSets.length; ++i) {
         if (runsByIndex [i] === undefined)
-            return;
+            return undefined;
     }
 
     console.log ("all runs loaded");
@@ -70,20 +70,20 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
     if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
         return;
 
-	commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => controller.benchmarkNameForId (id) || "");
+	commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => controller.benchmarkNameForId (id));
 
     var dataArray = [];
 
     for (i = 0; i < commonBenchmarkIds.length; ++i) {
         var benchmarkId = commonBenchmarkIds [i];
-        var row = [controller.benchmarkNameForId (benchmarkId)];
+        var row = [controller.benchmarkNameForId (benchmarkId), []];
         var mean = undefined;
         for (var j = 0; j < runSets.length; ++j) {
             var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
             var range = calculateRunsRange (filteredRuns);
             if (mean === undefined)
 				mean = rangeMean (range);
-            row = row.concat (normalizeRange (mean, range));
+			row [1].push (normalizeRange (mean, range));
         }
         dataArray.push (row);
     }
@@ -92,7 +92,7 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
 }
 
 function rangeInBenchmarkRow (row: BenchmarkRow, runSetIndex: number) : Range {
-	return row.slice (1 + runSetIndex * 4, 1 + (runSetIndex + 1) * 4);
+	return row [1] [runSetIndex];
 }
 
 // FIXME: use geometric mean
@@ -109,8 +109,8 @@ function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Parse.O
 	var differences = {};
 	for (var i = 0; i < dataArray.length; ++i) {
 		var row = dataArray [i];
-		var min = undefined;
-		var max = undefined;
+		var min = Number.MAX_VALUE;
+		var max = Number.MIN_VALUE;
 		for (var j = 0; j < runSets.length; ++j) {
 			var avg = rangeMean (rangeInBenchmarkRow (row, j));
 			if (min === undefined)
@@ -323,7 +323,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
             var runSet = this.props.runSets [i];
 			var label = labels [i];
 			var avg = runSetMean (dataArray, i);
-            var stdDevBar = {
+            var stdDevBar : Object = {
                 "fillAlphas": 1,
 				"lineAlpha": 0,
                 "title": label,
@@ -332,7 +332,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 "closeField": "stdhigh" + i,
                 "switchable": false
             };
-            var errorBar = {
+            var errorBar : Object = {
                 "balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n[[errorBalloon" + i + "]]",
                 "bullet": "yError",
                 "bulletAxis": "time",
@@ -344,7 +344,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 "visibleInLegend": false,
                 "newStack": true
             };
-			var guide = {
+			var guide : Object = {
 				"value": avg,
 				"balloonText": label,
 				"lineThickness": 3
