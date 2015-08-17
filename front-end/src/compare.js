@@ -70,7 +70,7 @@ class Page extends React.Component {
 
 		var chart;
 		if (runSets.length > 1)
-			chart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={runSets} />;
+			chart = <xp_charts.ComparisonAMChart graphName="comparisonChart" controller={this.props.controller} runSets={runSets} />;
 		else
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 

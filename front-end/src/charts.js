@@ -151,6 +151,10 @@ function normalizeRange (mean: number, range: Range) : Range {
 	return range.map (x => x / mean);
 }
 
+function rangeMean (range: Range) : number {
+	return (range [1] + range [2]) / 2;
+}
+
 function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (Array<Array<string | number>> | void) {
     for (var i = 0; i < runSets.length; ++i) {
         if (runsByIndex [i] === undefined)
@@ -185,10 +189,8 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
         for (var j = 0; j < runSets.length; ++j) {
             var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
             var range = calculateRunsRange (filteredRuns);
-            if (mean === undefined) {
-                // FIXME: eventually we'll have more meaningful ranges
-                mean = range [1];
-            }
+            if (mean === undefined)
+				mean = rangeMean (range);
             row = row.concat (normalizeRange (mean, range));
         }
         dataArray.push (row);
@@ -371,6 +373,7 @@ type AMChartProps = {
 	height: number;
 	options: Object;
 	selectListener: (index: number) => void;
+    initFunc: (chart: AmChart) => void;
 };
 
 export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
@@ -411,10 +414,207 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			this.chart = AmCharts.makeChart (props.graphName, props.options);
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener ('clickGraphItem', e => { this.props.selectListener (e.index); });
+            if (this.props.initFunc !== undefined)
+                this.props.initFunc (this.chart);
 		} else {
+            this.chart.graphs = this.props.options.graphs;
+            this.chart.dataProvider = this.props.options.dataProvider;
+            this.chart.valueAxes [0].minimum = this.props.options.valueAxes [0].minimum;
+            this.chart.valueAxes [0].maximum = this.props.options.valueAxes [0].maximum;
 			this.chart.validateData ();
+            if (this.props.initFunc !== undefined)
+                this.props.initFunc (this.chart);
 		}
 	}
+}
+
+function formatPercentage (x: number) : string {
+    return (x * 100).toPrecision (4) + "%";
+}
+
+type ComparisonAMChartProps = {
+    runSets: Array<Parse.Object>;
+	graphName: string;
+    controller: xp_common.Controller;
+};
+
+export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, ComparisonAMChartProps, void> {
+    runsByIndex : Array<Array<Parse.Object>>;
+    graphs: Array<Object>;
+    dataProvider: Array<Object>;
+    min: number;
+    max: number;
+
+    constructor (props : ComparisonChartProps) {
+        super (props);
+
+        this.invalidateState (props.runSets);
+    }
+
+    componentWillReceiveProps (nextProps : ComparisonAMChartProps) {
+		this.invalidateState (nextProps.runSets);
+	}
+
+    invalidateState (runSets : Array<Parse.Object>) : void {
+        this.runsByIndex = [];
+
+        xp_common.pageParseQuery (
+            () => {
+                var query = new Parse.Query (xp_common.Run);
+                query.containedIn ('runSet', runSets);
+                return query;
+            },
+            results => {
+                if (this.props.runSets !== runSets)
+                    return;
+
+                var runSetIndexById = {};
+                runSets.forEach ((rs, i) => {
+                    this.runsByIndex [i] = [];
+                    runSetIndexById [rs.id] = i;
+                });
+
+                results.forEach (r => {
+                    var i = runSetIndexById [r.get ('runSet').id];
+                    if (this.runsByIndex [i] === undefined)
+                        this.runsByIndex [i] = [];
+                    this.runsByIndex [i].push (r);
+                });
+
+                this.runsLoaded ();
+            },
+            function (error) {
+                alert ("error loading runs: " + error.toString ());
+            });
+    }
+
+    runsLoaded () {
+        var i;
+
+        console.log ("run loaded");
+
+        var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
+        if (dataArray === undefined)
+            return;
+
+        var graphs = [];
+        var dataProvider = [];
+
+        var labels = runSetLabels (this.props.controller, this.props.runSets);
+
+        for (var i = 0; i < this.props.runSets.length; ++i) {
+            var runSet = this.props.runSets [i];
+            var name = runSet.get ('name');
+            var stdDevBar = {
+                //"balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n",
+                "fillAlphas": 1,
+                "title": labels [i],
+                "type": "column",
+                "openField": "stdlow" + i,
+                "closeField": "stdhigh" + i,
+                "switchable": false
+            };
+            var errorBar = {
+                "balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n[[errorBalloon" + i + "]]",
+                "bullet": "yError",
+                "bulletAxis": "time",
+                "bulletSize": 5,
+                "errorField": "lowhigherror" + i,
+                "type": "column",
+                "valueField": "lowhighavg" + i,
+                "lineAlpha": 0,
+                "visibleInLegend": false,
+                "newStack": true
+            };
+            graphs.push (errorBar);
+            graphs.push (stdDevBar);
+        }
+
+        var min, max;
+        for (i = 0; i < dataArray.length; ++i) {
+            var row = dataArray [i];
+            var entry = { "benchmark": row [0] };
+            for (var j = 0; j < this.props.runSets.length; ++j) {
+                var range = row.slice (1 + j * 4, 1 + (j+1) * 4);
+                var lowhighavg = (range [0] + range [3]) / 2;
+                entry ["stdlow" + j] = range [1];
+                entry ["stdhigh" + j] = range [2];
+                entry ["lowhighavg" + j] = lowhighavg;
+                entry ["lowhigherror" + j] = range [3] - range [0];
+
+                if (min === undefined)
+                    min = range [0];
+                else
+                    min = Math.min (min, range [0]);
+
+                if (max === undefined)
+                    max = range [3];
+                else
+                    max = Math.max (max, range [3]);
+
+                entry ["stdBalloon" + j] = formatPercentage (range [1]) + " - " + formatPercentage (range [2]);
+                entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);
+            }
+            dataProvider.push (entry);
+        }
+
+        this.min = min;
+        this.max = max;
+        this.graphs = graphs;
+        this.dataProvider = dataProvider;
+        this.forceUpdate ();
+    }
+
+    render () {
+        if (this.dataProvider === undefined)
+            return <div className="diagnostic">Loading&hellip;</div>;
+
+        var options = {
+            "type": "serial",
+            "theme": "default",
+            "categoryField": "benchmark",
+            "rotate": false,
+            "startDuration": 0.3,
+            "categoryAxis": {
+                "gridPosition": "start"
+            },
+            "chartScrollbar": {
+            },
+            "trendLines": [],
+            "graphs": this.graphs,
+            "dataProvider": this.dataProvider,
+            "guides": [],
+            "valueAxes": [
+                {
+                    "id": "time",
+                    "title": "Relative wall clock time",
+                    "axisAlpha": 0,
+                    "stackType": "regular",
+                    "minimum": this.min,
+                    "maximum": this.max
+                }
+            ],
+            "allLabels": [],
+            "balloon": {},
+            "titles": [],
+            "legend": {
+                "useGraphSettings": true
+            }
+        };
+
+        var zoomFunc;
+        if (this.dataProvider.length > 15) {
+            zoomFunc = (chart => {
+                chart.zoomToCategoryValues (this.dataProvider [0]["benchmark"], this.dataProvider [9]["benchmark"]);
+            });
+        }
+
+        return <AMChart
+            graphName={this.props.graphName}
+            height={700}
+            options={options}
+            initFunc={zoomFunc} />;
+    }
 }
 
 type TimelineAMChartProps = {

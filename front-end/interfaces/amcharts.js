@@ -4,6 +4,7 @@ declare class AmEvent {
 
 declare class AmChart {
     addListener (eventName: string, handler: (e: AmEvent) => void) : void;
+    zoomToCategoryValues (min: Object, max: Object) : void;
 }
 
 declare class AmCharts {
