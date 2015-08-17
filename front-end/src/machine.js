@@ -17,15 +17,13 @@ class Controller extends xp_common.Controller {
 
 	allDataLoaded () {
 		React.render (
-			React.createElement (
-				xp_common.MachineDescription,
-				{
-					machine: xp_utils.find (
+			<div className="MachinePage">
+				<xp_common.Navigation currentPage="" />
+				<xp_common.MachineDescription
+					machine={xp_utils.find (
 						this.allMachines,
-						machine => machine.id === this.machineId
-					)
-				}
-			),
+						machine => machine.id === this.machineId)} />
+			</div>,
 			document.getElementById ('machinePage')
 		);
 	}

@@ -26,7 +26,7 @@ class Controller extends xp_common.Controller {
 				var runSet = this.runSetForId (id);
 				var machine = this.machineForId (runSet.get ('machine').id);
 				return {machine: machine, config: runSet.get ('config'), runSet: runSet};
-			});
+			}).concat ([{}]);
 		}
 
 		React.render (
@@ -96,7 +96,7 @@ class RunSetSelectorList extends React.Component {
 	}
 
 	addSelector () {
-		this.props.onChange ({selections: this.props.selections.concat ({})});
+		this.props.onChange ({selections: this.props.selections.concat ([{}])});
 	}
 
 	removeSelector (i) {

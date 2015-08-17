@@ -1,8 +1,22 @@
-.Timeline > table {
-    width: 100%;
+/* TimelinePage */
+
+.TimelinePage > article {
+	margin: 16px;
 }
 
-.Timeline > table td {
-    vertical-align: top;
-    width: 33%;
+.TimelinePage .panel {
+	background: #D1D9DD;
+	border-radius: 3px;
+	float: left;
+	width: 320px;
+}
+
+.TimelinePage > .panel > section {
+	margin: 16px 0;
+}
+
+/* BenchmarkChartList */
+
+.BenchmarkChartList {
+	margin: 16px;
 }

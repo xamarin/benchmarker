@@ -149,7 +149,11 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	chart: Object;
 
 	render () {
-		return React.DOM.div({id: this.props.graphName, style: {height: this.props.height}});
+		return React.DOM.div({
+			className: 'AMChart',
+			id: this.props.graphName,
+			style: {height: this.props.height}
+		});
 	}
 
 	componentDidMount () {

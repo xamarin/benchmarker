@@ -71,11 +71,12 @@ class Page extends React.Component {
 		else
 			detail = <RunSetDescription controller={this.props.controller} runSet={this.state.selection.runSet} />;
 
-		return <div>
+		return <div className="RunSetPage">
+			<xp_common.Navigation currentPage="" />
 			<xp_common.RunSetSelector
-		controller={this.props.controller}
-		selection={this.state.selection}
-		onChange={this.handleChange.bind (this)} />
+				controller={this.props.controller}
+				selection={this.state.selection}
+				onChange={this.handleChange.bind (this)} />
 			{detail}
 		</div>;
 	}
@@ -163,7 +164,7 @@ class RunSetDescription extends React.Component {
 		var commitHash = runSet.get ('commit').get ('hash');
 
 		return <div className="Description">
-			<p><a href={"index.html#" + runSet.id}>Compare</a></p>
+			<p><a href={"compare.html#" + runSet.id}>Compare</a></p>
 			<dl>
 				<dt>Commit</dt>
 				<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>

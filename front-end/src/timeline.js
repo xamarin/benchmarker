@@ -90,41 +90,38 @@ class Page extends React.Component {
 				controller={this.props.controller}
 				machine={this.state.machine}
 				config={this.state.config}
+				runSetSelected={this.runSetSelected.bind (this)}
 				/>;
 		} else {
-			chart = <div className="diagnostic">Please select a machine and config.</div>;
+			chart = <div className="DiagnosticBlock">Please select a machine and config.</div>;
 		}
 
 		var comparisonChart;
 		if (this.state.runSets.length > 1)
 			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart" controller={this.props.controller} runSets={this.state.runSets} />;
 
-		return <div className="Timeline">
+		return <div className="TimelinePage">
 			<xp_common.Navigation currentPage="timeline" />
-			<table>
-				<tr>
-					<td>
-						<xp_common.CombinedConfigSelector
-							controller={this.props.controller}
-							machine={this.state.machine}
-							config={this.state.config}
-							onChange={this.setState.bind (this)} />
-					</td>
-					<td>
-						<xp_common.MachineDescription
-							machine={this.state.machine}
-							omitHeader={true} />
-					</td>
-					<td>
-						<xp_common.ConfigDescription
-							config={this.state.config}
-							omitHeader={true} />
-					</td>
-				</tr>
-			</table>
-			{chart}
-			{comparisonChart}
-			{benchmarkChartList}
+			<article>
+				<div className="panel">
+					<xp_common.CombinedConfigSelector
+						controller={this.props.controller}
+						machine={this.state.machine}
+						config={this.state.config}
+						onChange={this.setState.bind (this)}
+						showControls={false} />
+					<xp_common.MachineDescription
+						machine={this.state.machine}
+						omitHeader={true} />
+					<xp_common.ConfigDescription
+						config={this.state.config}
+						omitHeader={true} />
+				</div>
+				{chart}
+				<div style={{ clear: 'both' }}></div>
+				{comparisonChart}
+				{benchmarkChartList}
+			</article>
 		</div>;
 	}
 }
@@ -157,7 +154,16 @@ function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
 	return false;
 }
 
-class TimelineChart extends React.Component {
+type TimelineChartProps = {
+	graphName: string;
+	controller: Controller;
+	machine: Parse.Object;
+	config: Parse.Object;
+	benchmark: string;
+	runSetSelected: (runSet: Parse.Object) => void;
+};
+
+class TimelineChart extends React.Component<TimelineChartProps, TimelineChartProps, void> {
 
 	sortedRunSets : Array<Parse.Object>;
 	table : void | Array<Object>;
@@ -344,7 +350,9 @@ class BenchmarkChartList extends React.Component {
 
 	render () {
 		if (!this.state.isExpanded) {
-			return <div onClick={this.expand.bind (this)}>Show benchmarks</div>;
+			return <div className="BenchmarkChartList">
+				<button onClick={this.expand.bind (this)}>Show Benchmarks</button>
+			</div>;
 		}
 
 		var benchmarks = this.props.controller.allEnabledBenchmarks ();
@@ -352,7 +360,7 @@ class BenchmarkChartList extends React.Component {
 		var charts = benchmarks.map (b => {
 			var name = b.get ('name');
 			var key = 'benchmarkChart_' + name;
-			return <div key={key}>
+			return <div key={key} className="BenchmarkChartList">
 				<h3>{name}</h3>
 				<BenchmarkChart
 				graphName={key}
@@ -360,6 +368,7 @@ class BenchmarkChartList extends React.Component {
 				machine={this.props.machine}
 				config={this.props.config}
 				benchmark={name}
+				runSetSelected={this.props.runSetSelected}
 				/>
 				</div>;
 		});

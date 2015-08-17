@@ -22,7 +22,7 @@ label {
 /* ConfigDescription, MachineDescription */
 
 .Description {
-	padding: 0 4px;
+	margin: 16px;
 	vertical-align: top;
 	font-family: sans-serif;
 }
@@ -36,11 +36,11 @@ label {
 }
 
 .Description > dl > dd {
-	margin-left: 16px;
+	margin-left: 8px;
 }
 
 .Description > dl > dt {
-	font-weight: bold;
+	font-size: small;
 }
 
 /* ConfigSelector, CombinedConfigSelector */
@@ -53,6 +53,10 @@ label {
 .ConfigSelector > select, .CombinedConfigSelector > select {
 	display: block;
 	margin: 8px;
+}
+
+.CombinedConfigSelector button {
+	margin-left: 8px;
 }
 
 /* Navigation */
@@ -90,4 +94,11 @@ label {
 .Navigation > ul > li.deselected > a:focus, .Navigation > ul > li.deselected > a:hover {
 	color: #FFFFFF;
 	background: #3A526A;
+}
+
+/* AMChart */
+
+.AMChart {
+	overflow: hidden; /* BFC */
+	margin: 16px;
 }

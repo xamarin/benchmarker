@@ -164,7 +164,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 		var config = this.props.config;
 
 		if (config === undefined)
-			return <div className="Description"></div>;
+			return <div></div>;
 
 		var header = this.props.omitHeader
 			? undefined
@@ -209,7 +209,7 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 		var machine = this.props.machine;
 
 		if (machine === undefined)
-			return <div className="Description"></div>;
+			return <div></div>;
 		var header = this.props.omitHeader
 			? undefined
 			: <h1>{machine.get ('name')}</h1>;
@@ -288,12 +288,32 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
 		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString (machineId, configId);
+		var controls = undefined;
+		if (this.props.showControls) {
+			controls = <div>
+				<button onClick={this.openConfigDescription.bind (this)}>About Config</button>
+				<button onClick={this.openMachineDescription.bind (this)}>About Machine</button>
+			</div>;
+		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
 			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
 				{Object.keys (machines).map (renderGroup.bind (this, machines))}
 			</select>
+			{controls}
 		</div>;
+	}
+
+	openConfigDescription () {
+        if (this.props.config === undefined)
+            return;
+        window.open ('config.html#' + this.props.config.id)
+	}
+
+	openMachineDescription () {
+        if (this.props.machine === undefined)
+            return;
+        window.open ('machine.html#' + this.props.machine.id)
 	}
 
 	combinationSelected (event: Object) {
@@ -358,7 +378,8 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				controller={this.props.controller}
 				machine={selection.machine}
 				config={config}
-				onChange={this.configSelected.bind (this)} />;
+				onChange={this.configSelected.bind (this)}
+				showControls={true} />;
 		var runSetsSelect = undefined;
 		if (filteredRunSets === undefined) {
 			runSetsSelect = <select size="6" disabled="true">
