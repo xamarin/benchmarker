@@ -279,8 +279,8 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
             var runSet = this.props.runSets [i];
             var name = runSet.get ('name');
             var stdDevBar = {
-                //"balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n",
                 "fillAlphas": 1,
+				"lineAlpha": 0,
                 "title": labels [i],
                 "type": "column",
                 "openField": "stdlow" + i,
@@ -299,6 +299,11 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 "visibleInLegend": false,
                 "newStack": true
             };
+			if (this.props.runSets.length <= xp_common.xamarinColorsOrder.length) {
+				var colors = xp_common.xamarinColors [xp_common.xamarinColorsOrder [i]];
+				stdDevBar ["fillColors"] = colors [2];
+				errorBar ["lineColor"] = colors [2];
+			}
             graphs.push (errorBar);
             graphs.push (stdDevBar);
         }
