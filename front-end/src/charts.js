@@ -105,6 +105,28 @@ function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
 	return sum / dataArray.length;
 }
 
+function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Parse.Object>) : DataArray {
+	var differences = {};
+	for (var i = 0; i < dataArray.length; ++i) {
+		var row = dataArray [i];
+		var min = undefined;
+		var max = undefined;
+		for (var j = 0; j < runSets.length; ++j) {
+			var avg = rangeMean (rangeInBenchmarkRow (row, j));
+			if (min === undefined)
+				min = avg;
+			else
+				min = Math.min (min, avg);
+			if (max === undefined)
+				max = avg;
+			else
+				max = Math.max (max, avg);
+		}
+		differences [row [0]] = max - min;
+	}
+	return xp_utils.sortArrayNumericallyBy (dataArray, row => -differences [row [0]]);
+}
+
 function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Object>) : Array<string> {
     var commitIds = runSets.map (rs => rs.get ('commit').id);
     var commitHistogram = xp_utils.histogramOfStrings (commitIds);
@@ -288,6 +310,8 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
         var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
         if (dataArray === undefined)
             return;
+
+		dataArray = sortDataArrayByDifference (dataArray, this.props.runSets);
 
         var graphs = [];
 		var guides = [];
