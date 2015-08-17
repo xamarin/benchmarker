@@ -1,6 +1,5 @@
 /* @flow */
 
-/* global google */
 /* global AmCharts */
 
 "use strict";
@@ -9,116 +8,6 @@ import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
 import {Parse} from 'parse';
 import React from 'react';
-
-export function start (started: () => void) {
-	google.load ('visualization', '1.0', {
-		packages: ['corechart'],
-		callback: googleChartsDidLoad
-	});
-
-    xp_common.start (started);
-}
-
-var googleChartsStateComponents = [];
-
-function googleChartsDidLoad () {
-	if (googleChartsStateComponents === undefined)
-		return;
-	var components = googleChartsStateComponents;
-	googleChartsStateComponents = undefined;
-	for (var i = 0; i < components.length; ++i) {
-		var component = components [i];
-		if (component === undefined)
-			continue;
-		component.googleChartsLoaded ();
-	}
-}
-
-export function canUseGoogleCharts (): boolean {
-	return googleChartsStateComponents === undefined;
-}
-
-type GoogleChartProps = {
-	graphName: string;
-	chartClass: any;
-	height: number;
-	table: Object;
-	options: Object;
-	selectListener: (chart: Object, event: Object) => void;
-}
-
-export class GoogleChart extends React.Component<GoogleChartProps, GoogleChartProps, void> {
-
-	chart: void | Object;
-
-	render () {
-		return React.DOM.div({
-			className: 'GoogleChart',
-			id: this.props.graphName,
-			style: {height: this.props.height}
-		});
-	}
-
-	componentDidMount () {
-		this.drawChart (this.props);
-	}
-
-	componentDidUpdate () {
-		this.drawChart (this.props);
-	}
-
-	componentWillReceiveProps (nextProps : any) {
-		if (this.shouldComponentUpdate (nextProps, undefined))
-			return;
-		console.log ("updating chart");
-		this.updateChart (nextProps);
-	}
-
-	shouldComponentUpdate (nextProps : GoogleChartProps, nextState : void) : boolean {
-		if (this.props.chartClass !== nextProps.chartClass)
-			return true;
-		if (this.props.graphName !== nextProps.graphName)
-			return true;
-		if (this.props.height !== nextProps.height)
-			return true;
-		// FIXME: what do we do with the selectListener?
-		return false;
-	}
-
-	updateChart (props : GoogleChartProps) : void {
-		var chart = this.chart;
-		if (chart === undefined)
-			return;
-		chart.draw (props.table, props.options);
-		if (props.selectListener !== undefined)
-			google.visualization.events.addListener (chart, 'select', props.selectListener.bind (null, chart));
-	}
-
-	drawChart (props : GoogleChartProps) : void {
-		var ChartClass = props.chartClass;
-		this.chart = new ChartClass (document.getElementById (props.graphName));
-		this.updateChart (props);
-	}
-}
-
-export class GoogleChartsStateComponent<P, S> extends React.Component<P, P, S> {
-	componentWillMount () {
-		if (googleChartsStateComponents === undefined)
-			return;
-
-		googleChartsStateComponents.push (this);
-	}
-
-	componentWillUnmount () {
-		if (googleChartsStateComponents === undefined)
-			return;
-
-		googleChartsStateComponents [googleChartsStateComponents.indexOf (this)] = undefined;
-	}
-
-	googleChartsLoaded () {
-	}
-}
 
 type Range = [number, number, number, number];
 
@@ -248,126 +137,6 @@ function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Ob
     return runSets.map (formatRunSet);
 }
 
-
-type ComparisonChartProps = {
-	runSets: Array<Parse.Object>;
-	controller: xp_common.Controller;
-}
-
-export class ComparisonChart extends GoogleChartsStateComponent<ComparisonChartProps, void> {
-
-	runsByIndex : Array<Array<Parse.Object>>;
-	table: Object;
-	height: string;
-
-	constructor (props : ComparisonChartProps) {
-		console.log ("run set compare chart constructing");
-
-		super (props);
-
-		this.invalidateState (props.runSets);
-	}
-
-	invalidateState (runSets : Array<Parse.Object>) : void {
-		this.runsByIndex = [];
-
-		xp_common.pageParseQuery (
-			() => {
-				var query = new Parse.Query (xp_common.Run);
-				query.containedIn ('runSet', runSets);
-				return query;
-			},
-			results => {
-				if (this.props.runSets !== runSets)
-					return;
-
-				var runSetIndexById = {};
-				runSets.forEach ((rs, i) => {
-					this.runsByIndex [i] = [];
-					runSetIndexById [rs.id] = i;
-				});
-
-				results.forEach (r => {
-					var i = runSetIndexById [r.get ('runSet').id];
-					if (this.runsByIndex [i] === undefined)
-						this.runsByIndex [i] = [];
-					this.runsByIndex [i].push (r);
-				});
-
-				this.runsLoaded ();
-			},
-			function (error) {
-				alert ("error loading runs: " + error.toString ());
-			});
-	}
-
-	componentWillReceiveProps (nextProps : ComparisonChartProps) {
-		this.invalidateState (nextProps.runSets);
-	}
-
-	googleChartsLoaded () {
-		this.runsLoaded ();
-	}
-
-	runsLoaded () {
-		var i;
-
-		console.log ("run loaded");
-
-		if (!canUseGoogleCharts ())
-			return;
-
-        var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
-        if (dataArray === undefined)
-            return;
-
-		var data = google.visualization.arrayToDataTable (dataArray, true);
-
-		var labels = runSetLabels (this.props.controller, this.props.runSets);
-		for (var i = 0; i < labels.length; ++i)
-			data.setColumnLabel (1 + 4 * i, labels [i]);
-
-		var height = (35 + (15 * this.props.runSets.length) * dataArray.length) + "px";
-
-		this.table = data;
-		this.height = height;
-		this.forceUpdate ();
-	}
-
-	render () {
-		if (this.table === undefined)
-			return <div className='diagnostic'>Loading&hellip;</div>;
-
-		var options = {
-			orientation: 'vertical',
-			chartArea: {height: '100%'},
-			animation: {
-				duration: 1000,
-				easing: 'out',
-			},
-			hAxis: {
-				gridlines: {
-					color: 'transparent'
-				},
-				baseline: 1.0,
-				textPosition: 'none'
-			},
-			vAxis: {
-				gridlines: {
-					color: 'transparent'
-				}
-			}
-		};
-		return <GoogleChart
-			graphName="compareChart"
-			className="ComparisonChart"
-			chartClass={google.visualization.CandlestickChart}
-			height={800 /*{this.height}*/}
-			table={this.table}
-			options={options} />;
-	}
-}
-
 type AMChartProps = {
 	graphName: string;
 	height: number;
@@ -445,7 +214,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     min: number | void;
     max: number | void;
 
-    constructor (props : ComparisonChartProps) {
+    constructor (props : ComparisonAMChartProps) {
         super (props);
 
         this.invalidateState (props.runSets);

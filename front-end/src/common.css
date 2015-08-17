@@ -91,10 +91,3 @@ label {
 	color: #FFFFFF;
 	background: #3A526A;
 }
-
-/* GoogleChart */
-
-.GoogleChart {
-	overflow: hidden; /* BFC */
-	margin: 16px;
-}

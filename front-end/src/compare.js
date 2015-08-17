@@ -128,4 +128,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_charts.start (started);
+xp_common.start (started);

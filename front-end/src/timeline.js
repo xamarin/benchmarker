@@ -97,7 +97,7 @@ class Page extends React.Component {
 
 		var comparisonChart;
 		if (this.state.runSets.length > 1)
-			comparisonChart = <xp_charts.ComparisonChart controller={this.props.controller} runSets={this.state.runSets} />;
+			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart" controller={this.props.controller} runSets={this.state.runSets} />;
 
 		return <div className="Timeline">
 			<xp_common.Navigation currentPage="timeline" />
@@ -193,18 +193,11 @@ class TimelineChart extends React.Component {
 		this.props.runSetSelected (runSet);
 	}
 
-	googleChartsLoaded () {
-		this.invalidateState (this.props.machine, this.props.config);
-	}
-
 	computeTable () {
 	}
 
 	invalidateState (machine, config) {
 		this.table = undefined;
-
-		if (!xp_charts.canUseGoogleCharts ())
-			return;
 
 		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
 
@@ -393,4 +386,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_charts.start (started);
+xp_common.start (started);
