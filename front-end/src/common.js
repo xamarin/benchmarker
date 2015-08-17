@@ -447,7 +447,7 @@ type NavigationProps = {
 
 export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
 
-	render () {
+	render () : Object {
 		var classFor = (page) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
 		return <div className="Navigation">

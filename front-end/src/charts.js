@@ -373,7 +373,7 @@ type AMChartProps = {
 	height: number;
 	options: Object;
 	selectListener: (index: number) => void;
-    initFunc: (chart: AmChart) => void;
+    initFunc: ((chart: AmChart) => void) | void;
 };
 
 export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
@@ -442,8 +442,8 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     runsByIndex : Array<Array<Parse.Object>>;
     graphs: Array<Object>;
     dataProvider: Array<Object>;
-    min: number;
-    max: number;
+    min: number | void;
+    max: number | void;
 
     constructor (props : ComparisonChartProps) {
         super (props);
