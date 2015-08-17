@@ -4,19 +4,31 @@
 	margin: 16px;
 }
 
-.TimelinePage .panel {
-	background: #D1D9DD;
-	border-radius: 3px;
+.TimelinePage > article > .outer {
+	background: #FFFFFF;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
 	float: left;
+	padding: 8px;
 	width: 320px;
 }
 
+.TimelinePage > article > .outer > .inner {
+	background: #ECF0F1;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
+	padding: 8px;
+}
+
+/*
 .TimelinePage > .panel > section {
 	margin: 16px 0;
 }
+*/
 
 /* BenchmarkChartList */
 
 .BenchmarkChartList {
-	margin: 16px;
+	margin: 16px 0;
+	text-align: center;
 }

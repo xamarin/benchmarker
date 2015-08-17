@@ -1,54 +1,45 @@
-/* ComparePage */
-
-.ComparePage > article {
-	margin: 16px;
-}
-
 /* RunSetSelector */
 
 .RunSetSelector {
-	display: block;
-	font-family: sans-serif;
-	margin-bottom: 4px;
-	vertical-align: top;
-	overflow: hidden; /* BFC */
+	background: #ECF0F1;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	padding: 8px;
 }
 
 .RunSetSelector > select {
+	box-sizing: border-box;
 	display: block;
-	margin: 8px;
+	margin: 8px 0;
+	width: 100%;
 }
 
 /* RunSetSelectorList */
 
 .RunSetSelectorList {
+	background: #FFFFFF;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
 	float: left;
-	margin: 0 16px;
+	padding: 8px;
 	width: 320px;
 }
 
 .RunSetSelectorList > section {
 	background: #D1D9DD;
-	border-radius: 3px;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
+	margin-bottom: 8px;
 	clear: both;
 }
 
 .RunSetSelectorList > footer {
 	clear: both;
-	width: 100%;
-}
-
-.RunSetSelectorList > footer > button {
-	float: right;
-	margin: 16px 0;
 }
 
 .RunSetSelectorList > section > button {
 	float: right;
-}
-
-.RunSetSelectorList > footer > button, .RunSetSelectorList > section > button {
-	height: 32px;
+	margin: 8px;
 }
 
 /* ComparisonChart */

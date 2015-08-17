@@ -19,10 +19,12 @@ class Controller extends xp_common.Controller {
 		React.render (
 			<div className="ConfigPage">
 				<xp_common.Navigation currentPage="" />
-				<xp_common.ConfigDescription
-					config={xp_utils.find (
-						this.allConfigs,
-						config => config.id === this.configId)} />
+				<article>
+					<xp_common.ConfigDescription
+						config={xp_utils.find (
+							this.allConfigs,
+							config => config.id === this.configId)} />
+				</article>
 			</div>,
 			document.getElementById ('configPage')
 		);

@@ -72,7 +72,7 @@ class Page extends React.Component {
 		else
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 
-		return <div class="ComparePage">
+		return <div className="ComparePage">
 			<header>
 				<xp_common.Navigation currentPage="compare" />
 			</header>
@@ -82,6 +82,7 @@ class Page extends React.Component {
 					selections={this.state.selections}
 					onChange={this.setState.bind (this)} />
 				{chart}
+				<div style={{ clear: 'both' }}></div>
 			</article>
 		</div>;
 	}
@@ -104,16 +105,17 @@ class RunSetSelectorList extends React.Component {
 	render () {
 		function renderSelector (selection, index) {
 			return <section>
-				<button onClick={this.removeSelector.bind (this, index)}>Remove</button>
 				<xp_common.RunSetSelector
 					controller={this.props.controller}
 					selection={selection}
 					onChange={this.handleChange.bind (this, index)} />
+				<button onClick={this.removeSelector.bind (this, index)}>&minus;&ensp;Remove</button>
+				<div style={{ clear: 'both' }}></div>
 			</section>;
 		}
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector.bind (this))}
-			<footer><button onClick={this.addSelector.bind (this)}>Add Run Set</button></footer>
+			<footer><button onClick={this.addSelector.bind (this)}>+&ensp;Add Run Set</button></footer>
 			</div>;
 	}
 }

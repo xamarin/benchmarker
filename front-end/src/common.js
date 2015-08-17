@@ -223,7 +223,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 			<dt>Command-line Options</dt>
 			<dd>{optionsList}</dd>
 			</dl>
-			</div>;
+		</div>;
 	}
 }
 
@@ -310,19 +310,19 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		if (this.props.config !== undefined)
 			configId = this.props.config.id;
 		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString (machineId, configId);
-		var controls = undefined;
+		var aboutConfig = undefined;
+		var aboutMachine = undefined;
 		if (this.props.showControls) {
-			controls = <div>
-				<button onClick={this.openConfigDescription.bind (this)}>About Config</button>
-				<button onClick={this.openMachineDescription.bind (this)}>About Machine</button>
-			</div>;
+			aboutConfig = <button onClick={this.openConfigDescription.bind (this)}>About Config</button>;
+			aboutMachine = <button onClick={this.openMachineDescription.bind (this)}>About Machine</button>;
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
 			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
 				{Object.keys (machines).map (renderGroup.bind (this, machines))}
 			</select>
-			{controls}
+			{aboutConfig}{aboutMachine}
+			<div style={{ clear: 'both' }}></div>
 		</div>;
 	}
 

@@ -19,10 +19,12 @@ class Controller extends xp_common.Controller {
 		React.render (
 			<div className="MachinePage">
 				<xp_common.Navigation currentPage="" />
-				<xp_common.MachineDescription
-					machine={xp_utils.find (
-						this.allMachines,
-						machine => machine.id === this.machineId)} />
+				<article>
+					<xp_common.MachineDescription
+						machine={xp_utils.find (
+							this.allMachines,
+							machine => machine.id === this.machineId)} />
+				</article>
 			</div>,
 			document.getElementById ('machinePage')
 		);

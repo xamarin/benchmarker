@@ -102,19 +102,21 @@ class Page extends React.Component {
 		return <div className="TimelinePage">
 			<xp_common.Navigation currentPage="timeline" />
 			<article>
-				<div className="panel">
-					<xp_common.CombinedConfigSelector
-						controller={this.props.controller}
-						machine={this.state.machine}
-						config={this.state.config}
-						onChange={this.setState.bind (this)}
-						showControls={false} />
-					<xp_common.MachineDescription
-						machine={this.state.machine}
-						omitHeader={true} />
-					<xp_common.ConfigDescription
-						config={this.state.config}
-						omitHeader={true} />
+				<div className="outer">
+					<div className="inner">
+						<xp_common.CombinedConfigSelector
+							controller={this.props.controller}
+							machine={this.state.machine}
+							config={this.state.config}
+							onChange={this.setState.bind (this)}
+							showControls={false} />
+						<xp_common.MachineDescription
+							machine={this.state.machine}
+							omitHeader={true} />
+						<xp_common.ConfigDescription
+							config={this.state.config}
+							omitHeader={true} />
+					</div>
 				</div>
 				{chart}
 				<div style={{ clear: 'both' }}></div>
