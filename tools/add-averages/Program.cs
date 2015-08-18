@@ -144,7 +144,7 @@ namespace DbTool
 				var allButLast = names.GetRange (0, names.Count - 1).Select (n => String.Format ("`{0}`", n));
 				benchmarksString = String.Format ("benchmarks {0}, and `{1}`", String.Join (", ", allButLast), names.Last ());
 			}
-			var message = String.Format ("The {0} got {1} between commits {2} and {3} on <http://xamarin.github.io/benchmarker/front-end/timeline.html#{4}+{5}|{6}>.",
+			var message = String.Format ("The {0} got {1} between commits {2} and {3} on <http://xamarin.github.io/benchmarker/front-end/index.html#{4}+{5}|{6}>.",
 				benchmarksString, (faster ? "faster" : "slower"), SlackCommitString (previousCommit), SlackCommitString (commit),
 				machine.ObjectId, config.ObjectId, machine.Get<string> ("architecture"));
 			await SendSlackMessage (message, "#performance-bots", faster ? "goodbot" : "badbot", faster ? ":thumbsup:" : ":red_circle:");
