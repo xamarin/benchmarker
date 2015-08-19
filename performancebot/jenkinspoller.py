@@ -106,13 +106,14 @@ class MonoJenkinsPoller(base.PollingChangeSource):
         not_added = []
         for change in change_list:
             oid, last_rev = yield self._get_current_rev()
-            if int(change['revision']) <= int(last_rev if last_rev is not None else 0):
-                not_added.append('#' + str(change['revision']))
+            current_rev = int(change['revision'])
+            if current_rev <= int(last_rev if last_rev is not None else 0):
+                not_added.append('#' + str(current_rev))
                 continue
             log.msg('adding change:' + str(change))
             yield self.master.addChange(
                 author=change['who'],
-                revision=change['revision'],
+                revision=str(current_rev),
                 files=[],
                 comments="",
                 revlink=change['url'],
@@ -124,7 +125,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
                 repository=self.fake_repo_url,
                 src=u'jenkins'
             )
-            yield self._set_current_rev(change['revision'], oid)
+            yield self._set_current_rev(str(current_rev), oid)
         if not_added:
             log.msg('not added: ' + str(not_added))
 
