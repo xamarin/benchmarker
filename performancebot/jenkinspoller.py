@@ -13,36 +13,40 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
-from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD
+from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD, Lane
 import re
 import urllib
 
+def generate_jenkins_poller_codebase(lane, platform, hostname, config_name):
+    return 'mono-jenkins-%s%s-%s-%s' % ("-pullrequest" if lane == Lane.PullRequest else "", platform, hostname, config_name)
+
 class MonoJenkinsPoller(base.PollingChangeSource):
-    compare_attrs = ['url', 'platform', 'hostname', 'config_name', 'fake_repo_url']
+    compare_attrs = ['lane', 'url', 'platform', 'hostname', 'config_name', 'fake_repo_url']
     parent = None
     working = False
 
-    def __init__(self, url, fake_repo_url, platform, hostname, config_name, *args, **kwargs):
+    def __init__(self, url, fake_repo_url, lane, platform, hostname, config_name, *args, **kwargs):
         self.url = url
         self.fake_repo_url = fake_repo_url
+        self.lane = lane
         self.platform = platform
         self.hostname = hostname
         self.config_name = config_name
-        self.db_class_name = "MonoJenkinsPoller-%s-%s-%s" % (platform, hostname, config_name)
+        self.db_class_name = "MonoJenkinsPoller-%s-%s-%s-%s" % (str(lane), platform, hostname, config_name)
 
         base.PollingChangeSource.__init__(self, pollAtLaunch=False, *args, **kwargs)
 
         self.branch = None
 
     def describe(self):
-        return "Getting changes from MonoJenkins %s" % str(self.url)
+        return "Getting changes from MonoJenkins %s/%s" % (str(self.url), str(self.db_class_name))
 
     def poll(self):
         if self.working:
             log.msg("Not polling because last poll is still working")
         else:
             self.working = True
-            dfrd = _get_new_jenkins_changes(self.url, self.platform, self.hostname, self.config_name)
+            dfrd = _get_new_jenkins_changes(self.url, self.lane, self.platform, self.hostname, self.config_name)
             dfrd.addCallback(self._process_changes)
             dfrd.addCallbacks(self._finished_ok, self._finished_failure)
             return dfrd
@@ -127,7 +131,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
             )
             yield self._set_current_rev(str(current_rev), oid)
         if not_added:
-            log.msg('not added: ' + str(not_added))
+            log.msg('not added to %s: %s' % (str(self.db_class_name), str(not_added)))
 
 
 def _mk_request_jenkins_all_builds(base_url, platform, logger):
@@ -184,7 +188,7 @@ def _mk_request_parse(hostname, config_name, logger):
     return getPage(url, headers=headers)
 
 @defer.inlineCallbacks
-def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
+def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_name):
     jenkins_request = yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)
     jenkins_json = json.loads(jenkins_request)
     parse_request = yield _mk_request_parse(hostname, config_name, None)
@@ -206,7 +210,7 @@ def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
             'revision': build_details_json['number'],
             'url': build_details_json['url'],
-            'codebase': 'mono-jenkins-%s-%s-%s' % (platform, hostname, config_name),
+            'codebase': generate_jenkins_poller_codebase(lane, platform, hostname, config_name),
             'when': build_details_json['timestamp']
         })
 
@@ -405,7 +409,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_changes_debian_arm():
-        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
+        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
         print ""
         print "URLs to process:"
         for url in sorted(change_list):
@@ -426,7 +430,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_changes_debian_amd64():
-        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
+        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
         for url in sorted(change_list):
@@ -447,7 +451,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_pr_changes_debian_amd64():
-        change_list = yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
+        change_list = yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, Lane.PullRequest, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
         for url in sorted(change_list):
