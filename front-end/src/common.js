@@ -46,7 +46,10 @@ export class Controller {
 				alert ("error loading machines: " + error.toString ());
 			});
 
-		pageParseQuery (() => new Parse.Query (RunSet).notEqualTo ('failed', true).include ('commit'),
+		pageParseQuery (() => new Parse.Query (RunSet)
+				.notEqualTo ('failed', true)
+				.doesNotExist ('pullRequest')
+				.include ('commit'),
 			this.runSetsLoaded.bind (this),
 			function (error) {
 				alert ("error loading run sets: " + error.toString ());
