@@ -191,6 +191,7 @@ class DebianMonoBuildFactory(BuildFactory):
             )
         )
 
+    def print_runsetid(self):
         self.addStep(
             ShellCommand(
                 name='print_RunSetId',
