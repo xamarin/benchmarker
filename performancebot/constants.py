@@ -11,8 +11,8 @@ FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 
 JENKINS_URL = 'https://jenkins.mono-project.com'
 
-MONOBASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono'
-MONOCOMMONSNAPSHOTSURL = JENKINS_URL + '/repo/debian/pool/main/m/mono-snapshot-common/'
-MONOSOURCETARBALLURL = JENKINS_URL + '/job/build-source-tarball-mono/'
+MONO_BASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono'
+MONO_COMMON_SNAPSHOTS_URL = JENKINS_URL + '/repo/debian/pool/main/m/mono-snapshot-common/'
+MONO_SOURCETARBALL_URL = JENKINS_URL + '/job/build-source-tarball-mono/'
 
 BUILDBOT_URL = 'http://performancebot.mono-project.com'

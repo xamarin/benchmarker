@@ -13,7 +13,7 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
-from constants import MONOBASEURL, MONOCOMMONSNAPSHOTSURL, MONOSOURCETARBALLURL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTYNAME_JENKINS_BUILD
+from constants import MONO_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTYNAME_JENKINS_BUILD
 import re
 import urllib
 
@@ -148,7 +148,7 @@ def _mk_request_jenkins_build_s3(build_url, logger):
     return getPage(url)
 
 def _mk_request_mono_common(logger):
-    url = MONOCOMMONSNAPSHOTSURL
+    url = MONO_COMMON_SNAPSHOTS_URL
     if logger:
         logger("request: " + str(url))
     return getPage(url)
@@ -323,7 +323,7 @@ def _do_fetch_build(build_url, platform, logger):
     parsermono = HTMLParserMonoCommon()
     parsermono.feed(mono_common_request)
     assert parsermono.common_deb is not None, 'no common debian package found :-('
-    result['deb_common_url'] = MONOCOMMONSNAPSHOTSURL + '/' + parsermono.common_deb
+    result['deb_common_url'] = MONO_COMMON_SNAPSHOTS_URL + '/' + parsermono.common_deb
 
     # get assemblies package always from debian-amd64 builder.
     amd64build_url = build_url.replace(platform, 'debian-amd64')
@@ -351,14 +351,14 @@ def _do_fetch_gitrev(build_url, platform, logger):
     result = {}
 
     # get git revision from jenkins
-    request_all = yield _mk_request_jenkins_all_builds(MONOBASEURL, platform, logger)
+    request_all = yield _mk_request_jenkins_all_builds(MONO_BASEURL, platform, logger)
     json_all = json.loads(request_all)
     gitrev = None
     for i in [i for i in json_all['allBuilds'] if i['url'].encode('ascii', 'ignore') == build_url]:
         for fingerprint in i['fingerprint']:
             if fingerprint['original']['name'] == 'build-source-tarball-mono':
                 assert gitrev is None, "should set gitrev only once"
-                url = MONOSOURCETARBALLURL + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
+                url = MONO_SOURCETARBALL_URL + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
                 if logger:
                     logger("request: " + str(url))
                 poll_log = yield getPage(url)
@@ -390,7 +390,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_changes_debian_arm():
-        change_list = yield _get_new_jenkins_changes(MONOBASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
+        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
         print ""
         print "URLs to process:"
         for url in sorted(change_list):
@@ -407,7 +407,7 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_changes_debian_amd64():
-        change_list = yield _get_new_jenkins_changes(MONOBASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
+        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
         for url in sorted(change_list):
