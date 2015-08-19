@@ -54,7 +54,7 @@ class DebianMonoBuildFactory(BuildFactory):
 
     def benchmarker_on_master(self):
         step = MasterShellCommand(
-            name="build benchmarker",
+            name="build_benchmarker",
             command=[
                 'bash', '-x', '-c',
                 Interpolate(
@@ -72,7 +72,7 @@ class DebianMonoBuildFactory(BuildFactory):
 
     def export_benchmark_list(self):
         step = MasterShellCommand(
-            name="list benchmarks",
+            name="list_benchmarks",
             command=[
                 'bash', '-c', Interpolate(
                     'mono %s/benchmarker/tools/compare.exe --list-benchmarks | ' % MASTERWORKDIR +
@@ -83,7 +83,7 @@ class DebianMonoBuildFactory(BuildFactory):
 
     def update_config_file(self):
         step = MasterShellCommand(
-            name='cp config',
+            name='cp_config',
             command=[
                 'bash',
                 '-c',
@@ -100,7 +100,7 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(FileDownload(Interpolate('%s/benchmarker.tar.gz' % MASTERWORKDIR), 'benchmarker.tar.gz', workdir='.'))
 
         self.addStep(ShellCommand(name='md5', command=['md5sum', 'benchmarker.tar.gz'], workdir='.'))
-        self.addStep(ShellCommand(name='unpack benchmarker', command=['tar', 'xf', 'benchmarker.tar.gz'], workdir='.'))
+        self.addStep(ShellCommand(name='unpack_benchmarker', command=['tar', 'xf', 'benchmarker.tar.gz'], workdir='.'))
         self.addStep(ShellCommand(name='debug2', command=['ls', '-lha', 'benchmarker'], workdir='.'))
         self.addStep(MasterShellCommand(name="cleanup", command=['rm', '-rf', Interpolate(MASTERWORKDIR)]))
 
@@ -146,7 +146,7 @@ class DebianMonoBuildFactory(BuildFactory):
                 workdir='mono'
             )
         )
-        self.addStep(ShellCommand(name='ccache stats', command=['ccache', '-s']))
+        self.addStep(ShellCommand(name='ccache_stats', command=['ccache', '-s']))
         self.addStep(
             ShellCommand(
                 name='make',
@@ -156,12 +156,12 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(
             ShellCommand(
-                name='make install',
+                name='make_install',
                 command=['make', 'install'],
                 workdir='mono'
             )
         )
-        self.addStep(ShellCommand(name='ccache stats', command=['ccache', '-s']))
+        self.addStep(ShellCommand(name='ccache_stats', command=['ccache', '-s']))
 
     def maybe_create_runsetid(self, lane, install_root):
         def _guard_runsetid_gen(step):
@@ -182,7 +182,7 @@ class DebianMonoBuildFactory(BuildFactory):
                ]
         self.addStep(
             ParsingShellCommand(
-                name='create RunSetId',
+                name='create_RunSetId',
                 parse_rules={PROPERTYNAME_RUNSETID: re.compile(r'"runSetId"\s*:\s*"(?P<' + PROPERTYNAME_RUNSETID + r'>\w+)"')},
                 command=cmd1 + pullrequestcmd + cmd2,
                 workdir='benchmarker',
@@ -193,7 +193,7 @@ class DebianMonoBuildFactory(BuildFactory):
 
         self.addStep(
             ShellCommand(
-                name='print RunSetId',
+                name='print_RunSetId',
                 command=['echo', Interpolate("%(prop:" + PROPERTYNAME_RUNSETID + ")s")]
             )
         )
