@@ -19,6 +19,7 @@ namespace Benchmarker.Common.Models
 		public Commit Commit { get; set; }
 		public string BuildURL { get; set; }
 		public string LogURL { get; set; }
+		public string PullRequestURL { get; set; }
 
 		List<Benchmark> timedOutBenchmarks;
 		public List<Benchmark> TimedOutBenchmarks { get { return timedOutBenchmarks; } }
@@ -179,6 +180,14 @@ namespace Benchmarker.Common.Models
 				obj ["commit"] = commit;
 				obj ["buildURL"] = BuildURL;
 				obj ["startedAt"] = StartDateTime;
+
+				if (PullRequestURL != null) {
+					var prObj = ParseInterface.NewParseObject ("PullRequest");
+					prObj ["URL"] = PullRequestURL;
+					saveList.Add (prObj);
+
+					obj ["pullRequest"] = prObj;
+				}
 			}
 
 			obj ["finishedAt"] = FinishDateTime;
