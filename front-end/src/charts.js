@@ -233,7 +233,9 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
             this.chart.dataProvider = this.props.options.dataProvider;
             this.chart.valueAxes [0].minimum = this.props.options.valueAxes [0].minimum;
             this.chart.valueAxes [0].maximum = this.props.options.valueAxes [0].maximum;
-			this.chart.valueAxes [0].guides = this.props.options.valueAxes [0].guides;
+			var guides = this.props.options.valueAxes [0].guides;
+			if (guides !== undefined)
+				this.chart.valueAxes [0].guides = guides;
 			this.chart.validateData ();
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
@@ -414,7 +416,6 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
             "trendLines": [],
             "graphs": this.graphs,
             "dataProvider": this.dataProvider,
-            "guides": [],
             "valueAxes": [
                 {
                     "id": "time",
@@ -507,7 +508,6 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, Timel
 							}
 
 						],
-						"guides": [],
 						"valueAxes": [
 							{
 								"baseValue": -13,
