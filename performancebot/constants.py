@@ -20,3 +20,8 @@ MONO_PULLREQUEST_BASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono-
 MONO_SOURCETARBALL_PULLREQUEST_URL = JENKINS_URL + '/job/build-source-tarball-mono-pullrequest/'
 
 BUILDBOT_URL = 'http://performancebot.mono-project.com'
+
+
+class Lane(object):
+    Master, PullRequest = range(2)
+
