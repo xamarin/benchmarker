@@ -13,7 +13,7 @@ from buildbot.util import epoch2datetime
 import credentials
 #pylint: enable=F0401
 import json
-from constants import MONO_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, FORCE_PROPERTYNAME_JENKINS_BUILD
+from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD
 import re
 import urllib
 
@@ -242,8 +242,10 @@ class BuildURLToPropertyStep(LoggingBuildStep):
 
 
 class FetchJenkinsBuildDetails(BuildStep):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, base_url, sourcetarball_url, *args, **kwargs):
         self.logger = None
+        self.base_url = base_url
+        self.sourcetarball_url = sourcetarball_url
         BuildStep.__init__(self, haltOnFailure=True, flunkOnFailure=True, *args, **kwargs)
 
     def start(self):
@@ -275,7 +277,7 @@ class FetchJenkinsBuildDetails(BuildStep):
         urls = yield _do_fetch_build(build_url, platform, self.logger)
         git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
         if git_commit is None or git_commit == "":
-            gitrev = yield _do_fetch_gitrev(build_url, platform, self.logger)
+            gitrev = yield _do_fetch_gitrev(build_url, self.base_url, self.sourcetarball_url, platform, self.logger)
             for key, value in gitrev.items():
                 urls[key] = value
         for prop_name, filename in urls.items():
@@ -347,18 +349,19 @@ def _do_fetch_build(build_url, platform, logger):
 
 
 @defer.inlineCallbacks
-def _do_fetch_gitrev(build_url, platform, logger):
+def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
     result = {}
 
     # get git revision from jenkins
-    request_all = yield _mk_request_jenkins_all_builds(MONO_BASEURL, platform, logger)
+    request_all = yield _mk_request_jenkins_all_builds(base_url, platform, logger)
     json_all = json.loads(request_all)
     gitrev = None
     for i in [i for i in json_all['allBuilds'] if i['url'].encode('ascii', 'ignore') == build_url]:
         for fingerprint in i['fingerprint']:
-            if fingerprint['original']['name'] == 'build-source-tarball-mono':
+            fp_name = fingerprint['original']['name']
+            if fp_name == 'build-source-tarball-mono':
                 assert gitrev is None, "should set gitrev only once"
-                url = MONO_SOURCETARBALL_URL + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
+                url = sourcetarball_url + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
                 if logger:
                     logger("request: " + str(url))
                 poll_log = yield getPage(url)
@@ -366,6 +369,17 @@ def _do_fetch_gitrev(build_url, platform, logger):
                 match = regexgitrev.search(poll_log)
                 assert match is not None
                 gitrev = match.group('gitrev')
+            if fp_name == 'build-source-tarball-mono-pullrequest':
+                assert gitrev is None, "should set gitrev only once"
+                url = sourcetarball_url + str(fingerprint['original']['number']) + '/consoleText'
+                if logger:
+                    logger("request: " + str(url))
+                console_log = yield getPage(url)
+                regexgitrev = re.compile("GitHub pull request #(?P<prid>[0-9]+) of commit (?P<gitrev>[0-9a-fA-F]+)")
+                match = regexgitrev.search(console_log)
+                assert match is not None
+                gitrev = match.group('gitrev')
+                result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
     defer.returnValue(result)
@@ -396,12 +410,16 @@ if __name__ == '__main__':
         for url in sorted(change_list):
             print url
 
+
     @defer.inlineCallbacks
     def test_fetch_build_debamd64():
         def _logger(msg):
             print msg
 
-        results = yield _do_fetch_build('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1403/', 'debian-amd64', _logger)
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1541/'
+        results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
+        results2 = yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'debian-amd64', _logger)
+        results.update(results2)
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
@@ -413,12 +431,36 @@ if __name__ == '__main__':
         for url in sorted(change_list):
             print url
 
+
+    @defer.inlineCallbacks
+    def test_fetch_pr_build_debamd64():
+        def _logger(msg):
+            print msg
+
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=debian-amd64/4/'
+        results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
+        results2 = yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'debian-amd64', _logger)
+        results.update(results2)
+        for key, value in results.items():
+            print "%s: %s" % (key, value)
+
+    @defer.inlineCallbacks
+    def test_get_pr_changes_debian_amd64():
+        change_list = yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
+        print ""
+        print "URLs to process:"
+        for url in sorted(change_list):
+            print url
+
+
     @defer.inlineCallbacks
     def run_tests():
-        _ = yield test_get_changes_debian_arm()
-        _ = yield test_fetch_build_debarm()
-        _ = yield test_get_changes_debian_amd64()
+        # _ = yield test_get_changes_debian_arm()
+        # _ = yield test_fetch_build_debarm()
+        # _ = yield test_get_changes_debian_amd64()
         _ = yield test_fetch_build_debamd64()
+        # _ = yield test_get_pr_changes_debian_amd64()
+        _ = yield test_fetch_pr_build_debamd64()
         stop_me()
 
     run_tests()
