@@ -68,7 +68,7 @@ type PullRequestDescriptionProps = {
 class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionProps, void> {
     constructor (props) {
         super (props);
-        this.state = { title: undefined };
+        this.state = { gitHubInfo: undefined };
 
         var pr = this.props.pullRequest;
         var match = pr.get ('URL').match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
@@ -76,27 +76,36 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
             var github = new GitHub ({});
             var repo = github.getRepo ("mono", "mono");
             repo.getPull (match [1], (err, info) => {
-                console.log ("got pull: ", info);
-                if (info.title !== undefined)
-                    this.setState ({ title: info.title });
+                if (info !== undefined)
+                    this.setState ({ gitHubInfo: info });
             });
         }
     }
 
 	render () : Object {
 		var pr = this.props.pullRequest;
+        var info = this.state.gitHubInfo;
 
         var baselineRunSet = pr.get ('baselineRunSet');
         var baselineHash = baselineRunSet.get ('commit').get ('hash');
 
         var title = "Link";
-        if (this.state.title !== undefined)
-            title = this.state.title;
+        if (info !== undefined && info.title !== undefined)
+            title = info.title;
+
+        var author = [];
+        if (info !== undefined && info.user !== undefined) {
+            author = [
+                <dt>Author</dt>,
+                <dd><a href={info.user ["html_url"]}>{info.user.login}</a></dd>
+            ];
+        }
 
 		return <div className="Description">
 			<dl>
 			<dt>Pull Request</dt>
             <dd><a href={pr.get ('URL')}>{title}</a></dd>
+            {author}
 			<dt>Baseline commit</dt>
 			<dd><a href={xp_common.githubCommitLink (baselineHash)}>{baselineHash.substring (0, 10)}</a></dd>
 			</dl>
