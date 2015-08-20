@@ -42,6 +42,10 @@
     <Reference Include="Nito.AsyncEx.Enlightenment">
       <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
     </Reference>
+    <Reference Include="Octokit">
+      <HintPath>..\packages\Octokit.0.12.0\lib\net45\Octokit.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

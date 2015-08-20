@@ -35,6 +35,7 @@
     <Compile Include="ParseInterface.cs" />
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Accredit.cs" />
+    <Compile Include="GitHubInterface.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

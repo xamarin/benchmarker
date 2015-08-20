@@ -6,6 +6,7 @@ using System.Linq;
 using Benchmarker.Common;
 using Benchmarker.Common.Models;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Parse;
 using Nito.AsyncEx;
 
@@ -30,12 +31,95 @@ class Compare
 		Console.Error.WriteLine ("        --git-repo          the directory of the Git repository");
 		Console.Error.WriteLine ("        --create-run-set    just create a run set, don't run any benchmarks");
 		Console.Error.WriteLine ("        --pull-request-url  GitHub URL of a pull request to create the run set with");
+		Console.Error.WriteLine ("        --mono-repository   Path of your local Mono repository");
 		Console.Error.WriteLine ("        --run-set-id        the Parse ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url         the URL of the binary build");
 		Console.Error.WriteLine ("        --log-url           the URL where the log files will be accessible");
 		Console.Error.WriteLine ("        --root              will be substituted for $ROOT in the config");
 
 		Environment.Exit (exitcode);
+	}
+
+	static async Task<ParseObject> GetPullRequestBaselineRunSet (string pullRequestURL, Benchmarker.Common.Git.Repository repository, Config config)
+	{
+		var gitHubClient = GitHubInterface.GitHubClient;
+		var match = Regex.Match (pullRequestURL, @"^https?://github.com/mono/mono/pull/(\d+)/?$");
+		if (match == null) {
+			Console.WriteLine ("Error: Cannot parse pull request URL.");
+			Environment.Exit (1);
+		}
+		var pullRequestNumber = Int32.Parse (match.Groups [1].Value);
+		Console.WriteLine ("pull request {0}", pullRequestNumber);
+
+		var pullRequest = await gitHubClient.PullRequest.Get ("mono", "mono", pullRequestNumber);
+
+		var prRepo = pullRequest.Head.Repository.SshUrl;
+		var prBranch = pullRequest.Head.Ref;
+
+		var prSha = repository.Fetch (prRepo, prBranch);
+		if (prSha == null) {
+			Console.Error.WriteLine ("Error: Could not fetch pull request branch {0} from repo {1}", prBranch, prRepo);
+			Environment.Exit (1);
+		}
+
+		var masterSha = repository.Fetch ("git@github.com:mono/mono.git", "master");
+		if (masterSha == null) {
+			Console.Error.WriteLine ("Error: Could not fetch master.");
+			Environment.Exit (1);
+		}
+
+		var baseSha = repository.MergeBase (prSha, masterSha);
+		if (baseSha == null) {
+			Console.Error.WriteLine ("Error: Could not determine merge base of pull request.");
+			Environment.Exit (1);
+		}
+
+		Console.WriteLine ("Merge base sha is {0}", baseSha);
+
+		var revList = repository.RevList (baseSha);
+		if (revList == null) {
+			Console.Error.WriteLine ("Error: Could not get rev-list for merge base {0}.", baseSha);
+			Environment.Exit (1);
+		}
+		Console.WriteLine ("{0} commits in rev-list", revList.Length);
+
+		var configObj = await config.GetFromParse ();
+		if (configObj == null) {
+			Console.Error.WriteLine ("Error: The config does not exist.");
+			Environment.Exit (1);
+		}
+
+		var machineObj = await RunSet.GetMachineFromParse ();
+		if (machineObj == null) {
+			Console.Error.WriteLine ("Error: The machine does not exist.");
+			Environment.Exit (1);
+		}
+
+		var runSets = await ParseInterface.PageQueryWithRetry (() => ParseObject.GetQuery ("RunSet")
+			.WhereEqualTo ("machine", machineObj)
+			.WhereEqualTo ("config", configObj)
+			.WhereDoesNotExist ("pullRequest")
+			.Include ("commit"));
+		Console.WriteLine ("{0} run sets", runSets.Count ());
+
+		var runSetsByCommits = new Dictionary<string, ParseObject> ();
+		foreach (var runSet in runSets) {
+			var sha = runSet.Get<ParseObject> ("commit").Get<string> ("hash");
+			if (runSetsByCommits.ContainsKey (sha)) {
+				// FIXME: select between them?
+				continue;
+			}
+			runSetsByCommits.Add (sha, runSet);
+		}
+
+		foreach (var sha in revList) {
+			if (runSetsByCommits.ContainsKey (sha)) {
+				Console.WriteLine ("tested base commit is {0}", sha);
+				return runSetsByCommits [sha];
+			}
+		}
+
+		return null;
 	}
 
 	public static void Main (string[] args)
@@ -49,6 +133,7 @@ class Compare
 		string buildURL = null;
 		string logURL = null;
 		string pullRequestURL = null;
+		string monoRepositoryPath = null;
 		string runSetId = null;
 		string configFile = null;
 		bool justCreateRunSet = false;
@@ -77,6 +162,8 @@ class Compare
 				logURL = args [++optindex];
 			} else if (args [optindex] == "--pull-request-url") {
 				pullRequestURL = args [++optindex];
+			} else if (args [optindex] == "--mono-repository") {
+				monoRepositoryPath = args [++optindex];
 			} else if (args [optindex] == "--create-run-set") {
 				justCreateRunSet = true;
 			} else if (args [optindex] == "--run-set-id") {
@@ -161,7 +248,7 @@ class Compare
 			Environment.Exit (0);
 		}
 
-		Config.InitializeGitHubClient ();
+		var gitHubClient = GitHubInterface.GitHubClient;
 
 		if (!ParseInterface.Initialize ()) {
 			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
@@ -195,13 +282,27 @@ class Compare
 				Environment.Exit (1);
 			}
 		} else {
+			ParseObject pullRequestBaselineRunSet = null;
+
+			if (pullRequestURL != null) {
+				if (monoRepositoryPath == null) {
+					Console.Error.WriteLine ("Error: Must specify a mono repository path to test a pull request.");
+					Environment.Exit (1);
+				}
+
+				var repo = new Benchmarker.Common.Git.Repository (monoRepositoryPath);
+
+				pullRequestBaselineRunSet = AsyncContext.Run (() => GetPullRequestBaselineRunSet (pullRequestURL, repo, config));
+			}
+
 			runSet = new RunSet {
 				StartDateTime = DateTime.Now,
 				Config = config,
 				Commit = commit,
 				BuildURL = buildURL,
 				LogURL = logURL,
-				PullRequestURL = pullRequestURL
+				PullRequestURL = pullRequestURL,
+				PullRequestBaselineRunSet = pullRequestBaselineRunSet
 			};
 		}
 

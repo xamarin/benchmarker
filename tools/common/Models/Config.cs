@@ -129,17 +129,6 @@ namespace Benchmarker.Common.Models
 			return builder.ToString ();
 		}
 
-		static Octokit.GitHubClient gitHubClient;
-
-		public static void InitializeGitHubClient () {
-			gitHubClient = new Octokit.GitHubClient (new Octokit.ProductHeaderValue ("XamarinBenchmark"));
-			if (gitHubClient == null)
-				throw new Exception ("Could not instantiate GitHub client");
-
-			var creds = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
-			gitHubClient.Credentials = new Octokit.Credentials (creds);
-		}
-
 		public async Task<Commit> GetCommit (string optionalCommitHash, string optionalGitRepoDir)
 		{
 			if (NoMono) {
@@ -220,6 +209,7 @@ namespace Benchmarker.Common.Models
 
 			Octokit.Commit gitHubCommit = null;
 			try {
+				var gitHubClient = GitHubInterface.GitHubClient;
 				gitHubCommit = await ParseInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", commit.Hash), typeof (Octokit.NotFoundException));
 			} catch (Octokit.NotFoundException) {
 				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
@@ -303,7 +293,7 @@ namespace Benchmarker.Common.Models
 			return true;
 		}
 
-		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
+		public async Task<ParseObject> GetFromParse ()
 		{
 			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Config")
 				.WhereEqualTo ("name", Name)
@@ -316,10 +306,18 @@ namespace Benchmarker.Common.Models
 					return o;
 				}
 			}
+			return null;
+		}
+
+		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
+		{
+			var obj = await GetFromParse ();
+			if (obj != null)
+				return obj;
 
 			Console.WriteLine ("creating new config");
 
-			var obj = ParseInterface.NewParseObject ("Config");
+			obj = ParseInterface.NewParseObject ("Config");
 			obj ["name"] = Name;
 			obj ["monoExecutable"] = MonoExecutable;
 			obj ["monoOptions"] = MonoOptions;

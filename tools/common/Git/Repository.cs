@@ -63,5 +63,20 @@ namespace Benchmarker.Common.Git
 				return dateTime;
 			return null;
 		}
+
+		public string Fetch (string repository, string branch)
+		{
+			if (RunGit (path, "fetch", repository, branch) == null)
+				return null;
+			return RevParse ("FETCH_HEAD");
+		}
+
+		public string[] RevList (string commit)
+		{
+			var output = RunGit (path, "rev-list", "--all", commit);
+			if (output == null)
+				return null;
+			return output.Trim ().Split ('\n');
+		}
 	}
 }

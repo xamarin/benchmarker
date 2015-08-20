@@ -20,6 +20,7 @@ namespace Benchmarker.Common.Models
 		public string BuildURL { get; set; }
 		public string LogURL { get; set; }
 		public string PullRequestURL { get; set; }
+		public ParseObject PullRequestBaselineRunSet { get; set; }
 
 		List<Benchmark> timedOutBenchmarks;
 		public List<Benchmark> TimedOutBenchmarks { get { return timedOutBenchmarks; } }
@@ -50,7 +51,7 @@ namespace Benchmarker.Common.Models
 			return Tuple.Create (hostname, arch);
 		}
 
-		async Task<ParseObject> GetOrUploadMachineToParse (List<ParseObject> saveList)
+		public static async Task<ParseObject> GetMachineFromParse ()
 		{
 			var hostnameAndArch = LocalHostnameAndArch ();
 			var hostname = hostnameAndArch.Item1;
@@ -59,7 +60,20 @@ namespace Benchmarker.Common.Models
 			//Console.WriteLine ("FindAsync Machine");
 			if (results.Count () > 0)
 				return results.First ();
-			var obj = ParseInterface.NewParseObject ("Machine");
+			return null;
+		}
+
+		async static  Task<ParseObject> GetOrUploadMachineToParse (List<ParseObject> saveList)
+		{
+			var obj = await GetMachineFromParse ();
+			if (obj != null)
+				return obj;
+			
+			var hostnameAndArch = LocalHostnameAndArch ();
+			var hostname = hostnameAndArch.Item1;
+			var arch = hostnameAndArch.Item2;
+
+			obj = ParseInterface.NewParseObject ("Machine");
 			obj ["name"] = hostname;
 			obj ["architecture"] = arch;
 			obj ["isDedicated"] = false;
@@ -184,6 +198,7 @@ namespace Benchmarker.Common.Models
 				if (PullRequestURL != null) {
 					var prObj = ParseInterface.NewParseObject ("PullRequest");
 					prObj ["URL"] = PullRequestURL;
+					prObj ["baselineRunSet"] = PullRequestBaselineRunSet;
 					saveList.Add (prObj);
 
 					obj ["pullRequest"] = prObj;
