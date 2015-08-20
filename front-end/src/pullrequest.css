@@ -1,0 +1,12 @@
+/* PullRequestPage */
+
+.PullRequestPage > article {
+	margin: 16px;
+}
+
+.PullRequestPage .panel {
+	background: #D1D9DD;
+	border-radius: 3px;
+	float: left;
+	width: 320px;
+}
