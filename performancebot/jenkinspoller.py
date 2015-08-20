@@ -189,10 +189,8 @@ def _mk_request_parse(hostname, config_name, logger):
 
 @defer.inlineCallbacks
 def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_name):
-    jenkins_request = yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)
-    jenkins_json = json.loads(jenkins_request)
-    parse_request = yield _mk_request_parse(hostname, config_name, None)
-    parse_json = json.loads(parse_request)
+    jenkins_json = json.loads((yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)))
+    parse_json = json.loads((yield _mk_request_parse(hostname, config_name, None)))
 
     def _filter_build_urls_jenkins(j):
         return sorted([i['url'].encode('ascii', 'ignore') for i in j['allBuilds'] if i['result'] == 'SUCCESS'])
@@ -204,8 +202,7 @@ def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_
 
     result = []
     for build in builds_todo:
-        build_details_request = yield _mk_request_jenkins_build(build, None)
-        build_details_json = json.loads(build_details_request)
+        build_details_json = json.loads((yield _mk_request_jenkins_build(build, None)))
         result.append({
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
             'revision': build_details_json['number'],
@@ -326,28 +323,25 @@ class HTMLParserS3Artifacts(HTMLParser):
 def _do_fetch_build(build_url, platform, logger):
     result = {}
 
-    mono_common_request = yield _mk_request_mono_common(logger)
     parsermono = HTMLParserMonoCommon()
-    parsermono.feed(mono_common_request)
+    parsermono.feed((yield _mk_request_mono_common(logger)))
     assert parsermono.common_deb is not None, 'no common debian package found :-('
     result['deb_common_url'] = MONO_COMMON_SNAPSHOTS_URL + '/' + parsermono.common_deb
 
     # get assemblies package always from debian-amd64 builder.
     amd64build_url = build_url.replace(platform, 'debian-amd64')
-    s3assembly = yield _mk_request_jenkins_build_s3(amd64build_url, logger)
     def _get_assemblies(parser, path):
         if '-assemblies' in path:
             parser.result['deb_asm_url'] = parser.build_url + '/s3/' + path
     parserassembly = HTMLParserS3Artifacts(result, amd64build_url, _get_assemblies)
-    parserassembly.feed(s3assembly)
+    parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
 
     # get bin package from arch specific builder
-    s3bin = yield _mk_request_jenkins_build_s3(build_url, logger)
     def _get_bin(parser, path):
         if '-assemblies' not in path:
             parser.result['deb_bin_url'] = parser.build_url + '/s3/' + path
     parserassembly = HTMLParserS3Artifacts(result, build_url, _get_bin)
-    parserassembly.feed(s3bin)
+    parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
 
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
     defer.returnValue(result)
@@ -358,8 +352,7 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
     result = {}
 
     # get git revision from jenkins
-    request_all = yield _mk_request_jenkins_all_builds(base_url, platform, logger)
-    json_all = json.loads(request_all)
+    json_all = json.loads((yield _mk_request_jenkins_all_builds(base_url, platform, logger)))
     gitrev = None
     for i in [i for i in json_all['allBuilds'] if i['url'].encode('ascii', 'ignore') == build_url]:
         for fingerprint in i['fingerprint']:
@@ -369,9 +362,8 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                 url = sourcetarball_url + str(fingerprint['original']['number']) + '/pollingLog/pollingLog'
                 if logger:
                     logger("request: " + str(url))
-                poll_log = yield getPage(url)
                 regexgitrev = re.compile("Latest remote head revision on [a-zA-Z/]+ is: (?P<gitrev>[0-9a-fA-F]+)")
-                match = regexgitrev.search(poll_log)
+                match = regexgitrev.search((yield getPage(url)))
                 assert match is not None
                 gitrev = match.group('gitrev')
             if fp_name == 'build-source-tarball-mono-pullrequest':
@@ -379,9 +371,8 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                 url = sourcetarball_url + str(fingerprint['original']['number']) + '/consoleText'
                 if logger:
                     logger("request: " + str(url))
-                console_log = yield getPage(url)
                 regexgitrev = re.compile("GitHub pull request #(?P<prid>[0-9]+) of commit (?P<gitrev>[0-9a-fA-F]+)")
-                match = regexgitrev.search(console_log)
+                match = regexgitrev.search((yield getPage(url)))
                 assert match is not None
                 gitrev = match.group('gitrev')
                 result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
@@ -409,10 +400,9 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_get_changes_debarm():
-        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
         print ""
         print "URLs to process:"
-        for url in sorted(change_list):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-armhf', 'utilite-desktop', 'auto-sgen'))):
             print url
 
 
@@ -423,17 +413,15 @@ if __name__ == '__main__':
 
         build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1541/'
         results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
-        results2 = yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'debian-amd64', _logger)
-        results.update(results2)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'debian-amd64', _logger)))
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
     def test_get_changes_debamd64():
-        change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
-        for url in sorted(change_list):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
             print url
 
 
@@ -444,17 +432,15 @@ if __name__ == '__main__':
 
         build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=debian-amd64/4/'
         results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
-        results2 = yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'debian-amd64', _logger)
-        results.update(results2)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'debian-amd64', _logger)))
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
     def test_get_pr_changes_debamd64():
-        change_list = yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, Lane.PullRequest, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
-        for url in sorted(change_list):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, Lane.PullRequest, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
             print url
 
 
