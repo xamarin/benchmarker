@@ -1,6 +1,5 @@
 from buildbot.steps.shell import ShellCommand
 from buildbot.process.buildstep import LoggingBuildStep
-from buildbot.process.properties import Interpolate
 from buildbot.status.builder import SUCCESS
 
 from twisted.python import log

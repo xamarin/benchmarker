@@ -17,7 +17,7 @@ from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSH
 import re
 import urllib
 
-def generate_jenkins_poller_codebase(lane, platform, hostname, config_name):
+def gen_jenkinspoller_codebase(lane, platform, hostname, config_name):
     return 'mono-jenkins-%s%s-%s-%s' % ("-pullrequest" if lane == Lane.PullRequest else "", platform, hostname, config_name)
 
 class MonoJenkinsPoller(base.PollingChangeSource):
@@ -210,7 +210,7 @@ def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_
             'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
             'revision': build_details_json['number'],
             'url': build_details_json['url'],
-            'codebase': generate_jenkins_poller_codebase(lane, platform, hostname, config_name),
+            'codebase': gen_jenkinspoller_codebase(lane, platform, hostname, config_name),
             'when': build_details_json['timestamp']
         })
 
@@ -408,7 +408,7 @@ if __name__ == '__main__':
             print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
-    def test_get_changes_debian_arm():
+    def test_get_changes_debarm():
         change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-armhf', 'utilite-desktop', 'auto-sgen')
         print ""
         print "URLs to process:"
@@ -429,7 +429,7 @@ if __name__ == '__main__':
             print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
-    def test_get_changes_debian_amd64():
+    def test_get_changes_debamd64():
         change_list = yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
@@ -450,7 +450,7 @@ if __name__ == '__main__':
             print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
-    def test_get_pr_changes_debian_amd64():
+    def test_get_pr_changes_debamd64():
         change_list = yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, Lane.PullRequest, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo')
         print ""
         print "URLs to process:"
@@ -460,11 +460,11 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def run_tests():
-        # _ = yield test_get_changes_debian_arm()
+        # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
-        # _ = yield test_get_changes_debian_amd64()
+        # _ = yield test_get_changes_debamd64()
         _ = yield test_fetch_build_debamd64()
-        # _ = yield test_get_pr_changes_debian_amd64()
+        # _ = yield test_get_pr_changes_debamd64()
         _ = yield test_fetch_pr_build_debamd64()
         stop_me()
 
