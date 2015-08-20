@@ -11,6 +11,7 @@ export var Config = Parse.Object.extend ('Config');
 export var Machine = Parse.Object.extend ('Machine');
 export var Run = Parse.Object.extend ('Run');
 export var RunSet = Parse.Object.extend ('RunSet');
+export var PullRequest = Parse.Object.extend ('PullRequest');
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -36,6 +37,7 @@ export class Controller {
 	allBenchmarks: Array<Parse.Object>;
 	allMachines: Array<Parse.Object>;
 	allRunSets: Array<Parse.Object>;
+	pullRequestRunSets: Array<Parse.Object>;
 	allConfigs: Array<Parse.Object>;
 
 	loadAsync () {
@@ -48,8 +50,9 @@ export class Controller {
 
 		pageParseQuery (() => new Parse.Query (RunSet)
 				.notEqualTo ('failed', true)
-				.doesNotExist ('pullRequest')
-				.include ('commit'),
+				.include ('commit')
+				.include ('pullRequest')
+				.include ('pullRequest.baselineRunSet'),
 			this.runSetsLoaded.bind (this),
 			function (error) {
 				alert ("error loading run sets: " + error.toString ());
@@ -87,7 +90,9 @@ export class Controller {
 
 	runSetsLoaded (results: Array<Parse.Object>) {
 		console.log ("run sets loaded: " + results.length);
-		this.allRunSets = results;
+		var partition = xp_utils.partitionArrayByString (results, rs => (rs.get ('pullRequest') === undefined).toString ());
+		this.allRunSets = partition ["true"];
+		this.pullRequestRunSets = partition ["false"];
 		this.checkAllDataLoaded ();
 	}
 
@@ -111,15 +116,24 @@ export class Controller {
 	}
 
 	machineForId (id: string) : Parse.Object {
-		return xp_utils.find (this.allMachines, m => m.id === id);
+		var machine = xp_utils.find (this.allMachines, m => m.id === id);
+		if (machine === undefined)
+			throw "Machine not found";
+		return machine;
 	}
 
 	configForId (id: string) : Parse.Object {
-		return xp_utils.find (this.allConfigs, m => m.id === id);
+		var config = xp_utils.find (this.allConfigs, m => m.id === id);
+		if (config === undefined)
+			throw "Config not found";
+		return config;
 	}
 
 	runSetForId (id: string) : Parse.Object {
-		return xp_utils.find (this.allRunSets, rs => rs.id === id);
+		var runSet = xp_utils.find (this.allRunSets, rs => rs.id === id);
+		if (runSet === undefined)
+			throw "Run set not found";
+		return runSet;
 	}
 
 	runSetsForMachineAndConfig (machine: Parse.Object, config: Parse.Object) : Array<Parse.Object> {
@@ -128,6 +142,16 @@ export class Controller {
 				rs.get ('machine').id === machine.id &&
 				rs.get ('config').id === config.id
 		);
+	}
+
+	runSetForPullRequestId (id: string) : Parse.Object {
+		for (var i = 0; i < this.pullRequestRunSets.length; ++i) {
+			var rs = this.pullRequestRunSets [i];
+			var pr = rs.get ('pullRequest');
+			if (pr.id === id)
+				return rs;
+		}
+		throw "Run set for pull request not found";
 	}
 
 	checkAllDataLoaded () {

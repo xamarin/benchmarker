@@ -10,7 +10,7 @@ export function findIndex<T> (arr : Array<T>, f: (v: T) => boolean) : number {
     return -1;
 }
 
-export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T {
+export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T | void {
     return arr [findIndex (arr, f)];
 }
 
