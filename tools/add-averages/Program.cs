@@ -176,6 +176,7 @@ namespace DbTool
 					.WhereEqualTo ("config", config)
 					.WhereEqualTo ("machine", machine)
 					.WhereNotEqualTo ("failed", true)
+					.WhereDoesNotExist ("pullRequest")
 					.Include ("commit");
 			});
 			var sortedRunSets = runSets.ToList ();
