@@ -42,7 +42,7 @@ class Compare
 	static async Task<ParseObject> GetPullRequestBaselineRunSet (string pullRequestURL, Benchmarker.Common.Git.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
-		var match = Regex.Match (pullRequestURL, @"^https?://github.com/mono/mono/pull/(\d+)/?$");
+		var match = Regex.Match (pullRequestURL, @"^https?://github\.com/mono/mono/pull/(\d+)/?$");
 		if (match == null) {
 			Console.WriteLine ("Error: Cannot parse pull request URL.");
 			Environment.Exit (1);
