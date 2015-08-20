@@ -7,7 +7,7 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST
 from monosteps import CreateRunSetIdStep
 
 import re
@@ -119,7 +119,7 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
-    def clone_mono(self):
+    def clone_mono(self, guard):
         step = git.Git(
             repourl='https://github.com/mono/mono/',
             workdir='mono',
@@ -127,6 +127,7 @@ class DebianMonoBuildFactory(BuildFactory):
             mode='incremental',
             # shallow=True,
             codebase='mono',
+            doStepIf=guard,
             haltOnFailure=True
         )
         self.addStep(step)
@@ -164,11 +165,16 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(ShellCommand(name='ccache_stats', command=['ccache', '-s']))
 
     def maybe_create_runsetid(self, install_root):
+
         def _guard_runsetid_gen(step):
             if step.build.getProperties().has_key(PROPERTYNAME_RUNSETID):
                 return step.build.getProperties()[PROPERTYNAME_RUNSETID] == ""
             return True
 
+        def _guard_pullrequest_only(step):
+            return step.build.getProperties().has_key(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
+
+        self.clone_mono(guard=lambda s: _guard_runsetid_gen(s) and _guard_pullrequest_only(s))
         self.addStep(
             CreateRunSetIdStep(
                 install_root=install_root,

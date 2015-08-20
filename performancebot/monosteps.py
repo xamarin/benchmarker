@@ -59,7 +59,11 @@ class CreateRunSetIdStep(ParsingShellCommand):
         git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
         config_name = self.getProperty('config_name')
         cmd1 = ['mono', 'tools/compare.exe', '--create-run-set']
-        pullrequestcmd = ['--pull-request-url', 'https://github.com/mono/mono/pull/%s' % str(pullrequestid)] if pullrequestid is not None else []
+        if pullrequestid is not None:
+            cmd1.append('--pull-request-url')
+            cmd1.append('https://github.com/mono/mono/pull/%s' % str(pullrequestid))
+            cmd1.append('--mono-repository')
+            cmd1.append('../mono')
         cmd2 = ['--build-url', build_url,
                 '--root', '../build/%s' % (self.install_root('/opt/' + mono_version)),
                 '--commit', git_commit,
@@ -68,6 +72,6 @@ class CreateRunSetIdStep(ParsingShellCommand):
                 'machines/',
                 'configs/%s.conf' % (config_name)
                ]
-        self.setCommand(cmd1 + pullrequestcmd + cmd2)
+        self.setCommand(cmd1 + cmd2)
         ShellCommand.start(self)
 
