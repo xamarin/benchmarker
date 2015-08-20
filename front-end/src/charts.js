@@ -231,11 +231,13 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 		} else {
             this.chart.graphs = this.props.options.graphs;
             this.chart.dataProvider = this.props.options.dataProvider;
-            this.chart.valueAxes [0].minimum = this.props.options.valueAxes [0].minimum;
-            this.chart.valueAxes [0].maximum = this.props.options.valueAxes [0].maximum;
-			var guides = this.props.options.valueAxes [0].guides;
-			if (guides !== undefined)
-				this.chart.valueAxes [0].guides = guides;
+			var valueAxis = this.props.options.valueAxes [0];
+			if (valueAxis.minimum !== undefined) {
+	            this.chart.valueAxes [0].minimum = valueAxis.minimum;
+	            this.chart.valueAxes [0].maximum = valueAxis.maximum;
+			}
+			if (valueAxis.guides !== undefined)
+				this.chart.valueAxes [0].guides = valueAxis.guides;
 			this.chart.validateData ();
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
