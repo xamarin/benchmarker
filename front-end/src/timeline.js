@@ -190,13 +190,7 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 			graphName={this.props.graphName}
 			height={300}
 			data={this.table}
-			selectListener={this.selectListener.bind (this)} />;
-	}
-
-	selectListener (itemIndex) {
-		console.log ("selected ", itemIndex);
-		var runSet = this.sortedRunSets [itemIndex];
-		this.props.runSetSelected (runSet);
+			selectListener={this.props.runSetSelected.bind (this)} />;
 	}
 
 	computeTable () {
@@ -295,6 +289,7 @@ class AllBenchmarksChart extends TimelineChart {
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
 			var broken = runSetIsBroken (this.props.controller, runSets [j]);
 			table.push ({
+				runSet: runSets [j],
 				low: min,
 				lowName: minName,
 				high: max,
@@ -331,6 +326,7 @@ class BenchmarkChart extends TimelineChart {
 			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSet);
 			table.push ({
+				runSet: runSet,
 				geomean: average,
 				low: low,
 				high: high,
