@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Threading;
 using Parse;
 
 namespace Benchmarker.Common.Models
 {
-	public class Benchmark
+    public class Benchmark
 	{
 		public string Name { get; set; }
 		public string TestDirectory { get; set; }

@@ -2,11 +2,9 @@
 using System.IO;
 using System.Diagnostics;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using Parse;
 using System.Threading.Tasks;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Text;
@@ -14,7 +12,7 @@ using Benchmarker.Common.Git;
 
 namespace Benchmarker.Common.Models
 {
-	public class Config
+    public class Config
 	{
 		const string rootVarString = "$ROOT";
 

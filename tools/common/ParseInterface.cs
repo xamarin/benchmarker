@@ -2,17 +2,12 @@
 using Parse;
 using Nito.AsyncEx;
 using System.Linq;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using Benchmarker.Common.Models;
 
 namespace Benchmarker.Common
 {
-	public class ParseInterface
+    public class ParseInterface
 	{
 		static ParseACL defaultACL;
 

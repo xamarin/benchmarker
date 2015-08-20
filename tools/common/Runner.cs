@@ -2,15 +2,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Collections;
 using System.Threading.Tasks;
 using Benchmarker.Common.Models;
 
 namespace Benchmarker.Common
 {
-	public class Runner
+    public class Runner
 	{
 		ProcessStartInfo info;
 		Config config;
