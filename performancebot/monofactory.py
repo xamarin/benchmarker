@@ -7,8 +7,8 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, Lane
-from monosteps import ParsingShellCommand
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS
+from monosteps import CreateRunSetIdStep
 
 import re
 
@@ -163,28 +163,17 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(ShellCommand(name='ccache_stats', command=['ccache', '-s']))
 
-    def maybe_create_runsetid(self, lane, install_root):
+    def maybe_create_runsetid(self, install_root):
         def _guard_runsetid_gen(step):
             if step.build.getProperties().has_key(PROPERTYNAME_RUNSETID):
                 return step.build.getProperties()[PROPERTYNAME_RUNSETID] == ""
             return True
 
-        cmd1 = ['mono', 'tools/compare.exe', '--create-run-set']
-        # TODO: check at runtime if pullrequest property is there
-        pullrequestcmd = ['--pull-request-url', Interpolate('https://github.com/mono/mono/pull/%(prop:' + PROPERTYNAME_JENKINSGITHUBPULLREQUEST + ')s')] if lane == Lane.PullRequest else []
-        cmd2 = ['--build-url', Interpolate('%(prop:' + PROPERTYNAME_JENKINSBUILDURL + ')s'),
-                '--root', Interpolate('../build/' + install_root('/opt/%(prop:' + PROPERTYNAME_MONOVERSION + ')s')),
-                '--commit', Interpolate('%(prop:' + PROPERTYNAME_JENKINSGITCOMMIT + ')s'),
-                'tests/',
-                'benchmarks/',
-                'machines/',
-                Interpolate('configs/%(prop:config_name)s.conf')
-               ]
         self.addStep(
-            ParsingShellCommand(
+            CreateRunSetIdStep(
+                install_root=install_root,
                 name='create_RunSetId',
                 parse_rules={PROPERTYNAME_RUNSETID: re.compile(r'"runSetId"\s*:\s*"(?P<' + PROPERTYNAME_RUNSETID + r'>\w+)"')},
-                command=cmd1 + pullrequestcmd + cmd2,
                 workdir='benchmarker',
                 doStepIf=_guard_runsetid_gen,
                 haltOnFailure=True
@@ -209,7 +198,6 @@ class DebianMonoBuildFactory(BuildFactory):
                 alwaysRun=True
             )
         )
-
 
 
 def disable_intel_turbo_steps():
