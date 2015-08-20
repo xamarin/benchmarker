@@ -20,7 +20,7 @@ class Controller extends xp_common.Controller {
 	allDataLoaded () {
         if (this.pullRequestId === undefined)
             return;
-            
+
         var prRunSet = this.runSetForPullRequestId (this.pullRequestId);
         var pullRequest = prRunSet.get ('pullRequest');
         var baselineRunSet = pullRequest.get ('baselineRunSet');
@@ -32,16 +32,56 @@ class Controller extends xp_common.Controller {
 
         var runSets = [baselineRunSet, prRunSet];
 
+        var machine = this.machineForId (prRunSet.get ('machine').id);
+        var config = this.configForId (prRunSet.get ('config').id);
+
 		React.render (
 			<div className="PullRequestPage">
 				<xp_common.Navigation currentPage="" />
-                <xp_charts.ComparisonAMChart
-                    graphName="comparisonChart"
-                    controller={this}
-                    runSets={runSets} />
+                <article>
+                    <div className="panel">
+                        <PullRequestDescription
+                            pullRequest={pullRequest} />
+                        <xp_common.MachineDescription
+                            machine={machine}
+                            omitHeader={false} />
+                        <xp_common.ConfigDescription
+                            config={config}
+                            omitHeader={false} />
+                    </div>
+                    <xp_charts.ComparisonAMChart
+                        graphName="comparisonChart"
+                        controller={this}
+                        runSets={runSets} />
+                </article>
 			</div>,
 			document.getElementById ('pullRequestPage')
 		);
+	}
+}
+
+type PullRequestDescriptionProps = {
+	pullRequest: Parse.Object | void;
+};
+
+class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionProps, void> {
+	render () : Object {
+		var pr = this.props.pullRequest;
+
+		if (pr === undefined)
+			return <div></div>;
+
+        var baselineRunSet = pr.get ('baselineRunSet');
+        var baselineHash = baselineRunSet.get ('commit').get ('hash');
+
+		return <div className="Description">
+			<dl>
+			<dt>Pull Request</dt>
+            <dd><a href={pr.get ('URL')}>Link</a></dd>
+			<dt>Baseline commit</dt>
+			<dd><a href={xp_common.githubCommitLink (baselineHash)}>{baselineHash.substring (0, 10)}</a></dd>
+			</dl>
+		</div>;
 	}
 }
 

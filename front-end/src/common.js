@@ -52,7 +52,8 @@ export class Controller {
 				.notEqualTo ('failed', true)
 				.include ('commit')
 				.include ('pullRequest')
-				.include ('pullRequest.baselineRunSet'),
+				.include ('pullRequest.baselineRunSet')
+				.include ('pullRequest.baselineRunSet.commit'),
 			this.runSetsLoaded.bind (this),
 			function (error) {
 				alert ("error loading run sets: " + error.toString ());
