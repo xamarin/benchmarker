@@ -370,7 +370,15 @@ class Compare
 		try {
 			var parseObject = AsyncContext.Run (() => runSet.UploadToParse ());
 			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", parseObject.ObjectId);
-			Console.WriteLine ("{{ \"runSetId\": \"{0}\" }}", parseObject.ObjectId);
+			ParseObject pullRequestObject = null;
+			if (pullRequestURL != null) {
+				pullRequestObject = parseObject.Get<ParseObject> ("pullRequest");
+                Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#{0}", pullRequestObject.ObjectId);
+			}
+			Console.Write ("{{ \"runSetId\": \"{0}\"", parseObject.ObjectId);
+            if (pullRequestURL != null)
+                Console.Write (", \"pullRequestId\": \"{0}\"", pullRequestObject.ObjectId);
+            Console.WriteLine (" }");
 		} catch (Exception exc) {
 			Console.WriteLine ("Error: Failure uploading data: " + exc);
 			Environment.Exit (1);
