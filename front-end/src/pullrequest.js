@@ -53,7 +53,8 @@ class Controller extends xp_common.Controller {
                     <xp_charts.ComparisonAMChart
                         graphName="comparisonChart"
                         controller={this}
-                        runSets={runSets} />
+                        runSets={runSets}
+                        runSetLabels={["Baseline", "Pull request"]} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')

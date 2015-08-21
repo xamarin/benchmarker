@@ -253,6 +253,7 @@ function formatPercentage (x: number) : string {
 
 type ComparisonAMChartProps = {
     runSets: Array<Parse.Object>;
+	runSetLabels: Array<string> | void;
 	graphName: string;
     controller: xp_common.Controller;
 };
@@ -323,7 +324,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 		var guides = [];
         var dataProvider = [];
 
-        var labels = runSetLabels (this.props.controller, this.props.runSets);
+        var labels = this.props.runSetLabels || runSetLabels (this.props.controller, this.props.runSets);
 
         for (var i = 0; i < this.props.runSets.length; ++i) {
             var runSet = this.props.runSets [i];
