@@ -1,5 +1,6 @@
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
+PROPERTYNAME_PULLREQUESTID = 'parse_pullrequestid'
 
 PROPERTYNAME_SKIP_BENCHS = 'skip_benchs'
 PROPERTYNAME_FILTER_BENCHS = 'filter_benchs'

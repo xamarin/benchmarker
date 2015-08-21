@@ -4,7 +4,10 @@ from buildbot.status.builder import SUCCESS
 
 from twisted.python import log
 
-from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT
+from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, BUILDBOT_URL, PROPERTYNAME_PULLREQUESTID
+
+import json
+import requests
 
 
 class ParsingShellCommand(ShellCommand):
@@ -31,9 +34,10 @@ class ParsingShellCommand(ShellCommand):
             existing_value = self.getProperty(prop_name)
             if existing_value is not None:
                 log.msg("overriding " + str(prop_name) + ", old value is: " + str(existing_value) + ", new value: " + str(results[0]))
-            assert len(results) == 1, 'more than one match: ' + str(results)
-            log.msg("ParsingShellCommand: " + prop_name + " <= " + str(results[0]))
-            self.setProperty(prop_name, results[0], 'ParsingShellCommand')
+            assert len(results) <= 1, 'more than one match for %s: %s' % (prop_name, str(results))
+            if len(results) >= 1:
+                log.msg("ParsingShellCommand: " + prop_name + " <= " + str(results[0]))
+                self.setProperty(prop_name, results[0], 'ParsingShellCommand')
 
 
 class PutPropertiesStep(LoggingBuildStep):
@@ -75,3 +79,28 @@ class CreateRunSetIdStep(ParsingShellCommand):
         self.setCommand(cmd1 + cmd2)
         ShellCommand.start(self)
 
+class GithubWritePullrequestComment(LoggingBuildStep):
+    def __init__(self, githubuser, githubrepo, githubtoken, *args, **kwargs):
+        self.githubuser = githubuser
+        self.githubrepo = githubrepo
+        self.githubtoken = githubtoken
+        LoggingBuildStep.__init__(self, *args, **kwargs)
+
+    def start(self):
+        parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
+        buildername = self.getProperty('buildername')
+        buildnumber = self.getProperty('buildnumber')
+        pullrequest_id = self.getProperty(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
+
+        payload = [
+            '`<botmode>`',
+            'Benchmark results: http://xamarin.github.io/benchmarker/front-end/pullrequest.html#%s' % str(parse_pullrequest_id),
+            'buildbot logs: %s/builders/%s/builds/%s' % (BUILDBOT_URL, buildername, str(buildnumber)),
+            '`</botmode>`'
+        ]
+        requests.post(
+            'https://api.github.com/repos/%s/%s/issues/%s/comments' % (self.githubuser, self.githubrepo, str(pullrequest_id)),
+            headers={'content-type': 'application/json', 'Authorization': 'token ' + self.githubtoken},
+            data=json.dumps({'body': '\n'.join(payload)})
+        )
+        self.finished(SUCCESS)

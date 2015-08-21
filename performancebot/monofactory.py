@@ -7,8 +7,8 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST
-from monosteps import CreateRunSetIdStep
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST
+from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment
 
 import re
 
@@ -175,16 +175,25 @@ class DebianMonoBuildFactory(BuildFactory):
             return step.build.getProperties().has_key(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
 
         self.clone_mono(guard=lambda s: _guard_runsetid_gen(s) and _guard_pullrequest_only(s))
+        parsers = {
+            PROPERTYNAME_RUNSETID: re.compile(r'"runSetId"\s*:\s*"(?P<' + PROPERTYNAME_RUNSETID + r'>\w+)"'),
+            PROPERTYNAME_PULLREQUESTID: re.compile(r'"pullRequestId"\s*:\s*"(?P<' + PROPERTYNAME_PULLREQUESTID + r'>\w+)"')
+        }
         self.addStep(
             CreateRunSetIdStep(
                 install_root=install_root,
                 name='create_RunSetId',
-                parse_rules={PROPERTYNAME_RUNSETID: re.compile(r'"runSetId"\s*:\s*"(?P<' + PROPERTYNAME_RUNSETID + r'>\w+)"')},
+                parse_rules=parsers,
                 workdir='benchmarker',
                 doStepIf=_guard_runsetid_gen,
                 haltOnFailure=True
             )
         )
+
+    def report_github(self, secret_github_token):
+        def _guard_pullrequest_only(step):
+            return step.build.getProperties().has_key(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
+        self.addStep(GithubWritePullrequestComment(name='report_github', githubuser='mono', githubrepo='mono', githubtoken=secret_github_token, doStepIf=_guard_pullrequest_only))
 
     def print_runsetid(self):
         self.addStep(
