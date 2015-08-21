@@ -286,6 +286,10 @@ class AllBenchmarksChart extends TimelineChart {
 				}
 				++count;
 			}
+			if (count === 0) {
+				console.log ("no data for run set " + runSets [j].id);
+				continue;
+			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
 			var broken = runSetIsBroken (this.props.controller, runSets [j]);
 			table.push ({
