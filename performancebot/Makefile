@@ -4,7 +4,7 @@ ifndef EC2PBOTMASTERIP
 $(error EC2PBOTMASTERIP is not set)
 endif
 
-DEBUGSHELL:=-x
+# DEBUGSHELL:=-x
 
 PBOTMASTERROOT:=/ebs/pbot-master/performancebot
 REMOTEHOST=ubuntu@$(EC2PBOTMASTERIP)
@@ -44,9 +44,12 @@ ec2-follow-log:
 # deploy buildbot configuration from this working directory and reconfig buildbot instance; if reconfig fails, the old configuration is restored
 ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh benchmarkerCredentials public_html templates
 	@$(CONTAINERCHECK) 1
-	ssh $(REMOTEHOST) 'mkdir -p /ebs/tmp'
-	scp -r $^ $(REMOTEHOST):/ebs/tmp/
+	@ssh $(REMOTEHOST) 'mkdir -p /ebs/tmp'
+	# copy files.
+	scp -q -r $^ $(REMOTEHOST):/ebs/tmp/
+	# create backup of current buildbot configuration and copy new files.
 	ssh $(REMOTEHOST) 'docker exec `docker ps | grep pbot-master | awk '"'"'{print $$1}'"'"'` bash $(DEBUGSHELL) -c "for i in $^; do if [ -d /ebs/tmp/\$$i ]; then rm -rf $(PBOTMASTERROOT)/\$$i~ && mv $(PBOTMASTERROOT)/\$$i{,~}; fi; cp -b -r /ebs/tmp/\$$i $(PBOTMASTERROOT)/; done"'
+	# reconfig buildbot master and depending on the result revert to backup or delete it.
 	ssh $(REMOTEHOST) 'docker exec `docker ps | grep pbot-master | awk '"'"'{print $$1}'"'"'` bash $(DEBUGSHELL) -c "test -f $(PBOTMASTERROOT)/twistd.pid && kill -0 \$$(cat $(PBOTMASTERROOT)/twistd.pid) ; (if [ \$$? -ne 0 ] ; then buildbot start $(PBOTMASTERROOT); else buildbot reconfig $(PBOTMASTERROOT); fi || (echo \"deployment failed, restoring files\" && (for i in $^ ; do rm -r $(PBOTMASTERROOT)/\$$i && mv $(PBOTMASTERROOT)/\$$i{~,} ; done))) && rm -rf $(PBOTMASTERROOT)/*~"'
 
 pylint:
