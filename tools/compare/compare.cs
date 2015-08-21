@@ -44,7 +44,7 @@ class Compare
 		var gitHubClient = GitHubInterface.GitHubClient;
 		var match = Regex.Match (pullRequestURL, @"^https?://github\.com/mono/mono/pull/(\d+)/?$");
 		if (match == null) {
-			Console.WriteLine ("Error: Cannot parse pull request URL.");
+			Console.Error.WriteLine ("Error: Cannot parse pull request URL.");
 			Environment.Exit (1);
 		}
 		var pullRequestNumber = Int32.Parse (match.Groups [1].Value);
@@ -236,7 +236,7 @@ class Compare
 
 		var benchmarks = Benchmark.LoadAllFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
-			Console.WriteLine ("Error: Could not load all benchmarks.");
+			Console.Error.WriteLine ("Error: Could not load all benchmarks.");
 			Environment.Exit (1);
 		}
 
@@ -261,23 +261,23 @@ class Compare
 		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline, gitRepoDir));
 
 		if (commit == null) {
-			Console.WriteLine ("Error: Could not get commit");
+			Console.Error.WriteLine ("Error: Could not get commit");
 			Environment.Exit (1);
 		}
 		if (commit.CommitDate == null) {
-			Console.WriteLine ("Error: Could not get a commit date.");
+			Console.Error.WriteLine ("Error: Could not get a commit date.");
 			Environment.Exit (1);
 		}
 
 		RunSet runSet;
 		if (runSetId != null) {
 			if (pullRequestURL != null) {
-				Console.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
+				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
 			runSet = AsyncContext.Run (() => RunSet.FromId (runSetId, config, commit, buildURL, logURL));
 			if (runSet == null) {
-				Console.WriteLine ("Error: Could not get run set.");
+				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
 			}
 		} else {
@@ -380,7 +380,7 @@ class Compare
                 Console.Write (", \"pullRequestId\": \"{0}\"", pullRequestObject.ObjectId);
             Console.WriteLine (" }");
 		} catch (Exception exc) {
-			Console.WriteLine ("Error: Failure uploading data: " + exc);
+			Console.Error.WriteLine ("Error: Failure uploading data: " + exc);
 			Environment.Exit (1);
 		}
 	}

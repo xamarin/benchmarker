@@ -96,7 +96,7 @@ namespace Benchmarker.Common
 					}
 				}
 			} catch (Exception) {
-				Console.WriteLine ("Failed to save credentials to disk");
+				Console.Error.WriteLine ("Warning: Failed to save credentials to file {0}", CredentialsFilename);
 			}
 
 			ParseInterface.InitializeParseForXamarinPerformance ();

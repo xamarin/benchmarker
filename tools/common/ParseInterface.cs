@@ -46,7 +46,7 @@ namespace Benchmarker.Common
 
 				defaultACL = acl;
 			} catch (Exception e) {
-				Console.WriteLine ("Exception when initializing Parse API: {0}", e);
+				Console.Error.WriteLine ("Error: Exception when initializing Parse API: {0}", e);
 				return false;
 			}
 			return true;

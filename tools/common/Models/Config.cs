@@ -160,7 +160,7 @@ namespace Benchmarker.Common.Models
 				Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
 			} else {
 				if (optionalCommitHash == null) {
-					Console.WriteLine ("Error: cannot parse mono version and no commit given.");
+					Console.Error.WriteLine ("Error: cannot parse mono version and no commit given.");
 					return null;
 				}
 			}
@@ -170,7 +170,7 @@ namespace Benchmarker.Common.Models
 
 			if (optionalCommitHash != null) {
 				if (commit.Hash != null && !optionalCommitHash.StartsWith (commit.Hash)) {
-					Console.WriteLine ("Error: Commit hash specified on command line does not match the one reported with --version.");
+					Console.Error.WriteLine ("Error: Commit hash specified on command line does not match the one reported with --version.");
 					return null;
 				}
 				commit.Hash = optionalCommitHash;
@@ -186,7 +186,7 @@ namespace Benchmarker.Common.Models
 					Console.WriteLine ("Got commit " + gitHash + " from repository");
 
 					if (optionalCommitHash != null && optionalCommitHash != gitHash) {
-						Console.WriteLine ("Error: Commit hash specified on command line does not match the one from the git repository.");
+						Console.Error.WriteLine ("Error: Commit hash specified on command line does not match the one from the git repository.");
 						return null;
 					}
 
@@ -195,7 +195,7 @@ namespace Benchmarker.Common.Models
 					commit.CommitDate = repo.CommitDate (commit.Hash);
 
 					if (commit.CommitDate == null) {
-						Console.WriteLine ("Error: Could not get commit date from the git repository.");
+						Console.Error.WriteLine ("Error: Could not get commit date from the git repository.");
 						return null;
 					}
 
@@ -216,7 +216,7 @@ namespace Benchmarker.Common.Models
 				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
 			} else {
 				if (optionalCommitHash != null && optionalCommitHash != gitHubCommit.Sha) {
-					Console.WriteLine ("Error: Commit hash specified on command line does not match the one from GitHub.");
+					Console.Error.WriteLine ("Error: Commit hash specified on command line does not match the one from GitHub.");
 					return null;
 				}
 
