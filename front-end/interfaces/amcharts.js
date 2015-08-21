@@ -1,5 +1,6 @@
 declare class AmEvent {
     index: number;
+    item: Object;
 }
 
 declare class AmChart {

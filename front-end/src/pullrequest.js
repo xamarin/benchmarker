@@ -65,7 +65,11 @@ type PullRequestDescriptionProps = {
 	pullRequest: Parse.Object;
 };
 
-class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionProps, void> {
+type PullRequestDescriptionState = {
+    gitHubInfo: Object | void;
+};
+
+class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionProps, PullRequestDescriptionState> {
     constructor (props) {
         super (props);
         this.state = { gitHubInfo: undefined };
