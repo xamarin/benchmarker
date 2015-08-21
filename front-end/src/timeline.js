@@ -68,7 +68,6 @@ class Page extends React.Component {
 	}
 
 	runSetSelected (runSet) {
-		console.log (runSet);
 		window.open ('runset.html#' + runSet.id);
 		this.setState ({runSets: this.state.runSets.concat ([runSet])});
 	}
@@ -287,7 +286,7 @@ class AllBenchmarksChart extends TimelineChart {
 				++count;
 			}
 			if (count === 0) {
-				console.log ("no data for run set " + runSets [j].id);
+				console.log ("No data for run set " + runSets [j].id);
 				continue;
 			}
 			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);

@@ -53,8 +53,6 @@ function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<P
             return undefined;
     }
 
-    console.log ("all runs loaded");
-
     var commonBenchmarkIds;
 
     for (i = 0; i < runSets.length; ++i) {
@@ -196,12 +194,10 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	}
 
 	componentDidMount () {
-		console.log ("mounting chart");
 		this.drawChart (this.props);
 	}
 
 	componentWillUnmount () {
-		console.log ("unmounting chart");
 		this.chart.clear ();
 	}
 
@@ -221,7 +217,6 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 	}
 
 	drawChart (props : AMChartProps) {
-		console.log ("drawing");
 		if (this.chart === undefined) {
 			this.chart = AmCharts.makeChart (props.graphName, props.options);
 			if (this.props.selectListener !== undefined)
@@ -311,8 +306,6 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
     runsLoaded () {
         var i;
-
-        console.log ("run loaded");
 
         var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
         if (dataArray === undefined)

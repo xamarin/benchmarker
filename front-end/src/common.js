@@ -79,7 +79,6 @@ export class Controller {
 	}
 
 	machinesLoaded (results: Array<Parse.Object>) {
-		console.log ("machines loaded: " + results.length);
 		this.allMachines = results;
 		this.checkAllDataLoaded ();
 	}
@@ -90,7 +89,6 @@ export class Controller {
 	}
 
 	runSetsLoaded (results: Array<Parse.Object>) {
-		console.log ("run sets loaded: " + results.length);
 		var partition = xp_utils.partitionArrayByString (results, rs => (rs.get ('pullRequest') === undefined).toString ());
 		this.allRunSets = partition ["true"];
 		this.pullRequestRunSets = partition ["false"];
@@ -272,7 +270,6 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		};
 
 		histogram = xp_utils.sortArrayLexicographicallyBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
-		console.log (histogram);
 
 		var machines = {};
 		for (var i = 0; i < histogram.length; ++i) {
@@ -291,13 +288,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			});
 		}
 
-		console.log (machines);
-
 		function renderEntry (entry) {
-			console.log ('rendering entry');
-			console.log (entry);
 			var string = idsToString (entry.machineId, entry.configId);
-			console.log ('string: ' + string);
 			return <option
 				value={string}
 				key={string}>
@@ -371,7 +363,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	runSetSelected (event: Object) {
 		var selection = this.props.selection;
 		var runSetId = event.target.value;
-		console.log ("run set selected: " + runSetId);
 		var runSet = this.props.controller.runSetForId (runSetId);
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
 	}
@@ -382,7 +373,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 	render () : Object {
 		var selection = this.props.selection;
-		console.log (selection);
 
 		var runSetId = undefined;
 		var filteredRunSets = undefined;
@@ -392,8 +382,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 		if (selection.machine !== undefined && selection.config !== undefined)
 			filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
-
-		console.log (filteredRunSets);
 
 		function renderRunSetOption (rs) {
 			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
@@ -476,8 +464,7 @@ export function pageParseQuery (makeQuery: () => Object, success: (results: Arra
 					done (soFar);
 			},
 			error: function (e) {
-				console.log ("Parse error:");
-				console.log (e);
+				console.log ("Parse error: ", e);
 				error (e);
 			}
 		});
