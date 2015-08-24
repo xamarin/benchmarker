@@ -70,13 +70,13 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
-    def export_benchmark_list(self):
+    def export_benchmark_list(self, machine):
         step = MasterShellCommand(
             name="list_benchmarks",
             command=[
                 'bash', '-c', Interpolate(
-                    'mono %s/benchmarker/tools/compare.exe --list-benchmarks | ' % MASTERWORKDIR +
-                    'tee benchmarks.list')
+                    'mono %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s | ' % (MASTERWORKDIR, machine) +
+                    'tee benchmarks-%s.list' % machine)
             ]
         )
         self.addStep(step)
