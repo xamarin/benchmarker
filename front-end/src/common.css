@@ -40,6 +40,33 @@ optgroup {
 	margin: 4px;
 }
 
+h1 {
+	font-size: larger;
+	font-weight: bold;
+	margin: 0 0 8px 0;
+}
+
+p {
+	margin: 0 0 8px 0;
+	line-height: 140%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:link {
+	color: #3192B3;
+}
+
+a:visited {
+	color: #2C7797;
+}
+
+a:active, a:hover, a:focus {
+	color: #1FAECE;
+}
+
 /* ConfigDescription, MachineDescription */
 
 .Description dl {

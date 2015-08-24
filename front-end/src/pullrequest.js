@@ -40,16 +40,18 @@ class Controller extends xp_common.Controller {
 			<div className="PullRequestPage">
 				<xp_common.Navigation currentPage="" />
                 <article>
-                    <div className="panel">
-                        <PullRequestDescription
-                            pullRequest={pullRequest} />
-                        <xp_common.MachineDescription
-                            machine={machine}
-                            omitHeader={false} />
-                        <xp_common.ConfigDescription
-                            config={config}
-                            omitHeader={false} />
-                    </div>
+					<div className="outer">
+						<div className="inner">
+							<PullRequestDescription
+								pullRequest={pullRequest} />
+							<xp_common.MachineDescription
+								machine={machine}
+								omitHeader={false} />
+							<xp_common.ConfigDescription
+								config={config}
+								omitHeader={false} />
+						</div>
+					</div>
                     <xp_charts.ComparisonAMChart
                         graphName="comparisonChart"
                         controller={this}
@@ -94,26 +96,22 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
         var baselineRunSet = pr.get ('baselineRunSet');
         var baselineHash = baselineRunSet.get ('commit').get ('hash');
 
-        var title = "Link";
+        var title = <span>Loading&hellip;</span>;
         if (info !== undefined && info.title !== undefined)
             title = info.title;
 
-        var author = [];
+		var description = undefined;
+		var commit = <a href={xp_common.githubCommitLink (baselineHash)}>{baselineHash.substring (0, 10)}</a>;
         if (info !== undefined && info.user !== undefined) {
-            author = [
-                <dt>Author</dt>,
-                <dd><a href={info.user ["html_url"]}>{info.user.login}</a></dd>
-            ];
-        }
+			var user = <a href={info.user ["html_url"]}>{info.user.login}</a>;
+			description = <p>Authored by {user}, based on {commit}.</p>
+		} else {
+			description = <p>Based on {commit}.</p>
+		}
 
 		return <div className="Description">
-			<dl>
-			<dt>Pull Request</dt>
-            <dd><a href={pr.get ('URL')}>{title}</a></dd>
-            {author}
-			<dt>Baseline commit</dt>
-			<dd><a href={xp_common.githubCommitLink (baselineHash)}>{baselineHash.substring (0, 10)}</a></dd>
-			</dl>
+			<h1><a href={pr.get ('URL')}>{title}</a></h1>
+			{description}
 		</div>;
 	}
 }

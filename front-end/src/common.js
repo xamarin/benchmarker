@@ -196,7 +196,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 
 		var header = this.props.omitHeader
 			? undefined
-			: <h1>{config.get ('name')}</h1>;
+			: <h1>Config: {config.get ('name')}</h1>;
 		var mono = config.get ('monoExecutable');
 		var monoExecutable = mono === undefined
 			? <span className="diagnostic">No mono executable specified.</span>
@@ -240,7 +240,7 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 			return <div></div>;
 		var header = this.props.omitHeader
 			? undefined
-			: <h1>{machine.get ('name')}</h1>;
+			: <h1>Machine: {machine.get ('name')}</h1>;
 
 		return <div className="Description">
 			{header}
