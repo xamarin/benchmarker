@@ -10,14 +10,15 @@ namespace Benchmarker.Common.Models
 		public string Name { get; set; }
 		public int DefaultTimeout { get; set; }
 		public Dictionary<string, int> BenchmarkTimeouts { get; set; }
+		public List<string> ExcludeBenchmarks { get; set; }
 
 		public Machine ()
 		{
 		}
-			
-		public static Machine LoadCurrentFrom (string directory)
+
+		public static Machine LoadFrom (string machineName, string directory)
 		{
-			string filename = Path.Combine (directory, String.Format ("{0}.conf", Environment.MachineName));
+			string filename = Path.Combine (directory, String.Format ("{0}.conf", machineName));
 
 			try {
 				using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
@@ -26,7 +27,11 @@ namespace Benchmarker.Common.Models
 			} catch (FileNotFoundException) {
 				return null;
 			}
-
+		}
+			
+		public static Machine LoadCurrentFrom (string directory)
+		{
+			return LoadFrom (Environment.MachineName, directory);
 		}
 	}
 }

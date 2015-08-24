@@ -25,6 +25,7 @@ class Compare
 		Console.Error.WriteLine ("    -b, --benchmarks        benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                               ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -l, --list-benchmarks   list all available benchmarks");
+		Console.Error.WriteLine ("        --machine           list benchmarks only for the given machine");
 		Console.Error.WriteLine ("    -t, --timeout           execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit            the hash of the commit being tested");
 		Console.Error.WriteLine ("        --git-repo          the directory of the Git repository");
@@ -135,6 +136,7 @@ class Compare
 		string monoRepositoryPath = null;
 		string runSetId = null;
 		string configFile = null;
+		string machineName = null;
 		bool justCreateRunSet = false;
 		bool justListBenchmarks = false;
 
@@ -151,6 +153,8 @@ class Compare
 				configFile = args [++optindex];
 			} else if (args [optindex] == "-l" || args [optindex] == "--list-benchmarks") {
 				justListBenchmarks = true;
+			} else if (args [optindex] == "--machine") {
+				machineName = args [++optindex];
 			} else if (args [optindex] == "--commit") {
 				commitFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--git-repo") {
@@ -194,6 +198,11 @@ class Compare
 
 		if (justListBenchmarks && benchmarkNames != null) {
 			Console.Error.WriteLine ("Error: -b/--benchmarks and -l/--list-benchmarks are incompatible.");
+			Environment.Exit (1);
+		}
+
+		if (machineName != null && !justListBenchmarks) {
+			Console.Error.WriteLine ("Error: --machine can only be used with -l/--list-benchmarks.");
 			Environment.Exit (1);
 		}
 
@@ -241,6 +250,15 @@ class Compare
 		}
 
 		if (justListBenchmarks) {
+			if (machineName != null) {
+				var listMachine = Machine.LoadFrom (machineName, machinesDir);
+				if (listMachine == null) {
+					Console.Error.WriteLine ("Error: Could not load machine `{0}`.", machineName);
+					Environment.Exit (1);
+				}
+				if (listMachine.ExcludeBenchmarks != null)
+					benchmarks = benchmarks.Where (b => !listMachine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
+			}
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
 				Console.Out.WriteLine (benchmark.Name);
 			}
@@ -257,6 +275,8 @@ class Compare
 		var config = Config.LoadFrom (configFile, rootFromCmdline);
 
 		var machine = Machine.LoadCurrentFrom (machinesDir);
+		if (machine.ExcludeBenchmarks != null)
+			benchmarks = benchmarks.Where (b => !machine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
 
 		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline, gitRepoDir));
 
