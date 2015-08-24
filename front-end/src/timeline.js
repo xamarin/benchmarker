@@ -127,7 +127,7 @@ class Page extends React.Component {
 	}
 }
 
-function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
+function tooltipForRunSet (controller: Controller, runSet: Parse.Object, includeBroken: boolean) {
 	var commit = runSet.get ('commit');
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
@@ -136,10 +136,13 @@ function tooltipForRunSet (controller: Controller, runSet: Parse.Object) {
 	var startedAtString = runSet.get ('startedAt').toDateString ();
 	var hashString = commit.get ('hash').substring (0, 10);
 
-	var timedOutBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
-	var crashedBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
-
-	return hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString + timedOutBenchmarks + crashedBenchmarks;
+	var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
+	if (includeBroken) {
+		var timedOutBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
+		var crashedBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
+	 	tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
+	}
+	return tooltip;
 }
 
 function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
@@ -169,6 +172,10 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 	sortedRunSets : Array<Parse.Object>;
 	table : void | Array<Object>;
 
+	valueAxisTitle () : string {
+		return "";
+	}
+
 	constructor (props) {
 		super (props);
 	}
@@ -191,6 +198,7 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 			graphName={this.props.graphName}
 			height={300}
 			data={this.table}
+			title={this.valueAxisTitle ()}
 			selectListener={this.props.runSetSelected.bind (this)} />;
 	}
 
@@ -219,6 +227,10 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 }
 
 class AllBenchmarksChart extends TimelineChart {
+	valueAxisTitle () : string {
+		return "Relative wall clock time";
+	}
+
 	computeTable () {
 		var runSets = this.sortedRunSets;
 		var i = 0, j = 0;
@@ -291,14 +303,14 @@ class AllBenchmarksChart extends TimelineChart {
 				console.log ("No data for run set " + runSets [j].id);
 				continue;
 			}
-			var tooltip = tooltipForRunSet (this.props.controller, runSets [j]);
+			var tooltip = tooltipForRunSet (this.props.controller, runSets [j], true);
 			var broken = runSetIsBroken (this.props.controller, runSets [j]);
 			table.push ({
 				runSet: runSets [j],
 				low: min,
-				lowName: minName,
+				lowName: minName ? ("Fastest: " + minName) : undefined,
 				high: max,
-				highName: maxName,
+				highName: maxName ? ("Slowest: " + maxName) : undefined,
 				geomean: Math.pow (prodForRunSet, 1.0 / count),
 				tooltip: tooltip,
 				lineColor: (broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2])
@@ -309,7 +321,15 @@ class AllBenchmarksChart extends TimelineChart {
 	}
 }
 
+function formatDuration (t: number) : string {
+	return (t / 1000).toPrecision (4) + "s";
+}
+
 class BenchmarkChart extends TimelineChart {
+	valueAxisTitle () : string {
+		return "Wall clock time";
+	}
+
 	computeTable () {
 		var runSets = this.sortedRunSets;
 		var j = 0;
@@ -322,20 +342,26 @@ class BenchmarkChart extends TimelineChart {
 			var variance = runSet.get ('elapsedTimeVariances') [this.props.benchmark];
 			if (average === undefined)
 				continue;
+
+			var tooltip = tooltipForRunSet (this.props.controller, runSet, false);
+
 			var low = undefined;
 			var high = undefined;
+			var averageTooltip;
 			if (variance !== undefined) {
 				var stdDev = Math.sqrt (variance);
 				low = average - stdDev;
 				high = average + stdDev;
+				averageTooltip = "Average +/- standard deviation: " + formatDuration (low) + "–" + formatDuration (high);
+			} else {
+				averageTooltip = "Average: " + formatDuration (average);
 			}
-			var tooltip = tooltipForRunSet (this.props.controller, runSet);
 			table.push ({
 				runSet: runSet,
 				geomean: average,
 				low: low,
 				high: high,
-				tooltip: tooltip
+				tooltip: tooltip + "\n" + averageTooltip
 			});
 		}
 

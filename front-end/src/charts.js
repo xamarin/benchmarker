@@ -382,7 +382,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 else
                     max = Math.max (max, range [3]);
 
-                entry ["stdBalloon" + j] = formatPercentage (range [1]) + " - " + formatPercentage (range [2]);
+                entry ["stdBalloon" + j] = formatPercentage (range [1]) + "–" + formatPercentage (range [2]);
                 entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);
             }
             dataProvider.push (entry);
@@ -451,6 +451,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 type TimelineAMChartProps = {
 	graphName: string;
 	height: number;
+	title: string;
 	data: Object;
 	selectListener: (index: number) => void;
 };
@@ -508,13 +509,11 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, Timel
 						],
 						"valueAxes": [
 							{
-								"baseValue": -13,
 								"id": "time",
 								"axisThickness": 0,
 								"fontSize": 12,
 								"gridAlpha": 0.07,
-								"title": "",
-								"titleFontSize": 0
+								"title": this.props.title
 							}
 						],
 						"allLabels": [],
