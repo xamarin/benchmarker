@@ -5,8 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compare", "compare\compare.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "common", "common\common.csproj", "{AD342772-DA1A-460F-8BE7-EA3C7A681116}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "suite", "suite", "{3FF28327-5356-4932-B628-5C6E72127969}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbTool", "add-averages\DbTool.csproj", "{13565BEF-4FE2-44EB-9882-F1FBC339E723}"
 EndProject
 Global
@@ -41,8 +39,6 @@ Global
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x64.Build.0 = Debug|x64
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x86.ActiveCfg = Debug|x64
 		{AD342772-DA1A-460F-8BE7-EA3C7A681116}.Release|x86.Build.0 = Debug|x64
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		outputpath = .
