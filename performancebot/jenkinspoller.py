@@ -48,21 +48,19 @@ class MonoJenkinsPoller(base.PollingChangeSource):
             self.working = True
             dfrd = _get_new_jenkins_changes(self.url, self.lane, self.platform, self.hostname, self.config_name)
             dfrd.addCallback(self._process_changes)
-            dfrd.addCallbacks(self._finished_ok, self._finished_failure)
+            dfrd.addCallback(self._finished_ok)
+            dfrd.addErrback(self._finished_failure)
             return dfrd
 
     def _finished_ok(self, res):
+        log.msg("MonoJenkinsPoller(%s) poll success: %s" % (self.db_class_name, str(res)))
         assert self.working
         self.working = False
-        log.msg("MonoJenkinsPoller poll success")
-
-        return res
 
     def _finished_failure(self, res):
-        log.msg("MonoJenkinsPoller poll failed: %s" % res)
+        log.msg("MonoJenkinsPoller(%s) poll failed: %s" % (self.db_class_name, str(res)))
         assert self.working
         self.working = False
-        return None
 
     def _get_state_object_id(self):
         """Return a deferred for object id in state db.
