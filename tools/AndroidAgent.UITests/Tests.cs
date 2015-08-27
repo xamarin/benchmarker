@@ -22,14 +22,12 @@ namespace AndroidAgent.UITests
 		[Test]
 		public void ClickingButtonTwiceShouldChangeItsLabel ()
 		{
-			Func<AppQuery, AppQuery> MyButton = c => c.Button ("myButton");
-
-			app.Tap (MyButton);
-			app.Tap (MyButton);
-			AppResult[] results = app.Query (MyButton);
-			app.Screenshot ("Button clicked twice.");
-
-			Assert.AreEqual ("2 clicks!", results [0].Text);
+			app.Screenshot ("init");
+			app.EnterText (c => c.Marked ("runSetId"), "123435");
+			app.Screenshot ("enter RunSetId");
+			app.Tap (c => c.Marked("myButton"));
+			app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes(179));
+			app.Screenshot ("after benchmark");
 		}
 	}
 }

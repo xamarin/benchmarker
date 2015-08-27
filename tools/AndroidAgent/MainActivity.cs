@@ -13,7 +13,7 @@ namespace AndroidAgent
 	[Activity (Label = "AndroidAgent", MainLauncher = true, Icon = "@drawable/icon")]
 	public class MainActivity : Activity
 	{
-		void SetButtonText (string text)
+		void SetStartButtonText (string text)
 		{
 			Button button = FindViewById<Button> (Resource.Id.myButton);
 			button.Text = text;
@@ -21,24 +21,19 @@ namespace AndroidAgent
 
 		void RunBenchmark (string runSetId)
 		{
-			var task = new Task (() => {
+			new Task (() => {
 				try {
 					Console.WriteLine ("MainActivity | Benchmark : start");
-
 					strcat.Main (new string[] { "10000000" });
-
 					Console.WriteLine ("MainActivity | Benchmark : finished");
 
 					RunOnUiThread (() => {
-						SetButtonText ("done");
+						SetStartButtonText ("start");
 					});
 				} catch (Exception e) {
 					Console.WriteLine (e);
 				}
-			});
-
-			task.Start ();
-
+			}).Start ();
 			Console.WriteLine ("Benchmark started, run set id {0}", runSetId);
 		}
 
@@ -48,13 +43,10 @@ namespace AndroidAgent
 
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
-
-			Button button = FindViewById<Button> (Resource.Id.myButton);
-			
-			button.Click += delegate {
+			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
 				TextView textView = FindViewById<TextView> (Resource.Id.runSetId);
 				var runSetId = textView.Text;
-				SetButtonText ("running");
+				SetStartButtonText ("running");
 				RunBenchmark (runSetId);
 			};
 
