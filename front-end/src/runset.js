@@ -72,12 +72,18 @@ class Page extends React.Component {
 			detail = <RunSetDescription controller={this.props.controller} runSet={this.state.selection.runSet} />;
 
 		return <div className="RunSetPage">
-			<xp_common.Navigation currentPage="" />
-			<xp_common.RunSetSelector
-				controller={this.props.controller}
-				selection={this.state.selection}
-				onChange={this.handleChange.bind (this)} />
-			{detail}
+			<header>
+				<xp_common.Navigation currentPage="" />
+			</header>
+			<article>
+				<div className="panel">
+					<xp_common.RunSetSelector
+						controller={this.props.controller}
+						selection={this.state.selection}
+						onChange={this.handleChange.bind (this)} />
+				</div>
+				{detail}
+			</article>
 		</div>;
 	}
 }
@@ -122,26 +128,25 @@ class RunSetDescription extends React.Component {
 		var table;
 
 		if (buildURL !== undefined)
-			buildLink = [<dt>Build</dt>, <dd><a href={buildURL}>Link</a></dd>];
+			buildLink = <a href={buildURL}>build</a>;
 
 		if (logURLs !== undefined && Object.keys (logURLs).length !== 0) {
-			logLinks = [<dt>Logs</dt>];
 			for (var key in logURLs) {
-				var url = logURLs[key];
-				logLinks.push(<dd>{key}: <a href={url}>{url}</a></dd>);
+				var url = logURLs [key];
+				logLinks.push(<li>{key}: <a href={url}>{url}</a></li>);
 			}
 		}
 
 		var timedOutString = xp_common.joinBenchmarkNames (this.props.controller, runSet.get ('timedOutBenchmarks'), "");
 		if (timedOutString !== "")
-			timedOutBenchmarks = [<dt>Timed out</dt>, <dd>{timedOutString}</dd>];
+			timedOutBenchmarks = timedOutString;
 
 		var crashedString = xp_common.joinBenchmarkNames (this.props.controller, runSet.get ('crashedBenchmarks'), "");
 		if (crashedString !== "")
-			crashedBenchmarks = [<dt>Crashed</dt>, <dd>{crashedString}</dd>];
+			crashedBenchmarks = crashedString;
 
 		if (this.state.runs === undefined) {
-			table = <div className='diagnostic'>Loading&hellip;</div>;
+			table = <div className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
 			var runsByBenchmarkName = xp_utils.partitionArrayByString (this.state.runs, r => this.props.controller.benchmarkNameForId (r.get ('benchmark').id));
 			var benchmarkNames = Object.keys (runsByBenchmarkName);
@@ -155,35 +160,34 @@ class RunSetDescription extends React.Component {
 				{benchmarkNames.map (name => {
 					var runs = runsByBenchmarkName [name];
 					var benchmark = this.props.controller.benchmarkForId (runs [0].get ('benchmark').id);
-					var disabled = "";
-					if (benchmark.get ('disabled'))
-						disabled = " (disabled)";
 					var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
 					elapsed.sort ();
 					var elapsedString = elapsed.join (", ");
-					return <tr>
-						<td>{name + disabled}</td>
+					var outlierVariance = xp_common.outlierVariance (elapsed);
+					return <tr className={benchmark.get ('disabled') ? 'disabled' : ''}>
+						<td><code>{name}</code>{benchmark.get ('disabled') ? ' (disabled)' : ''}</td>
 						<td>{elapsedString}</td>
-						<td>{xp_common.outlierVariance (elapsed)}</td>
+						<td>
+							<div className="degree" title={outlierVariance}>
+								<div className={outlierVariance}>&nbsp;</div>
+							</div>
+						</td>
 					</tr>;
 				})}
 			</table>;
 		}
 
 		var commitHash = runSet.get ('commit').get ('hash');
+		var commitLink = xp_common.githubCommitLink (commitHash);
 
+		var openCompare = function () { window.open('compare.html#' + runSet.id); };
 		return <div className="Description">
-			<p><a href={"compare.html#" + runSet.id}>Compare</a></p>
-			<dl>
-				<dt>Commit</dt>
-				<dd><a href={xp_common.githubCommitLink (commitHash)}>{commitHash}</a></dd>
-				{buildLink}
-				{logLinks}
-				{timedOutBenchmarks}
-				{crashedBenchmarks}
-				<dt>Elapsed Times</dt>
-				<dd>{table}</dd>
-			</dl>
+			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink})</h1>
+			<p><button onClick={openCompare}>Compare</button></p>
+			<ul>{logLinks}</ul>
+			<p>Timed out: {timedOutBenchmarks || "none"}</p>
+			<p>Crashed: {crashedBenchmarks || "none"}</p>
+			{table}
 		</div>;
 	}
 }

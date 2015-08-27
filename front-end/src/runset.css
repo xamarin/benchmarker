@@ -1,0 +1,49 @@
+.degree {
+	background: #ffffff;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
+	height: 16px;
+	width: 100%;
+}
+
+.degree > .none, .degree > .slight, .degree > .moderate, .degree > .severe {
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
+	height: 16px;
+	margin: -1px;
+}
+
+.degree > .none {
+	background: #1FAECE;
+	width: 1%;
+}
+
+.degree > .slight {
+	background: #91CA47;
+	width: 10%;
+}
+
+.degree > .moderate {
+	background-color: #F1C40F;
+	width: 50%;
+}
+
+.degree > .severe {
+	background-color: #F56D4F;
+	width: 100%;
+}
+
+.RunSetPage > article > .panel {
+	background: #FFFFFF;
+	border: 1px solid #ADB7BE;
+	border-radius: 4px;
+	float: left;
+	margin-right: 16px;
+	padding: 8px;
+	width: 320px;
+}
+
+.RunSetPage > article > .Description {
+	margin: 16px;
+	overflow: hidden;
+}
