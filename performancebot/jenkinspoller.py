@@ -104,25 +104,26 @@ class MonoJenkinsPoller(base.PollingChangeSource):
         return dfrd
 
     @defer.inlineCallbacks
-    def _process_changes(self, change_list):
+    def _process_changes(self, builds_todo):
         not_added = []
-        for change in change_list:
+        for build in builds_todo:
             oid, last_rev = yield self._get_current_rev()
-            current_rev = int(change['revision'])
+            revision = build[:-1].split('/')[-1] if build[-1] == '/' else build.split('/')[-1]
+            current_rev = int(revision)
             if current_rev <= int(last_rev if last_rev is not None else 0):
                 not_added.append('#' + str(current_rev))
                 continue
-            log.msg('adding change:' + str(change))
+            build_details_json = json.loads((yield _mk_request_jenkins_build(build, None)))
             yield self.master.addChange(
-                author=change['who'],
-                revision=str(current_rev),
+                author='Jenkins', # TODO: get author name responsible for triggering the jenkins build
+                revision=revision,
                 files=[],
                 comments="",
-                revlink=change['url'],
-                when_timestamp=epoch2datetime(int(change['when']) / 1000),
+                revlink=build_details_json['url'],
+                when_timestamp=epoch2datetime(int(build_details_json['timestamp']) / 1000),
                 branch=None,
                 category=None,
-                codebase=change['codebase'],
+                codebase=gen_jenkinspoller_codebase(self.url, self.lane, self.platform, self.hostname, self.config_name),
                 project='',
                 repository=self.fake_repo_url,
                 src=u'jenkins'
@@ -197,20 +198,7 @@ def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_
         return sorted([i['buildURL'].encode('ascii', 'ignore') for i in j['results'] if i.has_key('buildURL') and i['buildURL'] is not None])
 
     builds_todo = list(set(_filter_build_urls_jenkins(jenkins_json)) - set(_filter_build_urls_parse(parse_json)))
-
-    result = []
-    for build in builds_todo:
-        build_details_json = json.loads((yield _mk_request_jenkins_build(build, None)))
-        result.append({
-            'who': 'Jenkins', # TODO: get author name responsible for triggering the jenkins build
-            'revision': build_details_json['number'],
-            'url': build_details_json['url'],
-            'codebase': gen_jenkinspoller_codebase(lane, platform, hostname, config_name),
-            'when': build_details_json['timestamp']
-        })
-
-    defer.returnValue(sorted(result, key=lambda k: k['revision']))
-
+    defer.returnValue(sorted(builds_todo))
 
 
 def debug_pp_json(j):
@@ -446,7 +434,7 @@ if __name__ == '__main__':
     def run_tests():
         # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
-        # _ = yield test_get_changes_debamd64()
+        _ = yield test_get_changes_debamd64()
         _ = yield test_fetch_build_debamd64()
         # _ = yield test_get_pr_changes_debamd64()
         _ = yield test_fetch_pr_build_debamd64()
