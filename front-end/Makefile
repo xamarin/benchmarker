@@ -3,7 +3,7 @@
 PAGES = compare config machine timeline runset pullrequest
 COMMON = common utils charts
 DEPS = babel-loader parse react github-api
-STYLES = common compare style timeline pullrequest runset
+STYLES = common compare style timeline pullrequest runset font-awesome.min
 
 # Sources and targets
 
