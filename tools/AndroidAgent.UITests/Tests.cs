@@ -20,7 +20,7 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
-		public void ClickingButtonTwiceShouldChangeItsLabel ()
+		public void RunBenchmark ()
 		{
 			app.Screenshot ("init");
 			app.EnterText (c => c.Marked ("runSetId"), "123435");
@@ -31,4 +31,3 @@ namespace AndroidAgent.UITests
 		}
 	}
 }
-
