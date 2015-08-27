@@ -46,7 +46,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
             log.msg("Not polling because last poll is still working")
         else:
             self.working = True
-            dfrd = _get_new_jenkins_changes(self.url, self.lane, self.platform, self.hostname, self.config_name)
+            dfrd = _get_new_jenkins_changes(self.url, self.platform, self.hostname, self.config_name)
             dfrd.addCallback(self._process_changes)
             dfrd.addCallback(self._finished_ok)
             dfrd.addErrback(self._finished_failure)
@@ -123,7 +123,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
                 when_timestamp=epoch2datetime(int(build_details_json['timestamp']) / 1000),
                 branch=None,
                 category=None,
-                codebase=gen_jenkinspoller_codebase(self.url, self.lane, self.platform, self.hostname, self.config_name),
+                codebase=gen_jenkinspoller_codebase(self.lane, self.platform, self.hostname, self.config_name),
                 project='',
                 repository=self.fake_repo_url,
                 src=u'jenkins'
@@ -187,7 +187,7 @@ def _mk_request_parse(hostname, config_name, logger):
     return getPage(url, headers=headers)
 
 @defer.inlineCallbacks
-def _get_new_jenkins_changes(jenkins_base_url, lane, platform, hostname, config_name):
+def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
     jenkins_json = json.loads((yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)))
     parse_json = json.loads((yield _mk_request_parse(hostname, config_name, None)))
 
@@ -388,7 +388,7 @@ if __name__ == '__main__':
     def test_get_changes_debarm():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-armhf', 'utilite-desktop', 'auto-sgen'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen'))):
             print url
 
 
@@ -407,7 +407,7 @@ if __name__ == '__main__':
     def test_get_changes_debamd64():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, Lane.Master, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
             print url
 
 
@@ -426,7 +426,7 @@ if __name__ == '__main__':
     def test_get_pr_changes_debamd64():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, Lane.PullRequest, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
             print url
 
 
