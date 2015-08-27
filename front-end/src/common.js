@@ -383,8 +383,14 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (selection.machine !== undefined && selection.config !== undefined)
 			filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
 
+		function openRunSetDescription (id) {
+			return window.open ('runset.html#' + id);
+		}
+
 		function renderRunSetOption (rs) {
-			return <option value={rs.id} key={rs.id}>{rs.get ('startedAt').toString ()}</option>;
+			return <option value={rs.id} key={rs.id} onDoubleClick={openRunSetDescription.bind (this, rs.id)}>
+				{rs.get ('startedAt').toString ()}
+			</option>;
 		}
 
 		var config = selection.config === undefined
