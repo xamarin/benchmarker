@@ -5,6 +5,8 @@ using NUnit.Framework;
 using Xamarin.UITest;
 using Xamarin.UITest.Android;
 using Xamarin.UITest.Queries;
+using System.Reflection;
+using Newtonsoft.Json;
 
 namespace AndroidAgent.UITests
 {
@@ -22,12 +24,21 @@ namespace AndroidAgent.UITests
 		[Test]
 		public void RunBenchmark ()
 		{
-			app.Screenshot ("init");
-			app.EnterText (c => c.Marked ("runSetId"), "123435");
-			app.Screenshot ("enter RunSetId");
-			app.Tap (c => c.Marked("myButton"));
-			app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes(179));
-			app.Screenshot ("after benchmark");
+			var assembly = Assembly.GetExecutingAssembly ();
+			using (Stream stream = assembly.GetManifestResourceStream ("AndroidAgent.UITests.params.json")) {
+				using (StreamReader reader = new StreamReader (stream)) {
+					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
+					string runSetId = json.runSetId;
+
+					app.Screenshot ("init");
+					app.EnterText (c => c.Marked ("runSetId"), runSetId);
+					app.Screenshot ("enter RunSetId");
+					app.Tap (c => c.Marked("myButton"));
+					app.Screenshot ("after tap");
+					app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes(179));
+					app.Screenshot ("after benchmark");
+				}
+			}
 		}
 	}
 }
