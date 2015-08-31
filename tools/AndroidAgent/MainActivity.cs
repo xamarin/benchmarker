@@ -7,12 +7,24 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
+using System.Reflection;
 
 namespace AndroidAgent
 {
 	[Activity (Label = "AndroidAgent", MainLauncher = true, Icon = "@drawable/icon")]
 	public class MainActivity : Activity
 	{
+		string GetMonoVersion () {
+			Type type = Type.GetType("Mono.Runtime");
+			if (type != null)
+			{
+				MethodInfo displayName = type.GetMethod("GetDisplayName", BindingFlags.Public | BindingFlags.Static);
+				if (displayName != null)
+					return displayName.Invoke (null, null).ToString ();
+			}
+			return "(no version)";
+		}
+
 		void SetStartButtonText (string text)
 		{
 			Button button = FindViewById<Button> (Resource.Id.myButton);
@@ -49,7 +61,11 @@ namespace AndroidAgent
 				SetStartButtonText ("running");
 				RunBenchmark (runSetId);
 			};
-
+			string v = ".NET version:\n" + System.Environment.Version.ToString ();
+			v += "\n\nMonoVersion:\n" + GetMonoVersion ();
+			FindViewById<TextView> (Resource.Id.versionText).Text = v;
+			Console.WriteLine (".NET version: {0}", System.Environment.Version.ToString ());
+			Console.WriteLine ("MonoVersion: {0}", GetMonoVersion ());
 			Console.WriteLine ("OnCreate finished");
 		}
 	}
