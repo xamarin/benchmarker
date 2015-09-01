@@ -9,6 +9,9 @@ fi
 git config user.name "Travis CI"
 git config user.email "bernhard.urban@xamarin.com"
 
+git branch -a
+git remote -v
+
 git add -f front-end/build
 git commit -am "Deploy to GitHub Pages"
 
