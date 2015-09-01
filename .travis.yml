@@ -1,6 +1,11 @@
+env:
+  global:
+    - secure: "gLYX/2tli1MYC+UoyDdw6ANYsUX1VOQ51o6PnmR+S4tFJgx+K+f/gXnYGo62O6ZrP8JfMBRbmCJYm6Hoa0sfGbAJst2ntRItIA8y20Th7NEJvsxXjE22GW+wETSQHDRzXGXukUxA9S3K0e8RFrOo7tFoGiEQycWGjrbmjoMM6yw="
+
 language: csharp
 sudo: required
 before_script:
+    - env
     - sudo pip2 install --upgrade pip
     - sudo pip2 install pylint
     - sudo pip2 install buildbot
@@ -12,4 +17,6 @@ before_script:
     - make -C front-end
     - make -C front-end lint
     - make -C accredit/cloud-code lint
+    - bash ./deploy-github-pages.sh
+
 solution: tools/tools.sln
