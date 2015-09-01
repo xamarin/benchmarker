@@ -13,6 +13,7 @@ git branch -a
 git remote -v
 
 git add -f front-end/build
+git add front-end
 git commit -am "Deploy to GitHub Pages"
 
 git push --force "https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git" HEAD:gh-pages
