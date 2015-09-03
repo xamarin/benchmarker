@@ -24,6 +24,9 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="compare.cs" />
+    <Compile Include="Git\Repository.cs" />
+    <Compile Include="Utils.cs" />
+    <Compile Include="UnixRunner.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -46,6 +49,16 @@
     <Reference Include="Parse">
       <HintPath>..\packages\Parse.1.5.5\lib\net45\Parse.dll</HintPath>
     </Reference>
+    <Reference Include="Mono.Posix" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging.Core">
+      <HintPath>..\packages\Common.Logging.Core.3.2.0\lib\net40\Common.Logging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging">
+      <HintPath>..\packages\Common.Logging.3.2.0\lib\net40\Common.Logging.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -54,6 +67,10 @@
     <ProjectReference Include="..\common\common.csproj">
       <Project>{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}</Project>
       <Name>common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\accredit\accredit.csproj">
+      <Project>{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}</Project>
+      <Name>accredit</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

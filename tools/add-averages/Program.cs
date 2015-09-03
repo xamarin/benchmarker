@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Parse;
 using Nito.AsyncEx;
+using Benchmarker;
 using Benchmarker.Common;
 using System.Linq;
 using System.Collections.Generic;

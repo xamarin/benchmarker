@@ -23,18 +23,9 @@ namespace Benchmarker.Common.Models
 			runs = new List<Run> ();
 		}
 
-		public static Result LoadFrom (string filename)
+		public static Result LoadFromString (string content)
 		{
-			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
-				return JsonConvert.DeserializeObject<Result> (reader.ReadToEnd ());
-			}
-		}
-
-		public void StoreTo (string filename)
-		{
-			using (var writer = new StreamWriter (new FileStream (filename, FileMode.Create))) {
-				writer.Write (JsonConvert.SerializeObject (this, Formatting.Indented));
-			}
+			return JsonConvert.DeserializeObject<Result> (content);
 		}
 
 		public Tuple<double, double> AverageAndVarianceWallClockTimeMilliseconds {

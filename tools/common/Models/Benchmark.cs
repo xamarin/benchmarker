@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using Parse;
+using System.IO;
 
 namespace Benchmarker.Common.Models
 {
@@ -20,40 +20,16 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
-		public static Benchmark LoadFrom (string filename)
+		public static Benchmark LoadFromString (string jsonContent)
 		{
-			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
-				var benchmark = JsonConvert.DeserializeObject<Benchmark> (reader.ReadToEnd ());
+			var benchmark = JsonConvert.DeserializeObject<Benchmark> (jsonContent);
 
-				if (String.IsNullOrEmpty (benchmark.TestDirectory))
-					throw new InvalidDataException ("TestDirectory");
-				if (benchmark.CommandLine == null || benchmark.CommandLine.Length == 0)
-					throw new InvalidDataException ("CommandLine");
+			if (String.IsNullOrEmpty (benchmark.TestDirectory))
+				throw new InvalidDataException ("TestDirectory");
+			if (benchmark.CommandLine == null || benchmark.CommandLine.Length == 0)
+				throw new InvalidDataException ("CommandLine");
 
-				return benchmark;
-			}
-		}
-
-		public static List<Benchmark> LoadAllFrom (string directory)
-		{
-			return LoadAllFrom (directory, new string[0]);
-		}
-
-		public static List<Benchmark> LoadAllFrom (string directory, string[] names)
-		{
-			var allPaths = Directory.EnumerateFiles (directory)
-				.Where (f => f.EndsWith (".benchmark"));
-			if (names != null) {
-				foreach (var name in names) {
-					if (!allPaths.Any (p => Path.GetFileNameWithoutExtension (p) == name))
-						return null;
-				}
-				allPaths = allPaths
-					.Where (f => names.Any (n => Path.GetFileNameWithoutExtension (f) == n));
-			}
-			return allPaths
-				.Select (f => Benchmark.LoadFrom (f))
-				.ToList ();
+			return benchmark;
 		}
 
 		public override bool Equals (object other)

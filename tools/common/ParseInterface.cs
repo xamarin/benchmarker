@@ -4,12 +4,15 @@ using Nito.AsyncEx;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace Benchmarker.Common
 {
     public class ParseInterface
 	{
-		static ParseACL defaultACL;
+		public static ParseACL defaultACL;
+		public static JObject benchmarkerCredentials;
 
 		public static void InitializeParse (string applicationId, string dotNetKey)
 		{
@@ -30,12 +33,15 @@ namespace Benchmarker.Common
 		public static bool Initialize ()
 		{
 			try {
-				var credentials = Accredit.GetCredentials ("benchmarker");
+				Debug.Assert (benchmarkerCredentials != null, "client must set benchmarkerCredentials");
 
 				// Xamarin Performance
 				InitializeParseForXamarinPerformance ();
-
-				var user = AsyncContext.Run (() => ParseInterface.RunWithRetry (() => ParseUser.LogInAsync (credentials ["username"].ToString (), credentials ["password"].ToString ())));
+				var username = benchmarkerCredentials ["username"].ToString ();
+				var password = benchmarkerCredentials ["password"].ToString ();
+				var user = AsyncContext.Run (() 
+					=> ParseInterface.RunWithRetry (() 
+						=> ParseUser.LogInAsync (username, password)));
 				//Console.WriteLine ("LogInAsync");
 
 				//Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
@@ -46,7 +52,7 @@ namespace Benchmarker.Common
 
 				defaultACL = acl;
 			} catch (Exception e) {
-				Console.Error.WriteLine ("Error: Exception when initializing Parse API: {0}", e);
+				Logging.GetLogging().Error ("Error: Exception when initializing Parse API: {0}", e);
 				return false;
 			}
 			return true;
@@ -70,31 +76,27 @@ namespace Benchmarker.Common
 			throw new Exception ("Number is neither double nor long.");
 		}
 
-		public async static Task RunWithRetry (Func<Task> run, Type acceptedException = null, int numTries = 3) {
+		public async static Task RunWithRetry (Func<Task> run, int numTries = 3) {
 			for (var i = 0; i < numTries - 1; ++i) {
 				try {
 					await run ();
 					return;
 				} catch (Exception exc) {
-					if (acceptedException != null && acceptedException.IsAssignableFrom (exc.GetType ()))
-						throw exc;
 					var seconds = (i == 0) ? 10 : 60 * i;
-					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
+					Logging.GetLogging ().ErrorFormat ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
 					await Task.Delay (seconds * 1000);
 				}
 			}
 			await run ();
 		}
 
-		public async static Task<T> RunWithRetry<T> (Func<Task<T>> run, Type acceptedException = null, int numTries = 3) {
+		public async static Task<T> RunWithRetry<T> (Func<Task<T>> run, int numTries = 3) {
 			for (var i = 0; i < numTries - 1; ++i) {
 				try {
 					return await run ();
 				} catch (Exception exc) {
-					if (acceptedException != null && acceptedException.IsAssignableFrom (exc.GetType ()))
-						throw exc;
 					var seconds = (i == 0) ? 10 : 60 * i;
-					Console.Error.WriteLine ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
+					Logging.GetLogging ().ErrorFormat ("Exception when running task - sleeping {0} seconds and retrying: {1}", seconds, exc);
 					await Task.Delay (seconds * 1000);
 				}
 			}

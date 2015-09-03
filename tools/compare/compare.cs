@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Benchmarker;
 using Benchmarker.Common;
 using Benchmarker.Common.Models;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Parse;
 using Nito.AsyncEx;
+using Common.Logging;
+using Common.Logging.Simple;
 
 class Compare
 {
@@ -89,7 +92,8 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		var machineObj = await RunSet.GetMachineFromParse ();
+		var hostarch = compare.Utils.LocalHostnameAndArch ();
+		var machineObj = await RunSet.GetMachineFromParse (hostarch.Item1, hostarch.Item2);
 		if (machineObj == null) {
 			Console.Error.WriteLine ("Error: The machine does not exist.");
 			Environment.Exit (1);
@@ -120,6 +124,14 @@ class Compare
 		}
 
 		return null;
+	}
+
+	private static void InitCommons() {
+		LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
+		Logging.SetLogging (LogManager.GetCurrentClassLogger ());
+
+		ParseInterface.benchmarkerCredentials = Accredit.GetCredentials ("benchmarker");
+		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
 	}
 
 	public static void Main (string[] args)
@@ -206,6 +218,8 @@ class Compare
 			Environment.Exit (1);
 		}
 
+		InitCommons ();
+
 		string testsDir, benchmarksDir, machinesDir;
 
 		if (args.Length - optindex == 4) {
@@ -243,7 +257,7 @@ class Compare
 			return;
 		}
 
-		var benchmarks = Benchmark.LoadAllFrom (benchmarksDir, benchmarkNames);
+		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
 			Console.Error.WriteLine ("Error: Could not load all benchmarks.");
 			Environment.Exit (1);
@@ -251,7 +265,7 @@ class Compare
 
 		if (justListBenchmarks) {
 			if (machineName != null) {
-				var listMachine = Machine.LoadFrom (machineName, machinesDir);
+				var listMachine = compare.Utils.LoadMachineFromFile (machineName, machinesDir);
 				if (listMachine == null) {
 					Console.Error.WriteLine ("Error: Could not load machine `{0}`.", machineName);
 					Environment.Exit (1);
@@ -272,13 +286,13 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		var config = Config.LoadFrom (configFile, rootFromCmdline);
+		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 
-		var machine = Machine.LoadCurrentFrom (machinesDir);
-		if (machine.ExcludeBenchmarks != null)
+		var machine = compare.Utils.LoadMachineCurrentFrom (machinesDir);
+		if (machine != null && machine.ExcludeBenchmarks != null)
 			benchmarks = benchmarks.Where (b => !machine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
 
-		var commit = AsyncContext.Run (() => config.GetCommit (commitFromCmdline, gitRepoDir));
+		var commit = AsyncContext.Run (() => compare.Utils.GetCommit (config, commitFromCmdline, gitRepoDir));
 
 		if (commit == null) {
 			Console.Error.WriteLine ("Error: Could not get commit");
@@ -289,13 +303,14 @@ class Compare
 			Environment.Exit (1);
 		}
 
+		var hostarch = compare.Utils.LocalHostnameAndArch ();
 		RunSet runSet;
 		if (runSetId != null) {
 			if (pullRequestURL != null) {
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (runSetId, config, commit, buildURL, logURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (hostarch.Item1, hostarch.Item2, runSetId, config, commit, buildURL, logURL));
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -335,7 +350,7 @@ class Compare
 
 				Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-				var runner = new Runner (testsDir, config, benchmark, machine, timeout);
+				var runner = new UnixRunner (testsDir, config, benchmark, machine, timeout);
 
 				var result = new Result {
 					DateTime = DateTime.Now,
@@ -388,7 +403,7 @@ class Compare
 
 		Console.WriteLine ("uploading");
 		try {
-			var parseObject = AsyncContext.Run (() => runSet.UploadToParse ());
+			var parseObject = AsyncContext.Run (() => runSet.UploadToParse (hostarch.Item1, hostarch.Item2));
 			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", parseObject.ObjectId);
 			ParseObject pullRequestObject = null;
 			if (pullRequestURL != null) {

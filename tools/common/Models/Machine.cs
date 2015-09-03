@@ -16,22 +16,9 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
-		public static Machine LoadFrom (string machineName, string directory)
+		public static Machine LoadFromString (string content)
 		{
-			string filename = Path.Combine (directory, String.Format ("{0}.conf", machineName));
-
-			try {
-				using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
-					return JsonConvert.DeserializeObject<Machine> (reader.ReadToEnd ());
-				}
-			} catch (FileNotFoundException) {
-				return null;
-			}
-		}
-			
-		public static Machine LoadCurrentFrom (string directory)
-		{
-			return LoadFrom (Environment.MachineName, directory);
+			return JsonConvert.DeserializeObject<Machine> (content);
 		}
 	}
 }

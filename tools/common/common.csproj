@@ -31,11 +31,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Accredit.cs" />
     <Compile Include="GitHubInterface.cs" />
     <Compile Include="Runner.cs" />
     <Compile Include="ParseInterface.cs" />
-    <Compile Include="Git\Repository.cs" />
     <Compile Include="LogProfiler\Counter.cs" />
     <Compile Include="LogProfiler\Reader.cs" />
     <Compile Include="Models\Benchmark.cs" />
@@ -44,6 +42,7 @@
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\RunSet.cs" />
+    <Compile Include="Logging.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -70,6 +69,9 @@
     </Reference>
     <Reference Include="Octokit">
       <HintPath>..\packages\Octokit.0.14.0\lib\portable-net45+wp80+win+wpa81\Octokit.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging.Core">
+      <HintPath>..\packages\Common.Logging.Core.3.2.0\lib\portable-win+net40+sl40+wp7\Common.Logging.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
