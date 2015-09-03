@@ -42,9 +42,6 @@ namespace Benchmarker.Common
 				var user = AsyncContext.Run (() 
 					=> ParseInterface.RunWithRetry (() 
 						=> ParseUser.LogInAsync (username, password)));
-				//Console.WriteLine ("LogInAsync");
-
-				//Console.WriteLine ("User authenticated: " + user.IsAuthenticated);
 
 				var acl = new ParseACL (user);
 				acl.PublicReadAccess = true;
@@ -110,7 +107,6 @@ namespace Benchmarker.Common
 			for (var skip = 0;; skip += limit) {
 				var page = await RunWithRetry (() => {
 					var query = makeQuery ().Limit (limit).Skip (skip);
-					//Console.WriteLine ("skipping {0}", skip);
 					return query.FindAsync ();
 				});
 				results.AddRange (page);

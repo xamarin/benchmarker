@@ -159,7 +159,7 @@ namespace Benchmarker.Common.Models
 				.WhereEqualTo ("name", Name)
 				.WhereEqualTo ("monoExecutable", MonoExecutable)
 				.FindAsync ());
-			//Console.WriteLine ("FindAsync Config");
+			Logging.GetLogging ().Info ("FindAsync Config");
 			foreach (var o in results) {
 				if (EqualToParseObject (o)) {
 					Logging.GetLogging ().Info ("found config " + o.ObjectId);

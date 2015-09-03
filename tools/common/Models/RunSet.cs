@@ -38,7 +38,7 @@ namespace Benchmarker.Common.Models
 		{
 			var results = await ParseInterface.RunWithRetry (() 
 				=> ParseObject.GetQuery ("Machine").WhereEqualTo ("name", hostname).WhereEqualTo ("architecture", architecture).FindAsync ());
-			//Console.WriteLine ("FindAsync Machine");
+			Logging.GetLogging ().Info ("FindAsync Machine");
 			if (results.Count () > 0)
 				return results.First ();
 			return null;
@@ -74,7 +74,7 @@ namespace Benchmarker.Common.Models
 		public static async Task<RunSet> FromId (string hostname, string architecture, string id, Config config, Commit commit, string buildURL, string logURL)
 		{
 			var obj = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("RunSet").GetAsync (id));
-			//Console.WriteLine ("GetAsync RunSet");
+			Logging.GetLogging ().Info ("GetAsync RunSet");
 			if (obj == null)
 				throw new Exception ("Could not fetch run set.");
 
@@ -91,7 +91,7 @@ namespace Benchmarker.Common.Models
 			var machineObj = obj.Get<ParseObject> ("machine");
 
 			await ParseInterface.RunWithRetry (() => ParseObject.FetchAllAsync (new ParseObject[] { configObj, commitObj, machineObj }));
-			//Console.WriteLine ("FindAllAsync config, commit, machine");
+			Logging.GetLogging ().Info ("FindAllAsync config, commit, machine");
 
 			if (!config.EqualToParseObject (configObj))
 				throw new Exception ("Config does not match the one in the database.");
@@ -193,7 +193,6 @@ namespace Benchmarker.Common.Models
 
 			saveList.Add (obj);
 			await ParseInterface.RunWithRetry (() => ParseObject.SaveAllAsync (saveList));
-			//Console.WriteLine ("SaveAllAsync saveList 1");
 			saveList.Clear ();
 
 			parseObject = obj;
@@ -206,8 +205,6 @@ namespace Benchmarker.Common.Models
 				await result.UploadRunsToParse (obj, saveList);
 			}
 			await ParseInterface.RunWithRetry (() => ParseObject.SaveAllAsync (saveList));
-			//Console.WriteLine ("SaveAllAsync saveList 2");
-
 			Logging.GetLogging ().Info ("done uploading");
 
 			return obj;

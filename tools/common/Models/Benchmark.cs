@@ -56,7 +56,7 @@ namespace Benchmarker.Common.Models
 
 			nameToParseObject = new Dictionary<string, ParseObject> ();
 			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Benchmark").FindAsync ());
-			//Console.WriteLine ("FindAsync Benchmark");
+			Logging.GetLogging ().Info ("FindAsync Benchmark");
 			foreach (var o in results)
 				nameToParseObject [o.Get<string> ("name")] = o;
 		}
