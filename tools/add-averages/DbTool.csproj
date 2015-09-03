@@ -59,10 +59,4 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj">
-      <Project>{AD342772-DA1A-460F-8BE7-EA3C7A681116}</Project>
-      <Name>common</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>
