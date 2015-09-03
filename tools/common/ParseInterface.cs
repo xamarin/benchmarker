@@ -103,7 +103,7 @@ namespace Benchmarker.Common
 		public static async Task<IEnumerable<T>> PageQueryWithRetry<T> (Func<ParseQuery<T>> makeQuery) where T : ParseObject
 		{
 			List<T> results = new List<T> ();
-			var limit = 100;
+			const int limit = 100;
 			for (var skip = 0;; skip += limit) {
 				var page = await RunWithRetry (() => {
 					var query = makeQuery ().Limit (limit).Skip (skip);
