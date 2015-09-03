@@ -19,3 +19,15 @@ before_script:
     - bash ./deploy-github-pages.sh
 
 solution: tools/tools.sln
+script:
+    - nuget restore tools/tools.sln
+    - xbuild /p:Configuration=Release /target:common tools/tools.sln
+    - xbuild /p:Configuration=Release /target:compare tools/tools.sln
+    - xbuild /p:Configuration=Release /target:DbTool tools/tools.sln
+    - xbuild /p:Configuration=Release /target:Benchmarks tools/tools.sln
+    - xbuild /p:Configuration=Release /target:accredit tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:common tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:compare tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:DbTool tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:Benchmarks tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:accredit tools/tools.sln
