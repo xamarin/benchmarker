@@ -128,7 +128,7 @@ class Compare
 
 	private static void InitCommons() {
 		LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
-		Logging.SetLogging (LogManager.GetCurrentClassLogger ());
+		Logging.SetLogging (LogManager.GetLogger<Compare> ());
 
 		ParseInterface.benchmarkerCredentials = Accredit.GetCredentials ("benchmarker");
 		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
