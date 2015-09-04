@@ -47,23 +47,3 @@
 	margin: 16px;
 	overflow: hidden;
 }
-
-.RunSetPage > article > .Description .statusColumn {
-	text-align: center;
-}
-
-.RunSetPage > article > .Description .statusIcon {
-	margin: 4px;
-}
-
-.RunSetPage > article > .Description .statusIcon.crashed {
-	color: #F56D4F;
-}
-
-.RunSetPage > article > .Description .statusIcon.timedOut {
-	color: #F1C40F;
-}
-
-.RunSetPage > article > .Description .statusIcon.good {
-	color: #91CA47;
-}

@@ -134,6 +134,26 @@ th {
 	margin-bottom: 8px;
 }
 
+.Description .statusColumn {
+	text-align: center;
+}
+
+.Description .statusIcon {
+	margin: 4px;
+}
+
+.Description .statusIcon.crashed {
+	color: #F56D4F;
+}
+
+.Description .statusIcon.timedOut {
+	color: #F1C40F;
+}
+
+.Description .statusIcon.good {
+	color: #91CA47;
+}
+
 /* RunSetSelector */
 
 .RunSetSelector {

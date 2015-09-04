@@ -57,6 +57,15 @@ class Controller extends xp_common.Controller {
                         controller={this}
                         runSets={runSets}
                         runSetLabels={["Baseline", "Pull request"]} />
+					<div style={{ clear: 'both' }}></div>
+					<h2>Pull Request Run Set</h2>
+					<xp_common.RunSetDescription
+						controller={this}
+						runSet={prRunSet} />
+					<h2>Baseline Run Set</h2>
+					<xp_common.RunSetDescription
+						controller={this}
+						runSet={baselineRunSet} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')
