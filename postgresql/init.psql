@@ -1,0 +1,74 @@
+drop database performance;
+create database performance;
+\c performance
+
+drop table PullRequest;
+drop table RegressionWarnings;
+drop table Run;
+drop table RunSet;
+drop table Benchmark;
+drop table Machine;
+drop table Commit;
+drop table Config;
+
+create table Benchmark (
+       name varchar(128) primary key
+);
+
+create table Machine (
+       name varchar(128) primary key,
+       architecture varchar(128),
+       isDedicated boolean
+);
+
+create table Commit (
+       hash varchar(40) primary key,
+       commitDate timestamp with time zone
+);
+
+create table Config (
+       name varchar(128) primary key,
+       monoExecutable varchar(128),
+       monoEnvironmentVariables jsonb,
+       monoOptions text[]
+);
+
+create table RunSet (
+       id serial primary key,
+       startedAt timestamp with time zone,
+       finishedAt timestamp with time zone,
+       buildURL varchar(256),
+       elapsedTimeAverages jsonb,
+       elapsedTimeVariances jsonb,
+       failed boolean,
+       logURLs jsonb,
+       commit varchar(40) references Commit(hash),
+       machine varchar(128) references Machine(name),
+       config varchar(128) references Config(name),
+       pullRequest integer,
+       timedOutBenchmarks varchar(128)[], -- element references Benchmark(name),
+       crashedBenchmarks varchar(128)[] -- element references Benchmark(name)
+       --       pullRequest integer references PullRequest(id)
+);
+
+create table Run (
+       id serial primary key,
+       elapsedMilliseconds integer,
+       benchmark varchar(128) references Benchmark(name),
+       runSet integer references RunSet(id)
+);
+
+create table RegressionWarnings (
+       id serial primary key,
+       runSet integer references RunSet(id),
+       fasterBenchmarks varchar(128)[], -- element references Benchmark(name),
+       slowerBenchmarks varchar(128)[] -- element references Benchmark(name)
+);
+
+create table PullRequest (
+       id serial primary key,
+       URL varchar(256),
+       baselineRunSet integer references RunSet(id)
+);
+
+alter table RunSet add foreign key (pullRequest) references PullRequest(id);
