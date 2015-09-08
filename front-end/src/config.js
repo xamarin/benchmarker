@@ -3,28 +3,25 @@
 "use strict";
 
 import * as xp_common from './common.js';
-import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
-	configId: string | void;
+	configName: string | void;
 	config: Parse.Object | void;
 
-	constructor (configId) {
+	constructor (configName) {
 		super ();
-		this.configId = configId;
+		this.configName = configName;
 	}
 
 	loadAsync () {
-		var query = new Parse.Query (xp_common.Config);
-		query.get (this.configId, {
-			success: obj => {
-				this.config = obj;
-				this.allDataLoaded ();
-			},
-			error: error => {
-				alert ("error loading config: " + error.toString ());
-			}});
+		Database.fetch ('config?name=eq.' + this.configName, objs => {
+			this.config = objs [0];
+			this.allDataLoaded ();
+		}, error => {
+			alert ("error loading config: " + error.toString ());
+		});
 	}
 
 	allDataLoaded () {
