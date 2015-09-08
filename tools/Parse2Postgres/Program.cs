@@ -203,6 +203,49 @@ namespace Parse2Postgres
 			}
 		}
 
+		static void InsertObjectIds (NpgsqlConnection conn)
+		{
+			using (var cmd = new NpgsqlCommand ()) {
+				cmd.Connection = conn;
+				cmd.CommandText = "insert into ParseObjectID (tableName, parseID, integerKey) values (@table, @parse, @key)";
+				var tableParameter = cmd.Parameters.Add ("@table", NpgsqlTypes.NpgsqlDbType.Varchar, 32);
+				var parseParameter = cmd.Parameters.Add ("@parse", NpgsqlTypes.NpgsqlDbType.Char, 10);
+				var keyParameter = cmd.Parameters.Add ("@key", NpgsqlTypes.NpgsqlDbType.Integer);
+
+				foreach (var tableKvp in idMap) {
+					var table = tableKvp.Key;
+					tableParameter.Value = table;
+					foreach (var mapKvp in tableKvp.Value) {
+						var parseObjectId = mapKvp.Key;
+						var primaryKey = mapKvp.Value;
+						parseParameter.Value = parseObjectId;
+						keyParameter.Value = primaryKey;
+						cmd.ExecuteNonQuery ();
+					}
+				}
+			}	
+
+			using (var cmd = new NpgsqlCommand ()) {
+				cmd.Connection = conn;
+				cmd.CommandText = "insert into ParseObjectID (tableName, parseID, varcharKey) values (@table, @parse, @key)";
+				var tableParameter = cmd.Parameters.Add ("@table", NpgsqlTypes.NpgsqlDbType.Varchar, 32);
+				var parseParameter = cmd.Parameters.Add ("@parse", NpgsqlTypes.NpgsqlDbType.Char, 10);
+				var keyParameter = cmd.Parameters.Add ("@key", NpgsqlTypes.NpgsqlDbType.Varchar, 128);
+
+				foreach (var tableKvp in stringIdMap) {
+					var table = tableKvp.Key;
+					tableParameter.Value = table;
+					foreach (var mapKvp in tableKvp.Value) {
+						var parseObjectId = mapKvp.Key;
+						var primaryKey = mapKvp.Value;
+						parseParameter.Value = parseObjectId;
+						keyParameter.Value = primaryKey;
+						cmd.ExecuteNonQuery ();
+					}
+				}
+			}
+		}
+
 		static void ConvertBenchmarks (NpgsqlConnection conn, string exportDir)
 		{
 			ConvertTable (conn, exportDir, "Benchmark",
@@ -328,6 +371,8 @@ namespace Parse2Postgres
 				ConvertRegressionWarnings (conn, exportDir);
 				ConvertPullRequest (conn, exportDir);
 				ConvertRunSet (conn, exportDir, true);
+
+				InsertObjectIds (conn);
 			}
 		}
 	}

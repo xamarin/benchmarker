@@ -2,6 +2,8 @@ drop database performance;
 create database performance;
 \c performance
 
+drop table ParseObjectID;
+alter table RunSet drop constraint runset_pullrequest_fkey;
 drop table PullRequest;
 drop table RegressionWarnings;
 drop table Run;
@@ -72,3 +74,10 @@ create table PullRequest (
 );
 
 alter table RunSet add foreign key (pullRequest) references PullRequest(id);
+
+create table ParseObjectID (
+       parseID char(10) primary key,
+       tableName varchar(32),
+       integerKey integer,
+       varcharKey varchar(128)
+);
