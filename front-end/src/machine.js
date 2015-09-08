@@ -3,28 +3,58 @@
 "use strict";
 
 import * as xp_common from './common.js';
-import {Parse} from 'parse';
 import React from 'react';
 
+class DBObject {
+	data: Object;
+
+	constructor (data) {
+		this.data = data;
+	}
+
+	get (key) {
+		return this.data [key.toLowerCase ()];
+	}
+}
+
+function fetchDatabase (query, success, error) {
+	var request = new XMLHttpRequest();
+	var url = 'http://192.168.99.100:32773/' + query;
+
+	request.onreadystatechange = function () {
+		if (this.readyState !== 4)
+			return;
+
+		if (this.status !== 200) {
+			error ("database fetch failed");
+			return;
+		}
+
+        var results = JSON.parse (request.responseText);
+		var objs = results.map (data => new DBObject (data));
+        success (objs);
+	};
+
+	request.open('GET', url, true);
+	request.send();
+}
+
 class Controller extends xp_common.Controller {
-	machineId: string | void;
+	machineName: string | void;
 	machine: Parse.Object | void;
 
-	constructor (machineId) {
+	constructor (machineName) {
 		super ();
-		this.machineId = machineId;
+		this.machineName = machineName;
 	}
 
 	loadAsync () {
-		var query = new Parse.Query (xp_common.Machine);
-		query.get (this.machineId, {
-			success: obj => {
-				this.machine = obj;
-				this.allDataLoaded ();
-			},
-			error: error => {
-				alert ("error loading machine: " + error.toString ());
-			}});
+		fetchDatabase ('machine?name=eq.' + this.machineName, objs => {
+			this.machine = objs [0];
+			this.allDataLoaded ();
+		}, error => {
+			alert ("error loading machine: " + error.toString ());
+		});
 	}
 
 	allDataLoaded () {
@@ -39,7 +69,6 @@ class Controller extends xp_common.Controller {
 			document.getElementById ('machinePage')
 		);
 	}
-
 }
 
 function started () {
