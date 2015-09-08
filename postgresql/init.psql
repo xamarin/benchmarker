@@ -2,6 +2,7 @@ drop database performance;
 create database performance;
 \c performance
 
+drop table RunMetric;
 drop table ParseObjectID;
 alter table RunSet drop constraint runset_pullrequest_fkey;
 drop table PullRequest;
