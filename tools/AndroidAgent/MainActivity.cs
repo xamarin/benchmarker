@@ -122,9 +122,12 @@ namespace AndroidAgent
 						}
 						if (run != null) {
 							result.Runs.Add (run);
-						}		
+						} else {
+							Console.WriteLine ("no result available for #{0}!", i);
+						}
 					}
 
+					runSet.Results.Add (result);
 					var objectId = runSet.UploadToParseGetObjectId (hostname, architecture);
 					Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", objectId);
 					Console.Write ("{{ \"runSetId\": \"{0}\"", objectId);
