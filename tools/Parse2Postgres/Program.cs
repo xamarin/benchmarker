@@ -367,10 +367,11 @@ namespace Parse2Postgres
 				ConvertCommits (conn, exportDir);
 				ConvertConfigs (conn, exportDir);
 				ConvertRunSet (conn, exportDir, false);
-				ConvertRun (conn, exportDir);
 				ConvertRegressionWarnings (conn, exportDir);
 				ConvertPullRequest (conn, exportDir);
 				ConvertRunSet (conn, exportDir, true);
+				// do this last because of pull request run sets
+				ConvertRun (conn, exportDir);
 
 				InsertObjectIds (conn);
 			}

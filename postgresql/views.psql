@@ -1,22 +1,27 @@
+drop view "1".benchmark"
+drop view "1".config;
+drop view "1".machine;
+drop view "1".pullrequest;
+drop view "1".results;
+drop view "1".summary;
 drop schema "1";
 
 create schema "1";
 
-drop view "1".benchmark"
 create view "1".benchmark as
 select * from benchmark;
 
-drop view "1".config;
 create view "1".config as
 select * from config;
 
-drop view "1".machine;
 create view "1".machine as
 select * from machine;
 
-drop view "1".summary;
+create view "1".pullrequest as
+select * from pullrequest;
+
 create view "1".summary as
-select results.runset, results.metric, rs.machine, rs.config, c.hash, c.commitDate, rs.startedAt, rs.timedOutBenchmarks, rs.crashedBenchmarks, results.averages, results.variances from (
+select results.runset, results.metric, rs.machine, rs.config, rs.pullrequest, c.hash, c.commitDate, rs.startedAt, rs.timedOutBenchmarks, rs.crashedBenchmarks, results.averages, results.variances from (
 select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
 from (
 select r.runset, rm.metric, r.benchmark, avg(rm.result), var_pop(rm.result)
@@ -27,4 +32,14 @@ group by r.runset, r.benchmark, rm.metric
 group by runset, metric
 ) as results,
 runset rs, commit c
-where results.runset = rs.id and rs.commit = c.hash and rs.pullRequest is null;
+where results.runset = rs.id and rs.commit = c.hash;
+
+create view "1".results as
+select results.runset, results.metric, json_object_agg(results.benchmark, results.results) as results
+from (
+select r.runset, r.benchmark, rm.metric, array_agg(rm.result) as results
+from run r, runmetric rm
+where rm.run = r.id
+group by r.runset, r.benchmark, rm.metric
+) as results
+group by results.runset, results.metric;
