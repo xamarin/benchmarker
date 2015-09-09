@@ -17,6 +17,7 @@ using Benchmarker.Common.Models;
 using Nito.AsyncEx;
 using System.Text.RegularExpressions;
 using Parse;
+using System.Collections.Generic;
 
 namespace AndroidAgent
 {
@@ -103,7 +104,7 @@ namespace AndroidAgent
 		{
 			const string benchmark = "strcat";
 			var commit = GetCommit ();
-			var config = new Config { Name = "auto-sgen", Count = 10, };
+			var config = new Config { Name = "auto-sgen", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
 			var runSet = new RunSet {
 				StartDateTime = DateTime.Now,
 				Config = config,
