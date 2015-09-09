@@ -60,10 +60,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj">
-      <Project>{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}</Project>
-      <Name>common</Name>
-    </ProjectReference>
     <ProjectReference Include="..\accredit\accredit.csproj">
       <Project>{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}</Project>
       <Name>accredit</Name>

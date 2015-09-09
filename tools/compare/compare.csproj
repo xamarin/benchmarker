@@ -21,6 +21,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <Commandlineparameters>-b ahcbench,bh --no-run --counter "Minor GC time" -m /Users/ludovic/Xamarin/mono\~master/mono/mini/mono ../tests ../results ../benchmarks ../configs/default-sgen-ssb.conf ../configs/all.conf ../configs/default.conf</Commandlineparameters>
   </PropertyGroup>
+  <Import Project="..\common\common.projitems" Label="Shared" Condition="Exists('..\common\common.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="compare.cs" />
@@ -64,10 +65,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj">
-      <Project>{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}</Project>
-      <Name>common</Name>
-    </ProjectReference>
     <ProjectReference Include="..\accredit\accredit.csproj">
       <Project>{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}</Project>
       <Name>accredit</Name>

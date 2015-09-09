@@ -139,7 +139,12 @@ namespace AndroidAgent
 		private static void InitCommons() {
 			Logging.SetLogging (new AndroidLogger());
 			ParseInterface.benchmarkerCredentials = JObject.Parse ("{'username': 'nope', 'password': 'never'}");
-			ParseInterface.InitializeParseForXamarinPerformance ();
+			if (!ParseInterface.Initialize ()) {
+				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
+				throw new Exception ("Error: Could not initialize Parse interface.");
+			} else {
+				Console.WriteLine ("InitCommons: Parse successful");
+			}
 			GitHubInterface.githubCredentials = "magichash";
 		}
 

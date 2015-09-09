@@ -11,9 +11,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidAgent.UITests", "And
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{7940B561-C489-4D75-9582-99B09E6BEEC8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "common", "common\common.csproj", "{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "accredit", "accredit\accredit.csproj", "{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "common", "common\common.shproj", "{5A8CD6DA-AA95-46D0-9710-752E7C91C62F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,14 +55,6 @@ Global
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x64.Build.0 = Release|Any CPU
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x86.ActiveCfg = Release|Any CPU
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x86.Build.0 = Release|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Debug|x64.Build.0 = Debug|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Debug|x86.Build.0 = Debug|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Release|x64.ActiveCfg = Release|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Release|x64.Build.0 = Release|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Release|x86.ActiveCfg = Release|Any CPU
-		{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}.Release|x86.Build.0 = Release|Any CPU
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x64.Build.0 = Debug|Any CPU
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x86.ActiveCfg = Debug|Any CPU

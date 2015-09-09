@@ -17,11 +17,16 @@ namespace Benchmarker.Common
 		public static void InitializeParse (string applicationId, string dotNetKey)
 		{
 			ParseClient.Initialize (applicationId, dotNetKey);
+			Logging.GetLogging ().Info ("InitializeParse: done");
 			if (ParseUser.CurrentUser != null) {
+				Logging.GetLogging ().Info ("InitializeParse: user -> " + ParseUser.CurrentUser.Username);
 				try {
 					ParseUser.LogOut ();
 				} catch (Exception) {
+					Logging.GetLogging ().Info ("InitializeParse: something fishy");
 				}
+			} else {
+				Logging.GetLogging ().Info ("InitializeParse: nope");
 			}
 		}
 

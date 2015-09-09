@@ -99,16 +99,13 @@
     <AndroidResource Include="Resources\drawable-xxxhdpi\Icon.png" />
     <AndroidResource Include="Resources\layout\Main.axml" />
   </ItemGroup>
+  <Import Project="..\common\common.projitems" Label="Shared" Condition="Exists('..\common\common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <ItemGroup>
     <ProjectReference Include="..\Benchmarks\Benchmarks.csproj">
       <Project>{7940B561-C489-4D75-9582-99B09E6BEEC8}</Project>
       <Name>Benchmarks</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\common\common.csproj">
-      <Project>{71DB1CB8-EE03-41D9-A114-52C1B1354FF9}</Project>
-      <Name>common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
