@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Parse;
 using System.Linq;
+using Nito.AsyncEx;
 
 namespace Benchmarker.Common.Models
 {
@@ -111,6 +112,11 @@ namespace Benchmarker.Common.Models
 				runSet.crashedBenchmarks.Add (await Benchmark.FromId (((ParseObject)o).ObjectId));
 
 			return runSet;
+		}
+
+		public string UploadToParseGetObjectId (string hostname, string architecture) {
+			ParseObject parseObject = AsyncContext.Run (() => UploadToParse (hostname, architecture));
+			return parseObject.ObjectId;
 		}
 
 		public async Task<ParseObject> UploadToParse (string hostname, string architecture)

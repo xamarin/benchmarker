@@ -56,9 +56,6 @@
     <Reference Include="Parse">
       <HintPath>..\packages\parse.1.5.5\lib\net45\Parse.dll</HintPath>
     </Reference>
-    <Reference Include="Nito.AsyncEx">
-      <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\portable-net45+netcore45+wp8+wpa81+MonoTouch+MonoAndroid\Nito.AsyncEx.dll</HintPath>
-    </Reference>
     <Reference Include="System.Net.Http">
       <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\portable-net40+sl4+win8+wp71+wpa81\System.Net.Http.dll</HintPath>
     </Reference>
@@ -72,7 +69,10 @@
       <HintPath>..\packages\Octokit.0.14.0\lib\portable-net45+wp80+win+wpa81\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="Common.Logging.Core">
-      <HintPath>..\packages\Common.Logging.Core.3.2.0\lib\portable-win+net40+sl40+wp7\Common.Logging.Core.dll</HintPath>
+      <HintPath>..\packages\Common.Logging.Core.3.3.0\lib\portable-win+net40+sl40+wp7\Common.Logging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx">
+      <HintPath>..\packages\Nito.AsyncEx.3.0.1\lib\portable-net45+netcore45+wp8+wpa81\Nito.AsyncEx.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

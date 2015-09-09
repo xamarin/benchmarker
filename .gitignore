@@ -9,6 +9,7 @@ tests/zorn/ahcbench/*.orig
 tests/f-sharp-2.0/GeneralTest1.exe
 
 tools/packages
+tools/Components
 tools/*.exe
 tools/*.exe.mdb
 tools/*.dll
