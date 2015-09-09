@@ -29,10 +29,28 @@ namespace AndroidAgent.UITests
 				using (StreamReader reader = new StreamReader (stream)) {
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
 					string runSetId = json.runSetId;
+					string bmUsername = json.bmUsername;
+					string bmPassword = json.bmPassword;
+					string githubAPIKey = json.githubAPIKey;
 
 					app.Screenshot ("init");
+
+					app.ClearText (c => c.Marked ("runSetId"));
 					app.EnterText (c => c.Marked ("runSetId"), runSetId);
 					app.Screenshot ("enter RunSetId");
+
+					app.ClearText (c => c.Marked ("bmUsername"));
+					app.EnterText (c => c.Marked ("bmUsername"), bmUsername);
+					app.Screenshot ("enter bmUsername");
+
+					app.ClearText (c => c.Marked ("bmPassword"));
+					app.EnterText (c => c.Marked ("bmPassword"), bmPassword);
+					app.Screenshot ("enter bmPassword");
+
+					app.ClearText (c => c.Marked ("githubAPIKey"));
+					app.EnterText (c => c.Marked ("githubAPIKey"), githubAPIKey);
+					app.Screenshot ("enter githubAPIKey");
+
 					app.Tap (c => c.Marked("myButton"));
 					app.Screenshot ("after tap");
 					app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes(179));
