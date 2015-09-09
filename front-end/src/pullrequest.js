@@ -10,20 +10,57 @@ import React from 'react';
 import GitHub from 'github-api';
 
 class Controller extends xp_common.Controller {
-
 	pullRequestId: string | void;
+	pullRequest: Parse.Object | void;
+	prRunSet: Parse.Object | void;
 
 	constructor (pullRequestId) {
 		super ();
 		this.pullRequestId = pullRequestId;
 	}
 
+	loadAsync () {
+		var pullRequestQuery = new Parse.Query (xp_common.PullRequest)
+			.include ('baselineRunSet')
+			.include ('baselineRunSet.commit')
+		pullRequestQuery.get (this.pullRequestId, {
+			success: obj => {
+				this.pullRequest = obj;
+				this.checkAllDataLoaded ();
+			},
+			error: error => {
+				alert ("error loading pull request: " + error.toString ());
+			}});
+
+		var runSetQuery = new Parse.Query (xp_common.RunSet)
+			.include ('machine')
+			.include ('config')
+			.include ('commit')
+			.equalTo ('pullRequest', xp_common.PullRequest.createWithoutData (this.pullRequestId));
+		runSetQuery.find ({
+			success: objs => {
+				this.prRunSet = objs [0];
+				this.checkAllDataLoaded ();
+			},
+			error: error => {
+				alert ("error loading run set: " + error.toString ());
+			}});
+	}
+
+	checkAllDataLoaded () {
+		if (this.pullRequest === undefined
+			|| this.prRunSet === undefined)
+			return;
+
+		this.allDataLoaded ();
+	}
+
 	allDataLoaded () {
         if (this.pullRequestId === undefined)
             return;
 
-        var prRunSet = this.runSetForPullRequestId (this.pullRequestId);
-        var pullRequest = prRunSet.get ('pullRequest');
+        var prRunSet = this.prRunSet;
+        var pullRequest = this.pullRequest;
         var baselineRunSet = pullRequest.get ('baselineRunSet');
 
         if (baselineRunSet === undefined || prRunSet === undefined) {
@@ -33,8 +70,8 @@ class Controller extends xp_common.Controller {
 
         var runSets = [baselineRunSet, prRunSet];
 
-        var machine = this.machineForId (prRunSet.get ('machine').id);
-        var config = this.configForId (prRunSet.get ('config').id);
+        var machine =  prRunSet.get ('machine');
+        var config = prRunSet.get ('config');
 
 		React.render (
 			<div className="PullRequestPage">
