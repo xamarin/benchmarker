@@ -79,10 +79,11 @@ namespace AndroidAgent
 			Octokit.Commit gitHubCommit = null;
 			try {
 				var gitHubClient = GitHubInterface.GitHubClient;
-				gitHubCommit = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", commit.Hash)));
+				Octokit.TreeResponse treeResponse = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", commit.Hash)));
+				gitHubCommit = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", treeResponse.Sha)));
 			} catch (Octokit.NotFoundException e) {
 				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
-				Console.WriteLine (e.StackTrace);
+				throw e;
 			}
 			if (gitHubCommit == null) {
 				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
