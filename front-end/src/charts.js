@@ -47,37 +47,37 @@ function rangeMean (range: Range) : number {
 type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
-function dataArrayForRunSets (controller: xp_common.Controller, runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (DataArray | void) {
+function dataArrayForRunSets (runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (DataArray | void) {
     for (var i = 0; i < runSets.length; ++i) {
         if (runsByIndex [i] === undefined)
             return undefined;
     }
 
-    var commonBenchmarkIds;
+    var commonBenchmarkNames;
 
     for (i = 0; i < runSets.length; ++i) {
         var runs = runsByIndex [i];
-        var benchmarkIds = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').id));
-        if (commonBenchmarkIds === undefined) {
-            commonBenchmarkIds = benchmarkIds;
+        var benchmarkNames = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').get ('name')));
+        if (commonBenchmarkNames === undefined) {
+            commonBenchmarkNames = benchmarkNames;
             continue;
         }
-        commonBenchmarkIds = xp_utils.intersectArray (benchmarkIds, commonBenchmarkIds);
+        commonBenchmarkNames = xp_utils.intersectArray (benchmarkNames, commonBenchmarkNames);
     }
 
-    if (commonBenchmarkIds === undefined || commonBenchmarkIds.length === 0)
+    if (commonBenchmarkNames === undefined || commonBenchmarkNames.length === 0)
         return;
 
-	commonBenchmarkIds = xp_utils.sortArrayLexicographicallyBy (commonBenchmarkIds, id => controller.benchmarkNameForId (id));
+	commonBenchmarkNames.sort ();
 
     var dataArray = [];
 
-    for (i = 0; i < commonBenchmarkIds.length; ++i) {
-        var benchmarkId = commonBenchmarkIds [i];
-        var row = [controller.benchmarkNameForId (benchmarkId), []];
+    for (i = 0; i < commonBenchmarkNames.length; ++i) {
+        var benchmarkName = commonBenchmarkNames [i];
+        var row = [benchmarkName, []];
         var mean = undefined;
         for (var j = 0; j < runSets.length; ++j) {
-            var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').id === benchmarkId);
+            var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').get ('name') === benchmarkName);
             var range = calculateRunsRange (filteredRuns);
             if (mean === undefined)
 				mean = rangeMean (range);
@@ -276,8 +276,9 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
         xp_common.pageParseQuery (
             () => {
-                var query = new Parse.Query (xp_common.Run);
-                query.containedIn ('runSet', runSets);
+                var query = new Parse.Query (xp_common.Run)
+					.include ('benchmark')
+                	.containedIn ('runSet', runSets);
                 return query;
             },
             results => {
@@ -307,7 +308,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     runsLoaded () {
         var i;
 
-        var dataArray = dataArrayForRunSets (this.props.controller, this.props.runSets, this.runsByIndex);
+        var dataArray = dataArrayForRunSets (this.props.runSets, this.runsByIndex);
         if (dataArray === undefined)
             return;
 
