@@ -6,7 +6,23 @@
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/runSetId" />
+        android:id="@+id/runSetId"
+        android:text="runSetId" />
+    <AutoCompleteTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/bmUsername"
+        android:text="benchmarkerUsername" />
+    <AutoCompleteTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/bmPassword"
+        android:text="benchmarkPassword" />
+    <AutoCompleteTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/githubAPIKey"
+        android:text="github API Key" />
     <Button
         android:id="@+id/myButton"
         android:layout_width="match_parent"

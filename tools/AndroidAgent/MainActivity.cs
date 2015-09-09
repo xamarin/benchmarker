@@ -137,16 +137,16 @@ namespace AndroidAgent
 			Console.WriteLine ("Benchmark started, run set id {0}", runSetId);
 		}
 
-		private static void InitCommons() {
+		private static void InitCommons(string bmUsername, string bmPassword, string githubAPIKey) {
 			Logging.SetLogging (new AndroidLogger());
-			ParseInterface.benchmarkerCredentials = JObject.Parse ("{'username': 'nope', 'password': 'never'}");
+			ParseInterface.benchmarkerCredentials = JObject.Parse ("{'username': '" + bmUsername + "', 'password': '" + bmPassword + "'}");
 			if (!ParseInterface.Initialize ()) {
 				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
 				throw new Exception ("Error: Could not initialize Parse interface.");
 			} else {
 				Console.WriteLine ("InitCommons: Parse successful");
 			}
-			GitHubInterface.githubCredentials = "magichash";
+			GitHubInterface.githubCredentials = githubAPIKey;
 		}
 
 		protected override void OnCreate (Bundle savedInstanceState)
@@ -157,8 +157,11 @@ namespace AndroidAgent
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
 			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
-				TextView textView = FindViewById<TextView> (Resource.Id.runSetId);
-				var runSetId = textView.Text;
+				var runSetId = FindViewById<TextView> (Resource.Id.runSetId).Text;
+				var bmUsername = FindViewById<TextView> (Resource.Id.bmUsername).Text;
+				var bmPassword = FindViewById<TextView> (Resource.Id.bmPassword).Text;
+				var githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
+				InitCommons (bmUsername, bmPassword, githubAPIKey);
 				SetStartButtonText ("running");
 				RunBenchmark (runSetId, hostname, architecture);
 			};
@@ -168,7 +171,6 @@ namespace AndroidAgent
 			v += "\nHostname: " + hostname;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
 			Console.WriteLine (v);
-			InitCommons ();
 			Console.WriteLine ("OnCreate finished");
 		}
 	}
