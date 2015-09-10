@@ -24,7 +24,13 @@ namespace AndroidAgent
 	[Activity (Label = "AndroidAgent", MainLauncher = true, Icon = "@drawable/icon")]
 	public class MainActivity : Activity
 	{
-		string GetMonoVersion () {
+		static MainActivity ()
+		{
+			Logging.SetLogging (new AndroidLogger());
+		}
+
+		string GetMonoVersion ()
+		{
 			Type type = Type.GetType("Mono.Runtime");
 			if (type != null)
 			{
@@ -43,7 +49,7 @@ namespace AndroidAgent
 
 		Benchmarker.Common.Models.Result.Run Iteration (string benchmark, int iteration)
 		{
-			Console.WriteLine ("MainActivity | Benchmark {0}: start iteration {1}", benchmark, iteration);
+			Logging.GetLogging().InfoFormat ("MainActivity | Benchmark {0}: start iteration {1}", benchmark, iteration);
 			GC.Collect (1);
 			System.Threading.Thread.Sleep (5 * 1000); // cool down?
 
@@ -56,7 +62,7 @@ namespace AndroidAgent
 				throw new NotImplementedException ();
 			}
 			sw.Stop ();
-			Console.WriteLine ("MainActivity | Benchmark {0}: finished iteration {1}", benchmark, iteration);
+			Logging.GetLogging().InfoFormat ("MainActivity | Benchmark {0}: finished iteration {1}, took {2}ms", benchmark, iteration, sw.ElapsedMilliseconds);
 			return new Benchmarker.Common.Models.Result.Run {
 				WallClockTime = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds),
 				Output = "<no stdout>",
@@ -74,11 +80,11 @@ namespace AndroidAgent
 			if (match.Success) {
 				commit.Branch = match.Groups [1].Value;
 				commit.Hash = match.Groups [2].Value;
-				Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash);
+				Logging.GetLogging().Debug ("branch: " + commit.Branch + " hash: " + commit.Hash);
 			} else {
 				commit.Branch = "<unknown>";
 				commit.Hash = "<unknown>";
-				Console.WriteLine ("couldn't read git information: \"" + GetMonoVersion () + "\"");
+				Logging.GetLogging().Debug ("couldn't read git information: \"" + GetMonoVersion () + "\"");
 			}
 			Octokit.Commit gitHubCommit = null;
 			try {
@@ -86,15 +92,15 @@ namespace AndroidAgent
 				Octokit.TreeResponse treeResponse = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", commit.Hash)));
 				gitHubCommit = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", treeResponse.Sha)));
 			} catch (Octokit.NotFoundException e) {
-				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
+				Logging.GetLogging().Debug ("Commit " + commit.Hash + " not found on GitHub");
 				throw e;
 			}
 			if (gitHubCommit == null) {
-				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
+				Logging.GetLogging().Debug ("Could not get commit " + commit.Hash + " from GitHub");
 			} else {
 				commit.Hash = gitHubCommit.Sha;
 				commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
-				Console.WriteLine ("Got commit " + commit.Hash + " from GitHub");
+				Logging.GetLogging().Info ("Got commit " + commit.Hash + " from GitHub");
 			}
 
 			return commit;
@@ -127,31 +133,29 @@ namespace AndroidAgent
 						if (run != null) {
 							result.Runs.Add (run);
 						} else {
-							Console.WriteLine ("no result available for #{0}!", i);
+							Logging.GetLogging().DebugFormat ("no result available for #{0}!", i);
 						}
 					}
 
 					runSet.Results.Add (result);
 					var objectId = runSet.UploadToParseGetObjectId (hostname, architecture);
-					Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", objectId);
-					Console.Write ("{{ \"runSetId\": \"{0}\"", objectId);
+					Logging.GetLogging().InfoFormat ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", objectId);
+					Logging.GetLogging().InfoFormat ("{{ \"runSetId\": \"{0}\"}", objectId);
 					RunOnUiThread (() => SetStartButtonText ("start"));
-					Console.WriteLine (" }");
 				} catch (Exception e) {
-					Console.WriteLine (e);
+					Logging.GetLogging().Error (e);
 				}
 			}).Start ();
-			Console.WriteLine ("Benchmark started, run set id {0}", runSetId);
+			Logging.GetLogging().InfoFormat ("Benchmark started, run set id {0}", runSetId);
 		}
 
 		private static void InitCommons(string bmUsername, string bmPassword, string githubAPIKey) {
-			Logging.SetLogging (new AndroidLogger());
 			ParseInterface.benchmarkerCredentials = JObject.Parse ("{'username': '" + bmUsername + "', 'password': '" + bmPassword + "'}");
 			if (!ParseInterface.Initialize ()) {
-				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
+				Logging.GetLogging().Error ("Error: Could not initialize Parse interface.");
 				throw new Exception ("Error: Could not initialize Parse interface.");
 			} else {
-				Console.WriteLine ("InitCommons: Parse successful");
+				Logging.GetLogging().Info ("InitCommons: Parse successful");
 			}
 			GitHubInterface.githubCredentials = githubAPIKey;
 		}
@@ -177,10 +181,8 @@ namespace AndroidAgent
 			v += "\nArchitecture: " + architecture;
 			v += "\nHostname: " + hostname;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
-			Console.WriteLine (v);
-			Console.WriteLine ("OnCreate finished");
+			Logging.GetLogging().Info (v);
+			Logging.GetLogging().Info ("OnCreate finished");
 		}
 	}
-
-
 }

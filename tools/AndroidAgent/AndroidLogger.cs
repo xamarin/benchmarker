@@ -1,5 +1,5 @@
 ﻿using Common.Logging;
-using Android.Util.Log;
+using Android.Util;
 
 using System;
 
@@ -51,7 +51,7 @@ namespace AndroidAgent
 		}
 		public void Debug (object message)
 		{
-			Android.Util.Log.Debug (appname, message);
+			Android.Util.Log.Debug (appname, message.ToString ());
 		}
 		public void Debug (object message, Exception exception)
 		{
@@ -106,7 +106,7 @@ namespace AndroidAgent
 		}
 		public void Info (object message)
 		{
-			Android.Util.Log.Info (appname, message);
+			Android.Util.Log.Info (appname, message.ToString ());
 		}
 		public void Info (object message, Exception exception)
 		{
@@ -161,7 +161,7 @@ namespace AndroidAgent
 		}
 		public void Warn (object message)
 		{
-			Android.Util.Log.Warn (appname, message);
+			Android.Util.Log.Warn (appname, message.ToString ());
 		}
 		public void Warn (object message, Exception exception)
 		{
@@ -216,7 +216,7 @@ namespace AndroidAgent
 		}
 		public void Error (object message)
 		{
-			Android.Util.Log.Error (appname, message);
+			Android.Util.Log.Error (appname, message.ToString ());
 		}
 		public void Error (object message, Exception exception)
 		{
