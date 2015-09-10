@@ -4,6 +4,7 @@
 
 import * as xp_utils from './utils.js';
 import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 
 export var Benchmark = Parse.Object.extend ('Benchmark');
@@ -431,7 +432,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 }
 
 type RunSetDescriptionProps = {
-	controller: Controller;
 	runSet: Parse.Object | void;
 };
 
@@ -444,20 +444,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	invalidateState (runSet) {
 		this.state = {};
 
-		xp_common.pageParseQuery (
-			() => {
-				var query = new Parse.Query (xp_common.Run);
-				query.equalTo ('runSet', runSet);
-				return query;
-			},
-			results => {
-				if (runSet !== this.props.runSet)
-					return;
-				this.setState ({runs: results});
-			},
-			function (error) {
-				alert ("error loading runs: " + error.toString ());
-			});
+		Database.fetch ('results?metric=eq.time&runset=eq.' + this.props.runSet.get ('id'), false,
+		objs => {
+			if (runSet !== this.props.runSet)
+				return;
+			this.setState ({results: objs})
+		}, error => {
+			alert ("error loading results: " + error.toString ());
+		});
 	}
 
 	componentWillReceiveProps (nextProps) {
@@ -494,13 +488,17 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			}
 		}
 
-		if (this.state.runs === undefined) {
+		if (this.state.results === undefined) {
 			table = <div className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
-			var runsByBenchmarkName = xp_utils.partitionArrayByString (this.state.runs, r => this.props.controller.benchmarkNameForId (r.get ('benchmark').id));
-			var crashedBenchmarkIds = runSet.get ('crashedBenchmarks').map (b => b.id);
-			var timedOutBenchmarkIds = runSet.get ('timedOutBenchmarks').map (b => b.id);
-			var benchmarkNames = Object.keys (runsByBenchmarkName);
+			var resultsByBenchmark = {};
+			for (var i = 0; i < this.state.results.length; ++i) {
+				var result = this.state.results [i];
+				resultsByBenchmark [result ['benchmark']] = { elapsed: result ['results'], disabled: result ['disabled'] };
+			}
+			var crashedBenchmarks = runSet.get ('crashedBenchmarks');
+			var timedOutBenchmarks = runSet.get ('timedOutBenchmarks');
+			var benchmarkNames = Object.keys (resultsByBenchmark);
 			benchmarkNames.sort ();
 			table = <table>
 				<tr>
@@ -510,23 +508,22 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					<th>Bias due to Outliers</th>
 				</tr>
 				{benchmarkNames.map (name => {
-					var runs = runsByBenchmarkName [name];
-					var benchmarkId = runs [0].get ('benchmark').id;
-					var benchmark = this.props.controller.benchmarkForId (benchmarkId);
-					var elapsed = runs.map (r => r.get ('elapsedMilliseconds'));
+					var result = resultsByBenchmark [name]
+					var elapsed = result.elapsed;
+					var disabled = result.disabled;
 					elapsed.sort ();
 					var elapsedString = elapsed.join (", ");
 					var outlierVariance = xp_common.outlierVariance (elapsed);
 					var statusIcons = [];
-					if (crashedBenchmarkIds.indexOf (benchmarkId) !== -1)
+					if (crashedBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-					if (timedOutBenchmarkIds.indexOf (benchmarkId) !== -1)
+					if (timedOutBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
 					if (statusIcons.length === 0)
 						statusIcons.push (<span className="statusIcon good fa fa-check" title="Good"></span>);
 
-					return <tr className={benchmark.get ('disabled') ? 'disabled' : ''}>
-						<td><code>{name}</code>{benchmark.get ('disabled') ? ' (disabled)' : ''}</td>
+					return <tr className={disabled ? 'disabled' : ''}>
+						<td><code>{name}</code>{disabled ? ' (disabled)' : ''}</td>
 						<td className="statusColumn">{statusIcons}</td>
 						<td>{elapsedString}</td>
 						<td>
@@ -539,8 +536,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			</table>;
 		}
 
-		var commitHash = runSet.get ('commit').get ('hash');
-		var commitLink = xp_common.githubCommitLink (commitHash);
+		var commitHash = runSet.get ('commit');
+		var commitLink = githubCommitLink (commitHash);
 
 		return <div className="Description">
 			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#' + runSet.id}>compare</a>)</h1>

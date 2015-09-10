@@ -16,7 +16,8 @@ class Controller extends xp_common.Controller {
 	}
 
 	loadAsync () {
-		Database.fetch ('config?name=eq.' + this.configName, objs => {
+		Database.fetch ('config?name=eq.' + this.configName, true,
+		objs => {
 			this.config = objs [0];
 			this.allDataLoaded ();
 		}, error => {

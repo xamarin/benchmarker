@@ -5,14 +5,13 @@
 import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
 import * as xp_charts from './charts.js';
-import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 import GitHub from 'github-api';
 
 class Controller extends xp_common.Controller {
 	pullRequestId: string | void;
-	pullRequest: Parse.Object | void;
-	prRunSet: Parse.Object | void;
+	dbRow: Object | void;
 
 	constructor (pullRequestId) {
 		super ();
@@ -20,58 +19,26 @@ class Controller extends xp_common.Controller {
 	}
 
 	loadAsync () {
-		var pullRequestQuery = new Parse.Query (xp_common.PullRequest)
-			.include ('baselineRunSet')
-			.include ('baselineRunSet.commit')
-		pullRequestQuery.get (this.pullRequestId, {
-			success: obj => {
-				this.pullRequest = obj;
-				this.checkAllDataLoaded ();
-			},
-			error: error => {
-				alert ("error loading pull request: " + error.toString ());
-			}});
-
-		var runSetQuery = new Parse.Query (xp_common.RunSet)
-			.include ('machine')
-			.include ('config')
-			.include ('commit')
-			.equalTo ('pullRequest', xp_common.PullRequest.createWithoutData (this.pullRequestId));
-		runSetQuery.find ({
-			success: objs => {
-				this.prRunSet = objs [0];
-				this.checkAllDataLoaded ();
-			},
-			error: error => {
-				alert ("error loading run set: " + error.toString ());
-			}});
-	}
-
-	checkAllDataLoaded () {
-		if (this.pullRequest === undefined
-			|| this.prRunSet === undefined)
-			return;
-
-		this.allDataLoaded ();
+		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId, false,
+		objs => {
+			this.dbRow = objs [0];
+			this.allDataLoaded ();
+		}, error => {
+			alert ("error loading config: " + error.toString ());
+		});
 	}
 
 	allDataLoaded () {
         if (this.pullRequestId === undefined)
             return;
 
-        var prRunSet = this.prRunSet;
-        var pullRequest = this.pullRequest;
-        var baselineRunSet = pullRequest.get ('baselineRunSet');
-
-        if (baselineRunSet === undefined || prRunSet === undefined) {
-            console.log ("Error: Could not get baseline or test run set.", baselineRunSet, prRunSet);
-            return;
-        }
+        var prRunSet = new Database.DBObject (this.dbRow, 'prrs_');
+        var pullRequest = new Database.DBObject (this.dbRow, 'pr_');
+        var baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_');
+		var machine = new Database.DBObject (this.dbRow, 'm_');
+		var config = new Database.DBObject (this.dbRow, 'cfg_');
 
         var runSets = [baselineRunSet, prRunSet];
-
-        var machine =  prRunSet.get ('machine');
-        var config = prRunSet.get ('config');
 
 		React.render (
 			<div className="PullRequestPage">
@@ -80,7 +47,8 @@ class Controller extends xp_common.Controller {
 					<div className="outer">
 						<div className="inner">
 							<PullRequestDescription
-								pullRequest={pullRequest} />
+								pullRequest={pullRequest}
+								baselineRunSet={baselineRunSet} />
 							<xp_common.MachineDescription
 								machine={machine}
 								omitHeader={false} />
@@ -94,6 +62,13 @@ class Controller extends xp_common.Controller {
                         controller={this}
                         runSets={runSets}
                         runSetLabels={["Baseline", "Pull request"]} />
+					<div style={{ clear: 'both' }}></div>
+					<h2>Pull Request Run Set</h2>
+					<xp_common.RunSetDescription
+						runSet={prRunSet} />
+					<h2>Baseline Run Set</h2>
+					<xp_common.RunSetDescription
+						runSet={baselineRunSet} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')
@@ -102,7 +77,8 @@ class Controller extends xp_common.Controller {
 }
 
 type PullRequestDescriptionProps = {
-	pullRequest: Parse.Object;
+	pullRequest: Database.DBObject;
+	baselineRunSet: Database.DBObject;
 };
 
 type PullRequestDescriptionState = {
@@ -128,10 +104,10 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 
 	render () : Object {
 		var pr = this.props.pullRequest;
+		var baselineRunSet = this.props.baselineRunSet;
         var info = this.state.gitHubInfo;
 
-        var baselineRunSet = pr.get ('baselineRunSet');
-        var baselineHash = baselineRunSet.get ('commit').get ('hash');
+        var baselineHash = baselineRunSet.get ('commit');
 
         var title = <span>Loading&hellip;</span>;
         if (info !== undefined && info.title !== undefined)

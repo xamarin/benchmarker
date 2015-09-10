@@ -250,7 +250,8 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Benchmark",
 				new ParameterInfo[] {
-					new ParameterInfo { name = "name", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 }
+					new ParameterInfo { name = "name", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
+					new ParameterInfo { name = "disabled", type = NpgsqlTypes.NpgsqlDbType.Boolean }
 				},
 				"name");
 		}

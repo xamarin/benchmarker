@@ -6,31 +6,31 @@
 
 import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
-import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 
 type Range = [number, number, number, number];
 
-function calculateRunsRange (runs: Array<Parse.Object>): Range {
+function calculateRunsRange (data: Array<number>): Range {
 	var min: number | void;
 	var max: number | void;
 	var sum = 0;
-	for (var i = 0; i < runs.length; ++i) {
-		var v = runs [i].get ('elapsedMilliseconds');
+	for (var i = 0; i < data.length; ++i) {
+		var v = data [i];
 		if (min === undefined || v < min)
 			min = v;
 		if (max === undefined || v > max)
 			max = v;
 		sum += v;
 	}
-	var mean = sum / runs.length;
+	var mean = sum / data.length;
     sum = 0;
-    for (i = 0; i < runs.length; ++i) {
-        var v = runs [i].get ('elapsedMilliseconds');
+    for (i = 0; i < data.length; ++i) {
+        var v = data [i];
         var diff = v - mean;
         sum += diff * diff;
     }
-    var stddev = Math.sqrt (sum) / runs.length;
+    var stddev = Math.sqrt (sum) / data.length;
 	if (min === undefined || max === undefined)
 		min = max = 0;
 	return [min, mean - stddev, mean + stddev, max];
@@ -47,17 +47,17 @@ function rangeMean (range: Range) : number {
 type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
-function dataArrayForRunSets (runSets: Array<Parse.Object>, runsByIndex : Array<Array<Parse.Object>>): (DataArray | void) {
+function dataArrayForRunSets (runSets: Array<Database.DBObject>, resultsByIndex : Array<{[benchmark: string]: Object}>): (DataArray | void) {
     for (var i = 0; i < runSets.length; ++i) {
-        if (runsByIndex [i] === undefined)
+        if (resultsByIndex [i] === undefined)
             return undefined;
     }
 
     var commonBenchmarkNames;
 
     for (i = 0; i < runSets.length; ++i) {
-        var runs = runsByIndex [i];
-        var benchmarkNames = xp_utils.uniqStringArray (runs.map (o => o.get ('benchmark').get ('name')));
+        var results = resultsByIndex [i];
+        var benchmarkNames = Object.keys (results);
         if (commonBenchmarkNames === undefined) {
             commonBenchmarkNames = benchmarkNames;
             continue;
@@ -77,8 +77,8 @@ function dataArrayForRunSets (runSets: Array<Parse.Object>, runsByIndex : Array<
         var row = [benchmarkName, []];
         var mean = undefined;
         for (var j = 0; j < runSets.length; ++j) {
-            var filteredRuns = runsByIndex [j].filter (r => r.get ('benchmark').get ('name') === benchmarkName);
-            var range = calculateRunsRange (filteredRuns);
+			var data = resultsByIndex [j][benchmarkName]['results'];
+            var range = calculateRunsRange (data);
             if (mean === undefined)
 				mean = rangeMean (range);
 			row [1].push (normalizeRange (mean, range));
@@ -103,7 +103,7 @@ function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
 	return sum / dataArray.length;
 }
 
-function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Parse.Object>) : DataArray {
+function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Database.DBObject>) : DataArray {
 	var differences = {};
 	for (var i = 0; i < dataArray.length; ++i) {
 		var row = dataArray [i];
@@ -125,7 +125,7 @@ function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Parse.O
 	return xp_utils.sortArrayNumericallyBy (dataArray, row => -differences [row [0]]);
 }
 
-function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Object>) : Array<string> {
+function runSetLabels (controller: xp_common.Controller, runSets: Array<Database.DBObject>) : Array<string> {
     var commitIds = runSets.map (rs => rs.get ('commit').id);
     var commitHistogram = xp_utils.histogramOfStrings (commitIds);
 
@@ -137,11 +137,11 @@ function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Ob
             includeStartedAt = true;
     }
 
-    var machineIds = runSets.map (rs => rs.get ('machine').id);
-    var includeMachine = xp_utils.uniqStringArray (machineIds).length > 1;
+    var machines = runSets.map (rs => rs.get ('machine'));
+    var includeMachine = xp_utils.uniqStringArray (machines).length > 1;
 
-    var configIds = runSets.map (rs => rs.get ('config').id);
-    var includeConfigs = xp_utils.uniqStringArray (configIds).length > 1;
+    var configs = runSets.map (rs => rs.get ('config'));
+    var includeConfigs = xp_utils.uniqStringArray (configs).length > 1;
 
     var formatRunSet = runSet => {
         var str = "";
@@ -150,13 +150,13 @@ function runSetLabels (controller: xp_common.Controller, runSets: Array<Parse.Ob
             str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
         }
         if (includeMachine) {
-            var machine = controller.machineForId (runSet.get ('machine').id);
+            var machine = runSet.get ('machine');
             if (str !== "")
                 str = str + "\n";
             str = str + machine.get ('name');
         }
         if (includeConfigs) {
-            var config = controller.configForId (runSet.get ('config').id);
+            var config = runSet.get ('config');
             if (includeMachine)
                 str = str + " / ";
             else if (str !== "")
@@ -247,14 +247,14 @@ function formatPercentage (x: number) : string {
 }
 
 type ComparisonAMChartProps = {
-    runSets: Array<Parse.Object>;
+    runSets: Array<Database.DBObject>;
 	runSetLabels: Array<string> | void;
 	graphName: string;
     controller: xp_common.Controller;
 };
 
 export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, ComparisonAMChartProps, void> {
-    runsByIndex : Array<Array<Parse.Object>>;
+    resultsByIndex : Array<{[benchmark: string]: Object}>;
     graphs: Array<Object>;
     dataProvider: Array<Object>;
     min: number | void;
@@ -271,44 +271,37 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 		this.invalidateState (nextProps.runSets);
 	}
 
-    invalidateState (runSets : Array<Parse.Object>) : void {
-        this.runsByIndex = [];
+    invalidateState (runSets : Array<Database.DBObject>) : void {
+        this.resultsByIndex = [];
 
-        xp_common.pageParseQuery (
-            () => {
-                var query = new Parse.Query (xp_common.Run)
-					.include ('benchmark')
-                	.containedIn ('runSet', runSets);
-                return query;
-            },
-            results => {
-                if (this.props.runSets !== runSets)
-                    return;
+		Database.fetch ('results?metric=eq.time&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','), false,
+		objs => {
+			if (runSets !== this.props.runSets)
+				return;
 
-                var runSetIndexById = {};
-                runSets.forEach ((rs, i) => {
-                    this.runsByIndex [i] = [];
-                    runSetIndexById [rs.id] = i;
-                });
-
-                results.forEach (r => {
-                    var i = runSetIndexById [r.get ('runSet').id];
-                    if (this.runsByIndex [i] === undefined)
-                        this.runsByIndex [i] = [];
-                    this.runsByIndex [i].push (r);
-                });
-
-                this.runsLoaded ();
-            },
-            function (error) {
-                alert ("error loading runs: " + error.toString ());
+			var runSetIndexById = {};
+            runSets.forEach ((rs, i) => {
+                this.resultsByIndex [i] = [];
+                runSetIndexById [rs.get ('id')] = i;
             });
+
+            objs.forEach (r => {
+                var i = runSetIndexById [r ['runset']];
+                if (this.resultsByIndex [i] === undefined)
+                    this.resultsByIndex [i] = {};
+                this.resultsByIndex [i][r ['benchmark']] = r;
+            });
+
+            this.runsLoaded ();
+		}, error => {
+			alert ("error loading results: " + error.toString ());
+		});
     }
 
     runsLoaded () {
         var i;
 
-        var dataArray = dataArrayForRunSets (this.props.runSets, this.runsByIndex);
+        var dataArray = dataArrayForRunSets (this.props.runSets, this.resultsByIndex);
         if (dataArray === undefined)
             return;
 
