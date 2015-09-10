@@ -126,6 +126,14 @@ namespace DbTool
 			return "<" + url + "|" + hash + ">";
 		}
 
+		static string GithubDiff (ParseObject previous, ParseObject to)
+		{
+			var hash_start = previous.Get<string> ("hash");
+			var hash_end = to.Get<string> ("hash");
+			var url = "https://github.com/mono/mono/compare/";
+			return url + hash_start + ".." + hash_end;
+		}
+
 		static async Task<bool> WarnIfNecessary (bool testRun, List<ParseObject> benchmarksToWarn, List<object> warnedBenchmarks,
 			bool faster, ParseObject testRunSet, ParseObject previousRunSet, ParseObject machine, ParseObject config)
 		{
@@ -151,9 +159,10 @@ namespace DbTool
 				                  machine.ObjectId, config.ObjectId);
 			var compareUrl = String.Format ("http://xamarin.github.io/benchmarker/front-end/compare.html#{0}+{1}",
 				                 previousRunSet.ObjectId, testRunSet.ObjectId);
-			var message = String.Format ("The {0} got {1} between commits {2} and {3} on <{4}|{5}> — <{6}|compare>",
+			var message = String.Format ("The {0} got {1} between commits {2} and {3} (<{4}|diff>) on <{5}|{6}> — <{7}|compare>",
 				              benchmarksString, (faster ? "faster" : "slower"),
 				              SlackCommitString (previousCommit), SlackCommitString (commit),
+				              GithubDiff (previousCommit, commit),
 				              timelineUrl, machine.Get<string> ("architecture"), compareUrl);
 			var botName = faster ? "goodbot" : "badbot";
 			if (testRun)
