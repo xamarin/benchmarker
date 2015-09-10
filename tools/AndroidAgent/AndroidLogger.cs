@@ -1,10 +1,13 @@
 ﻿using Common.Logging;
+using Android.Util.Log;
 
 using System;
 
 namespace AndroidAgent
 {
 	class AndroidLogger : ILog {
+		private static string appname = "benchmarker";
+
 		#region ILog implementation
 		public void Trace (object message)
 		{
@@ -48,7 +51,7 @@ namespace AndroidAgent
 		}
 		public void Debug (object message)
 		{
-			Console.WriteLine (message);
+			Android.Util.Log.Debug (appname, message);
 		}
 		public void Debug (object message, Exception exception)
 		{
@@ -58,16 +61,16 @@ namespace AndroidAgent
 		{
 			switch (args.Length) {
 			case 0:
-				Console.WriteLine (format);
+				Android.Util.Log.Debug (appname, format);
 				break;
 			case 1:
-				Console.WriteLine (format, args [0]);
+				Android.Util.Log.Debug (appname, String.Format (format, args[0]));
 				break;
 			case 2:
-				Console.WriteLine (format, args [0], args [1]);
+				Android.Util.Log.Debug (appname, String.Format (format, args[0], args[1]));
 				break;
 			case 3:
-				Console.WriteLine (format, args [0], args [1], args [2]);
+				Android.Util.Log.Debug (appname, String.Format (format, args[0], args[1], args[2]));
 				break;
 			default:
 				throw new NotImplementedException ();
@@ -103,7 +106,7 @@ namespace AndroidAgent
 		}
 		public void Info (object message)
 		{
-			Console.WriteLine (message);
+			Android.Util.Log.Info (appname, message);
 		}
 		public void Info (object message, Exception exception)
 		{
@@ -113,16 +116,16 @@ namespace AndroidAgent
 		{
 			switch (args.Length) {
 			case 0:
-				Console.WriteLine (format);
+				Android.Util.Log.Info (appname, format);
 				break;
 			case 1:
-				Console.WriteLine (format, args [0]);
+				Android.Util.Log.Info (appname, String.Format (format, args[0]));
 				break;
 			case 2:
-				Console.WriteLine (format, args [0], args [1]);
+				Android.Util.Log.Info (appname, String.Format (format, args[0], args[1]));
 				break;
 			case 3:
-				Console.WriteLine (format, args [0], args [1], args [2]);
+				Android.Util.Log.Info (appname, String.Format (format, args[0], args[1], args[2]));
 				break;
 			default:
 				throw new NotImplementedException ();
@@ -158,7 +161,7 @@ namespace AndroidAgent
 		}
 		public void Warn (object message)
 		{
-			Console.WriteLine (message);
+			Android.Util.Log.Warn (appname, message);
 		}
 		public void Warn (object message, Exception exception)
 		{
@@ -168,16 +171,16 @@ namespace AndroidAgent
 		{
 			switch (args.Length) {
 			case 0:
-				Console.WriteLine (format);
+				Android.Util.Log.Warn (appname, format);
 				break;
 			case 1:
-				Console.WriteLine (format, args [0]);
+				Android.Util.Log.Warn (appname, String.Format (format, args[0]));
 				break;
 			case 2:
-				Console.WriteLine (format, args [0], args [1]);
+				Android.Util.Log.Warn (appname, String.Format (format, args[0], args[1]));
 				break;
 			case 3:
-				Console.WriteLine (format, args [0], args [1], args [2]);
+				Android.Util.Log.Warn (appname, String.Format (format, args[0], args[1], args[2]));
 				break;
 			default:
 				throw new NotImplementedException ();
@@ -213,7 +216,7 @@ namespace AndroidAgent
 		}
 		public void Error (object message)
 		{
-			Console.WriteLine (message);
+			Android.Util.Log.Error (appname, message);
 		}
 		public void Error (object message, Exception exception)
 		{
@@ -223,16 +226,16 @@ namespace AndroidAgent
 		{
 			switch (args.Length) {
 			case 0:
-				Console.WriteLine (format);
+				Android.Util.Log.Error (appname, format);
 				break;
 			case 1:
-				Console.WriteLine (format, args [0]);
+				Android.Util.Log.Error (appname, String.Format (format, args[0]));
 				break;
 			case 2:
-				Console.WriteLine (format, args [0], args [1]);
+				Android.Util.Log.Error (appname, String.Format (format, args[0], args[1]));
 				break;
 			case 3:
-				Console.WriteLine (format, args [0], args [1], args [2]);
+				Android.Util.Log.Error (appname, String.Format (format, args[0], args[1], args[2]));
 				break;
 			default:
 				throw new NotImplementedException ();
