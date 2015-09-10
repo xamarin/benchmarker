@@ -143,7 +143,7 @@ namespace AndroidAgent
 					runSet.Results.Add (result);
 					var objectId = runSet.UploadToParseGetObjectId (hostname, architecture);
 					Logging.GetLogging().InfoFormat ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", objectId);
-					Logging.GetLogging().InfoFormat ("{{ \"runSetId\": \"{0}\"}", objectId);
+					Logging.GetLogging().InfoFormat ("{{ \"runSetId\": \"{0}\" }}", objectId);
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
 					Logging.GetLogging().Error (e);
