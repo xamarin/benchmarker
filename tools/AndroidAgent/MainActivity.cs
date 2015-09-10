@@ -58,6 +58,9 @@ namespace AndroidAgent
 			case "strcat": 
 				strcat.Main (new string[] { "40000000" });
 				break;
+			case "n-body":
+				NBody.Main (new string[] { "50000000" }, Logging.GetLogging ());
+				break;
 			default:
 				throw new NotImplementedException ();
 			}
@@ -108,7 +111,7 @@ namespace AndroidAgent
 
 		void RunBenchmark (string runSetId, string hostname, string architecture)
 		{
-			const string benchmark = "strcat";
+			const string benchmark = "n-body";
 			var commit = GetCommit ();
 			var config = new Config { Name = "auto-sgen", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
 			var runSet = new RunSet {

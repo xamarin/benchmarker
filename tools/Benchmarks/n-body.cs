@@ -5,18 +5,19 @@
 */
 
 using System;
+using Common.Logging;
 
-class NBody {
-   public static void Main(String[] args) {
+public class NBody {
+   public static void Main(String[] args, ILog logger) {
       int n = 10000;
       if (args.Length > 0) n = Int32.Parse(args[0]);
 
       NBodySystem bodies = new NBodySystem();
 
-      Console.WriteLine("{0:f9}",bodies.Energy());
+      logger.InfoFormat ("{0:f9}",bodies.Energy());
       for (int i=0; i<n; i++)
          bodies.Advance(0.01);
-      Console.WriteLine("{0:f9}",bodies.Energy());
+      logger.InfoFormat ("{0:f9}",bodies.Energy());
    }
 }
 
