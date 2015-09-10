@@ -43,10 +43,13 @@ namespace AndroidAgent
 		Benchmarker.Common.Models.Result.Run Iteration (string benchmark, int iteration)
 		{
 			Console.WriteLine ("MainActivity | Benchmark {0}: start iteration {1}", benchmark, iteration);
+			GC.Collect (1);
+			System.Threading.Thread.Sleep (5 * 1000); // cool down?
+
 			var sw = Stopwatch.StartNew ();
 			switch (benchmark) {
 			case "strcat": 
-				strcat.Main (new string[] { "10000000" });
+				strcat.Main (new string[] { "40000000" });
 				break;
 			default:
 				throw new NotImplementedException ();

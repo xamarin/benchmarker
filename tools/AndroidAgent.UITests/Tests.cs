@@ -48,6 +48,7 @@ namespace AndroidAgent.UITests
 					app.Screenshot ("enter bmPassword");
 
 					app.ClearText (c => c.Marked ("githubAPIKey"));
+					app.ClearText (c => c.Marked ("githubAPIKey"));
 					app.EnterText (c => c.Marked ("githubAPIKey"), githubAPIKey);
 					app.Screenshot ("enter githubAPIKey");
 
