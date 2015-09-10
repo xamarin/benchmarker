@@ -171,18 +171,6 @@ export function hashForRunSets (runSets: Array<Parse.Object>) : string {
 	return ids.join ('+');
 }
 
-type MachineConfigSelection = {
-	machine: Parse.Object | void;
-	config: Parse.Object | void;
-}
-
-type ConfigSelectorProps = {
-	controller: Controller;
-	machine: Parse.Object | void;
-	config: Parse.Object | void;
-	onChange: (selection: MachineConfigSelection) => void;
-};
-
 type ConfigDescriptionProps = {
 	config: Parse.Object | void;
 	omitHeader: boolean;
@@ -255,62 +243,56 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 	}
 }
 
+type MachineConfigSelection = {
+	machine: string | void;
+	config: string | void;
+};
+
+type ConfigSelectorProps = {
+	runSetCounts: Array<{ machine: Database.DBObject, config: Database.DBObject, count: number }>;
+	machine: string | void;
+	config: string | void;
+	onChange: (selection: MachineConfigSelection) => void;
+};
+
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
 	render () : Object {
-		function idsToString (machine, config) : string {
-			return machine + "+" + config;
-		}
-
-		var combinations = this.props.controller.allRunSets.map (rs => [rs.get ('machine').id, rs.get ('config').id]);
-		var histogram = xp_utils.histogramByString (combinations, ids => idsToString (ids [0], ids [1]));
-
-		var userStringForIds = ids => {
-			var machine = this.props.controller.machineForId (ids [0]);
-			var config = this.props.controller.configForId (ids [1]);
-			return machine.get ('name') + " / " + config.get ('name');
+		var userStringForRSC = r => {
+			return r.machine.get ('name') + " / " + r.config.get ('name');
 		};
 
-		histogram = xp_utils.sortArrayLexicographicallyBy (histogram, e => userStringForIds (e [0]).toLowerCase ());
+		var valueStringForEntry = (machine, config) => {
+			return machine.get ('name') + '+' + config.get ('name');
+		}
+
+		var histogram = xp_utils.sortArrayLexicographicallyBy (this.props.runSetCounts, r => userStringForRSC (r).toLowerCase ());
 
 		var machines = {};
 		for (var i = 0; i < histogram.length; ++i) {
-			var machineId = histogram [i] [0] [0];
-			var configId = histogram [i] [0] [1];
-			var count = histogram [i] [1];
-			var machine = this.props.controller.machineForId (machineId).get ('name');
-			var config = this.props.controller.configForId (configId).get ('name');
-			machines [machine] = machines [machine] || [];
-			machines [machine].push ({
-				configId: configId,
-				configName: config,
-				count: count,
-				machineId: machineId,
-				machineName: machine,
-			});
+			var rsc = histogram [i];
+			var machineName = rsc.machine.get ('name');
+			machines [machineName] = machines [machineName] || [];
+			machines [machineName].push (rsc);
 		}
 
 		function renderEntry (entry) {
-			var string = idsToString (entry.machineId, entry.configId);
+			var string = valueStringForEntry (entry.machine, entry.config);
 			return <option
 				value={string}
 				key={string}>
-				{entry.configName} ({entry.count})
+				{entry.config.get ('name')} ({entry.count})
 			</option>;
 		}
 
-		function renderGroup (machines, machine) {
-			return <optgroup label={machine}>
-				{xp_utils.sortArrayNumericallyBy (machines [machine], x => -x.count).map (renderEntry.bind (this))}
+		function renderGroup (machines, machineName) {
+			return <optgroup label={machineName}>
+				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (renderEntry.bind (this))}
 			</optgroup>;
 		}
 
-		var machineId = undefined;
-		if (this.props.machine !== undefined)
-			machineId = this.props.machine.id;
-		var configId = undefined;
-		if (this.props.config !== undefined)
-			configId = this.props.config.id;
-		var selectedValue = (machineId === undefined || configId === undefined) ? undefined : idsToString (machineId, configId);
+		var machine = this.props.machine;
+		var config = this.props.config;
+		var selectedValue = (machine === undefined || config === undefined) ? undefined : valueStringForEntry (machine, config);
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
@@ -330,20 +312,19 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	openConfigDescription () {
         if (this.props.config === undefined)
             return;
-        window.open ('config.html#' + this.props.config.id)
+        window.open ('config.html#' + this.props.config.get ('name'))
 	}
 
 	openMachineDescription () {
         if (this.props.machine === undefined)
             return;
-        window.open ('machine.html#' + this.props.machine.id)
+        window.open ('machine.html#' + this.props.machine.get ('name'))
 	}
 
 	combinationSelected (event: Object) {
-		var ids = event.target.value.split ("+");
-		var machine = this.props.controller.machineForId (ids [0]);
-		var config = this.props.controller.configForId (ids [1]);
-		this.props.onChange ({machine: machine, config: config});
+		var names = event.target.value.split ('+');
+		var rsc = Database.findRunSetCount (this.props.runSetCounts, names [0], names [1]);
+		this.props.onChange (rsc);
 	}
 }
 
@@ -594,12 +575,6 @@ export function pageParseQuery (makeQuery: () => Object, success: (results: Arra
     }
 
     page (0, undefined, [], {});
-}
-
-export function joinBenchmarkNames (controller: Controller, benchmarks: (Array<Parse.Object> | void), prefix: string) : string {
-	if (benchmarks === undefined || benchmarks.length === 0)
-		return "";
-	return prefix + benchmarks.map (b => controller.benchmarkNameForId (b.id)).join (", ");
 }
 
 type NavigationProps = {

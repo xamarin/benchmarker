@@ -5,40 +5,48 @@
 import * as xp_common from './common.js';
 import * as xp_utils from './utils.js';
 import * as xp_charts from './charts.js';
-import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
+	initialSelectionNames: { machineName: string | void, configName: string | void };
+	runSetCounts: Array<Object>;
 
-	initialMachineId: string | void;
-	initialConfigId: string | void;
-
-	constructor (machineId, configId) {
+	constructor (machineName, configName) {
 		super ();
-		this.initialMachineId = machineId;
-		this.initialConfigId = configId;
+		this.initialSelectionNames = { machineName: machineName, configName: configName };
+	}
+
+	loadAsync () {
+		Database.fetchRunSetCounts (runSetCounts => {
+			this.runSetCounts = runSetCounts;
+			this.allDataLoaded ();
+		}, error => {
+			alert ("error loading run set counts: " + error.toString ());
+		});
 	}
 
 	allDataLoaded () {
-		var initialSelection = {};
-		if (this.initialMachineId !== undefined)
-			initialSelection.machine = this.machineForId (this.initialMachineId);
-		if (this.initialConfigId !== undefined)
-			initialSelection.config = this.configForId (this.initialConfigId);
+		var selection = Database.findRunSetCount (this.runSetCounts,
+			this.initialSelectionNames.machineName,
+			this.initialSelectionNames.configName);
+		if (selection === undefined)
+			selection = { machine: undefined, config: undefined };
 
 		React.render (
 			React.createElement (
 				Page,
 				{
 					controller: this,
-					initialSelection: initialSelection,
+					initialSelection: selection,
+					runSetCounts: this.runSetCounts,
 					onChange: this.updateForSelection.bind (this)
 				}
 			),
 			document.getElementById ('timelinePage')
 		);
 
-		this.updateForSelection (initialSelection);
+		this.updateForSelection (selection);
 	}
 
 	updateForSelection (selection) {
@@ -46,30 +54,65 @@ class Controller extends xp_common.Controller {
 		var config = selection.config;
 		if (machine === undefined || config === undefined)
 			return;
-		window.location.hash = machine.id + '+' + config.id;
+		window.location.hash = machine.get ('name') + '+' + config.get ('name');
 	}
-
 }
 
 class Page extends React.Component {
-
 	constructor (props) {
 		super (props);
 		this.state = {
 			machine: this.props.initialSelection.machine,
 			config: this.props.initialSelection.config,
-			runSets: []
+			runSets: [],
+			sortedResults: [],
+			benchmarkNames: []
 		};
 	}
 
-	setState (newState) {
-		super.setState (newState);
-		this.props.onChange (newState);
+	componentWillMount () {
+		this.fetchSummaries (this.state);
 	}
 
 	runSetSelected (runSet) {
-		window.open ('runset.html#' + runSet.id);
+		window.open ('runset.html#' + runSet.get ('id'));
 		this.setState ({runSets: this.state.runSets.concat ([runSet])});
+	}
+
+	allBenchmarksLoaded (names) {
+		this.setState ({benchmarkNames: names});
+	}
+
+	fetchSummaries (selection) {
+		var machine = selection.machine;
+		var config = selection.config;
+
+		if (machine === undefined || config === undefined)
+			return;
+
+		Database.fetchSummaries ('time', machine, config,
+			objs => {
+				objs.sort ((a, b) => {
+					var aDate = a.commit.get ('commitDate');
+					var bDate = b.commit.get ('commitDate');
+					if (aDate.getTime () !== bDate.getTime ())
+						return aDate - bDate;
+					return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
+				});
+
+				this.setState ({sortedResults: objs});
+			}, error => {
+				alert ("error loading summaries: " + error.toString ());
+			});
+	}
+
+	selectionChanged (selection) {
+		var machine = selection.machine;
+		var config = selection.config;
+
+		this.setState ({machine: machine, config: config, sortedResults: [], benchmarkNames: []});
+		this.fetchSummaries (selection);
+		this.props.onChange (selection);
 	}
 
 	render () {
@@ -80,15 +123,17 @@ class Page extends React.Component {
 		if (selected) {
 			chart = <AllBenchmarksChart
 				graphName={'allBenchmarksChart'}
-				controller={this.props.controller}
 				machine={this.state.machine}
 				config={this.state.config}
+				sortedResults={this.state.sortedResults}
 				runSetSelected={this.runSetSelected.bind (this)}
+				allBenchmarksLoaded={this.allBenchmarksLoaded.bind (this)}
 				/>;
 			benchmarkChartList = <BenchmarkChartList
-				controller={this.props.controller}
+				benchmarkNames={this.state.benchmarkNames}
 				machine={this.state.machine}
 				config={this.state.config}
+				sortedResults={this.state.sortedResults}
 				runSetSelected={this.runSetSelected.bind (this)}
 				/>;
 		} else {
@@ -96,8 +141,10 @@ class Page extends React.Component {
 		}
 
 		var comparisonChart;
-		if (this.state.runSets.length > 1)
-			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart" controller={this.props.controller} runSets={this.state.runSets} />;
+		if (this.state.runSets.length > 1) {
+			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart"
+				runSets={this.state.runSets} />;
+		}
 
 		return <div className="TimelinePage">
 			<xp_common.Navigation currentPage="timeline" />
@@ -105,10 +152,10 @@ class Page extends React.Component {
 				<div className="outer">
 					<div className="inner">
 						<xp_common.CombinedConfigSelector
-							controller={this.props.controller}
+							runSetCounts={this.props.runSetCounts}
 							machine={this.state.machine}
 							config={this.state.config}
-							onChange={this.setState.bind (this)}
+							onChange={this.selectionChanged.bind (this)}
 							showControls={false} />
 						<xp_common.MachineDescription
 							machine={this.state.machine}
@@ -127,8 +174,13 @@ class Page extends React.Component {
 	}
 }
 
-function tooltipForRunSet (controller: Controller, runSet: Parse.Object, includeBroken: boolean) {
-	var commit = runSet.get ('commit');
+export function joinBenchmarkNames (benchmarks: (Array<string> | void), prefix: string) : string {
+	if (benchmarks === undefined || benchmarks.length === 0)
+		return "";
+	return prefix + benchmarks.join (", ");
+}
+
+function tooltipForRunSet (runSet: Database.DBObject, commit: Database.DBObject, includeBroken: boolean) {
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
 	if (commit.get ('branch') !== undefined)
@@ -138,21 +190,22 @@ function tooltipForRunSet (controller: Controller, runSet: Parse.Object, include
 
 	var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
 	if (includeBroken) {
-		var timedOutBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
-		var crashedBenchmarks = xp_common.joinBenchmarkNames (controller, runSet.get ('crashedBenchmarks'), "\nCrashed: ");
+		var timedOutBenchmarks = joinBenchmarkNames (runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
+		var crashedBenchmarks = joinBenchmarkNames (runSet.get ('crashedBenchmarks'), "\nCrashed: ");
 	 	tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
 	}
 	return tooltip;
 }
 
-function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
+type BenchmarkValueArray = Array<{ [benchmark: string]: number }>;
+
+function runSetIsBroken (runSet: Database.DBObject, averages: BenchmarkValueArray) {
 	var timedOutBenchmarks = runSet.get ('timedOutBenchmarks') || [];
 	var crashedBenchmarks = runSet.get ('crashedBenchmarks') || [];
 	var timedOutOrCrashedBenchmarks = timedOutBenchmarks.concat (crashedBenchmarks);
 	for (var i = 0; i < timedOutOrCrashedBenchmarks.length; ++i) {
 		var benchmark = timedOutOrCrashedBenchmarks [i];
-		var name = controller.benchmarkNameForId (benchmark.id);
-		if (!(name in runSet.get ('elapsedTimeAverages')))
+		if (!(benchmark in averages))
 			return true;
 	}
 	return false;
@@ -160,7 +213,6 @@ function runSetIsBroken (controller: Controller, runSet: Parse.Object) {
 
 type TimelineChartProps = {
 	graphName: string;
-	controller: Controller;
 	machine: Parse.Object;
 	config: Parse.Object;
 	benchmark: string;
@@ -168,26 +220,21 @@ type TimelineChartProps = {
 };
 
 class TimelineChart extends React.Component<TimelineChartProps, TimelineChartProps, void> {
-
-	sortedRunSets : Array<Parse.Object>;
+	sortedResults : Array<{ runSet: Database.DBObject, commit: Database.DBObject, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
 	table : void | Array<Object>;
 
 	valueAxisTitle () : string {
 		return "";
 	}
 
-	constructor (props) {
-		super (props);
-	}
-
 	componentWillMount () {
-		this.invalidateState (this.props.machine, this.props.config);
+		this.invalidateState (this.props);
 	}
 
 	componentWillReceiveProps (nextProps) {
-		if (this.props.machine === nextProps.machine && this.props.config === nextProps.config)
+		if (this.props.machine === nextProps.machine && this.props.config === nextProps.config && this.props.sortedResults === nextProps.sortedResults)
 			return;
-		this.invalidateState (nextProps.machine, nextProps.config);
+		this.invalidateState (nextProps);
 	}
 
 	render () {
@@ -202,27 +249,13 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 			selectListener={this.props.runSetSelected.bind (this)} />;
 	}
 
-	computeTable () {
+	computeTable (nextProps) {
 	}
 
-	invalidateState (machine, config) {
+	invalidateState (nextProps) {
 		this.table = undefined;
-
-		var runSets = this.props.controller.runSetsForMachineAndConfig (machine, config);
-
-		runSets.sort ((a, b) => {
-			var aDate = a.get ('commit').get ('commitDate');
-			var bDate = b.get ('commit').get ('commitDate');
-			if (aDate.getTime () !== bDate.getTime ())
-				return aDate - bDate;
-			return a.get ('startedAt') - b.get ('startedAt');
-		});
-
-		this.sortedRunSets = runSets;
-
-		this.computeTable ();
-
-		this.forceUpdate ();
+		this.computeTable (nextProps);
+		//this.forceUpdate ();
 	}
 }
 
@@ -231,10 +264,9 @@ class AllBenchmarksChart extends TimelineChart {
 		return "Relative wall clock time";
 	}
 
-	computeTable () {
-		var runSets = this.sortedRunSets;
+	computeTable (nextProps) {
+		var results = nextProps.sortedResults;
 		var i = 0, j = 0;
-		var allBenchmarks = this.props.controller.allEnabledBenchmarks ();
 
 		/* A table of run data. The rows are indexed by benchmark index, the
 		 * columns by sorted run set index.
@@ -242,26 +274,25 @@ class AllBenchmarksChart extends TimelineChart {
 		var runMetricsTable : Array<Array<number>> = [];
 
 		/* Get a row index from a benchmark ID. */
-		var benchmarkIndicesById = {};
-		for (i = 0; i < allBenchmarks.length; ++i) {
-			runMetricsTable.push ([]);
-			benchmarkIndicesById [allBenchmarks [i].id] = i;
-		}
-
-		/* Get a column index from a run set ID. */
-		var runSetIndicesById = {};
-		for (i = 0; i < runSets.length; ++i)
-			runSetIndicesById [runSets [i].id] = i;
-
+		var benchmarkIndicesByName = {};
+		var benchmarkNamesByIndices = [];
 		/* Compute the mean elapsed time for each. */
-		for (i = 0; i < allBenchmarks.length; ++i) {
-			for (j = 0; j < runSets.length; ++j) {
-				var benchmark = allBenchmarks [i];
-				var averages = runSets [j].get ('elapsedTimeAverages');
-				var avg = averages [benchmark.get ('name')];
+		for (i = 0; i < results.length; ++i) {
+			var row = results [i];
+			var averages = row.averages;
+			for (var name in averages) {
+				var index = benchmarkIndicesByName [name];
+				if (index === undefined) {
+					index = Object.keys (benchmarkIndicesByName).length;
+					runMetricsTable.push ([]);
+					benchmarkIndicesByName [name] = index;
+					benchmarkNamesByIndices [index] = name;
+				}
+
+				var avg = averages [name];
 				if (avg === undefined)
 					continue;
-				runMetricsTable [i] [j] = avg;
+				runMetricsTable [index] [i] = avg;
 			}
 		}
 
@@ -269,7 +300,7 @@ class AllBenchmarksChart extends TimelineChart {
 		 * it, i.e., in a given run set, a given benchmark took some
 		 * proportion of the average time for that benchmark.
 		 */
-		for (i = 0; i < allBenchmarks.length; ++i) {
+		for (i = 0; i < runMetricsTable.length; ++i) {
 			var filtered = runMetricsTable [i].filter (x => !isNaN (x));
 			var normal = filtered.reduce ((sumSoFar, time) => sumSoFar + time, 0) / filtered.length;
 			runMetricsTable [i] = runMetricsTable [i].map (time => time / normal);
@@ -277,25 +308,26 @@ class AllBenchmarksChart extends TimelineChart {
 
 		var table = [];
 
-		for (j = 0; j < runSets.length; ++j) {
+		for (j = 0; j < results.length; ++j) {
+			var runSet = results [j].runSet;
 			var prodForRunSet = 1.0;
 			var count = 0;
 			var min = undefined;
 			var minName = undefined;
 			var max = undefined;
 			var maxName = undefined;
-			for (i = 0; i < allBenchmarks.length; ++i) {
+			for (i = 0; i < runMetricsTable.length; ++i) {
 				var val = runMetricsTable [i] [j];
 				if (isNaN (val))
 					continue;
 				prodForRunSet *= val;
 				if (min === undefined || val < min) {
 					min = val;
-					minName = allBenchmarks [i].get ('name');
+					minName = benchmarkNamesByIndices [i];
 				}
 				if (max === undefined || val > max) {
 					max = val;
-					maxName = allBenchmarks [i].get ('name');
+					maxName = benchmarkNamesByIndices [i];
 				}
 				++count;
 			}
@@ -303,10 +335,10 @@ class AllBenchmarksChart extends TimelineChart {
 				console.log ("No data for run set " + runSets [j].id);
 				continue;
 			}
-			var tooltip = tooltipForRunSet (this.props.controller, runSets [j], true);
-			var broken = runSetIsBroken (this.props.controller, runSets [j]);
+			var tooltip = tooltipForRunSet (runSet, results [j].commit, true);
+			var broken = runSetIsBroken (runSet, results [j].averages);
 			table.push ({
-				runSet: runSets [j],
+				runSet: runSet,
 				low: min,
 				lowName: minName ? ("Fastest: " + minName) : undefined,
 				high: max,
@@ -318,6 +350,9 @@ class AllBenchmarksChart extends TimelineChart {
 		}
 
 		this.table = table;
+
+		if (nextProps.allBenchmarksLoaded !== undefined)
+			nextProps.allBenchmarksLoaded (benchmarkNamesByIndices);
 	}
 }
 
@@ -330,20 +365,20 @@ class BenchmarkChart extends TimelineChart {
 		return "Wall clock time";
 	}
 
-	computeTable () {
-		var runSets = this.sortedRunSets;
+	computeTable (nextProps) {
+		var results = nextProps.sortedResults;
 		var j = 0;
 
 		var table = [];
 
-		for (j = 0; j < runSets.length; ++j) {
-			var runSet = runSets [j];
-			var average = runSet.get ('elapsedTimeAverages') [this.props.benchmark];
-			var variance = runSet.get ('elapsedTimeVariances') [this.props.benchmark];
+		for (j = 0; j < results.length; ++j) {
+			var runSet = results [j].runSet;
+			var average = results [j].averages [nextProps.benchmark];
+			var variance = results [j].variances [nextProps.benchmark];
 			if (average === undefined)
 				continue;
 
-			var tooltip = tooltipForRunSet (this.props.controller, runSet, false);
+			var tooltip = tooltipForRunSet (runSet, results [j].commit, false);
 
 			var low = undefined;
 			var high = undefined;
@@ -382,21 +417,20 @@ class BenchmarkChartList extends React.Component {
 			</div>;
 		}
 
-		var benchmarks = this.props.controller.allEnabledBenchmarks ();
-		benchmarks = xp_utils.sortArrayLexicographicallyBy (benchmarks, b => b.get ('name'));
-		var charts = benchmarks.map (b => {
-			var name = b.get ('name');
+		var benchmarks = this.props.benchmarkNames.slice ();
+		benchmarks.sort ();
+		var charts = benchmarks.map (name => {
 			var key = 'benchmarkChart_' + name;
 			return <div key={key} className="BenchmarkChartList">
 				<h3>{name}</h3>
 				<BenchmarkChart
-				graphName={key}
-				controller={this.props.controller}
-				machine={this.props.machine}
-				config={this.props.config}
-				benchmark={name}
-				runSetSelected={this.props.runSetSelected}
-				/>
+					graphName={key}
+					sortedResults={this.props.sortedResults}
+					machine={this.props.machine}
+					config={this.props.config}
+					benchmark={name}
+					runSetSelected={this.props.runSetSelected}
+					/>
 				</div>;
 		});
 
@@ -409,16 +443,16 @@ class BenchmarkChartList extends React.Component {
 }
 
 function started () {
-	var machineId = undefined;
-	var configId = undefined;
+	var machine = undefined;
+	var config = undefined;
 	if (window.location.hash) {
-		var ids = window.location.hash.substring (1).split ('+');
-		if (ids.length === 2) {
-			machineId = ids [0];
-			configId = ids [1];
+		var names = window.location.hash.substring (1).split ('+');
+		if (names.length === 2) {
+			machine = names [0];
+			config = names [1];
 		}
 	}
-	var controller = new Controller (machineId, configId);
+	var controller = new Controller (machine, config);
 	controller.loadAsync ();
 }
 

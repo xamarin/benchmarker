@@ -19,12 +19,29 @@ create view "1".machine as
 select * from machine;
 
 create view "1".runsetcount as
-select machine, config, count(*)
-from runset
-where pullrequest is null
-group by machine, config;
+select count(rs.id) as num,
+       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
+from runset rs, machine m, config cfg
+where rs.pullrequest is null and rs.machine = m.name and rs.config = cfg.name
+group by m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexecutable, cfg.monoenvironmentvariables, cfg.monooptions;
 
 create view "1".summary as
+select results.runset as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
+       c.hash as c_hash, c.commitDate as c_commitDate,
+       results.metric, results.averages, results.variances from (
+select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
+from (
+select r.runset, rm.metric, r.benchmark, avg(rm.result), var_pop(rm.result)
+from run r, runmetric rm, benchmark b
+where r.id = rm.run and r.benchmark = b.name and b.disabled is not true
+group by r.runset, r.benchmark, rm.metric
+) as x
+group by runset, metric
+) as results,
+runset rs, commit c
+where results.runset = rs.id and rs.commit = c.hash;
+
 select results.runset, results.metric, rs.machine, rs.config, rs.pullrequest, c.hash, c.commitDate, rs.startedAt, rs.timedOutBenchmarks, rs.crashedBenchmarks, results.averages, results.variances from (
 select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
 from (

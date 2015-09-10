@@ -15,7 +15,8 @@ drop table Commit;
 drop table Config;
 
 create table Benchmark (
-       name varchar(128) primary key
+       name varchar(128) primary key,
+       disabled boolean
 );
 
 create table Machine (
