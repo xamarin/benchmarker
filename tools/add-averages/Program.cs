@@ -8,6 +8,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Common.Logging.Simple;
+using Common.Logging;
 
 namespace DbTool
 {
@@ -326,6 +328,7 @@ namespace DbTool
 
 		static void InitializeParseInterface ()
 		{
+			ParseInterface.benchmarkerCredentials = Accredit.GetCredentials ("benchmarker");
 			if (!ParseInterface.Initialize ()) {
 				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
 				Environment.Exit (1);
@@ -343,6 +346,8 @@ namespace DbTool
 
 		public static void Main (string[] args)
 		{
+			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
+			Logging.SetLogging (LogManager.GetLogger<MainClass> ());
 			if (args.Length == 0)
 				UsageAndExit (true);
 
