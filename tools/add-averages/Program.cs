@@ -131,7 +131,7 @@ namespace DbTool
 			var hash_start = previous.Get<string> ("hash");
 			var hash_end = to.Get<string> ("hash");
 			var url = "https://github.com/mono/mono/compare/";
-			return url + hash_start + ".." + hash_end;
+			return url + hash_start + "..." + hash_end;
 		}
 
 		static async Task<bool> WarnIfNecessary (bool testRun, List<ParseObject> benchmarksToWarn, List<object> warnedBenchmarks,
