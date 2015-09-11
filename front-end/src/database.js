@@ -54,7 +54,8 @@ export function fetchRunSetCounts (success, error) {
 			var results = objs.map (r => {
 				var machine = new DBObject (r, 'm_');
 				var config = new DBObject (r, 'cfg_');
-				return { machine: machine, config: config, count: r ['num'] };
+				var ids = r ['ids'];
+				return { machine: machine, config: config, ids: ids, count: ids.length };
 			});
 			success (results);
 		}, error);
@@ -82,5 +83,39 @@ export function fetchSummaries (metric, machine, config, success, error) {
 				});
 			});
 			success (results);
+		}, error);
+}
+
+function processRunSet (row) {
+	row ['c_commitdate'] = new Date (row ['c_commitdate']);
+	row ['rs_startedat'] = new Date (row ['rs_startedat']);
+	return {
+		runSet: new DBObject (row, 'rs_'),
+		commit: new DBObject (row, 'c_'),
+		machine: new DBObject (row, 'm_'),
+		config: new DBObject (row, 'cfg_')
+	};
+}
+
+export function fetchRunSets (machine, config, success, error) {
+	fetch ('runset?rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'), false,
+		objs => {
+			var results = [];
+			objs.forEach (r => { results.push (processRunSet (r)) });
+			success (results);
+		}, error);
+}
+
+export function findRunSet (runSetEntries, id) {
+	return xp_utils.find (runSetEntries, e => e.runSet.get ('id') == id);
+}
+
+export function fetchRunSet (id, success, error) {
+	fetch ('runset?rs_id=eq.' + id, false,
+		objs => {
+			if (objs.length === 0)
+				success (undefined);
+			else
+				success (processRunSet (objs [0]));
 		}, error);
 }

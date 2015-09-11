@@ -248,8 +248,10 @@ type MachineConfigSelection = {
 	config: string | void;
 };
 
+type RunSetCountArray = Array<{ machine: Database.DBObject, config: Database.DBObject, count: number }>;
+
 type ConfigSelectorProps = {
-	runSetCounts: Array<{ machine: Database.DBObject, config: Database.DBObject, count: number }>;
+	runSetCounts: RunSetCountArray;
 	machine: string | void;
 	config: string | void;
 	onChange: (selection: MachineConfigSelection) => void;
@@ -335,18 +337,52 @@ type RunSetSelection = {
 }
 
 type RunSetSelectorProps = {
-	controller: Controller;
+	runSetCounts: RunSetCountArray;
 	selection: RunSetSelection;
 	onChange: (selection: RunSetSelection) => void;
 };
 
 export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, void> {
 
+	constructor (props) {
+		super (props);
+		this.state = { runSetEntries: undefined };
+	}
+
+	componentWillMount () {
+		this.fetchData (this.props);
+	}
+
+	componentWillReceiveProps (nextProps) {
+		if (this.props.runSetCounts === nextProps.runSetCounts &&
+				this.props.selection.machine.get ('name') === nextProps.selection.machine.get ('name') &&
+				this.props.selection.config.get ('name') === nextProps.selection.config.get ('name')) {
+			return;
+		}
+		this.setState ({ runSetEntries: undefined });
+		this.fetchData (nextProps);
+	}
+
+	fetchData (props) {
+		var machine = props.selection.machine;
+		var config = props.selection.config;
+
+		if (machine === undefined || config === undefined)
+			return;
+
+		Database.fetchRunSets (machine, config, entries => {
+			this.setState ({ runSetEntries: entries });
+		}, error => {
+			alert ("error loading run sets: " + error.toString ());
+		});
+	}
+
 	runSetSelected (event: Object) {
 		var selection = this.props.selection;
 		var runSetId = event.target.value;
-		var runSet = this.props.controller.runSetForId (runSetId);
-		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: runSet});
+		var rse = Database.findRunSet (this.state.runSetEntries, runSetId);
+		if (rse !== undefined)
+			this.props.onChange ({machine: rse.machine, config: rse.config, runSet: rse.runSet});
 	}
 
 	configSelected (selection: MachineConfigSelection) {
@@ -355,53 +391,49 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 	render () : Object {
 		var selection = this.props.selection;
+		var machine = selection.machine;
+		var config = selection.config;
+		var runSetEntries = this.state.runSetEntries;
 
 		var runSetId = undefined;
 		var filteredRunSets = undefined;
 
 		if (selection.runSet !== undefined)
-			runSetId = selection.runSet.id;
-
-		if (selection.machine !== undefined && selection.config !== undefined)
-			filteredRunSets = this.props.controller.runSetsForMachineAndConfig (selection.machine, selection.config);
+			runSetId = selection.runSet.get ('id');
 
 		function openRunSetDescription (id) {
 			return window.open ('runset.html#' + id);
 		}
 
-		function renderRunSetOption (rs) {
-			return <option value={rs.id} key={rs.id} onDoubleClick={openRunSetDescription.bind (this, rs.id)}>
+		function renderRunSetEntry (entry) {
+			var rs = entry.runSet;
+			var id = rs.get ('id');
+			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
 				{rs.get ('startedAt').toString ()}
 			</option>;
 		}
 
-		var config = selection.config === undefined
-			? undefined
-			: this.props.controller.configForId (selection.config.id);
-
 		var configSelector =
 			<CombinedConfigSelector
-				controller={this.props.controller}
+				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
-				config={config}
+				config={selection.config}
 				onChange={this.configSelected.bind (this)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
-		if (filteredRunSets === undefined) {
-			runSetsSelect = <select size="6" disabled="true">
-				<option className="diagnostic">Please select a machine and config.</option>
-			</select>;
-		} else if (filteredRunSets.length === 0) {
-			runSetsSelect = <select size="6" disabled="true">
-				<option className="diagnostic">No run sets found for this machine and config.</option>
-			</select>;
+		if (runSetEntries === undefined && machine !== undefined && config !== undefined) {
+			runSetsSelect = <div className="diagnostic">Loading&hellip;</div>;
+		} else if (runSetEntries === undefined) {
+			runSetsSelect = <div className="diagnostic">Please select a machine and config.</div>;
+		} else if (runSetEntries.length === 0) {
+			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
 				size="6"
 				selectedIndex="-1"
 				value={runSetId}
 				onChange={this.runSetSelected.bind (this)}>
-				{filteredRunSets.map (renderRunSetOption)}
+				{runSetEntries.map (renderRunSetEntry)}
 			</select>;
 		}
 		return <div className="RunSetSelector">

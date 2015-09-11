@@ -4,26 +4,57 @@
 
 import * as xp_utils from './utils.js';
 import * as xp_common from './common.js';
-import {Parse} from 'parse';
+import * as Database from './database.js';
 import React from 'react';
 
 class Controller extends xp_common.Controller {
-
-	startupRunSetId: string | void;
+	startupRunSetId: number | void;
+	runSetCounts: Array<Object>;
+	runSetEntry: Object | void;
 
 	constructor (startupRunSetId) {
 		super ();
 		this.startupRunSetId = startupRunSetId;
 	}
 
+	loadAsync () {
+		Database.fetchRunSetCounts (runSetCounts => {
+				this.runSetCounts = runSetCounts;
+				this.checkAllDataLoaded ();
+			}, error => {
+				alert ("error loading run set counts: " + error.toString ());
+			});
+
+		if (this.startupRunSetId === undefined)
+			return;
+		Database.fetchRunSet (this.startupRunSetId,
+			runSetEntry => {
+				if (runSetEntry === undefined)
+					this.startupRunSetId = undefined;
+				else
+					this.runSetEntry = runSetEntry;
+				this.checkAllDataLoaded ();
+			}, error => {
+				alert ("error loading run set: " + error.toString ());
+			});
+	}
+
+	checkAllDataLoaded () {
+		if (this.runSetCounts === undefined)
+			return;
+		if (this.startupRunSetId !== undefined && this.runSetEntry === undefined)
+			return;
+		this.allDataLoaded ();
+	}
+
 	allDataLoaded () {
-		var selection;
-		if (this.startupRunSetId === undefined) {
-			selection = {};
-		} else {
-			var runSet = this.runSetForId (this.startupRunSetId);
-			var machine = this.machineForId (runSet.get ('machine').id);
-			selection = {machine: machine, config: runSet.get ('config'), runSet: runSet};
+		var selection = {};
+		if (this.runSetEntry !== undefined) {
+			selection = {
+				machine: this.runSetEntry.machine,
+				config: this.runSetEntry.config,
+				runSet: this.runSetEntry.runSet
+			};
 		}
 
 		React.render (
@@ -32,6 +63,7 @@ class Controller extends xp_common.Controller {
 				{
 					controller: this,
 					initialSelection: selection,
+					runSetCounts: this.runSetCounts,
 					onChange: this.updateForRunSet.bind (this)
 				}
 			),
@@ -45,7 +77,7 @@ class Controller extends xp_common.Controller {
 		var runSet = selection.runSet;
 		if (runSet === undefined)
 			return;
-		window.location.hash = runSet.id;
+		window.location.hash = runSet.get ('id');
 	}
 }
 
@@ -80,6 +112,7 @@ class Page extends React.Component {
 					<xp_common.RunSetSelector
 						controller={this.props.controller}
 						selection={this.state.selection}
+						runSetCounts={this.props.runSetCounts}
 						onChange={this.handleChange.bind (this)} />
 				</div>
 				{detail}
@@ -90,8 +123,11 @@ class Page extends React.Component {
 
 function started () {
 	var startupRunSetId;
-	if (window.location.hash)
-		startupRunSetId = window.location.hash.substring (1);
+	if (window.location.hash) {
+		startupRunSetId = parseInt (window.location.hash.substring (1));
+		if (isNaN (startupRunSetId))
+			startupRunSetId = undefined;
+	}
 	var controller = new Controller (startupRunSetId);
 	controller.loadAsync ();
 }
