@@ -7,13 +7,12 @@ import * as xp_common from './common.js';
 import * as Database from './database.js';
 import React from 'react';
 
-class Controller extends xp_common.Controller {
+class Controller {
 	startupRunSetId: number | void;
 	runSetCounts: Array<Object>;
 	runSetEntry: Object | void;
 
 	constructor (startupRunSetId) {
-		super ();
 		this.startupRunSetId = startupRunSetId;
 	}
 

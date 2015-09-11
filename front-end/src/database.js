@@ -86,24 +86,24 @@ export function fetchSummaries (metric, machine, config, success, error) {
 		}, error);
 }
 
-function processRunSet (row) {
-	row ['c_commitdate'] = new Date (row ['c_commitdate']);
-	row ['rs_startedat'] = new Date (row ['rs_startedat']);
-	return {
-		runSet: new DBObject (row, 'rs_'),
-		commit: new DBObject (row, 'c_'),
-		machine: new DBObject (row, 'm_'),
-		config: new DBObject (row, 'cfg_')
-	};
+function processRunSetEntries (objs) {
+	var results = [];
+	objs.forEach (r => {
+		r ['c_commitdate'] = new Date (r ['c_commitdate']);
+		r ['rs_startedat'] = new Date (r ['rs_startedat']);
+		results.push ({
+			runSet: new DBObject (r, 'rs_'),
+			commit: new DBObject (r, 'c_'),
+			machine: new DBObject (r, 'm_'),
+			config: new DBObject (r, 'cfg_')
+		});
+	});
+	return results;
 }
 
-export function fetchRunSets (machine, config, success, error) {
+export function fetchRunSetsForMachineAndConfig (machine, config, success, error) {
 	fetch ('runset?rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'), false,
-		objs => {
-			var results = [];
-			objs.forEach (r => { results.push (processRunSet (r)) });
-			success (results);
-		}, error);
+		objs => success (processRunSetEntries (objs)), error);
 }
 
 export function findRunSet (runSetEntries, id) {
@@ -116,6 +116,11 @@ export function fetchRunSet (id, success, error) {
 			if (objs.length === 0)
 				success (undefined);
 			else
-				success (processRunSet (objs [0]));
+				success (processRunSetEntries (objs) [0]);
 		}, error);
+}
+
+export function fetchRunSets (ids, success, error) {
+	fetch ('runset?rs_id=in.' + ids.join (','), false,
+		objs => success (processRunSetEntries (objs)), error);
 }

@@ -8,12 +8,11 @@ import * as xp_charts from './charts.js';
 import * as Database from './database.js';
 import React from 'react';
 
-class Controller extends xp_common.Controller {
+class Controller {
 	initialSelectionNames: { machineName: string | void, configName: string | void };
 	runSetCounts: Array<Object>;
 
 	constructor (machineName, configName) {
-		super ();
 		this.initialSelectionNames = { machineName: machineName, configName: configName };
 	}
 
@@ -213,10 +212,10 @@ function runSetIsBroken (runSet: Database.DBObject, averages: BenchmarkValueArra
 
 type TimelineChartProps = {
 	graphName: string;
-	machine: Parse.Object;
-	config: Parse.Object;
+	machine: Database.DBObject;
+	config: Database.DBObject;
 	benchmark: string;
-	runSetSelected: (runSet: Parse.Object) => void;
+	runSetSelected: (runSet: Database.DBObject) => void;
 };
 
 class TimelineChart extends React.Component<TimelineChartProps, TimelineChartProps, void> {

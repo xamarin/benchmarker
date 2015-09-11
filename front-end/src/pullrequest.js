@@ -9,12 +9,11 @@ import * as Database from './database.js';
 import React from 'react';
 import GitHub from 'github-api';
 
-class Controller extends xp_common.Controller {
+class Controller {
 	pullRequestId: string | void;
 	dbRow: Object | void;
 
 	constructor (pullRequestId) {
-		super ();
 		this.pullRequestId = pullRequestId;
 	}
 

@@ -3,16 +3,8 @@
 "use strict";
 
 import * as xp_utils from './utils.js';
-import {Parse} from 'parse';
 import * as Database from './database.js';
 import React from 'react';
-
-export var Benchmark = Parse.Object.extend ('Benchmark');
-export var Config = Parse.Object.extend ('Config');
-export var Machine = Parse.Object.extend ('Machine');
-export var Run = Parse.Object.extend ('Run');
-export var RunSet = Parse.Object.extend ('RunSet');
-export var PullRequest = Parse.Object.extend ('PullRequest');
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -28,151 +20,16 @@ export var xamarinColors = {
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
 export function start (started: () => void) {
-	Parse.initialize('7khPUBga9c7L1YryD1se1bp6VRzKKJESc0baS9ES', 'qnBBT97Mttqsvq3g9zghnBVn2iiHLAQvTzekUigm');
-
 	started ();
 }
 
-export class Controller {
-
-	allBenchmarks: Array<Parse.Object>;
-	allMachines: Array<Parse.Object>;
-	allRunSets: Array<Parse.Object>;
-	pullRequestRunSets: Array<Parse.Object>;
-	allConfigs: Array<Parse.Object>;
-
-	loadAsync () {
-
-		pageParseQuery (() => new Parse.Query ((Machine : Parse.Object)),
-			this.machinesLoaded.bind (this),
-			function (error) {
-				alert ("error loading machines: " + error.toString ());
-			});
-
-		pageParseQuery (() => new Parse.Query (RunSet)
-				.notEqualTo ('failed', true)
-				.include ('commit')
-				.include ('pullRequest')
-				.include ('pullRequest.baselineRunSet')
-				.include ('pullRequest.baselineRunSet.commit'),
-			this.runSetsLoaded.bind (this),
-			function (error) {
-				alert ("error loading run sets: " + error.toString ());
-			});
-
-		pageParseQuery (() => new Parse.Query (Config),
-			this.configsLoaded.bind (this),
-			function (error) {
-				alert ("error loading configs: " + error.toString ());
-			});
-
-		pageParseQuery (() => new Parse.Query (Benchmark),
-			results => {
-				this.allBenchmarks = results;
-				this.checkAllDataLoaded ();
-			},
-			function (error) {
-				alert ("error loading benchmarks: " + error.toString ());
-			});
-	}
-
-	allDataLoaded () {
-	}
-
-	machinesLoaded (results: Array<Parse.Object>) {
-		this.allMachines = results;
-		this.checkAllDataLoaded ();
-	}
-
-	configsLoaded (results: Array<Parse.Object>) {
-		this.allConfigs = results;
-		this.checkAllDataLoaded ();
-	}
-
-	runSetsLoaded (results: Array<Parse.Object>) {
-		var partition = xp_utils.partitionArrayByString (results, rs => (rs.get ('pullRequest') === undefined).toString ());
-		this.allRunSets = partition ["true"];
-		this.pullRequestRunSets = partition ["false"];
-		this.checkAllDataLoaded ();
-	}
-
-	allEnabledBenchmarks () : Array<Parse.Object> {
-		return this.allBenchmarks.filter (b => !b.get ('disabled'));
-	}
-
-	benchmarkForId (id: string) : (Parse.Object | void) {
-		for (var i = 0; i < this.allBenchmarks.length; ++i) {
-			if (this.allBenchmarks [i].id === id)
-				return this.allBenchmarks [i];
-		}
-		return undefined;
-	}
-
-	benchmarkNameForId (id: string) : string {
-		var benchmark = this.benchmarkForId (id);
-		if (benchmark === undefined)
-			return "*unknown*";
-		return benchmark.get ('name');
-	}
-
-	machineForId (id: string) : Parse.Object {
-		var machine = xp_utils.find (this.allMachines, m => m.id === id);
-		if (machine === undefined)
-			throw "Machine not found";
-		return machine;
-	}
-
-	configForId (id: string) : Parse.Object {
-		var config = xp_utils.find (this.allConfigs, m => m.id === id);
-		if (config === undefined)
-			throw "Config not found";
-		return config;
-	}
-
-	runSetForId (id: string) : Parse.Object {
-		var runSet = xp_utils.find (this.allRunSets, rs => rs.id === id);
-		if (runSet === undefined)
-			throw "Run set not found";
-		return runSet;
-	}
-
-	runSetsForMachineAndConfig (machine: Parse.Object, config: Parse.Object) : Array<Parse.Object> {
-		return this.allRunSets.filter (
-			rs =>
-				rs.get ('machine').id === machine.id &&
-				rs.get ('config').id === config.id
-		);
-	}
-
-	runSetForPullRequestId (id: string) : Parse.Object {
-		for (var i = 0; i < this.pullRequestRunSets.length; ++i) {
-			var rs = this.pullRequestRunSets [i];
-			var pr = rs.get ('pullRequest');
-			if (pr.id === id)
-				return rs;
-		}
-		throw "Run set for pull request not found";
-	}
-
-	checkAllDataLoaded () {
-		if (this.allMachines === undefined
-			|| this.allRunSets === undefined
-			|| this.allBenchmarks === undefined
-			|| this.allConfigs === undefined)
-			return;
-
-		this.allDataLoaded ();
-	}
-
-}
-
-export function hashForRunSets (runSets: Array<Parse.Object>) : string {
-	var ids = runSets.map (o => o.id);
+export function hashForRunSets (runSets: Array<Database.DBObject>) : string {
+	var ids = runSets.map (o => o.get ('id'));
 	return ids.join ('+');
 }
 
 type ConfigDescriptionProps = {
-	config: Parse.Object | void;
+	config: Database.DBObject | void;
 	omitHeader: boolean;
 };
 
@@ -217,7 +74,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 }
 
 type MachineDescriptionProps = {
-	machine: Parse.Object | void;
+	machine: Database.DBObject | void;
 	omitHeader: boolean;
 };
 
@@ -331,9 +188,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 }
 
 type RunSetSelection = {
-	machine: Parse.Object | void;
-	config: Parse.Object | void;
-	runSet: Parse.Object | void;
+	machine: Database.DBObject | void;
+	config: Database.DBObject | void;
+	runSet: Database.DBObject | void;
 }
 
 type RunSetSelectorProps = {
@@ -370,7 +227,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (machine === undefined || config === undefined)
 			return;
 
-		Database.fetchRunSets (machine, config, entries => {
+		Database.fetchRunSetsForMachineAndConfig (machine, config, entries => {
 			this.setState ({ runSetEntries: entries });
 		}, error => {
 			alert ("error loading run sets: " + error.toString ());
@@ -445,7 +302,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 }
 
 type RunSetDescriptionProps = {
-	runSet: Parse.Object | void;
+	runSet: Database.DBObject | void;
 };
 
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, void> {
@@ -562,51 +419,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
-}
-
-export function pageParseQuery (makeQuery: () => Object, success: (results: Array<Parse.Object>) => void, error: (error: Object) => void) : void {
-    var limit = 1000;
-
-    function done (results) {
-		var values = [];
-		for(var key in results) {
-			var value = results [key];
-			values.push (value);
-		}
-		success (values);
-    }
-
-    function page (skip, earliest, previousResults, soFar) {
-		var query = makeQuery ();
-		query.limit (limit);
-		query.ascending ('createdAt');
-
-		if (skip >= 10000) {
-			skip = 0;
-			earliest = previousResults [previousResults.length - 1].createdAt;
-		}
-
-		query.skip (skip);
-		if (earliest !== undefined)
-			query.greaterThanOrEqualTo ('createdAt', earliest);
-
-		query.find ({
-			success: function (results) {
-				for (var i = 0; i < results.length; ++i)
-					soFar [results [i].id] = results [i];
-				if (results.length >= limit)
-					page (skip + limit, earliest, results, soFar);
-				else
-					done (soFar);
-			},
-			error: function (e) {
-				console.log ("Parse error: ", e);
-				error (e);
-			}
-		});
-    }
-
-    page (0, undefined, [], {});
 }
 
 type NavigationProps = {

@@ -6,12 +6,11 @@ import * as xp_common from './common.js';
 import * as Database from './database.js';
 import React from 'react';
 
-class Controller extends xp_common.Controller {
+class Controller {
 	configName: string | void;
-	config: Parse.Object | void;
+	config: Database.DBObject | void;
 
 	constructor (configName) {
-		super ();
 		this.configName = configName;
 	}
 
