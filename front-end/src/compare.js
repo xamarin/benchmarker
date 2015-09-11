@@ -5,29 +5,49 @@
 import * as xp_utils from './utils.js';
 import * as xp_common from './common.js';
 import * as xp_charts from './charts.js';
+import * as Database from './database.js';
 import React from 'react';
 
-class Controller extends xp_common.Controller {
-
+class Controller {
 	startupRunSetIds: Array<string> | void;
+	runSetCounts: Array<Object> | void;
+	runSetEntries: Array<Object> | void;
 
 	constructor (startupRunSetIds) {
-		super ();
 		this.startupRunSetIds = startupRunSetIds;
+	}
+
+	loadAsync () {
+		Database.fetchRunSetCounts (runSetCounts => {
+			this.runSetCounts = runSetCounts;
+			this.checkAllDataLoaded ();
+		}, error => {
+			alert ("error loading run set counts: " + error.toString ());
+		});
+
+		if (this.startupRunSetIds !== undefined) {
+			Database.fetchRunSets (runSetEntries => {
+				this.runSetEntries = runSetEntries;
+				this.checkAllDataLoaded ();
+			})
+		}
+	}
+
+	checkAllDataLoaded () {
+		if (this.runSetCounts === undefined)
+			return;
+		if (this.startupRunSetIds !== undefined && this.runSetEntries === undefined)
+			return;
+		this.allDataLoaded ();
 	}
 
 	allDataLoaded () {
 		var selections;
 
-		if (this.startupRunSetIds === undefined) {
+		if (this.runSetEntries === undefined)
 			selections = [{}];
-		} else {
-			selections = this.startupRunSetIds.map (id => {
-				var runSet = this.runSetForId (id);
-				var machine = this.machineForId (runSet.get ('machine').id);
-				return {machine: machine, config: runSet.get ('config'), runSet: runSet};
-			}).concat ([{}]);
-		}
+		else
+			selections = this.runSetEntries.concat ([{}]);
 
 		React.render (
 			React.createElement (
@@ -35,6 +55,7 @@ class Controller extends xp_common.Controller {
 				{
 					controller: this,
 					initialSelections: selections,
+					runSetCounts: this.runSetCounts,
 					onChange: this.updateForSelection.bind (this)
 				}
 			),
@@ -64,7 +85,7 @@ class Page extends React.Component {
 	render () {
 		var selections = this.state.selections;
 		var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
-		runSets = xp_utils.uniqArrayByString (runSets, rs => rs.id);
+		runSets = xp_utils.uniqArrayByString (runSets, rs => rs.get ('id').toString ());
 
 		var chart;
 		if (runSets.length > 1)
@@ -78,7 +99,7 @@ class Page extends React.Component {
 			</header>
 			<article>
 				<RunSetSelectorList
-					controller={this.props.controller}
+					runSetCounts={this.props.runSetCounts}
 					selections={this.state.selections}
 					onChange={this.setState.bind (this)} />
 				{chart}
@@ -106,7 +127,7 @@ class RunSetSelectorList extends React.Component {
 		function renderSelector (selection, index) {
 			return <section>
 				<xp_common.RunSetSelector
-					controller={this.props.controller}
+					runSetCounts={this.props.runSetCounts}
 					selection={selection}
 					onChange={this.handleChange.bind (this, index)} />
 				<button onClick={this.removeSelector.bind (this, index)}>&minus;&ensp;Remove</button>
@@ -123,7 +144,7 @@ class RunSetSelectorList extends React.Component {
 function started () {
 	var startupRunSetIds;
 	if (window.location.hash)
-		startupRunSetIds = window.location.hash.substring (1).split ('+');
+		startupRunSetIds = window.location.hash.substring (1).split ('+').map (parseInt);
 	var controller = new Controller (startupRunSetIds);
 	controller.loadAsync ();
 }

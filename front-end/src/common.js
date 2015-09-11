@@ -211,9 +211,15 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 
 	componentWillReceiveProps (nextProps) {
+		function getName (obj) {
+			if (obj === undefined)
+				return undefined;
+			return obj.get ('name');
+		}
+
 		if (this.props.runSetCounts === nextProps.runSetCounts &&
-				this.props.selection.machine.get ('name') === nextProps.selection.machine.get ('name') &&
-				this.props.selection.config.get ('name') === nextProps.selection.config.get ('name')) {
+				getName (this.props.selection.machine) === getName (nextProps.selection.machine) &&
+				getName (this.props.selection.config) === getName (nextProps.selection.config)) {
 			return;
 		}
 		this.setState ({ runSetEntries: undefined });
