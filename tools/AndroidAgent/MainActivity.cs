@@ -109,9 +109,8 @@ namespace AndroidAgent
 			return commit;
 		}
 
-		void RunBenchmark (string runSetId, string hostname, string architecture)
+		void RunBenchmark (string runSetId, string benchmarkName, string hostname, string architecture)
 		{
-			const string benchmark = "n-body";
 			const int tryRuns = 10;
 			var commit = GetCommit ();
 			var config = new Config { Name = "auto-sgen", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
@@ -125,12 +124,12 @@ namespace AndroidAgent
 			new Task (() => {
 				var result = new Benchmarker.Common.Models.Result {
 					DateTime = DateTime.Now,
-					Benchmark = new Benchmark { Name = benchmark, },
+					Benchmark = new Benchmark { Name = benchmarkName, },
 					Config = config,
 				};
 				try {
 					for (var i = 0; i < (config.Count + tryRuns); i++) {
-						var run = Iteration (benchmark, i);
+						var run = Iteration (benchmarkName, i);
 						if (i < tryRuns) {
 							continue;
 						}
@@ -173,12 +172,13 @@ namespace AndroidAgent
 			SetContentView (Resource.Layout.Main);
 			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
 				var runSetId = FindViewById<TextView> (Resource.Id.runSetId).Text;
+				var benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
 				var bmUsername = FindViewById<TextView> (Resource.Id.bmUsername).Text;
 				var bmPassword = FindViewById<TextView> (Resource.Id.bmPassword).Text;
 				var githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
 				InitCommons (bmUsername, bmPassword, githubAPIKey);
 				SetStartButtonText ("running");
-				RunBenchmark (runSetId, hostname, architecture);
+				RunBenchmark (runSetId, benchmarkName, hostname, architecture);
 			};
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();

@@ -11,8 +11,13 @@
     <AutoCompleteTextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:id="@+id/benchmark"
+        android:text="benchmark" />
+    <AutoCompleteTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:id="@+id/bmUsername"
-        android:text="benchmarkerUsername" />
+        android:text="benchmarkUsername" />
     <AutoCompleteTextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
