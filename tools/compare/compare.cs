@@ -213,11 +213,6 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		if (machineName != null && !justListBenchmarks) {
-			Console.Error.WriteLine ("Error: --machine can only be used with -l/--list-benchmarks.");
-			Environment.Exit (1);
-		}
-
 		InitCommons ();
 
 		string testsDir, benchmarksDir, machinesDir;
@@ -288,7 +283,13 @@ class Compare
 
 		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 
-		var machine = compare.Utils.LoadMachineCurrentFrom (machinesDir);
+		Machine machine = null;
+		if (machineName != null) {
+			machine = compare.Utils.LoadMachineCurrentFrom (machinesDir);
+		} else {
+			machine = compare.Utils.LoadMachineFromFile (machineName, machinesDir);
+		}
+
 		if (machine != null && machine.ExcludeBenchmarks != null)
 			benchmarks = benchmarks.Where (b => !machine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
 
