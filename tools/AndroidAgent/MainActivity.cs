@@ -59,7 +59,7 @@ namespace AndroidAgent
 				strcat.Main (new string[] { "40000000" });
 				break;
 			case "n-body":
-				NBody.Main (new string[] { "50000000" }, Logging.GetLogging ());
+				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
 				break;
 			default:
 				throw new NotImplementedException ();
