@@ -47,15 +47,15 @@ function rangeMean (range: Range) : number {
 type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
-function dataArrayForRunSets (runSets: Array<Database.DBObject>, resultsByIndex : Array<{[benchmark: string]: Object}>): (DataArray | void) {
-    for (var i = 0; i < runSets.length; ++i) {
+function dataArrayForResults (resultsByIndex : Array<{[benchmark: string]: Object}>): (DataArray | void) {
+    for (var i = 0; i < resultsByIndex.length; ++i) {
         if (resultsByIndex [i] === undefined)
             return undefined;
     }
 
     var commonBenchmarkNames;
 
-    for (i = 0; i < runSets.length; ++i) {
+    for (i = 0; i < resultsByIndex.length; ++i) {
         var results = resultsByIndex [i];
         var benchmarkNames = Object.keys (results);
         if (commonBenchmarkNames === undefined) {
@@ -76,7 +76,7 @@ function dataArrayForRunSets (runSets: Array<Database.DBObject>, resultsByIndex 
         var benchmarkName = commonBenchmarkNames [i];
         var row = [benchmarkName, []];
         var mean = undefined;
-        for (var j = 0; j < runSets.length; ++j) {
+        for (var j = 0; j < resultsByIndex.length; ++j) {
 			var data = resultsByIndex [j][benchmarkName]['results'];
             var range = calculateRunsRange (data);
             if (mean === undefined)
@@ -103,13 +103,13 @@ function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
 	return sum / dataArray.length;
 }
 
-function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Database.DBObject>) : DataArray {
+function sortDataArrayByDifference (dataArray: DataArray) : DataArray {
 	var differences = {};
 	for (var i = 0; i < dataArray.length; ++i) {
 		var row = dataArray [i];
 		var min = Number.MAX_VALUE;
 		var max = Number.MIN_VALUE;
-		for (var j = 0; j < runSets.length; ++j) {
+		for (var j = 0; j < row [1].length; ++j) {
 			var avg = rangeMean (rangeInBenchmarkRow (row, j));
 			if (min === undefined)
 				min = avg;
@@ -125,9 +125,9 @@ function sortDataArrayByDifference (dataArray: DataArray, runSets: Array<Databas
 	return xp_utils.sortArrayNumericallyBy (dataArray, row => -differences [row [0]]);
 }
 
-function runSetLabels (controller: xp_common.Controller, runSets: Array<Database.DBObject>) : Array<string> {
-    var commitIds = runSets.map (rs => rs.get ('commit').id);
-    var commitHistogram = xp_utils.histogramOfStrings (commitIds);
+function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
+    var commitHashes = runSets.map (rs => rs.commit.get ('hash'));
+    var commitHistogram = xp_utils.histogramOfStrings (commitHashes);
 
     var includeCommit = commitHistogram.length > 1;
 
@@ -137,26 +137,26 @@ function runSetLabels (controller: xp_common.Controller, runSets: Array<Database
             includeStartedAt = true;
     }
 
-    var machines = runSets.map (rs => rs.get ('machine'));
+    var machines = runSets.map (rs => rs.machine.get ('name'));
     var includeMachine = xp_utils.uniqStringArray (machines).length > 1;
 
-    var configs = runSets.map (rs => rs.get ('config'));
+    var configs = runSets.map (rs => rs.config.get ('name'));
     var includeConfigs = xp_utils.uniqStringArray (configs).length > 1;
 
     var formatRunSet = runSet => {
         var str = "";
         if (includeCommit) {
-            var commit = runSet.get ('commit');
+			var commit = runSet.commit;
             str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
         }
         if (includeMachine) {
-            var machine = runSet.get ('machine');
+			var machine = runSet.machine;
             if (str !== "")
                 str = str + "\n";
             str = str + machine.get ('name');
         }
         if (includeConfigs) {
-            var config = runSet.get ('config');
+            var config = runSet.config;
             if (includeMachine)
                 str = str + " / ";
             else if (str !== "")
@@ -178,7 +178,7 @@ type AMChartProps = {
 	graphName: string;
 	height: number;
 	options: Object;
-	selectListener: (index: number) => void;
+	selectListener: (runSet: Database.DBObject) => void;
     initFunc: ((chart: AmChart) => void) | void;
 };
 
@@ -222,7 +222,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
-					e => this.props.selectListener (e.item.dataContext.runSet));
+					e => this.props.selectListener (e.item.dataContext.dataItem));
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
 		} else {
@@ -247,7 +247,7 @@ function formatPercentage (x: number) : string {
 }
 
 type ComparisonAMChartProps = {
-    runSets: Array<Database.DBObject>;
+    runSets: Array<Database.DBRunSet>;
 	runSetLabels: Array<string> | void;
 	graphName: string;
     controller: xp_common.Controller;
@@ -271,50 +271,49 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 		this.invalidateState (nextProps.runSets);
 	}
 
-    invalidateState (runSets : Array<Database.DBObject>) : void {
+    invalidateState (runSets: Array<Database.DBRunSet>) : void {
         this.resultsByIndex = [];
 
 		Database.fetch ('results?metric=eq.time&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','), false,
-		objs => {
-			if (runSets !== this.props.runSets)
-				return;
+			objs => {
+				if (runSets !== this.props.runSets)
+					return;
 
-			var runSetIndexById = {};
-            runSets.forEach ((rs, i) => {
-                this.resultsByIndex [i] = [];
-                runSetIndexById [rs.get ('id')] = i;
-            });
+				var runSetIndexById = {};
+	            runSets.forEach ((rs, i) => {
+	                this.resultsByIndex [i] = [];
+	                runSetIndexById [rs.get ('id')] = i;
+	            });
 
-            objs.forEach (r => {
-                var i = runSetIndexById [r ['runset']];
-                if (this.resultsByIndex [i] === undefined)
-                    this.resultsByIndex [i] = {};
-                this.resultsByIndex [i][r ['benchmark']] = r;
-            });
+	            objs.forEach (r => {
+	                var i = runSetIndexById [r ['runset']];
+	                if (this.resultsByIndex [i] === undefined)
+	                    this.resultsByIndex [i] = {};
+	                this.resultsByIndex [i][r ['benchmark']] = r;
+	            });
 
-            this.runsLoaded ();
-		}, error => {
-			alert ("error loading results: " + error.toString ());
-		});
+	            this.runsLoaded ();
+			}, error => {
+				alert ("error loading results: " + error.toString ());
+			});
     }
 
     runsLoaded () {
         var i;
 
-        var dataArray = dataArrayForRunSets (this.props.runSets, this.resultsByIndex);
+        var dataArray = dataArrayForResults (this.resultsByIndex);
         if (dataArray === undefined)
             return;
 
-		dataArray = sortDataArrayByDifference (dataArray, this.props.runSets);
+		dataArray = sortDataArrayByDifference (dataArray);
 
         var graphs = [];
 		var guides = [];
         var dataProvider = [];
 
-        var labels = this.props.runSetLabels || runSetLabels (this.props.controller, this.props.runSets);
+        var labels = this.props.runSetLabels || runSetLabels (this.props.runSets);
 
         for (var i = 0; i < this.props.runSets.length; ++i) {
-            var runSet = this.props.runSets [i];
 			var label = labels [i];
 			var avg = runSetMean (dataArray, i);
             var stdDevBar : Object = {

@@ -203,7 +203,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 	constructor (props) {
 		super (props);
-		this.state = { runSetEntries: undefined };
+		this.state = { runSets: undefined };
 	}
 
 	componentWillMount () {
@@ -222,7 +222,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				getName (this.props.selection.config) === getName (nextProps.selection.config)) {
 			return;
 		}
-		this.setState ({ runSetEntries: undefined });
+		this.setState ({ runSets: undefined });
 		this.fetchData (nextProps);
 	}
 
@@ -233,8 +233,8 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (machine === undefined || config === undefined)
 			return;
 
-		Database.fetchRunSetsForMachineAndConfig (machine, config, entries => {
-			this.setState ({ runSetEntries: entries });
+		Database.fetchRunSetsForMachineAndConfig (machine, config, runSets => {
+			this.setState ({ runSets: runSets });
 		}, error => {
 			alert ("error loading run sets: " + error.toString ());
 		});
@@ -243,9 +243,9 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	runSetSelected (event: Object) {
 		var selection = this.props.selection;
 		var runSetId = event.target.value;
-		var rse = Database.findRunSet (this.state.runSetEntries, runSetId);
-		if (rse !== undefined)
-			this.props.onChange ({machine: rse.machine, config: rse.config, runSet: rse.runSet});
+		var runSet = Database.findRunSet (this.state.runSets, runSetId);
+		if (runSet !== undefined)
+			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
 	}
 
 	configSelected (selection: MachineConfigSelection) {
@@ -256,7 +256,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		var selection = this.props.selection;
 		var machine = selection.machine;
 		var config = selection.config;
-		var runSetEntries = this.state.runSetEntries;
+		var runSets = this.state.runSets;
 
 		var runSetId = undefined;
 		var filteredRunSets = undefined;
@@ -268,11 +268,10 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			return window.open ('runset.html#' + id);
 		}
 
-		function renderRunSetEntry (entry) {
-			var rs = entry.runSet;
-			var id = rs.get ('id');
+		function renderRunSet (runSet) {
+			var id = runSet.get ('id');
 			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
-				{rs.get ('startedAt').toString ()}
+				{runSet.get ('startedAt').toString ()}
 			</option>;
 		}
 
@@ -284,11 +283,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				onChange={this.configSelected.bind (this)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
-		if (runSetEntries === undefined && machine !== undefined && config !== undefined) {
+		if (runSets === undefined && machine !== undefined && config !== undefined) {
 			runSetsSelect = <div className="diagnostic">Loading&hellip;</div>;
-		} else if (runSetEntries === undefined) {
+		} else if (runSets === undefined) {
 			runSetsSelect = <div className="diagnostic">Please select a machine and config.</div>;
-		} else if (runSetEntries.length === 0) {
+		} else if (runSets.length === 0) {
 			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
@@ -296,7 +295,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				selectedIndex="-1"
 				value={runSetId}
 				onChange={this.runSetSelected.bind (this)}>
-				{runSetEntries.map (renderRunSetEntry)}
+				{runSets.map (renderRunSet)}
 			</select>;
 		}
 		return <div className="RunSetSelector">

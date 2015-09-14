@@ -21,6 +21,19 @@ export class DBObject {
 	}
 }
 
+export class DBRunSet extends DBObject {
+	machine: DBObject;
+	config: DBObject;
+	commit: DBObject;
+
+	constructor (data, prefix, machine, config, commit) {
+		super (data, prefix);
+		this.machine = machine;
+		this.config = config;
+		this.commit = commit;
+	}
+}
+
 export function fetch (query, wrap, success, error) {
 	var request = new XMLHttpRequest();
 	var url = 'http://192.168.99.100:32777/' + query;
@@ -76,8 +89,7 @@ export function fetchSummaries (metric, machine, config, success, error) {
 				r ['c_commitdate'] = new Date (r ['c_commitdate']);
 				r ['rs_startedat'] = new Date (r ['rs_startedat']);
 				results.push ({
-					runSet: new DBObject (r, 'rs_'),
-					commit: new DBObject (r, 'c_'),
+					runSet: new DBRunSet (r, 'rs_', new DBObject (r, 'm_'), new DBObject (r, 'cfg_'), new DBObject (r, 'c_')),
 					averages: r ['averages'],
 					variances: r ['variances']
 				});
@@ -91,12 +103,7 @@ function processRunSetEntries (objs) {
 	objs.forEach (r => {
 		r ['c_commitdate'] = new Date (r ['c_commitdate']);
 		r ['rs_startedat'] = new Date (r ['rs_startedat']);
-		results.push ({
-			runSet: new DBObject (r, 'rs_'),
-			commit: new DBObject (r, 'c_'),
-			machine: new DBObject (r, 'm_'),
-			config: new DBObject (r, 'cfg_')
-		});
+		results.push (new DBRunSet (r, 'rs_', new DBObject (r, 'm_'), new DBObject (r, 'cfg_'), new DBObject (r, 'c_')));
 	});
 	return results;
 }
@@ -106,8 +113,8 @@ export function fetchRunSetsForMachineAndConfig (machine, config, success, error
 		objs => success (processRunSetEntries (objs)), error);
 }
 
-export function findRunSet (runSetEntries, id) {
-	return xp_utils.find (runSetEntries, e => e.runSet.get ('id') == id);
+export function findRunSet (runSets, id) {
+	return xp_utils.find (runSets, rs => rs.get ('id') == id);
 }
 
 export function fetchRunSet (id, success, error) {

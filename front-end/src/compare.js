@@ -11,7 +11,7 @@ import React from 'react';
 class Controller {
 	startupRunSetIds: Array<string> | void;
 	runSetCounts: Array<Object> | void;
-	runSetEntries: Array<Object> | void;
+	runSets: Array<Database.DBRunSet> | void;
 
 	constructor (startupRunSetIds) {
 		this.startupRunSetIds = startupRunSetIds;
@@ -26,35 +26,35 @@ class Controller {
 		});
 
 		if (this.startupRunSetIds !== undefined) {
-			Database.fetchRunSets (runSetEntries => {
-				this.runSetEntries = runSetEntries;
-				this.checkAllDataLoaded ();
-			})
+			Database.fetchRunSets (this.startupRunSetIds,
+				runSets => {
+					this.runSets = runSets;
+					this.checkAllDataLoaded ();
+				}, error => {
+					alert ("error loading run sets: " + error.toString ());
+				});
 		}
 	}
 
 	checkAllDataLoaded () {
 		if (this.runSetCounts === undefined)
 			return;
-		if (this.startupRunSetIds !== undefined && this.runSetEntries === undefined)
+		if (this.startupRunSetIds !== undefined && this.runSets === undefined)
 			return;
 		this.allDataLoaded ();
 	}
 
 	allDataLoaded () {
-		var selections;
-
-		if (this.runSetEntries === undefined)
-			selections = [{}];
-		else
-			selections = this.runSetEntries.concat ([{}]);
+		var runSets = this.runSets;
+		if (runSets === undefined)
+			runSets = [];
 
 		React.render (
 			React.createElement (
 				Page,
 				{
 					controller: this,
-					initialSelections: selections,
+					initialRunSets: runSets,
 					runSetCounts: this.runSetCounts,
 					onChange: this.updateForSelection.bind (this)
 				}
@@ -62,36 +62,43 @@ class Controller {
 			document.getElementById ('comparePage')
 		);
 
-		this.updateForSelection (selections);
+		this.updateForSelection (runSets);
 	}
 
-	updateForSelection (selections) {
-		var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
+	updateForSelection (runSets) {
 		window.location.hash = xp_common.hashForRunSets (runSets);
 	}
+}
+
+function runSetsFromSelections (selections) {
+	return selections.map (s => s.runSet).filter (rs => rs !== undefined);
 }
 
 class Page extends React.Component {
 	constructor (props) {
 		super (props);
-		this.state = {selections: this.props.initialSelections};
+		var selections = props.initialRunSets.map (rs => { return { runSet: rs, machine: rs.machine, config: rs.config }; }).concat ([{}]);
+		this.state = { selections: selections };
 	}
 
 	setState (newState) {
 		super.setState (newState);
-		this.props.onChange (newState.selections);
+		this.props.onChange (runSetsFromSelections (newState.selections));
 	}
 
 	render () {
-		var selections = this.state.selections;
-		var runSets = selections.map (s => s.runSet).filter (rs => rs !== undefined);
+		var runSets = runSetsFromSelections (this.state.selections);
 		runSets = xp_utils.uniqArrayByString (runSets, rs => rs.get ('id').toString ());
 
 		var chart;
-		if (runSets.length > 1)
-			chart = <xp_charts.ComparisonAMChart graphName="comparisonChart" controller={this.props.controller} runSets={runSets} />;
-		else
+		if (runSets.length > 1) {
+			chart = <xp_charts.ComparisonAMChart
+				graphName="comparisonChart"
+				controller={this.props.controller}
+				runSets={runSets} />;
+		} else {
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
+		}
 
 		return <div className="ComparePage">
 			<header>
@@ -110,26 +117,36 @@ class Page extends React.Component {
 }
 
 class RunSetSelectorList extends React.Component {
-	handleChange (index, newSelection) {
+	handleChange (computeNewSelections) {
+		var selections = computeNewSelections (this.props.selections);
+		this.props.onChange ({ selections: selections });
+	}
+
+	changeSelector (index, newSelection) {
 		var selections = xp_utils.updateArray (this.props.selections, index, newSelection);
-		this.props.onChange ({selections: selections});
+		this.props.onChange ({ selections: selections });
 	}
 
 	addSelector () {
-		this.props.onChange ({selections: this.props.selections.concat ([{}])});
+		var selections = this.props.selections.concat ([{}]);
+		this.props.onChange ({ selections: selections });
 	}
 
 	removeSelector (i) {
-		this.props.onChange ({selections: xp_utils.removeArrayElement (this.props.selections, i)});
+		var selections = xp_utils.removeArrayElement (this.props.selections, i);
+		this.props.onChange ({ selections: selections });
 	}
 
 	render () {
 		function renderSelector (selection, index) {
+			var runSet = selection.runSet;
+			var machine = selection.machine;
+			var config = selection.config;
 			return <section>
 				<xp_common.RunSetSelector
 					runSetCounts={this.props.runSetCounts}
-					selection={selection}
-					onChange={this.handleChange.bind (this, index)} />
+					selection={{runSet: runSet, machine: machine, config: config}}
+					onChange={this.changeSelector.bind (this, index)} />
 				<button onClick={this.removeSelector.bind (this, index)}>&minus;&ensp;Remove</button>
 				<div style={{ clear: 'both' }}></div>
 			</section>;
@@ -144,7 +161,7 @@ class RunSetSelectorList extends React.Component {
 function started () {
 	var startupRunSetIds;
 	if (window.location.hash)
-		startupRunSetIds = window.location.hash.substring (1).split ('+').map (parseInt);
+		startupRunSetIds = window.location.hash.substring (1).split ('+').map (s => parseInt (s));
 	var controller = new Controller (startupRunSetIds);
 	controller.loadAsync ();
 }

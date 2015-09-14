@@ -10,7 +10,7 @@ import React from 'react';
 class Controller {
 	startupRunSetId: number | void;
 	runSetCounts: Array<Object>;
-	runSetEntry: Object | void;
+	runSet: Object | void;
 
 	constructor (startupRunSetId) {
 		this.startupRunSetId = startupRunSetId;
@@ -27,11 +27,11 @@ class Controller {
 		if (this.startupRunSetId === undefined)
 			return;
 		Database.fetchRunSet (this.startupRunSetId,
-			runSetEntry => {
-				if (runSetEntry === undefined)
+			runSet => {
+				if (runSet === undefined)
 					this.startupRunSetId = undefined;
 				else
-					this.runSetEntry = runSetEntry;
+					this.runSet = runSet;
 				this.checkAllDataLoaded ();
 			}, error => {
 				alert ("error loading run set: " + error.toString ());
@@ -41,18 +41,18 @@ class Controller {
 	checkAllDataLoaded () {
 		if (this.runSetCounts === undefined)
 			return;
-		if (this.startupRunSetId !== undefined && this.runSetEntry === undefined)
+		if (this.startupRunSetId !== undefined && this.runSet === undefined)
 			return;
 		this.allDataLoaded ();
 	}
 
 	allDataLoaded () {
 		var selection = {};
-		if (this.runSetEntry !== undefined) {
+		if (this.runSet !== undefined) {
 			selection = {
-				machine: this.runSetEntry.machine,
-				config: this.runSetEntry.config,
-				runSet: this.runSetEntry.runSet
+				machine: this.runSet.machine,
+				config: this.runSet.config,
+				runSet: this.runSet
 			};
 		}
 

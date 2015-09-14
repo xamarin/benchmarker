@@ -92,8 +92,8 @@ class Page extends React.Component {
 		Database.fetchSummaries ('time', machine, config,
 			objs => {
 				objs.sort ((a, b) => {
-					var aDate = a.commit.get ('commitDate');
-					var bDate = b.commit.get ('commitDate');
+					var aDate = a.runSet.commit.get ('commitDate');
+					var bDate = b.runSet.commit.get ('commitDate');
 					if (aDate.getTime () !== bDate.getTime ())
 						return aDate - bDate;
 					return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
@@ -179,7 +179,8 @@ export function joinBenchmarkNames (benchmarks: (Array<string> | void), prefix: 
 	return prefix + benchmarks.join (", ");
 }
 
-function tooltipForRunSet (runSet: Database.DBObject, commit: Database.DBObject, includeBroken: boolean) {
+function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) {
+	var commit = runSet.commit;
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
 	if (commit.get ('branch') !== undefined)
@@ -215,11 +216,11 @@ type TimelineChartProps = {
 	machine: Database.DBObject;
 	config: Database.DBObject;
 	benchmark: string;
+	sortedResults : Array<{ runSet: Database.DBRunSet, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
 	runSetSelected: (runSet: Database.DBObject) => void;
 };
 
 class TimelineChart extends React.Component<TimelineChartProps, TimelineChartProps, void> {
-	sortedResults : Array<{ runSet: Database.DBObject, commit: Database.DBObject, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
 	table : void | Array<Object>;
 
 	valueAxisTitle () : string {
@@ -331,13 +332,13 @@ class AllBenchmarksChart extends TimelineChart {
 				++count;
 			}
 			if (count === 0) {
-				console.log ("No data for run set " + runSets [j].id);
+				console.log ("No data for run set " + runSet.get ('id'));
 				continue;
 			}
-			var tooltip = tooltipForRunSet (runSet, results [j].commit, true);
+			var tooltip = tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
 			table.push ({
-				runSet: runSet,
+				dataItem: runSet,
 				low: min,
 				lowName: minName ? ("Fastest: " + minName) : undefined,
 				high: max,
@@ -377,7 +378,7 @@ class BenchmarkChart extends TimelineChart {
 			if (average === undefined)
 				continue;
 
-			var tooltip = tooltipForRunSet (runSet, results [j].commit, false);
+			var tooltip = tooltipForRunSet (runSet, false);
 
 			var low = undefined;
 			var high = undefined;
@@ -391,7 +392,7 @@ class BenchmarkChart extends TimelineChart {
 				averageTooltip = "Average: " + formatDuration (average);
 			}
 			table.push ({
-				runSet: runSet,
+				dataItem: runSet,
 				geomean: average,
 				low: low,
 				high: high,
