@@ -112,6 +112,7 @@ namespace AndroidAgent
 		void RunBenchmark (string runSetId, string hostname, string architecture)
 		{
 			const string benchmark = "n-body";
+			const int tryRuns = 10;
 			var commit = GetCommit ();
 			var config = new Config { Name = "auto-sgen", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
 			var runSet = new RunSet {
@@ -128,9 +129,9 @@ namespace AndroidAgent
 					Config = config,
 				};
 				try {
-					for (var i = 0; i < config.Count + 1; i++) {
+					for (var i = 0; i < (config.Count + tryRuns); i++) {
 						var run = Iteration (benchmark, i);
-						if (i == 0) {
+						if (i < tryRuns) {
 							continue;
 						}
 						if (run != null) {
