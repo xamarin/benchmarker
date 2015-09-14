@@ -21,6 +21,14 @@ namespace AndroidAgent.UITests
 			app = ConfigureApp.Android.StartApp ();
 		}
 
+		private void clearAndSetTextField(string id, string value)
+		{
+			app.ClearText (c => c.Marked (id));
+			app.ClearText (c => c.Marked (id));
+			app.EnterText (c => c.Marked (id), value);
+			app.Screenshot ("enter " + id);
+		}
+
 		[Test]
 		public void RunBenchmark ()
 		{
@@ -35,22 +43,10 @@ namespace AndroidAgent.UITests
 
 					app.Screenshot ("init");
 
-					app.ClearText (c => c.Marked ("runSetId"));
-					app.EnterText (c => c.Marked ("runSetId"), runSetId);
-					app.Screenshot ("enter RunSetId");
-
-					app.ClearText (c => c.Marked ("bmUsername"));
-					app.EnterText (c => c.Marked ("bmUsername"), bmUsername);
-					app.Screenshot ("enter bmUsername");
-
-					app.ClearText (c => c.Marked ("bmPassword"));
-					app.EnterText (c => c.Marked ("bmPassword"), bmPassword);
-					app.Screenshot ("enter bmPassword");
-
-					app.ClearText (c => c.Marked ("githubAPIKey"));
-					app.ClearText (c => c.Marked ("githubAPIKey"));
-					app.EnterText (c => c.Marked ("githubAPIKey"), githubAPIKey);
-					app.Screenshot ("enter githubAPIKey");
+					clearAndSetTextField ("runSetId", runSetId);
+					clearAndSetTextField ("bmUsername", bmUsername);
+					clearAndSetTextField ("bmPassword", bmPassword);
+					clearAndSetTextField ("githubAPIKey", githubAPIKey);
 
 					app.Tap (c => c.Marked("myButton"));
 					app.Screenshot ("after tap");
