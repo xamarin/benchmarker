@@ -135,39 +135,41 @@ namespace compare
 
 		public async static Task<Commit> GetCommit (Config cfg, string optionalCommitHash, string optionalGitRepoDir)
 		{
-			if (cfg.NoMono) {
+			if (cfg.NoMono && optionalCommitHash == null) {
 				// FIXME: return a dummy commit
 				return null;
 			}
 
-			var info = NewProcessStartInfo (cfg);
-			/* Run without timing with --version */
-			info.Arguments = "--version";
-
-			Console.Out.WriteLine ("\t$> {0} {1} {2}", PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
-
-			var process = Process.Start (info);
-			var version = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
-			var versionError = Task.Run (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd ()).Result;
-
-			process.WaitForExit ();
-			process.Close ();
-
-			var line = version.Split (new char[] {'\n'}, 2) [0];
-			var regex = new Regex ("^Mono JIT.*\\((.*)/([0-9a-f]+) (.*)\\)");
-			var match = regex.Match (line);
-
 			var commit = new Commit ();
+			var info = NewProcessStartInfo (cfg);
+			if (!String.IsNullOrEmpty (info.FileName)) {
+				/* Run without timing with --version */
+				info.Arguments = "--version";
 
-			if (match.Success) {
-				commit.Branch = match.Groups [1].Value;
-				commit.Hash = match.Groups [2].Value;
-				var date = match.Groups [3].Value;
-				Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
-			} else {
-				if (optionalCommitHash == null) {
-					Console.Error.WriteLine ("Error: cannot parse mono version and no commit given.");
-					return null;
+				Console.Out.WriteLine ("\t$> {0} {1} {2}", PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
+
+				var process = Process.Start (info);
+				var version = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
+				var versionError = Task.Run (() => new StreamReader (process.StandardError.BaseStream).ReadToEnd ()).Result;
+
+				process.WaitForExit ();
+				process.Close ();
+
+				var line = version.Split (new char[] { '\n' }, 2) [0];
+				var regex = new Regex ("^Mono JIT.*\\((.*)/([0-9a-f]+) (.*)\\)");
+				var match = regex.Match (line);
+
+
+				if (match.Success) {
+					commit.Branch = match.Groups [1].Value;
+					commit.Hash = match.Groups [2].Value;
+					var date = match.Groups [3].Value;
+					Console.WriteLine ("branch: " + commit.Branch + " hash: " + commit.Hash + " date: " + date);
+				} else {
+					if (optionalCommitHash == null) {
+						Console.Error.WriteLine ("Error: cannot parse mono version and no commit given.");
+						return null;
+					}
 				}
 			}
 
@@ -211,17 +213,17 @@ namespace compare
 				Console.WriteLine ("Could not get git repository");
 			}
 
-			Octokit.Commit gitHubCommit = null;
-			try {
-				var gitHubClient = GitHubInterface.GitHubClient;
-				gitHubCommit = await GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", commit.Hash));
-			} catch (Octokit.NotFoundException) {
-				Console.WriteLine ("Commit " + commit.Hash + " not found on GitHub");
+			if (commit.Hash == null && optionalCommitHash == null) {
+				Console.Error.WriteLine ("Error: Neither `mono --version' or `--commit` provides a hash ");
+				return null;
 			}
+			Octokit.Commit gitHubCommit = await ResolveFullHashViaGithub (commit.Hash);
+			Octokit.Commit gitHubOptionalCommit = await ResolveFullHashViaGithub (optionalCommitHash);
+
 			if (gitHubCommit == null) {
 				Console.WriteLine ("Could not get commit " + commit.Hash + " from GitHub");
 			} else {
-				if (optionalCommitHash != null && optionalCommitHash != gitHubCommit.Sha) {
+				if (optionalCommitHash != null && (optionalCommitHash != gitHubCommit.Sha && gitHubOptionalCommit.Sha != gitHubCommit.Sha)) {
 					Console.Error.WriteLine ("Error: Commit hash specified on command line does not match the one from GitHub.");
 					return null;
 				}
@@ -233,6 +235,24 @@ namespace compare
 			}
 
 			return commit;
+		}
+
+		private static async Task<Octokit.Commit> ResolveFullHashViaGithub (string commit) {
+			if (commit == null) {
+				return null;
+			}
+
+			Octokit.Commit gitHubCommit = null;
+			Octokit.TreeResponse treeResponse = null;
+			try {
+				var gitHubClient = GitHubInterface.GitHubClient;
+				treeResponse = await GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", commit));
+				gitHubCommit = await GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", treeResponse.Sha));
+			} catch (Octokit.NotFoundException) {
+				Console.WriteLine ("Commit " + commit + " not found on GitHub");
+			}
+
+			return gitHubCommit;
 		}
 	}
 }
