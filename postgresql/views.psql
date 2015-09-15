@@ -2,6 +2,7 @@ drop view "1".benchmark"
 drop view "1".config;
 drop view "1".machine;
 drop view "1".runsetcount;
+drop view "1".runset;
 drop view "1".results;
 drop view "1".summary;
 drop view "1".pullrequest;
@@ -19,7 +20,7 @@ create view "1".machine as
 select * from machine;
 
 create view "1".runsetcount as
-select count(rs.id) as num,
+select array_agg(rs.id) as ids,
        m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
        cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
 from runset rs, machine m, config cfg
@@ -29,6 +30,8 @@ group by m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexecutable, cf
 create view "1".summary as
 select results.runset as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
        c.hash as c_hash, c.commitDate as c_commitDate,
+       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
        results.metric, results.averages, results.variances from (
 select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
 from (
@@ -39,21 +42,16 @@ group by r.runset, r.benchmark, rm.metric
 ) as x
 group by runset, metric
 ) as results,
-runset rs, commit c
-where results.runset = rs.id and rs.commit = c.hash;
+runset rs, commit c, machine m, config cfg
+where results.runset = rs.id and rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
-select results.runset, results.metric, rs.machine, rs.config, rs.pullrequest, c.hash, c.commitDate, rs.startedAt, rs.timedOutBenchmarks, rs.crashedBenchmarks, results.averages, results.variances from (
-select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
-from (
-select r.runset, rm.metric, r.benchmark, avg(rm.result), var_pop(rm.result)
-from run r, runmetric rm
-where r.id = rm.run
-group by r.runset, r.benchmark, rm.metric
-) as x
-group by runset, metric
-) as results,
-runset rs, commit c
-where results.runset = rs.id and rs.commit = c.hash;
+create view "1".runset as
+select c.hash as c_hash, c.commitDate as c_commitDate,
+       rs.id as rs_id, rs.startedAt as rs_startedAt, rs.finishedAt as rs_finishedAt, rs.buildURL as rs_buildURL, rs.logURLs as rs_logURLs, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedOutBenchmarks as rs_timedOutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
+       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
+from runset rs, commit c, machine m, config cfg
+where rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
 create view "1".results as
 select r.runset, r.benchmark, b.disabled, rm.metric, array_agg(rm.result) as results
