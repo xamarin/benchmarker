@@ -442,7 +442,7 @@ class BenchmarkChartList extends React.Component {
 	}
 }
 
-function started () {
+function start () {
 	var machine = undefined;
 	var config = undefined;
 	if (window.location.hash) {
@@ -456,4 +456,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

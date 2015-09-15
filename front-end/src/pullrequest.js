@@ -128,7 +128,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 	}
 }
 
-function started () {
+function start () {
 	var pullRequestId;
 	if (window.location.hash)
 		pullRequestId = window.location.hash.substring (1);
@@ -136,4 +136,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

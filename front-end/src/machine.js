@@ -38,7 +38,7 @@ class Controller {
 	}
 }
 
-function started () {
+function start () {
 	var machineId;
 	if (window.location.hash)
 		machineId = window.location.hash.substring (1);
@@ -46,4 +46,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

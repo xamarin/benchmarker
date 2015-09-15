@@ -120,7 +120,7 @@ class Page extends React.Component {
 	}
 }
 
-function started () {
+function start () {
 	var startupRunSetId;
 	if (window.location.hash) {
 		startupRunSetId = parseInt (window.location.hash.substring (1));
@@ -131,4 +131,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

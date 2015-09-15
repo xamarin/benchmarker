@@ -38,7 +38,7 @@ class Controller {
 	}
 }
 
-function started () {
+function start () {
 	var configId;
 	if (window.location.hash)
 		configId = window.location.hash.substring (1);
@@ -46,4 +46,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

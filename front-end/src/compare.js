@@ -158,7 +158,7 @@ class RunSetSelectorList extends React.Component {
 	}
 }
 
-function started () {
+function start () {
 	var startupRunSetIds;
 	if (window.location.hash)
 		startupRunSetIds = window.location.hash.substring (1).split ('+').map (s => parseInt (s));
@@ -166,4 +166,4 @@ function started () {
 	controller.loadAsync ();
 }
 
-xp_common.start (started);
+start ();

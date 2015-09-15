@@ -19,10 +19,6 @@ export var xamarinColors = {
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
-export function start (started: () => void) {
-	started ();
-}
-
 export function hashForRunSets (runSets: Array<Database.DBObject>) : string {
 	var ids = runSets.map (o => o.get ('id'));
 	return ids.join ('+');
