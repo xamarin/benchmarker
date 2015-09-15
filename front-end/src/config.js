@@ -15,7 +15,7 @@ class Controller {
 	}
 
 	loadAsync () {
-		Database.fetch ('config?name=eq.' + this.configName, true,
+		Database.fetchAndWrap ('config?name=eq.' + this.configName,
 		objs => {
 			this.config = objs [0];
 			this.allDataLoaded ();

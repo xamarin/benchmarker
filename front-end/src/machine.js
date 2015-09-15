@@ -15,7 +15,7 @@ class Controller {
 	}
 
 	loadAsync () {
-		Database.fetch ('machine?name=eq.' + this.machineName, true,
+		Database.fetchAndWrap ('machine?name=eq.' + this.machineName,
 		objs => {
 			this.machine = objs [0];
 			this.allDataLoaded ();

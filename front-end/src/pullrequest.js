@@ -18,7 +18,7 @@ class Controller {
 	}
 
 	loadAsync () {
-		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId, false,
+		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId,
 		objs => {
 			this.dbRow = objs [0];
 			this.allDataLoaded ();

@@ -310,7 +310,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	invalidateState (runSet) {
 		this.state = {};
 
-		Database.fetch ('results?metric=eq.time&runset=eq.' + this.props.runSet.get ('id'), false,
+		Database.fetch ('results?metric=eq.time&runset=eq.' + this.props.runSet.get ('id'),
 		objs => {
 			if (runSet !== this.props.runSet)
 				return;

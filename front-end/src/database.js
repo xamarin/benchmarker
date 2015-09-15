@@ -34,7 +34,7 @@ export class DBRunSet extends DBObject {
 	}
 }
 
-export function fetch (query, wrap, success, error) {
+export function fetch (query: string, success: (results: Array<Object>) => void, error: (err: Object) => void) {
 	var request = new XMLHttpRequest();
 	var url = 'http://192.168.99.100:32777/' + query;
 
@@ -47,22 +47,22 @@ export function fetch (query, wrap, success, error) {
 			return;
 		}
 
-        var results = JSON.parse (request.responseText);
-		if (!wrap) {
-			success (results);
-			return;
-		}
-
-		var objs = results.map (data => new DBObject (data));
-        success (objs);
+        success (JSON.parse (request.responseText));
 	};
 
 	request.open('GET', url, true);
 	request.send();
 }
 
+export function fetchAndWrap (query: string, success: (results: Array<DBObject>) => void, error: (err: Object) => void) {
+	fetch (query, results => {
+		var objs = results.map (data => new DBObject (data));
+		success (objs);
+	}, error);
+}
+
 export function fetchRunSetCounts (success, error) {
-	fetch ('runsetcount', false,
+	fetch ('runsetcount',
 		objs => {
 			var results = objs.map (r => {
 				var machine = new DBObject (r, 'm_');
@@ -82,7 +82,7 @@ export function findRunSetCount (runSetCounts, machineName, configName) {
 }
 
 export function fetchSummaries (metric, machine, config, success, error) {
-	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'), false,
+	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		objs => {
 			var results = [];
 			objs.forEach (r => {
@@ -109,7 +109,7 @@ function processRunSetEntries (objs) {
 }
 
 export function fetchRunSetsForMachineAndConfig (machine, config, success, error) {
-	fetch ('runset?rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'), false,
+	fetch ('runset?rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		objs => success (processRunSetEntries (objs)), error);
 }
 
@@ -118,7 +118,7 @@ export function findRunSet (runSets, id) {
 }
 
 export function fetchRunSet (id, success, error) {
-	fetch ('runset?rs_id=eq.' + id, false,
+	fetch ('runset?rs_id=eq.' + id,
 		objs => {
 			if (objs.length === 0)
 				success (undefined);
@@ -128,12 +128,12 @@ export function fetchRunSet (id, success, error) {
 }
 
 export function fetchRunSets (ids, success, error) {
-	fetch ('runset?rs_id=in.' + ids.join (','), false,
+	fetch ('runset?rs_id=in.' + ids.join (','),
 		objs => success (processRunSetEntries (objs)), error);
 }
 
 export function fetchParseObjectIds (parseIds, success, error) {
-	fetch ('parseobjectid?parseid=in.' + parseIds.join (','), false,
+	fetch ('parseobjectid?parseid=in.' + parseIds.join (','),
 		objs => {
 			var ids = [];
 			for (var i = 0; i < objs.length; ++i) {

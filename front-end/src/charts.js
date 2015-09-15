@@ -274,7 +274,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     invalidateState (runSets: Array<Database.DBRunSet>) : void {
         this.resultsByIndex = [];
 
-		Database.fetch ('results?metric=eq.time&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','), false,
+		Database.fetch ('results?metric=eq.time&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','),
 			objs => {
 				if (runSets !== this.props.runSets)
 					return;
