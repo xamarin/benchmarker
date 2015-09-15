@@ -76,7 +76,7 @@ class Controller {
 		var runSet = selection.runSet;
 		if (runSet === undefined)
 			return;
-		window.location.hash = runSet.get ('id');
+		xp_common.setLocationForDict ({ id: runSet.get ('id') });
 	}
 }
 
@@ -120,15 +120,14 @@ class Page extends React.Component {
 	}
 }
 
-function start () {
-	var startupRunSetId;
-	if (window.location.hash) {
-		startupRunSetId = parseInt (window.location.hash.substring (1));
-		if (isNaN (startupRunSetId))
-			startupRunSetId = undefined;
+function start (params) {
+	var startupRunSetId = params ['id'];
+	if (startupRunSetId === undefined) {
+		alert ("Error: Please provide a run set ID.");
+		return;
 	}
 	var controller = new Controller (startupRunSetId);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForDict (['id'], start);

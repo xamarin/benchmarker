@@ -38,12 +38,14 @@ class Controller {
 	}
 }
 
-function start () {
-	var configId;
-	if (window.location.hash)
-		configId = window.location.hash.substring (1);
-	var controller = new Controller (configId);
+function start (params) {
+	var name = params ['name'];
+	if (name === undefined) {
+		alert ("Error: Please provide a config name.");
+		return;
+	}
+	var controller = new Controller (name);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForDict (['name'], start);

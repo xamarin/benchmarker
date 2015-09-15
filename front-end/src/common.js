@@ -19,11 +19,6 @@ export var xamarinColors = {
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
-export function hashForRunSets (runSets: Array<Database.DBObject>) : string {
-	var ids = runSets.map (o => o.get ('id'));
-	return ids.join ('+');
-}
-
 type ConfigDescriptionProps = {
 	config: Database.DBObject | void;
 	omitHeader: boolean;
@@ -447,6 +442,81 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 		</div>;
 	}
 
+}
+
+export function parseLocationHashForDict (items, startFunc) {
+	var hash = window.location.hash.substring (1);
+
+	if (hash.length === 0) {
+		startFunc ({});
+		return;
+	}
+
+	var components = hash.split ('&');
+	var parsed = {};
+	var error = false;
+	for (var i = 0; i < components.length; ++i) {
+		var kv = components [i].split ('=');
+		if (kv.length != 2) {
+			error = true;
+			break;
+		}
+		if (xp_utils.findIndex (items, n => n === kv [0]) < 0) {
+			alert ("Warning: Parameter " + kv [0] + " not supported.");
+			continue;
+		}
+		parsed [kv [0]] = kv [1];
+	}
+
+	if (!error) {
+		startFunc (parsed);
+		return;
+	}
+
+	var ids = hash.split ('+');
+	Database.fetchParseObjectIds (ids, keys => {
+		var keyMap = {};
+		keys.forEach ((k, i) => keyMap [items [i]] = k);
+		startFunc (keyMap);
+	}, error => {
+		alert ("Error: " + error.toString ());
+	})
+}
+
+export function setLocationForDict (dict) {
+	var components = [];
+	var keys = Object.keys (dict);
+	for (var i = 0; i < keys.length; ++i) {
+		var k = keys [i];
+		components.push (k + "=" + dict [k].toString ());
+	}
+	window.location.hash = components.join ("&");
+}
+
+export function parseLocationHashForArray (key, startFunc) {
+	var hash = window.location.hash.substring (1);
+
+	if (hash.length === 0) {
+		startFunc ([]);
+		return;
+	}
+
+	var kv = hash.split ('=');
+	if (kv.length === 2 && kv [0] === key) {
+		var items = kv [1].split ('+');
+		startFunc (items);
+		return;
+	}
+
+	var ids = hash.split ('+');
+	Database.fetchParseObjectIds (ids, startFunc,
+		error => {
+			alert ("Error: " + error.toString ());
+		});
+}
+
+export function setLocationForArray (key, ids) {
+	window.location.hash = key + "=" + ids.join ("+");
 }
 
 function minBy (f: (x: number) => number, x: number, y: number): number {

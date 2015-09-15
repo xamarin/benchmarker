@@ -131,3 +131,22 @@ export function fetchRunSets (ids, success, error) {
 	fetch ('runset?rs_id=in.' + ids.join (','), false,
 		objs => success (processRunSetEntries (objs)), error);
 }
+
+export function fetchParseObjectIds (parseIds, success, error) {
+	fetch ('parseobjectid?parseid=in.' + parseIds.join (','), false,
+		objs => {
+			var ids = [];
+			for (var i = 0; i < objs.length; ++i) {
+				var o = objs [i];
+				var j = xp_utils.findIndex (parseIds, id => id === o ['parseid']);
+				ids [j] = o ['integerkey'] || o ['varcharkey'];
+			}
+			for (var i = 0; i < parseIds.length; ++i) {
+				if (!ids [i]) {
+					error ("Not all Parse IDs found.");
+					return;
+				}
+			}
+			success (ids);
+		}, error);
+}

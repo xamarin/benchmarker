@@ -38,12 +38,14 @@ class Controller {
 	}
 }
 
-function start () {
-	var machineId;
-	if (window.location.hash)
-		machineId = window.location.hash.substring (1);
-	var controller = new Controller (machineId);
+function start (params) {
+	var name = params ['name'];
+	if (name === undefined) {
+		alert ("Error: Please provide a machine name.");
+		return;
+	}
+	var controller = new Controller (name);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForDict (['name'], start);

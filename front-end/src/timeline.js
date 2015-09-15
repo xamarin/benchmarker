@@ -53,7 +53,7 @@ class Controller {
 		var config = selection.config;
 		if (machine === undefined || config === undefined)
 			return;
-		window.location.hash = machine.get ('name') + '+' + config.get ('name');
+		xp_common.setLocationForDict ({ machine: machine.get ('name'), config: config.get ('name') });
 	}
 }
 
@@ -442,18 +442,9 @@ class BenchmarkChartList extends React.Component {
 	}
 }
 
-function start () {
-	var machine = undefined;
-	var config = undefined;
-	if (window.location.hash) {
-		var names = window.location.hash.substring (1).split ('+');
-		if (names.length === 2) {
-			machine = names [0];
-			config = names [1];
-		}
-	}
-	var controller = new Controller (machine, config);
+function start (params) {
+	var controller = new Controller (params ['machine'], params ['config']);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForDict (['machine', 'config'], start);

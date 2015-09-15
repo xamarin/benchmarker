@@ -66,7 +66,7 @@ class Controller {
 	}
 
 	updateForSelection (runSets) {
-		window.location.hash = xp_common.hashForRunSets (runSets);
+		xp_common.setLocationForArray ("ids", runSets.map (rs => rs.get ('id')));
 	}
 }
 
@@ -158,12 +158,9 @@ class RunSetSelectorList extends React.Component {
 	}
 }
 
-function start () {
-	var startupRunSetIds;
-	if (window.location.hash)
-		startupRunSetIds = window.location.hash.substring (1).split ('+').map (s => parseInt (s));
+function start (startupRunSetIds) {
 	var controller = new Controller (startupRunSetIds);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForArray ('ids', start);

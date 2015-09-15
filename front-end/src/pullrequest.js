@@ -128,12 +128,14 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 	}
 }
 
-function start () {
-	var pullRequestId;
-	if (window.location.hash)
-		pullRequestId = window.location.hash.substring (1);
+function start (params) {
+	var pullRequestId = params ['id'];
+	if (pullRequestId === undefined) {
+		alert ("Error: Please provide a pull request ID.");
+		return;
+	}
 	var controller = new Controller (pullRequestId);
 	controller.loadAsync ();
 }
 
-start ();
+xp_common.parseLocationHashForDict (['id'], start);
