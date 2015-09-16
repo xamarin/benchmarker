@@ -70,6 +70,13 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def cleanup_master_workdir(self):
+        step = MasterShellCommand(
+            name="cleanup_master_workdir",
+            command=['bash', '-x', '-c', Interpolate('rm -rf %s' % MASTERWORKDIR)]
+        )
+        self.addStep(step)
+
     def export_benchmark_list(self, machine):
         step = MasterShellCommand(
             name="list_benchmarks",
