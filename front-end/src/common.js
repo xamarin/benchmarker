@@ -379,7 +379,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					var disabled = result.disabled;
 					elapsed.sort ();
 					var elapsedString = elapsed.join (", ");
-					var outlierVariance = xp_common.outlierVariance (elapsed);
+					var variance = outlierVariance (elapsed);
 					var statusIcons = [];
 					if (crashedBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
@@ -393,8 +393,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 						<td className="statusColumn">{statusIcons}</td>
 						<td>{elapsedString}</td>
 						<td>
-							<div className="degree" title={outlierVariance}>
-								<div className={outlierVariance}>&nbsp;</div>
+							<div className="degree" title={variance}>
+								<div className={variance}>&nbsp;</div>
 							</div>
 						</td>
 					</tr>;
