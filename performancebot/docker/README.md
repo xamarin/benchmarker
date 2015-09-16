@@ -23,7 +23,7 @@ at least `docker=1.7.1` is required:
 `scp Dockerfile.master` from another machine:
 
     $ docker build -f Dockerfile.master -t pbot-master .
-    $ docker run -p 80:8010 -p 9989:9989 -p 443:9999 -v /ebs:/ebs -it pbot-master
+    $ docker run -p 80:8010 -p 9989:9989 -p 9999:9999 -v /ebs:/ebs -it pbot-master
 
 wait after initialization is done, if you see the shell prompt press `CTRL+P
 CTRL+Q` in order to detach from the container.

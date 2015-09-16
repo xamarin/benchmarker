@@ -18,7 +18,7 @@ CONTAINERCHECK=check() { test `ssh $(REMOTEHOST) "docker ps | grep pbot-master |
 # start container on ec2 instance
 ec2-boot:
 	@$(CONTAINERCHECK) 0
-	ssh $(REMOTEHOST) 'docker run -p 80:8010 -p 9989:9989 -p 443:9999 -v /ebs:/ebs -idt pbot-master'
+	ssh $(REMOTEHOST) 'docker run -p 80:8010 -p 9989:9989 -p 9999:9999 -v /ebs:/ebs -idt pbot-master'
 
 # stop container on ec2 instance
 ec2-kill:
