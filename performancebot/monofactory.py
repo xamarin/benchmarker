@@ -127,6 +127,9 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(step)
 
     def clone_mono(self, guard):
+        if guard is None:
+            guard = lambda _: True
+
         step = git.Git(
             repourl='https://github.com/mono/mono/',
             workdir='mono',
