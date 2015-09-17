@@ -85,9 +85,14 @@ namespace Parse2Postgres
 
 			cmd.CommandText = string.Format ("insert into {0} ({1}) values ({2})", table, string.Join (",", names), string.Join (",", namesWithPrefixes));
 
-			cmd.ExecuteNonQuery ();
-
 			var objectId = entry ["objectId"].ToObject<string> ();
+
+			try {
+				cmd.ExecuteNonQuery ();
+			} catch (NpgsqlException exc) {
+				Console.Error.WriteLine ("Exception when inserting {0} {1}: {2}", table, objectId, exc);
+				throw;
+			}
 
 			if (primaryKeyValue != null) {
 				if (!stringIdMap.ContainsKey (table))
@@ -124,7 +129,10 @@ namespace Parse2Postgres
 			var objectId = entry ["objectId"].ToObject<string> ();
 
 			if (isString) {
-				return stringIdMap [table] [objectId];
+				string value;
+				if (stringIdMap [table].TryGetValue (objectId, out value))
+					return value;
+				return null;
 			} else {
 				long value;
 				if (idMap [table].TryGetValue (objectId, out value))
@@ -179,12 +187,19 @@ namespace Parse2Postgres
 							if (info.isArray) {
 								if (!isString)
 									throw new Exception ("only support string foreign key arrays");
-								postgresValue = value.Select (e => (string)GetForeignKey (e, info.table, true)).ToArray ();
+								var valueArray = value.Select (e => (string)GetForeignKey (e, info.table, true)).ToArray ();
+								postgresValue = valueArray;
+								if (valueArray.Any (s => s == null)) {
+									Console.WriteLine ("foreign key in array not found - skipping");
+									goto NextEntry;
+								}
 								postgresType = NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar;
 							} else {
 								postgresValue = GetForeignKey (value, info.table, isString);
-								if (postgresValue == null)
+								if (postgresValue == null) {
+									Console.WriteLine ("foreign key not found - skipping");
 									goto NextEntry;
+								}
 								if (isString)
 									postgresType = NpgsqlTypes.NpgsqlDbType.Varchar;
 								else
