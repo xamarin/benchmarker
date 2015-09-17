@@ -68,9 +68,13 @@ class CreateRunSetIdStep(ParsingShellCommand):
             cmd1.append('https://github.com/mono/mono/pull/%s' % str(pullrequestid))
             cmd1.append('--mono-repository')
             cmd1.append('../mono')
-        cmd2 = ['--build-url', build_url,
-                '--root', '../build/%s' % (self.install_root('/opt/' + mono_version)),
-                '--commit', git_commit,
+        if build_url is not None:
+            cmd1.append('--build-url')
+            cmd1.append(build_url)
+        if git_commit is not None:
+            cmd1.append('--commit')
+            cmd1.append(git_commit)
+        cmd2 = ['--root', self.install_root(mono_version),
                 'tests/',
                 'benchmarks/',
                 'machines/',
