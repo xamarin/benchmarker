@@ -1,13 +1,4 @@
-drop view "1".benchmark"
-drop view "1".config;
-drop view "1".machine;
-drop view "1".parseobjectid;
-drop view "1".runsetcount;
-drop view "1".runset;
-drop view "1".results;
-drop view "1".summary;
-drop view "1".pullrequest;
-drop schema "1";
+-- -*- sql -*-
 
 create schema "1";
 
@@ -73,3 +64,7 @@ select pr.id as pr_id, pr.url as pr_url,
        cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
 from pullrequest as pr, runset as blrs, runset as prrs, commit as blc, commit as prc, machine as m, config cfg
 where pr.baselinerunset = blrs.id and prrs.pullrequest = pr.id and blc.hash = blrs.commit and prc.hash = prrs.commit and blrs.machine = m.name and blrs.config = cfg.name;
+
+create user $POSTGREST_USER login encrypted password '$POSTGREST_PASSWORD';
+grant usage on schema "1" to $POSTGREST_USER;
+grant select on all tables in schema "1" to $POSTGREST_USER;

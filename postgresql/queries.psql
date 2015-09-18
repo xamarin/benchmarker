@@ -1,9 +1,0 @@
-select x.runset, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
-from
-(
-select r.runset, r.benchmark, avg(rm.result), var_pop(rm.result)
-from run r, runset rs, runmetric rm
-where r.id = rm.run and rm.metric = 'time' and r.runset = rs.id and rs.machine = 'benchmarker' and rs.config = 'auto-sgen-noturbo'
-group by r.runset, r.benchmark
-) as x
-group by runset;

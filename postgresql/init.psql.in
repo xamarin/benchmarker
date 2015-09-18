@@ -1,36 +1,29 @@
-drop database performance;
-create database performance;
-\c performance
+-- -*- sql -*-
 
-drop table RunMetric;
-drop table ParseObjectID;
-alter table RunSet drop constraint runset_pullrequest_fkey;
-drop table PullRequest;
-drop table RegressionWarnings;
-drop table Run;
-drop table RunSet;
-drop table Benchmark;
-drop table Machine;
-drop table Commit;
-drop table Config;
+create database $DATABASE;
+\c $DATABASE
 
 create table Benchmark (
+       objectId varchar(10),
        name varchar(128) primary key,
        disabled boolean
 );
 
 create table Machine (
+       objectId varchar(10),
        name varchar(128) primary key,
        architecture varchar(128),
        isDedicated boolean
 );
 
 create table Commit (
+       objectId varchar(10),
        hash varchar(40) primary key,
        commitDate timestamp with time zone
 );
 
 create table Config (
+       objectId varchar(10),
        name varchar(128) primary key,
        monoExecutable varchar(128),
        monoEnvironmentVariables jsonb,
@@ -38,6 +31,7 @@ create table Config (
 );
 
 create table RunSet (
+       objectId varchar(10),
        id serial primary key,
        startedAt timestamp with time zone,
        finishedAt timestamp with time zone,
@@ -56,6 +50,7 @@ create table RunSet (
 );
 
 create table Run (
+       objectId varchar(10),
        id serial primary key,
        elapsedMilliseconds integer,
        benchmark varchar(128) references Benchmark(name),
@@ -63,6 +58,7 @@ create table Run (
 );
 
 create table RegressionWarnings (
+       objectId varchar(10),
        id serial primary key,
        runSet integer references RunSet(id),
        fasterBenchmarks varchar(128)[], -- element references Benchmark(name),
@@ -70,6 +66,7 @@ create table RegressionWarnings (
 );
 
 create table PullRequest (
+       objectId varchar(10),
        id serial primary key,
        URL varchar(256),
        baselineRunSet integer references RunSet(id)
@@ -77,9 +74,6 @@ create table PullRequest (
 
 alter table RunSet add foreign key (pullRequest) references PullRequest(id);
 
-create table ParseObjectID (
-       parseID char(10) primary key,
-       tableName varchar(32),
-       integerKey integer,
-       varcharKey varchar(128)
-);
+create user $BENCHMARKER_USER login encrypted password '$BENCHMARKER_PASSWORD';
+grant select, insert, update, delete on table Benchmark, Commit, Config, Machine, PullRequest, RegressionWarnings, Run, RunSet to $BENCHMARKER_USER;
+grant usage, select, update on sequence runset_id_seq, pullrequest_id_seq, run_id_seq, regressionwarnings_id_seq to $BENCHMARKER_USER;

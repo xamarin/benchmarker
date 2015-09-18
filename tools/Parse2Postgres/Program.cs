@@ -5,6 +5,10 @@ using System.Linq;
 using Npgsql;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Benchmarker;
+using Common.Logging;
+using Common.Logging.Simple;
+using Benchmarker.Common;
 
 namespace Parse2Postgres
 {
@@ -13,6 +17,7 @@ namespace Parse2Postgres
 		static Dictionary<string, Dictionary<string, long>> idMap = new Dictionary<string, Dictionary<string, long>> ();
 		static Dictionary<string, Dictionary<string, string>> stringIdMap = new Dictionary<string, Dictionary<string, string>> ();
 
+		/*
 		static long LastVal (NpgsqlConnection conn)
 		{
 			using (var cmd = new NpgsqlCommand ()) {
@@ -27,11 +32,15 @@ namespace Parse2Postgres
 				}
 			}
 		}
+		*/
 
-		static long? Insert (NpgsqlCommand cmd, string table, JToken entry, string primaryStringKey, ISet<string> namesAlreadySet)
+		struct PostgresName {
+			public string name;
+			public NpgsqlTypes.NpgsqlDbType type;
+		};
+
+		static void SetColumnValues (string table, IEnumerable<PostgresName> columnNames, IDictionary<string, object> columnValues, JToken entry, string primaryStringKey)
 		{
-			var namesWithPrefixes = new List<string> ();
-			var names = new List<string> ();
 			string primaryKeyValue = null;
 			string postgresName = null;
 			if (primaryStringKey != null) {
@@ -39,17 +48,19 @@ namespace Parse2Postgres
 				if (postgresNameValue != null)
 					postgresName = postgresNameValue.ToObject<string> ();
 			}
-				
-			foreach (NpgsqlParameter parameter in cmd.Parameters) {
-				var nameWithPrefix = parameter.ParameterName;
-				namesWithPrefixes.Add (nameWithPrefix);
-				var name = nameWithPrefix.Substring (1);
-				names.Add (name);
 
-				if (namesAlreadySet != null && namesAlreadySet.Contains (name))
+			foreach (var pgName in columnNames) {
+				var name = pgName.name;
+				if (columnValues.ContainsKey (name))
 					continue;
 
 				var value = entry [name];
+
+				if (value == null || value.Type == JTokenType.Null) {
+					columnValues [name] = null;
+					continue;
+				}
+
 				if (name == primaryStringKey) {
 					primaryKeyValue = value.ToObject<string> ();
 					if (postgresName != null) {
@@ -57,56 +68,35 @@ namespace Parse2Postgres
 						value = postgresName;
 					}
 				}
-				switch (parameter.NpgsqlDbType) {
+
+				object pgValue;
+
+				switch (pgName.type) {
 				case NpgsqlTypes.NpgsqlDbType.Integer:
-					parameter.Value = value.ToObject<int> ();
+					pgValue = value.ToObject<int> ();
 					break;
 				case NpgsqlTypes.NpgsqlDbType.Varchar:
-					parameter.Value = value.ToObject<string> ();
+					pgValue = value.ToObject<string> ();
 					break;
 				case NpgsqlTypes.NpgsqlDbType.Boolean:
-					parameter.Value = value.ToObject<bool> ();
+					pgValue = value.ToObject<bool> ();
 					break;
 				case NpgsqlTypes.NpgsqlDbType.TimestampTZ:
-					parameter.Value = value ["iso"].ToObject<DateTime> ();
+					pgValue = value ["iso"].ToObject<DateTime> ();
 					break;
 				case NpgsqlTypes.NpgsqlDbType.Jsonb:
-					parameter.Value = value.ToString ();
+					pgValue = value.ToString ();
 					break;
 				case NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text:
 					var children = value.Children<JToken> ();
 					var arr = children.Select (jt => jt.ToObject<string> ()).ToArray ();
-					parameter.Value = arr;
+					pgValue = arr;
 					break;
 				default:
 					throw new Exception ("unknown type");
 				}
-			}
 
-			cmd.CommandText = string.Format ("insert into {0} ({1}) values ({2})", table, string.Join (",", names), string.Join (",", namesWithPrefixes));
-
-			var objectId = entry ["objectId"].ToObject<string> ();
-
-			try {
-				cmd.ExecuteNonQuery ();
-			} catch (NpgsqlException exc) {
-				Console.Error.WriteLine ("Exception when inserting {0} {1}: {2}", table, objectId, exc);
-				throw;
-			}
-
-			if (primaryKeyValue != null) {
-				if (!stringIdMap.ContainsKey (table))
-					stringIdMap.Add (table, new Dictionary<string, string> ());
-				stringIdMap [table].Add (objectId, primaryKeyValue);
-				Console.WriteLine ("{0} {1} -> {2}", table, objectId, primaryKeyValue);
-				return null;
-			} else {
-				var id = LastVal (cmd.Connection);
-				if (!idMap.ContainsKey (table))
-					idMap.Add (table, new Dictionary<string, long> ());
-				idMap [table].Add (objectId, id);
-				Console.WriteLine ("{0} {1} -> {2}", table, objectId, id);
-				return id;
+				columnValues [name] = pgValue;
 			}
 		}
 
@@ -141,41 +131,60 @@ namespace Parse2Postgres
 			}
 		}
 
+		static NpgsqlTypes.NpgsqlDbType PostgresTypeForForeignKeyInfo (ForeignKeyInfo info) {
+			bool isString;
+
+			if (idMap.ContainsKey (info.table))
+				isString = false;
+			else if (stringIdMap.ContainsKey (info.table))
+				isString = true;
+			else
+				throw new Exception ("unknown table for foreign key");
+			
+			if (info.isArray) {
+				if (!isString)
+					throw new Exception ("only support string foreign key arrays");
+				return NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar;
+			} else {
+				if (isString)
+					return NpgsqlTypes.NpgsqlDbType.Varchar;
+				else
+					return NpgsqlTypes.NpgsqlDbType.Integer;
+			}
+		}
+
 		static void ConvertTable (NpgsqlConnection conn, string exportDir, string tableName,
 			ParameterInfo[] parameterInfos, string primaryStringKey = null, ForeignKeyInfo[] foreignKeyInfos = null,
 			Func<JToken, bool> predicate = null)
 		{
 			var root = JObject.Parse (File.ReadAllText (Path.Combine (exportDir, string.Format ("{0}.json", tableName))));
 			var results = root ["results"];
+			var columnNames = parameterInfos.Select (pi => new PostgresName { name = pi.name, type = pi.type }).ToList ();
+			if (foreignKeyInfos != null) {
+				columnNames.AddRange (foreignKeyInfos.Select (fki => new PostgresName {
+					name = fki.name,
+					type = PostgresTypeForForeignKeyInfo (fki)
+				}));
+			}
+			var copyCommand = string.Format ("copy {0} ({1}) from stdin binary", tableName, string.Join (",", columnNames.Select (n => n.name)));
 
-			foreach (var entry in results) {
-				if (predicate != null && !predicate (entry))
-					continue;
-
-				using (var cmd = new NpgsqlCommand())
-				{
-					cmd.Connection = conn;
-
-					if (parameterInfos != null) {
-						foreach (var info in parameterInfos) {
-							var value = entry [info.name];
-							if (value == null || value.Type == JTokenType.Null)
-								continue;
-							cmd.Parameters.Add ("@" + info.name, info.type, info.size);
-						}
-					}
-
-					var namesAlreadySet = new HashSet<string> ();
+			using (var writer = conn.BeginBinaryImport (copyCommand)) {
+				foreach (var entry in results) {
+					if (predicate != null && !predicate (entry))
+						continue;
+					
+					var columnValues = new Dictionary<string, object> ();
 
 					if (foreignKeyInfos != null) {
 						foreach (var info in foreignKeyInfos) {
 							var value = entry [info.name];
 							bool isString;
 							object postgresValue;
-							NpgsqlTypes.NpgsqlDbType postgresType;
 
-							if (value == null || value.Type == JTokenType.Null)
+							if (value == null || value.Type == JTokenType.Null) {
+								columnValues [info.name] = null;
 								continue;
+							}
 
 							if (idMap.ContainsKey (info.table))
 								isString = false;
@@ -193,69 +202,59 @@ namespace Parse2Postgres
 									Console.WriteLine ("foreign key in array not found - skipping");
 									goto NextEntry;
 								}
-								postgresType = NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar;
 							} else {
 								postgresValue = GetForeignKey (value, info.table, isString);
 								if (postgresValue == null) {
 									Console.WriteLine ("foreign key not found - skipping");
 									goto NextEntry;
 								}
-								if (isString)
-									postgresType = NpgsqlTypes.NpgsqlDbType.Varchar;
-								else
-									postgresType = NpgsqlTypes.NpgsqlDbType.Integer;
 							}
 
-							cmd.Parameters.Add ("@" + info.name, postgresType).Value = postgresValue;
-							namesAlreadySet.Add (info.name);
+							columnValues [info.name] = postgresValue;
 						}
 					}
 
-					Insert (cmd, tableName, entry, primaryStringKey, namesAlreadySet);
-				}
-				NextEntry:
-				;
-			}
-		}
+					SetColumnValues (tableName, columnNames, columnValues, entry, primaryStringKey);
 
-		static void InsertObjectIds (NpgsqlConnection conn)
-		{
-			using (var cmd = new NpgsqlCommand ()) {
-				cmd.Connection = conn;
-				cmd.CommandText = "insert into ParseObjectID (tableName, parseID, integerKey) values (@table, @parse, @key)";
-				var tableParameter = cmd.Parameters.Add ("@table", NpgsqlTypes.NpgsqlDbType.Varchar, 32);
-				var parseParameter = cmd.Parameters.Add ("@parse", NpgsqlTypes.NpgsqlDbType.Char, 10);
-				var keyParameter = cmd.Parameters.Add ("@key", NpgsqlTypes.NpgsqlDbType.Integer);
-
-				foreach (var tableKvp in idMap) {
-					var table = tableKvp.Key;
-					tableParameter.Value = table;
-					foreach (var mapKvp in tableKvp.Value) {
-						var parseObjectId = mapKvp.Key;
-						var primaryKey = mapKvp.Value;
-						parseParameter.Value = parseObjectId;
-						keyParameter.Value = primaryKey;
-						cmd.ExecuteNonQuery ();
+					writer.StartRow();
+					foreach (var pgName in columnNames) {
+						var name = pgName.name;
+						var value = columnValues [name];
+						if (value == null)
+							writer.WriteNull ();
+						else
+							writer.Write (value, pgName.type);
 					}
+
+					NextEntry:
+					;
 				}
-			}	
+			}
 
-			using (var cmd = new NpgsqlCommand ()) {
-				cmd.Connection = conn;
-				cmd.CommandText = "insert into ParseObjectID (tableName, parseID, varcharKey) values (@table, @parse, @key)";
-				var tableParameter = cmd.Parameters.Add ("@table", NpgsqlTypes.NpgsqlDbType.Varchar, 32);
-				var parseParameter = cmd.Parameters.Add ("@parse", NpgsqlTypes.NpgsqlDbType.Char, 10);
-				var keyParameter = cmd.Parameters.Add ("@key", NpgsqlTypes.NpgsqlDbType.Varchar, 128);
+			using (var cmd = conn.CreateCommand ()) {
+				cmd.CommandText = string.Format ("select objectID, {0} from {1}", primaryStringKey ?? "id", tableName);
+				using (var reader = cmd.ExecuteReader())
+				{
+					while (reader.Read ()) {
+						var objectId = reader.GetString (0);
 
-				foreach (var tableKvp in stringIdMap) {
-					var table = tableKvp.Key;
-					tableParameter.Value = table;
-					foreach (var mapKvp in tableKvp.Value) {
-						var parseObjectId = mapKvp.Key;
-						var primaryKey = mapKvp.Value;
-						parseParameter.Value = parseObjectId;
-						keyParameter.Value = primaryKey;
-						cmd.ExecuteNonQuery ();
+						if (primaryStringKey != null) {
+							var primaryKeyValue = reader.GetString (1);
+							if (!stringIdMap.ContainsKey (tableName))
+								stringIdMap.Add (tableName, new Dictionary<string, string> ());
+							if (!stringIdMap [tableName].ContainsKey (objectId)) {
+								stringIdMap [tableName].Add (objectId, primaryKeyValue);
+								Console.WriteLine ("{0} {1} -> {2}", tableName, objectId, primaryKeyValue);
+							}
+						} else {
+							var id = reader.GetInt64 (1);
+							if (!idMap.ContainsKey (tableName))
+								idMap.Add (tableName, new Dictionary<string, long> ());
+							if (!idMap [tableName].ContainsKey (objectId)) {
+								idMap [tableName].Add (objectId, id);
+								Console.WriteLine ("{0} {1} -> {2}", tableName, objectId, id);
+							}
+						}
 					}
 				}
 			}
@@ -265,6 +264,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Benchmark",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "name", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
 					new ParameterInfo { name = "disabled", type = NpgsqlTypes.NpgsqlDbType.Boolean }
 				},
@@ -275,6 +275,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Machine",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "name", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
 					new ParameterInfo { name = "architecture", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
 					new ParameterInfo { name = "isDedicated", type = NpgsqlTypes.NpgsqlDbType.Boolean }
@@ -286,6 +287,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Commit",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "hash", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 40 },
 					new ParameterInfo { name = "commitDate", type = NpgsqlTypes.NpgsqlDbType.TimestampTZ }
 				},
@@ -296,6 +298,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Config",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "name", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
 					new ParameterInfo { name = "monoExecutable", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
 					new ParameterInfo { name = "monoEnvironmentVariables", type = NpgsqlTypes.NpgsqlDbType.Jsonb },
@@ -306,8 +309,23 @@ namespace Parse2Postgres
 
 		static void ConvertRunSet (NpgsqlConnection conn, string exportDir, bool withPullRequests)
 		{
+			var foreignKeyInfos = new ForeignKeyInfo[] {
+				new ForeignKeyInfo { name = "commit", table = "Commit" },
+				new ForeignKeyInfo { name = "machine", table = "Machine" },
+				new ForeignKeyInfo { name = "config", table = "Config" },
+				new ForeignKeyInfo { name = "timedOutBenchmarks", table = "Benchmark", isArray = true },
+				new ForeignKeyInfo { name = "crashedBenchmarks", table = "Benchmark", isArray = true }
+			};
+
+			if (withPullRequests) {
+				foreignKeyInfos = foreignKeyInfos.Concat (new ForeignKeyInfo[] {
+					new ForeignKeyInfo { name = "pullRequest", table = "PullRequest" }
+				}).ToArray ();
+			}
+
 			ConvertTable (conn, exportDir, "RunSet",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "startedAt", type = NpgsqlTypes.NpgsqlDbType.TimestampTZ },
 					new ParameterInfo { name = "finishedAt", type = NpgsqlTypes.NpgsqlDbType.TimestampTZ },
 					new ParameterInfo { name = "buildURL", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 256 },
@@ -317,14 +335,7 @@ namespace Parse2Postgres
 					new ParameterInfo { name = "logURLs", type = NpgsqlTypes.NpgsqlDbType.Jsonb }
 				},
 				null,
-				new ForeignKeyInfo[] {
-					new ForeignKeyInfo { name = "commit", table = "Commit" },
-					new ForeignKeyInfo { name = "machine", table = "Machine" },
-					new ForeignKeyInfo { name = "config", table = "Config" },
-					new ForeignKeyInfo { name = "timedOutBenchmarks", table = "Benchmark", isArray = true },
-					new ForeignKeyInfo { name = "crashedBenchmarks", table = "Benchmark", isArray = true },
-					new ForeignKeyInfo { name = "pullRequest", table = "PullRequest" }
-				},
+				foreignKeyInfos,
 				e => e ["pullRequest"] == null ? !withPullRequests : withPullRequests);
 		}
 
@@ -332,6 +343,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "Run",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "elapsedMilliseconds", type = NpgsqlTypes.NpgsqlDbType.Integer }
 				},
 				null,
@@ -344,7 +356,9 @@ namespace Parse2Postgres
 		static void ConvertRegressionWarnings (NpgsqlConnection conn, string exportDir)
 		{
 			ConvertTable (conn, exportDir, "RegressionWarnings",
-				null,
+				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 }
+				},
 				null,
 				new ForeignKeyInfo[] {
 					new ForeignKeyInfo { name = "runSet", table = "RunSet" },
@@ -357,6 +371,7 @@ namespace Parse2Postgres
 		{
 			ConvertTable (conn, exportDir, "PullRequest",
 				new ParameterInfo[] {
+					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "URL", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 256 }
 				},
 				null,
@@ -374,7 +389,20 @@ namespace Parse2Postgres
 
 			var exportDir = args [0];
 
-			using (var conn = new NpgsqlConnection("Host=192.168.99.100;Port=32768;Username=postgres;Password=mysecretpassword;Database=performance"))
+			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
+			Logging.SetLogging (LogManager.GetLogger<MainClass> ());
+
+			var credentials = Accredit.GetCredentials ("benchmarkerPostgres");
+			var host = credentials ["host"].ToObject<string> ();
+			var port = credentials ["port"].ToObject<int> ();
+			var database = credentials ["database"].ToObject<string> ();
+			var user = credentials ["user"].ToObject<string> ();
+			var password = credentials ["password"].ToObject<string> ();
+
+			var connectionString = string.Format ("Host={0};Port={1};Username={2};Password={3};Database={4};SslMode=Require;TrustServerCertificate=true",
+				                       host, port, user, password, database);
+
+			using (var conn = new NpgsqlConnection(connectionString))
 			{
 				conn.Open();
 
@@ -388,8 +416,6 @@ namespace Parse2Postgres
 				ConvertRunSet (conn, exportDir, true);
 				// do this last because of pull request run sets
 				ConvertRun (conn, exportDir);
-
-				InsertObjectIds (conn);
 			}
 		}
 	}
