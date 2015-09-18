@@ -19,7 +19,7 @@ namespace Benchmarker
 
 		private static void WaitForConfirmation (string key)
 		{
-			Console.WriteLine ("Log in on browser for access, confirmation key {0}", key);
+			Console.Error.WriteLine ("Log in on browser for access, confirmation key {0}", key);
 			ParseQuery<ParseObject> query = ParseObject.GetQuery ("CredentialsResponse").WhereEqualTo ("key", key);
 			while (true) {
 				var task = query.FirstOrDefaultAsync ();
@@ -33,7 +33,7 @@ namespace Benchmarker
 				}
 				Thread.Sleep (1000);
 			}
-			Console.WriteLine ("Login successful");
+			Console.Error.WriteLine ("Login successful");
 		}
 
 		private static string GetResponse (string url, string parameters)

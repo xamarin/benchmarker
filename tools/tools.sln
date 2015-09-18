@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parse2Postgres", "Parse2Pos
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "accredit", "accredit\accredit.shproj", "{08D02AC3-7F08-49F9-9D63-0493AF099B61}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Accreditize", "Accreditize\Accreditize.csproj", "{6819955F-90F7-46EB-9F30-53EEB658ACD1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -65,6 +67,14 @@ Global
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x64.Build.0 = Release|Any CPU
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x86.ActiveCfg = Release|Any CPU
 		{5CB69952-8811-41F2-91A2-070EED488F8F}.Release|x86.Build.0 = Release|Any CPU
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Debug|x64.ActiveCfg = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Debug|x64.Build.0 = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Debug|x86.ActiveCfg = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Debug|x86.Build.0 = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Release|x64.ActiveCfg = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Release|x64.Build.0 = Debug|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Release|x86.ActiveCfg = Release|x86
+		{6819955F-90F7-46EB-9F30-53EEB658ACD1}.Release|x86.Build.0 = Release|x86
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x64.Build.0 = Debug|Any CPU
 		{7940B561-C489-4D75-9582-99B09E6BEEC8}.Debug|x86.ActiveCfg = Debug|Any CPU
