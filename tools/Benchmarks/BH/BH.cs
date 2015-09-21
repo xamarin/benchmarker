@@ -3,83 +3,82 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-public class BH
+namespace Benchmarks.BH
 {
+	public class BH
+	{
 
-	private static int nbody = 20;
+		private static int nbody = 20;
 
-	/**
+		/**
 	 * The maximum number of time steps to take in the simulation
 	 **/
-	private static int nsteps = 10;
+		private static int nsteps = 10;
 
-	/**
+		/**
 	 * Should we print information messsages
 	 **/
-	private static bool printMsgs = true;
-	/**
+		private static bool printMsgs = true;
+		/**
 	 * Should we print detailed results
 	 **/
-	private static bool printResults = true;
+		private static bool printResults = true;
 
-	public static double DTIME = 0.0125;
+		public static double DTIME = 0.0125;
 
-	public static void Main(String[] args)
-	{
-		parseCmdLine(args);
-
-		Node.staticInitNode();
-		Cell.initCell();
-
-		if(nbody < 2)
+		public static void Main (String[] args)
 		{
-			Console.WriteLine("Needs at least 2 bodies.");
-			System.Environment.Exit(1);
-		}
+			parseCmdLine (args);
 
-		if(printMsgs)
-			Console.WriteLine("nbody = " + nbody);
+			Node.staticInitNode ();
+			Cell.initCell ();
 
-		BTree root = BTree.makeTreeX();
-		root.createTestData(nbody);
-
-		if(printMsgs)
-			Console.WriteLine("Bodies created");
-
-		int i = 0;
-		while(i < nsteps)
-			root.stepSystem(i++);
-
-		if(printResults)
-		{
-			int j = 0;
-			while(j < root.bodyTab.Count)
-			{
-				Body b = root.bodyTab[j];
-				Console.Write("body " + j++ + " -- ");
-				b.pos.printMathVector();
-				Console.WriteLine();
+			if (nbody < 2) {
+				Console.WriteLine ("Needs at least 2 bodies.");
+				System.Environment.Exit (1);
 			}
+
+			if (printMsgs)
+				Console.WriteLine ("nbody = " + nbody);
+
+			BTree root = BTree.makeTreeX ();
+			root.createTestData (nbody);
+
+			if (printMsgs)
+				Console.WriteLine ("Bodies created");
+
+			int i = 0;
+			while (i < nsteps)
+				root.stepSystem (i++);
+
+			if (printResults) {
+				int j = 0;
+				while (j < root.bodyTab.Count) {
+					Body b = root.bodyTab [j];
+					Console.Write ("body " + j++ + " -- ");
+					b.pos.printMathVector ();
+					Console.WriteLine ();
+				}
+			}
+
+			Console.WriteLine ("Done!");
 		}
 
-		Console.WriteLine("Done!");
-	}
-
-	/**
+		/**
 	 * Random number generator used by the orignal BH benchmark.
 	 *
 	 * @param seed the seed to the generator
 	 * @return a random number
 	 */
-	public static double myRand(double seed)
-	{
-		double t = 16807.0 * seed + 1.0;
+		public static double myRand (double seed)
+		{
+			double t = 16807.0 * seed + 1.0;
 
-		seed = t - (2147483647.0 * Math.Floor(t / 2147483647.0));
-		return seed;
-	}
+			seed = t - (2147483647.0 * Math.Floor (t / 2147483647.0));
+			return seed;
+		}
 
-	/**
+		/**
 	 * Generate a floating point random number.  Used by
 	 * the original BH benchmark.
 	 *
@@ -88,73 +87,58 @@ public class BH
 	 * @param r  seed
 	 * @return a floating point randon number
 	 */
-	public static double xRand(double xl, double xh, double r)
-	{
-		double res = xl + (xh - xl) * r / 2147483647.0;
-		return res;
-	}
-
-	private static void parseCmdLine(String[] args)
-	{
-		int i = 0;
-		String arg;
-
-		while(i < args.Length && args[i].StartsWith("-"))
+		public static double xRand (double xl, double xh, double r)
 		{
-			arg = args[i++];
-
-			// check for options that require arguments
-			if(arg.Equals("-b"))
-			{
-				if(i < args.Length)
-				{
-					nbody = Int32.Parse(args[i++]);
-				}
-				else
-				{
-					throw new Exception("-l requires the number of levels");
-				}
-			}
-			else if(arg.Equals("-s"))
-			{
-				if(i < args.Length)
-				{
-					nsteps = Int32.Parse(args[i++]);
-				}
-				else
-				{
-					throw new Exception("-l requires the number of levels");
-				}
-			}
-			else if(arg.Equals("-m"))
-			{
-				printMsgs = true;
-			}
-			else if(arg.Equals("-p"))
-			{
-				printResults = true;
-			}
-			else if(arg.Equals("-h"))
-			{
-				usage();
-			}
+			double res = xl + (xh - xl) * r / 2147483647.0;
+			return res;
 		}
-		if(nbody == 0)
-			usage();
-	}
 
-	/**
+		private static void parseCmdLine (String[] args)
+		{
+			int i = 0;
+			String arg;
+
+			while (i < args.Length && args [i].StartsWith ("-")) {
+				arg = args [i++];
+
+				// check for options that require arguments
+				if (arg.Equals ("-b")) {
+					if (i < args.Length) {
+						nbody = Int32.Parse (args [i++]);
+					} else {
+						throw new Exception ("-l requires the number of levels");
+					}
+				} else if (arg.Equals ("-s")) {
+					if (i < args.Length) {
+						nsteps = Int32.Parse (args [i++]);
+					} else {
+						throw new Exception ("-l requires the number of levels");
+					}
+				} else if (arg.Equals ("-m")) {
+					printMsgs = true;
+				} else if (arg.Equals ("-p")) {
+					printResults = true;
+				} else if (arg.Equals ("-h")) {
+					usage ();
+				}
+			}
+			if (nbody == 0)
+				usage ();
+		}
+
+		/**
 	 * The usage routine which describes the program options.
 	 **/
-	private static void usage()
-	{
-		Console.WriteLine("usage: java BH -b <size> [-s <steps>] [-p] [-m] [-h]");
-		Console.WriteLine("    -b the number of bodies");
-		Console.WriteLine("    -s the max. number of time steps (default=10)");
-		Console.WriteLine("    -p (print detailed results)");
-		Console.WriteLine("    -m (print information messages");
-		Console.WriteLine("    -h (this message)");
-		System.Environment.Exit(0);
+		private static void usage ()
+		{
+			Console.WriteLine ("usage: java BH -b <size> [-s <steps>] [-p] [-m] [-h]");
+			Console.WriteLine ("    -b the number of bodies");
+			Console.WriteLine ("    -s the max. number of time steps (default=10)");
+			Console.WriteLine ("    -p (print detailed results)");
+			Console.WriteLine ("    -m (print information messages");
+			Console.WriteLine ("    -h (this message)");
+			System.Environment.Exit (0);
+		}
 	}
 }
 
