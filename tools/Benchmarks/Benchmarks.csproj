@@ -33,6 +33,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="strcat.cs" />
     <Compile Include="n-body.cs" />
+    <Compile Include="BH\BH.cs" />
+    <Compile Include="BH\Body.cs" />
+    <Compile Include="BH\BTree.cs" />
+    <Compile Include="BH\Cell.cs" />
+    <Compile Include="BH\HG.cs" />
+    <Compile Include="BH\MathVector.cs" />
+    <Compile Include="BH\Node.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -42,5 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BH\" />
   </ItemGroup>
 </Project>
