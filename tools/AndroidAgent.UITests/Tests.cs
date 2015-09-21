@@ -30,7 +30,11 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
-		public void RunBenchmark ()
+		public void RunBenchmarkBh () {
+			RunBenchmarkHelper ("bh");
+		}
+
+		public void RunBenchmarkHelper (string benchmark)
 		{
 			var assembly = Assembly.GetExecutingAssembly ();
 			using (Stream stream = assembly.GetManifestResourceStream ("AndroidAgent.UITests.params.json")) {
@@ -44,6 +48,7 @@ namespace AndroidAgent.UITests
 					app.Screenshot ("init");
 
 					clearAndSetTextField ("runSetId", runSetId);
+					clearAndSetTextField ("benchmark", benchmark);
 					clearAndSetTextField ("bmUsername", bmUsername);
 					clearAndSetTextField ("bmPassword", bmPassword);
 					clearAndSetTextField ("githubAPIKey", githubAPIKey);
