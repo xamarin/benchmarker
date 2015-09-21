@@ -57,7 +57,7 @@ namespace AndroidAgent
 			var sw = Stopwatch.StartNew ();
 			switch (benchmark) {
 			case "bh":
-				BH.Main (new string[] { "-b", "700", "-s", "1000" }, Logging.GetLogging ());
+				BH.Main (new string[] { "-b", "400", "-s", "200" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "40000000" });
