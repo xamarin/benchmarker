@@ -118,13 +118,9 @@ namespace AndroidAgent
 			const int tryRuns = 10;
 			var commit = GetCommit ();
 			var config = new Config { Name = "auto-sgen", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
-			var runSet = new RunSet {
-				StartDateTime = DateTime.Now,
-				Config = config,
-				Commit = commit,
-				BuildURL = null, // TODO: wrench url?
-				LogURL = null, // TODO: XTC url?
-			};
+			// TODO: buildURL => wrench log?
+			// TODO: logURL => XTC url?
+			var runSet = AsyncContext.Run (() => RunSet.FromId (architecture, hostname, runSetId, config, commit, null, null));
 			new Task (() => {
 				var result = new Benchmarker.Common.Models.Result {
 					DateTime = DateTime.Now,
