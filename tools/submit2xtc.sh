@@ -4,10 +4,34 @@ set -x
 set -e
 set -o pipefail
 
+PARAMSJSON="AndroidAgent.UITests/params.json"
+XTCAPIKEY="../xtc-api-key"
+
+function checkjsonfield()
+{
+    (cat "$PARAMSJSON" | jq -e '.'$1 > /dev/null) || (echo "file $PARAMSJSON must contain field $1" && exit 4)
+}
+
 if [ $# -ne 1 ]; then
     echo "./submit2xtc.sh <commit sha1>"
     exit 1
 fi
+
+if [ ! -f $XTCAPIKEY ]; then
+    echo "$XTCAPIKEY file must exist"
+    exit 2
+fi
+
+if [ ! -f $PARAMSJSON ]; then
+    echo "$PARAMSJSON file must exist"
+    exit 3
+fi
+
+# check if the json file has the required fields
+checkjsonfield 'bmUsername'
+checkjsonfield 'bmPassword'
+checkjsonfield 'githubAPIKey'
+checkjsonfield 'runSetId'
 
 COMMITSHA="$1"
 
@@ -20,11 +44,26 @@ RUNSETID=$(mono --debug ./compare.exe \
 
 echo "runSetId: $RUNSETID"
 
-# TODO: fixup json file
+# insert new runSetId into JSON file
+mv "$PARAMSJSON" "$PARAMSJSON"_template
+cat "$PARAMSJSON"_template | jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
+rm "$PARAMSJSON"_template
 
-# TODO: build app + uitests
+# build app + uitests
 (cd AndroidAgent && xbuild /p:Configuration=Release /target:SignAndroidPackage )
 (cd AndroidAgent.UITests/ && xbuild /p:Configuration=Release )
 
+# submit to xtc
+mono \
+    ./packages/Xamarin.UITest.*/tools/test-cloud.exe \
+    submit \
+    ./AndroidAgent/bin/Release/com.xamarin.benchmarkagent.apk \
+    `cat $XTCAPIKEY` \
+    --devices aba2bb7e \
+    --async \
+    --test-chunk \
+    --fixture AndroidAgent \
+    --app-name AndroidAgent \
+    --assembly-dir ./AndroidAgent.UITests/bin/Release \
+    --user 'bernhard.urban@xamarin.com'
 
-# TODO: submit to xtc
