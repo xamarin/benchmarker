@@ -10,6 +10,7 @@ using Android.OS;
 using System.Reflection;
 using System.Diagnostics;
 using Benchmarker.Common;
+using Benchmarks.BH;
 using Java.Util.Logging;
 using Common.Logging;
 using Newtonsoft.Json.Linq;
@@ -55,6 +56,9 @@ namespace AndroidAgent
 
 			var sw = Stopwatch.StartNew ();
 			switch (benchmark) {
+			case "bh":
+				BH.Main (new string[] { "-b", "700", "-s", "1000" }, Logging.GetLogging ());
+				break;
 			case "strcat": 
 				strcat.Main (new string[] { "40000000" });
 				break;

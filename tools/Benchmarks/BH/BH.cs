@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using Common.Logging;
 
 namespace Benchmarks.BH
 {
@@ -26,26 +27,26 @@ namespace Benchmarks.BH
 
 		public static double DTIME = 0.0125;
 
-		public static void Main (String[] args)
+		public static void Main (String[] args, ILog logger)
 		{
-			parseCmdLine (args);
+			parseCmdLine (args, logger);
 
 			Node.staticInitNode ();
 			Cell.initCell ();
 
 			if (nbody < 2) {
-				Console.WriteLine ("Needs at least 2 bodies.");
-				System.Environment.Exit (1);
+				logger.InfoFormat ("Needs at least 2 bodies.");
+				return;
 			}
 
 			if (printMsgs)
-				Console.WriteLine ("nbody = " + nbody);
+				logger.InfoFormat ("nbody = " + nbody);
 
 			BTree root = BTree.makeTreeX ();
 			root.createTestData (nbody);
 
 			if (printMsgs)
-				Console.WriteLine ("Bodies created");
+				logger.InfoFormat ("Bodies created");
 
 			int i = 0;
 			while (i < nsteps)
@@ -55,13 +56,12 @@ namespace Benchmarks.BH
 				int j = 0;
 				while (j < root.bodyTab.Count) {
 					Body b = root.bodyTab [j];
-					Console.Write ("body " + j++ + " -- ");
-					b.pos.printMathVector ();
-					Console.WriteLine ();
+					logger.InfoFormat ("body " + j++ + " -- ");
+					b.pos.printMathVector (logger);
 				}
 			}
 
-			Console.WriteLine ("Done!");
+			logger.InfoFormat ("Done!");
 		}
 
 		/**
@@ -93,7 +93,7 @@ namespace Benchmarks.BH
 			return res;
 		}
 
-		private static void parseCmdLine (String[] args)
+		private static void parseCmdLine (String[] args, ILog logger)
 		{
 			int i = 0;
 			String arg;
@@ -119,25 +119,25 @@ namespace Benchmarks.BH
 				} else if (arg.Equals ("-p")) {
 					printResults = true;
 				} else if (arg.Equals ("-h")) {
-					usage ();
+					usage (logger);
 				}
 			}
 			if (nbody == 0)
-				usage ();
+				usage (logger);
 		}
 
 		/**
 	 * The usage routine which describes the program options.
 	 **/
-		private static void usage ()
+		private static void usage (ILog logger)
 		{
-			Console.WriteLine ("usage: java BH -b <size> [-s <steps>] [-p] [-m] [-h]");
-			Console.WriteLine ("    -b the number of bodies");
-			Console.WriteLine ("    -s the max. number of time steps (default=10)");
-			Console.WriteLine ("    -p (print detailed results)");
-			Console.WriteLine ("    -m (print information messages");
-			Console.WriteLine ("    -h (this message)");
-			System.Environment.Exit (0);
+			logger.InfoFormat ("usage: java BH -b <size> [-s <steps>] [-p] [-m] [-h]");
+			logger.InfoFormat ("    -b the number of bodies");
+			logger.InfoFormat ("    -s the max. number of time steps (default=10)");
+			logger.InfoFormat ("    -p (print detailed results)");
+			logger.InfoFormat ("    -m (print information messages");
+			logger.InfoFormat ("    -h (this message)");
+			return;
 		}
 	}
 }

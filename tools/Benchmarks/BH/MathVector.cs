@@ -1,5 +1,5 @@
-﻿
-using System;
+﻿using System;
+using Common.Logging;
 
 namespace Benchmarks.BH
 {
@@ -229,10 +229,10 @@ namespace Benchmarks.BH
 				data [i] = u.data [i] + s;
 		}
 
-		public void printMathVector ()
+		public void printMathVector (ILog logger)
 		{
 			for (int i = 0; i < NDIM; i++)
-				Console.Write (this.data [i] + " ");
+				logger.InfoFormat (this.data [i] + " ");
 		}
 	}
 }
