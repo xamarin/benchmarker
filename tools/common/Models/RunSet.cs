@@ -101,7 +101,7 @@ namespace Benchmarker.Common.Models
 			if (buildURL != runSet.BuildURL)
 				throw new Exception ("Build URL does not match the one in the database.");
 			if (!AreWeOnParseMachine (hostname, architecture, machineObj))
-				throw new Exception ("Machine does not match the one in the database.");
+				throw new Exception ("Machine does not match the one in the database: " + hostname + "/" + architecture + " vs. " + machineObj["name"] + "/" + machineObj["architecture"]);
 
 			runSet.Config = config;
 			runSet.Commit = commit;
