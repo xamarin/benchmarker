@@ -100,7 +100,7 @@ class Page extends React.Component {
 		if (this.state.selection.runSet === undefined)
 			detail = <div className='diagnostic'>Please select a run set.</div>;
 		else
-			detail = <RunSetDescription controller={this.props.controller} runSet={this.state.selection.runSet} />;
+			detail = <xp_common.RunSetDescription controller={this.props.controller} runSet={this.state.selection.runSet} />;
 
 		return <div className="RunSetPage">
 			<header>
