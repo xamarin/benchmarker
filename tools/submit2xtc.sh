@@ -35,6 +35,8 @@ checkjsonfield 'runSetId'
 
 COMMITSHA="$1"
 
+xbuild /p:Configuration=Release /target:compare
+
 # generate run-set id for nexus5
 RUNSETID=$(mono --debug ./compare.exe \
     --commit $COMMITSHA \

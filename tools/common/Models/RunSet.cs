@@ -35,33 +35,33 @@ namespace Benchmarker.Common.Models
 			crashedBenchmarks = new List<Benchmark> ();
 		}
 
-		public static async Task<ParseObject> GetMachineFromParse (string hostname, string architecture)
+		public static async Task<ParseObject> GetMachineFromParse (Machine machine)
 		{
 			var results = await ParseInterface.RunWithRetry (() 
-				=> ParseObject.GetQuery ("Machine").WhereEqualTo ("name", hostname).WhereEqualTo ("architecture", architecture).FindAsync ());
+				=> ParseObject.GetQuery ("Machine").WhereEqualTo ("name", machine.Name).WhereEqualTo ("architecture", machine.Architecture).FindAsync ());
 			Logging.GetLogging ().Info ("FindAsync Machine");
 			if (results.Count () > 0)
 				return results.First ();
 			return null;
 		}
 
-		async static  Task<ParseObject> GetOrUploadMachineToParse (string hostname, string architecture, List<ParseObject> saveList)
+		async static  Task<ParseObject> GetOrUploadMachineToParse (Machine machine, List<ParseObject> saveList)
 		{
-			var obj = await GetMachineFromParse (hostname, architecture);
+			var obj = await GetMachineFromParse (machine);
 			if (obj != null)
 				return obj;
 
 			obj = ParseInterface.NewParseObject ("Machine");
-			obj ["name"] = hostname;
-			obj ["architecture"] = architecture;
+			obj ["name"] = machine.Name;
+			obj ["architecture"] = machine.Architecture;
 			obj ["isDedicated"] = false;
 			saveList.Add (obj);
 			return obj;
 		}
 
-		static bool AreWeOnParseMachine (string hostname, string architecture, ParseObject obj)
+		static bool AreWeOnParseMachine (Machine machine, ParseObject obj)
 		{
-			return hostname == obj.Get<string> ("name") && architecture == obj.Get<string> ("architecture");
+			return machine.Name == obj.Get<string> ("name") && machine.Architecture == obj.Get<string> ("architecture");
 		}
 
 		static async Task<ParseObject[]> BenchmarkListToParseObjectArray (IList<Benchmark> l, List<ParseObject> saveList)
@@ -72,7 +72,7 @@ namespace Benchmarker.Common.Models
 			return pos.ToArray ();
 		}
 
-		public static async Task<RunSet> FromId (string hostname, string architecture, string id, Config config, Commit commit, string buildURL, string logURL)
+		public static async Task<RunSet> FromId (Machine machine, string id, Config config, Commit commit, string buildURL, string logURL)
 		{
 			var obj = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("RunSet").GetAsync (id));
 			Logging.GetLogging ().Info ("GetAsync RunSet");
@@ -100,8 +100,8 @@ namespace Benchmarker.Common.Models
 				throw new Exception ("Commit does not match the one in the database.");
 			if (buildURL != runSet.BuildURL)
 				throw new Exception ("Build URL does not match the one in the database.");
-			if (!AreWeOnParseMachine (hostname, architecture, machineObj))
-				throw new Exception ("Machine does not match the one in the database: " + hostname + "/" + architecture + " vs. " + machineObj["name"] + "/" + machineObj["architecture"]);
+			if (!AreWeOnParseMachine (machine, machineObj))
+				throw new Exception ("Machine does not match the one in the database: " + machine.Name + "/" + machine.Architecture + " vs. " + machineObj["name"] + "/" + machineObj["architecture"]);
 
 			runSet.Config = config;
 			runSet.Commit = commit;
@@ -114,12 +114,12 @@ namespace Benchmarker.Common.Models
 			return runSet;
 		}
 
-		public string UploadToParseGetObjectId (string hostname, string architecture) {
-			ParseObject parseObject = AsyncContext.Run (() => UploadToParse (hostname, architecture));
+		public string UploadToParseGetObjectId (Machine machine) {
+			ParseObject parseObject = AsyncContext.Run (() => UploadToParse (machine));
 			return parseObject.ObjectId;
 		}
 
-		public async Task<ParseObject> UploadToParse (string hostname, string architecture)
+		public async Task<ParseObject> UploadToParse (Machine machine)
 		{
 			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
 
@@ -166,7 +166,7 @@ namespace Benchmarker.Common.Models
 			var obj = parseObject ?? ParseInterface.NewParseObject ("RunSet");
 
 			if (parseObject == null) {
-				var m = await GetOrUploadMachineToParse (hostname, architecture, saveList);
+				var m = await GetOrUploadMachineToParse (machine, saveList);
 				var c = await Config.GetOrUploadToParse (saveList);
 				var commit = await Commit.GetOrUploadToParse (saveList);
 				obj ["machine"] = m;

@@ -93,7 +93,7 @@ class Compare
 		}
 
 		var hostarch = compare.Utils.LocalHostnameAndArch ();
-		var machineObj = await RunSet.GetMachineFromParse (hostarch.Item1, hostarch.Item2);
+		var machineObj = await RunSet.GetMachineFromParse (new Machine () { Name = hostarch.Item1, Architecture = hostarch.Item2 });
 		if (machineObj == null) {
 			Console.Error.WriteLine ("Error: The machine does not exist.");
 			Environment.Exit (1);
@@ -284,7 +284,7 @@ class Compare
 		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 
 		Machine machine = null;
-		if (machineName != null) {
+		if (machineName == null) {
 			machine = compare.Utils.LoadMachineCurrentFrom (machinesDir);
 		} else {
 			machine = compare.Utils.LoadMachineFromFile (machineName, machinesDir);
@@ -292,6 +292,13 @@ class Compare
 
 		if (machine != null && machine.ExcludeBenchmarks != null)
 			benchmarks = benchmarks.Where (b => !machine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
+
+		if (machine == null) { // couldn't find machine file
+			var hostarch = compare.Utils.LocalHostnameAndArch ();
+			machine = new Machine ();
+			machine.Name = hostarch.Item1;
+			machine.Architecture = hostarch.Item2;
+		}
 
 		var commit = AsyncContext.Run (() => compare.Utils.GetCommit (config, commitFromCmdline, gitRepoDir));
 
@@ -304,14 +311,13 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		var hostarch = compare.Utils.LocalHostnameAndArch ();
 		RunSet runSet;
 		if (runSetId != null) {
 			if (pullRequestURL != null) {
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (hostarch.Item1, hostarch.Item2, runSetId, config, commit, buildURL, logURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (machine, runSetId, config, commit, buildURL, logURL));
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -404,7 +410,7 @@ class Compare
 
 		Console.WriteLine ("uploading");
 		try {
-			var parseObject = AsyncContext.Run (() => runSet.UploadToParse (hostarch.Item1, hostarch.Item2));
+			var parseObject = AsyncContext.Run (() => runSet.UploadToParse (machine));
 			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", parseObject.ObjectId);
 			ParseObject pullRequestObject = null;
 			if (pullRequestURL != null) {
