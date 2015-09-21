@@ -21,7 +21,7 @@ namespace AndroidAgent.UITests
 			app = ConfigureApp.Android.StartApp ();
 		}
 
-		private void clearAndSetTextField(string id, string value)
+		private void clearAndSetTextField (string id, string value)
 		{
 			app.ClearText (c => c.Marked (id));
 			app.ClearText (c => c.Marked (id));
@@ -30,8 +30,21 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
-		public void RunBenchmarkBh () {
+		public void RunBenchmarkBh ()
+		{
 			RunBenchmarkHelper ("bh");
+		}
+
+		[Test]
+		public void RunBenchmarkNbody ()
+		{
+			RunBenchmarkHelper ("n-body");
+		}
+
+		[Test]
+		public void RunBenchmarkStrcat ()
+		{
+			RunBenchmarkHelper ("strcat");
 		}
 
 		public void RunBenchmarkHelper (string benchmark)
@@ -53,9 +66,9 @@ namespace AndroidAgent.UITests
 					clearAndSetTextField ("bmPassword", bmPassword);
 					clearAndSetTextField ("githubAPIKey", githubAPIKey);
 
-					app.Tap (c => c.Marked("myButton"));
+					app.Tap (c => c.Marked ("myButton"));
 					app.Screenshot ("after tap");
-					app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes(179));
+					app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes (179));
 					app.Screenshot ("after benchmark");
 				}
 			}

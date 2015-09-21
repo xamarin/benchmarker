@@ -59,11 +59,11 @@ namespace AndroidAgent
 			case "bh":
 				BH.Main (new string[] { "-b", "400", "-s", "200" }, Logging.GetLogging ());
 				break;
-			case "strcat": 
-				strcat.Main (new string[] { "40000000" });
-				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
+				break;
+			case "strcat": 
+				strcat.Main (new string[] { "40000000" });
 				break;
 			default:
 				throw new NotImplementedException ();
