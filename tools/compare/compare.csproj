@@ -56,7 +56,7 @@
       <HintPath>..\packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
     </Reference>
     <Reference Include="Octokit">
-      <HintPath>..\packages\Octokit.0.15.0\lib\net45\Octokit.dll</HintPath>
+      <HintPath>..\packages\Octokit.0.16.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

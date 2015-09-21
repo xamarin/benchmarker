@@ -73,11 +73,11 @@
     <Reference Include="Nito.AsyncEx.Enlightenment">
       <HintPath>..\packages\Nito.AsyncEx.3.0.1\lib\MonoAndroid\Nito.AsyncEx.Enlightenment.dll</HintPath>
     </Reference>
-    <Reference Include="Octokit">
-      <HintPath>..\packages\Octokit.0.15.0\lib\portable-net45+wp80+win+wpa81\Octokit.dll</HintPath>
-    </Reference>
     <Reference Include="Parse.Android">
       <HintPath>..\Components\parse-1.5.5\lib\android\Parse.Android.dll</HintPath>
+    </Reference>
+    <Reference Include="Octokit">
+      <HintPath>..\packages\Octokit.0.16.0\lib\portable-net45+wp80+win+wpa81\Octokit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
