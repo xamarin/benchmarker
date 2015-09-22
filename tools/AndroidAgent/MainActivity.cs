@@ -171,12 +171,16 @@ namespace AndroidAgent
 		}
 
 		private Boolean IsRooted() {
-			Java.Lang.Process su = Java.Lang.Runtime.GetRuntime ().Exec ("su");
-			Java.IO.DataOutputStream outSu = new Java.IO.DataOutputStream (su.OutputStream);
-			outSu.WriteBytes ("exit\n");
-			outSu.Flush ();
-			su.WaitFor ();
-			return su.ExitValue () == 0;
+			try {
+				Java.Lang.Process su = Java.Lang.Runtime.GetRuntime ().Exec ("su");
+				Java.IO.DataOutputStream outSu = new Java.IO.DataOutputStream (su.OutputStream);
+				outSu.WriteBytes ("exit\n");
+				outSu.Flush ();
+				su.WaitFor ();
+				return su.ExitValue () == 0;
+			} catch (Java.Lang.Exception _) {
+				return false;
+			}
 		}
 
 		private string[] AvailableCPUFreuquencies() {
