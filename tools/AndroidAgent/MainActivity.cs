@@ -161,7 +161,36 @@ namespace AndroidAgent
 			v += "\nHostname: " + hostname;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
 			Logging.GetLogging().Info (v);
+			if (IsRooted ()) {
+				Logging.GetLogging ().Info ("Ohai: On a rooted device!");
+			} else {
+				Logging.GetLogging ().Warn ("device not rooted, thus can't set CPU frequency: expect flaky results");
+			}
 			Logging.GetLogging().Info ("OnCreate finished");
+		}
+
+		private Boolean IsRooted() {
+			Java.Lang.Process su = Java.Lang.Runtime.GetRuntime ().Exec ("su");
+			Java.IO.DataOutputStream outSu = new Java.IO.DataOutputStream (su.OutputStream);
+			outSu.WriteBytes ("exit\n");
+			outSu.Flush ();
+			su.WaitFor ();
+			return su.ExitValue () == 0;
+		}
+
+		private string[] AvailableCPUFreuquencies() {
+			return null;
+		}
+
+		private string[] AvailableCPUGovenors() {
+			return null;
+		}
+
+		private void SetCPUGovenor() {
+		}
+
+		private void SetCPUFrequency() {
+			return;
 		}
 	}
 }
