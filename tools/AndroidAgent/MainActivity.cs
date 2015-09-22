@@ -130,6 +130,7 @@ namespace AndroidAgent
 					}
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
+					RunOnUiThread (() => SetStartButtonText ("failed"));
 					Logging.GetLogging().Error (e);
 				}
 			}).Start ();

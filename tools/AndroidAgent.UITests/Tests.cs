@@ -65,6 +65,7 @@ namespace AndroidAgent.UITests
 					app.Tap (c => c.Marked ("myButton"));
 					app.Screenshot ("after tap");
 					app.WaitForNoElement (c => c.Marked ("myButton").Text ("running"), "Benchmark is taking too long", TimeSpan.FromMinutes (179));
+					Assert.AreEqual (app.Query (c => c.Marked ("myButton")).First ().Text, "start");
 					app.Screenshot ("after benchmark");
 				}
 			}
