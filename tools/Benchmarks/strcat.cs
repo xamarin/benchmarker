@@ -6,19 +6,24 @@
 
 using System;
 
-public class strcat {
+namespace Benchmarks.Strcat
+{
+	public class strcat
+	{
 
-    public static void Main(String[] args)
-    {
-        int N = int.Parse(args[0]);
-        if(N < 1) N = 1;
+		public static void Main (String[] args)
+		{
+			int N = int.Parse (args [0]);
+			if (N < 1)
+				N = 1;
 
-        System.Text.StringBuilder sb = new System.Text.StringBuilder(32);
+			System.Text.StringBuilder sb = new System.Text.StringBuilder (32);
 
-        for (int i = 0; i < N; i++) {
-            sb.Append("hello\n");
-        }
+			for (int i = 0; i < N; i++) {
+				sb.Append ("hello\n");
+			}
 
-        //Console.WriteLine(sb.Length);
-    }
+			//Console.WriteLine(sb.Length);
+		}
+	}
 }

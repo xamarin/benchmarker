@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Diagnostics;
 using Benchmarker.Common;
 using Benchmarks.BH;
+using Benchmarks.Nbody;
+using Benchmarks.Strcat;
 using Java.Util.Logging;
 using Common.Logging;
 using Newtonsoft.Json.Linq;
