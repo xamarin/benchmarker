@@ -55,9 +55,11 @@ rm "$PARAMSJSON"_template
 (cd AndroidAgent && xbuild /p:Configuration=Release /target:SignAndroidPackage )
 (cd AndroidAgent.UITests/ && xbuild /p:Configuration=Release )
 
+UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
+UITEST="${UITESTS[${#UITESTS[@]} - 1]}" # select most recent version
 # submit to xtc
 mono \
-    ./packages/Xamarin.UITest.*/tools/test-cloud.exe \
+    $UITEST \
     submit \
     ./AndroidAgent/bin/Release/com.xamarin.benchmarkagent.apk \
     `cat $XTCAPIKEY` \
