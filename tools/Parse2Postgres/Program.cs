@@ -24,7 +24,6 @@ namespace Parse2Postgres
 
 		static void SetColumnValues (string table, IEnumerable<PostgresName> columnNames, IDictionary<string, object> columnValues, JToken entry, string primaryStringKey)
 		{
-			string primaryKeyValue = null;
 			string postgresName = null;
 			if (primaryStringKey != null) {
 				var postgresNameValue = entry ["postgresName"];
@@ -44,13 +43,8 @@ namespace Parse2Postgres
 					continue;
 				}
 
-				if (name == primaryStringKey) {
-					primaryKeyValue = value.ToObject<string> ();
-					if (postgresName != null) {
-						primaryKeyValue = postgresName;
-						value = postgresName;
-					}
-				}
+				if (name == primaryStringKey && postgresName != null)
+					value = postgresName;
 
 				object pgValue;
 
