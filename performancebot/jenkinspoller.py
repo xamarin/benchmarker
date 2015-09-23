@@ -9,13 +9,9 @@ from buildbot.process.buildstep import BuildStep, LoggingBuildStep
 from buildbot.changes import base
 from buildbot.util import epoch2datetime
 
-#pylint: disable=F0401
-import credentials
-#pylint: enable=F0401
 import json
 from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD, Lane
 import re
-import urllib
 
 def gen_jenkinspoller_codebase(lane, platform, hostname, config_name):
     return 'mono-jenkins-%s%s-%s-%s' % ("-pullrequest" if lane == Lane.PullRequest else "", platform, hostname, config_name)
@@ -157,47 +153,25 @@ def _mk_request_mono_common(logger):
         logger("request: " + str(url))
     return getPage(url)
 
-def _mk_request_parse(hostname, config_name, logger):
-    headers = credentials.getParseHeaders()
-    #pylint: disable=C0330
-    query = ('where={' +
-                '"buildURL":{"$exists":true},' +
-                '"machine":{' +
-                    '"$inQuery":{' +
-                        '"where":{' +
-                            '"name":"' + hostname + '"' +
-                        '},' +
-                        '"className":"Machine"' +
-                    '}' +
-                '},' +
-                '"config":{' +
-                    '"$inQuery":{' +
-                        '"where":{' +
-                            '"name":"' + config_name+ '"' +
-                        '},' +
-                        '"className":"Config"' +
-                    '}' +
-                '}' +
-            '}')
-    #pylint: enable=C0330
-    params = urllib.quote(query, '=')
-    url = 'https://api.parse.com/1/classes/RunSet?%s' % params
+def _mk_request_postgrest(hostname, config_name, logger):
+    query = 'runset?rs_buildurl=isnot.null&rs_machine=eq.%s&rs_config=eq.%s' % (hostname, config_name)
+    url = 'http://performancebot.mono-project.com:81/' + query
     if logger:
         logger("request: " + str(url))
-    return getPage(url, headers=headers)
+    return getPage(url)
 
 @defer.inlineCallbacks
 def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
     jenkins_json = json.loads((yield _mk_request_jenkins_all_builds(jenkins_base_url, platform, None)))
-    parse_json = json.loads((yield _mk_request_parse(hostname, config_name, None)))
+    postgrest_json = json.loads((yield _mk_request_postgrest(hostname, config_name, None)))
 
     def _filter_build_urls_jenkins(j):
         return sorted([i['url'].encode('ascii', 'ignore') for i in j['allBuilds'] if i['result'] == 'SUCCESS'])
 
-    def _filter_build_urls_parse(j):
-        return sorted([i['buildURL'].encode('ascii', 'ignore') for i in j['results'] if i.has_key('buildURL') and i['buildURL'] is not None])
+    def _filter_build_urls_postgrest(j):
+        return sorted([i['rs_buildurl'].encode('ascii', 'ignore') for i in j if i.has_key('rs_buildurl') and i['rs_buildurl'] is not None])
 
-    builds_todo = list(set(_filter_build_urls_jenkins(jenkins_json)) - set(_filter_build_urls_parse(parse_json)))
+    builds_todo = list(set(_filter_build_urls_jenkins(jenkins_json)) - set(_filter_build_urls_postgrest(postgrest_json)))
     defer.returnValue(sorted(builds_todo))
 
 
@@ -429,15 +403,28 @@ if __name__ == '__main__':
         for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
             print url
 
+    @defer.inlineCallbacks
+    def test_postgrest():
+        def _logger(msg):
+            print msg
+        postgrest = json.loads((yield _mk_request_postgrest('benchmarker', 'auto-sgen-noturbo', _logger)))
+        def _filter_build_urls_postgrest(j):
+            return sorted([i['rs_buildurl'].encode('ascii', 'ignore') for i in j if i.has_key('rs_buildurl') and i['rs_buildurl'] is not None])
+        postgrestids = _filter_build_urls_postgrest(postgrest)
+        print "postgrestids: " + str(len(postgrestids))
+
+        for url in postgrestids:
+            print url
 
     @defer.inlineCallbacks
     def run_tests():
         # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
-        _ = yield test_get_changes_debamd64()
-        _ = yield test_fetch_build_debamd64()
+        # _ = yield test_get_changes_debamd64()
+        # _ = yield test_fetch_build_debamd64()
         # _ = yield test_get_pr_changes_debamd64()
-        _ = yield test_fetch_pr_build_debamd64()
+        # _ = yield test_fetch_pr_build_debamd64()
+        _ = yield test_postgrest()
         stop_me()
 
     run_tests()
