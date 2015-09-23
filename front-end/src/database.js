@@ -36,7 +36,7 @@ export class DBRunSet extends DBObject {
 
 export function fetch (query: string, success: (results: Array<Object>) => void, error: (err: Object) => void) {
 	var request = new XMLHttpRequest();
-	var url = 'http://192.168.99.100:32777/' + query;
+	var url = 'http://performancebot.mono-project.com:81/' + query;
 
 	request.onreadystatechange = function () {
 		if (this.readyState !== 4)

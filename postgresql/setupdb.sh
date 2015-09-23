@@ -95,7 +95,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-cat drop.psql.in | sed "s/\$BENCHMARKER_USER/$BENCHMARKER_USER/g" | sed "s/\$POSTGREST_USER/$POSTGREST_USER/g" | psql -d "$ADMIN_DATABASE" -f -
+cat drop.psql.in | sed "s/\$BENCHMARKER_USER/$BENCHMARKER_USER/g" | sed "s/\$POSTGREST_USER/$POSTGREST_USER/g" | psql -d "$DATABASE" -f -
 if [ $? -ne 0 ] ; then
     echo "Error: psql failed."
     exit 1
