@@ -7,10 +7,10 @@ using Benchmarker.Common;
 using Benchmarker.Common.Models;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using Parse;
 using Nito.AsyncEx;
 using Common.Logging;
 using Common.Logging.Simple;
+using Npgsql;
 
 class Compare
 {
@@ -28,7 +28,7 @@ class Compare
 		Console.Error.WriteLine ("    -b, --benchmarks        benchmarks to run, separated by commas; default to all of them");
 		Console.Error.WriteLine ("                               ex: -b ahcbench,db,message,raytracer2");
 		Console.Error.WriteLine ("    -l, --list-benchmarks   list all available benchmarks");
-		Console.Error.WriteLine ("        --machine           list benchmarks only for the given machine");
+		Console.Error.WriteLine ("        --machine           machine to list benchmarks or to create run set for");
 		Console.Error.WriteLine ("    -t, --timeout           execution timeout for each benchmark, in seconds; default to no timeout");
 		Console.Error.WriteLine ("        --commit            the hash of the commit being tested");
 		Console.Error.WriteLine ("        --git-repo          the directory of the Git repository");
@@ -43,7 +43,7 @@ class Compare
 		Environment.Exit (exitcode);
 	}
 
-	static async Task<ParseObject> GetPullRequestBaselineRunSet (string pullRequestURL, Benchmarker.Common.Git.Repository repository, Config config)
+	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, string pullRequestURL, Benchmarker.Common.Git.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
 		var match = Regex.Match (pullRequestURL, @"^https?://github\.com/mono/mono/pull/(\d+)/?$");
@@ -86,40 +86,39 @@ class Compare
 		}
 		Console.WriteLine ("{0} commits in rev-list", revList.Length);
 
-		var configObj = await config.GetFromParse ();
-		if (configObj == null) {
-			Console.Error.WriteLine ("Error: The config does not exist.");
+		if (!config.ExistsInPostgres (conn)) {
+			Console.Error.WriteLine ("Error: The config {0} does not exist or is incompatible.", config.Name);
 			Environment.Exit (1);
 		}
 
+		// FIXME: also support `--machine`
 		var hostarch = compare.Utils.LocalHostnameAndArch ();
-		var machineObj = await RunSet.GetMachineFromParse (new Machine () { Name = hostarch.Item1, Architecture = hostarch.Item2 });
-		if (machineObj == null) {
+		var machine = new Machine { Name = hostarch.Item1, Architecture = hostarch.Item2 };
+		if (!RunSet.MachineExistsInPostgres (conn, machine)) {
 			Console.Error.WriteLine ("Error: The machine does not exist.");
 			Environment.Exit (1);
 		}
 
-		var runSets = await ParseInterface.PageQueryWithRetry (() => ParseObject.GetQuery ("RunSet")
-			.WhereEqualTo ("machine", machineObj)
-			.WhereEqualTo ("config", configObj)
-			.WhereDoesNotExist ("pullRequest")
-			.Include ("commit"));
-		Console.WriteLine ("{0} run sets", runSets.Count ());
+		var whereValues = new PostgresRow ();
+		whereValues.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, machine.Name);
+		whereValues.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, config.Name);
+		var rows = PostgresInterface.Select (conn, "runSet", new string[] { "id", "commit" }, "machine = :machine and config = :config", whereValues);
+		Console.WriteLine ("{0} run sets", rows.Count ());
 
-		var runSetsByCommits = new Dictionary<string, ParseObject> ();
-		foreach (var runSet in runSets) {
-			var sha = runSet.Get<ParseObject> ("commit").Get<string> ("hash");
-			if (runSetsByCommits.ContainsKey (sha)) {
+		var runSetIdsByCommits = new Dictionary<string, long> ();
+		foreach (var row in rows) {
+			var sha = row.GetReference<string> ("commit");
+			if (runSetIdsByCommits.ContainsKey (sha)) {
 				// FIXME: select between them?
 				continue;
 			}
-			runSetsByCommits.Add (sha, runSet);
+			runSetIdsByCommits.Add (sha, row.GetValue<long> ("id").Value);
 		}
 
 		foreach (var sha in revList) {
-			if (runSetsByCommits.ContainsKey (sha)) {
+			if (runSetIdsByCommits.ContainsKey (sha)) {
 				Console.WriteLine ("tested base commit is {0}", sha);
-				return runSetsByCommits [sha];
+				return runSetIdsByCommits [sha];
 			}
 		}
 
@@ -130,7 +129,6 @@ class Compare
 		LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
 		Logging.SetLogging (LogManager.GetLogger<Compare> ());
 
-		ParseInterface.benchmarkerCredentials = Accredit.GetCredentials ("benchmarker");
 		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
 	}
 
@@ -146,7 +144,7 @@ class Compare
 		string logURL = null;
 		string pullRequestURL = null;
 		string monoRepositoryPath = null;
-		string runSetId = null;
+		long? runSetId = null;
 		string configFile = null;
 		string machineName = null;
 		bool justCreateRunSet = false;
@@ -182,7 +180,7 @@ class Compare
 			} else if (args [optindex] == "--create-run-set") {
 				justCreateRunSet = true;
 			} else if (args [optindex] == "--run-set-id") {
-				runSetId = args [++optindex];
+				runSetId = Int64.Parse (args [++optindex]);
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
@@ -276,10 +274,7 @@ class Compare
 
 		var gitHubClient = GitHubInterface.GitHubClient;
 
-		if (!ParseInterface.Initialize ()) {
-			Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
-			Environment.Exit (1);
-		}
+		var dbConnection = PostgresInterface.Connect ();
 
 		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 
@@ -317,13 +312,13 @@ class Compare
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (machine, runSetId, config, commit, buildURL, logURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (dbConnection, machine, runSetId.Value, config, commit, buildURL, logURL));
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
 			}
 		} else {
-			ParseObject pullRequestBaselineRunSet = null;
+			long? pullRequestBaselineRunSetId = null;
 
 			if (pullRequestURL != null) {
 				if (monoRepositoryPath == null) {
@@ -333,7 +328,11 @@ class Compare
 
 				var repo = new Benchmarker.Common.Git.Repository (monoRepositoryPath);
 
-				pullRequestBaselineRunSet = AsyncContext.Run (() => GetPullRequestBaselineRunSet (pullRequestURL, repo, config));
+				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, pullRequestURL, repo, config));
+				if (pullRequestBaselineRunSetId == null) {
+					Console.Error.WriteLine ("Error: No appropriate baseline run set found.");
+					Environment.Exit (1);
+				}
 			}
 
 			runSet = new RunSet {
@@ -343,7 +342,7 @@ class Compare
 				BuildURL = buildURL,
 				LogURL = logURL,
 				PullRequestURL = pullRequestURL,
-				PullRequestBaselineRunSet = pullRequestBaselineRunSet
+				PullRequestBaselineRunSetId = pullRequestBaselineRunSetId
 			};
 		}
 
@@ -351,7 +350,7 @@ class Compare
 			var someSuccess = false;
 
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
-				/* Run the benchmarks */
+				// Run the benchmarks
 				if (config.Count <= 0)
 					throw new ArgumentOutOfRangeException (String.Format ("configs [\"{0}\"].Count <= 0", config.Name));
 
@@ -391,9 +390,9 @@ class Compare
 				}
 
 				if (haveTimedOut)
-					runSet.TimedOutBenchmarks.Add (benchmark);
+					runSet.TimedOutBenchmarks.Add (benchmark.Name);
 				if (haveCrashed)
-					runSet.CrashedBenchmarks.Add (benchmark);
+					runSet.CrashedBenchmarks.Add (benchmark.Name);
 
 				// FIXME: implement pausetime
 				//if (pausetime)
@@ -410,20 +409,20 @@ class Compare
 
 		Console.WriteLine ("uploading");
 		try {
-			var parseObject = AsyncContext.Run (() => runSet.UploadToParse (machine));
-			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", parseObject.ObjectId);
-			ParseObject pullRequestObject = null;
+			var newIds = runSet.UploadToPostgres (dbConnection, machine);
+			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#id={0}", newIds.Item1);
 			if (pullRequestURL != null) {
-				pullRequestObject = parseObject.Get<ParseObject> ("pullRequest");
-                Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#{0}", pullRequestObject.ObjectId);
+				Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", newIds.Item2.Value);
 			}
-			Console.Write ("{{ \"runSetId\": \"{0}\"", parseObject.ObjectId);
+			Console.Write ("{{ \"runSetId\": \"{0}\"", newIds.Item1);
             if (pullRequestURL != null)
-                Console.Write (", \"pullRequestId\": \"{0}\"", pullRequestObject.ObjectId);
+				Console.Write (", \"pullRequestId\": \"{0}\"", newIds.Item2.Value);
             Console.WriteLine (" }");
 		} catch (Exception exc) {
 			Console.Error.WriteLine ("Error: Failure uploading data: " + exc);
 			Environment.Exit (1);
 		}
+
+		dbConnection.Close ();
 	}
 }

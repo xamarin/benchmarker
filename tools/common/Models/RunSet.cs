@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Parse;
 using System.Linq;
+using Npgsql;
 using Nito.AsyncEx;
+using Newtonsoft.Json.Linq;
 
 namespace Benchmarker.Common.Models
 {
 	public class RunSet
 	{
-		ParseObject parseObject;
+		PostgresRow postgresRow;
 
 		List<Result> results;
 		public List<Result> Results { get { return results; } }
@@ -20,135 +20,112 @@ namespace Benchmarker.Common.Models
 		public string BuildURL { get; set; }
 		public string LogURL { get; set; }
 		public string PullRequestURL { get; set; }
-		public ParseObject PullRequestBaselineRunSet { get; set; }
-
-		List<Benchmark> timedOutBenchmarks;
-		public List<Benchmark> TimedOutBenchmarks { get { return timedOutBenchmarks; } }
-
-		List<Benchmark> crashedBenchmarks;
-		public List<Benchmark> CrashedBenchmarks { get { return crashedBenchmarks; } }
+		public long? PullRequestBaselineRunSetId { get; set; }
+		public List<string> TimedOutBenchmarks { get; set; }
+		public List<string> CrashedBenchmarks { get; set; }
 
 		public RunSet ()
 		{
 			results = new List<Result> ();
-			timedOutBenchmarks = new List<Benchmark> ();
-			crashedBenchmarks = new List<Benchmark> ();
+			TimedOutBenchmarks = new List<string> ();
+			CrashedBenchmarks = new List<string> ();
 		}
 
-		public static async Task<ParseObject> GetMachineFromParse (Machine machine)
+		public static bool MachineExistsInPostgres (NpgsqlConnection conn, Machine machine)
 		{
-			var results = await ParseInterface.RunWithRetry (() 
-				=> ParseObject.GetQuery ("Machine").WhereEqualTo ("name", machine.Name).WhereEqualTo ("architecture", machine.Architecture).FindAsync ());
-			Logging.GetLogging ().Info ("FindAsync Machine");
-			if (results.Count () > 0)
-				return results.First ();
-			return null;
+			using (var cmd = conn.CreateCommand ()) {
+				cmd.CommandText = "select architecture, isDedicated from machine where name = :name";
+				cmd.Parameters.Add (new NpgsqlParameter ("name", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Name;
+
+				using (var reader = cmd.ExecuteReader ()) {
+					if (!reader.Read ())
+						return false;
+
+					if (reader.GetString (0) != machine.Architecture)
+						throw new Exception (string.Format ("Error: Machine {0} exists but is not the same as the local machine.", machine.Name));
+
+					return true;
+				}
+			}
 		}
 
-		async static  Task<ParseObject> GetOrUploadMachineToParse (Machine machine, List<ParseObject> saveList)
+		static string GetOrUploadMachineToPostgres (NpgsqlConnection conn, Machine machine)
 		{
-			var obj = await GetMachineFromParse (machine);
-			if (obj != null)
-				return obj;
+			if (MachineExistsInPostgres (conn, machine))
+				return machine.Name;
 
-			obj = ParseInterface.NewParseObject ("Machine");
-			obj ["name"] = machine.Name;
-			obj ["architecture"] = machine.Architecture;
-			obj ["isDedicated"] = false;
-			saveList.Add (obj);
-			return obj;
+			Logging.GetLogging ().Info ("machine " + machine.Name + " not found - inserting");
+
+			using (var cmd = conn.CreateCommand ()) {
+				cmd.CommandText = "insert into machine (name, architecture, isDedicated) values (:name, :arch, :dedicated)";
+				cmd.Parameters.Add (new NpgsqlParameter ("name", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Name;
+				cmd.Parameters.Add (new NpgsqlParameter ("arch", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Architecture;
+				cmd.Parameters.Add (new NpgsqlParameter ("dedicated", NpgsqlTypes.NpgsqlDbType.Boolean)).Value = false;
+
+				if (cmd.ExecuteNonQuery () != 1)
+					throw new Exception ("Error: Failure inserting machine " + machine.Name);
+			}
+
+			return machine.Name;
 		}
 
-		static bool AreWeOnParseMachine (Machine machine, ParseObject obj)
+		public static RunSet FromId (NpgsqlConnection conn, Machine machine, long id, Config config, Commit commit, string buildURL, string logURL)
 		{
-			return machine.Name == obj.Get<string> ("name") && machine.Architecture == obj.Get<string> ("architecture");
-		}
-
-		static async Task<ParseObject[]> BenchmarkListToParseObjectArray (IList<Benchmark> l, List<ParseObject> saveList)
-		{
-			var pos = new List<ParseObject> ();
-			foreach (var b in l)
-				pos.Add (await b.GetOrUploadToParse (saveList));
-			return pos.ToArray ();
-		}
-
-		public static async Task<RunSet> FromId (Machine machine, string id, Config config, Commit commit, string buildURL, string logURL)
-		{
-			var obj = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("RunSet").GetAsync (id));
-			Logging.GetLogging ().Info ("GetAsync RunSet");
-			if (obj == null)
-				throw new Exception ("Could not fetch run set.");
+			var whereValues = new PostgresRow ();
+			whereValues.Set ("id", NpgsqlTypes.NpgsqlDbType.Integer, id);
+			var row = PostgresInterface.Select (conn, new Dictionary<string, string> { ["RunSet"] = "rs", ["Config"] = "c", ["Machine"] = "m" },
+				new string[] {
+					"rs.id",
+					"rs.startedAt",
+					"rs.finishedAt",
+					"rs.buildURL",
+					"rs.commit",
+					"rs.timedOutBenchmarks",
+					"rs.crashedBenchmarks",
+					"rs.logURLs",
+					"m.name",
+					"m.architecture",
+					"c.name",
+					"c.monoExecutable",
+					"c.monoEnvironmentVariables",
+					"c.monoOptions"
+					},
+				"rs.id = :id and rs.config = c.name and rs.machine = m.name", whereValues).First ();
 
 			var runSet = new RunSet {
-				parseObject = obj,
-				StartDateTime = obj.Get<DateTime> ("startedAt"),
-				FinishDateTime = obj.Get<DateTime> ("finishedAt"),
-				BuildURL = obj.Get<string> ("buildURL"),
-				LogURL = logURL
+				postgresRow = row,
+				StartDateTime = row.GetValue<DateTime> ("rs.startedAt").Value,
+				FinishDateTime = row.GetValue<DateTime> ("rs.finishedAt").Value,
+				BuildURL = row.GetReference<string> ("rs.buildURL"),
+				LogURL = logURL,
+				Config = config,
+				Commit = commit,
+				TimedOutBenchmarks = row.GetReference<string[]> ("rs.timedOutBenchmarks").ToList (),
+				CrashedBenchmarks = row.GetReference<string[]> ("rs.crashedBenchmarks").ToList ()
 			};
 
-			var configObj = obj.Get<ParseObject> ("config");
-			var commitObj = obj.Get<ParseObject> ("commit");
-			var machineObj = obj.Get<ParseObject> ("machine");
-
-			await ParseInterface.RunWithRetry (() => ParseObject.FetchAllAsync (new ParseObject[] { configObj, commitObj, machineObj }));
-			Logging.GetLogging ().Info ("FindAllAsync config, commit, machine");
-
-			if (!config.EqualToParseObject (configObj))
-				throw new Exception ("Config does not match the one in the database.");
-			if (commit.Hash != commitObj.Get<string> ("hash"))
+			if (commit.Hash != row.GetReference<string> ("rs.commit"))
 				throw new Exception ("Commit does not match the one in the database.");
 			if (buildURL != runSet.BuildURL)
 				throw new Exception ("Build URL does not match the one in the database.");
-			if (!AreWeOnParseMachine (machine, machineObj))
-				throw new Exception ("Machine does not match the one in the database: " + machine.Name + "/" + machine.Architecture + " vs. " + machineObj["name"] + "/" + machineObj["architecture"]);
-
-			runSet.Config = config;
-			runSet.Commit = commit;
-
-			foreach (var o in obj.Get<List<object>> ("timedOutBenchmarks"))
-				runSet.timedOutBenchmarks.Add (await Benchmark.FromId (((ParseObject)o).ObjectId));
-			foreach (var o in obj.Get<List<object>> ("crashedBenchmarks"))
-				runSet.crashedBenchmarks.Add (await Benchmark.FromId (((ParseObject)o).ObjectId));
-
+			if (machine.Name != row.GetReference<string> ("m.name") || machine.Architecture != row.GetReference<string> ("m.architecture"))
+				throw new Exception ("Machine does not match the one in the database.");
+			if (!config.EqualsPostgresObject (row, "c."))
+				throw new Exception ("Config does not match the one in the database.");
+			
 			return runSet;
 		}
 
-		public string UploadToParseGetObjectId (Machine machine) {
-			ParseObject parseObject = AsyncContext.Run (() => UploadToParse (machine));
-			return parseObject.ObjectId;
-		}
-
-		public async Task<ParseObject> UploadToParse (Machine machine)
+		public Tuple<long, long?> UploadToPostgres (NpgsqlConnection conn, Machine machine)
 		{
 			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
 
-			var averages = new Dictionary<string, double> ();
-			var variances = new Dictionary<string, double> ();
 			var logURLs = new Dictionary<string, string> ();
 
-			if (parseObject != null) {
-				var originalAverages = parseObject.Get<Dictionary<string, object>> ("elapsedTimeAverages");
-				foreach (var kvp in originalAverages)
-					averages [kvp.Key] = ParseInterface.NumberAsDouble (kvp.Value);
-
-				var originalVariances = parseObject.Get<Dictionary<string, object>> ("elapsedTimeVariances");
-				foreach (var kvp in originalVariances)
-					variances [kvp.Key] = ParseInterface.NumberAsDouble (kvp.Value);
-
-				var originalLogURLs = parseObject.Get<Dictionary<string, object>> ("logURLs");
-				if (originalLogURLs != null) {
-					foreach (var kvp in originalLogURLs)
-						logURLs [kvp.Key] = (string)kvp.Value;
-				}
-			}
-
-			foreach (var result in results) {
-				var avgAndVariance = result.AverageAndVarianceWallClockTimeMilliseconds;
-				if (avgAndVariance == null)
-					continue;
-				averages [result.Benchmark.Name] = avgAndVariance.Item1;
-				variances [result.Benchmark.Name] = avgAndVariance.Item2;
+			if (postgresRow != null) {
+				var originalLogURLs = postgresRow.GetReference<JObject> ("rs.logURLs");
+				foreach (var p in originalLogURLs.Properties ())
+					logURLs [p.Name] = p.Value.Value<string> ();
 			}
 
 			if (LogURL != null) {
@@ -162,58 +139,55 @@ namespace Benchmarker.Common.Models
 				}
 			}
 
-			var saveList = new List<ParseObject> ();
-			var obj = parseObject ?? ParseInterface.NewParseObject ("RunSet");
+			var row = new PostgresRow ();
+			long? prId = null;
 
-			if (parseObject == null) {
-				var m = await GetOrUploadMachineToParse (machine, saveList);
-				var c = await Config.GetOrUploadToParse (saveList);
-				var commit = await Commit.GetOrUploadToParse (saveList);
-				obj ["machine"] = m;
-				obj ["config"] = c;
-				obj ["commit"] = commit;
-				obj ["buildURL"] = BuildURL;
-				obj ["startedAt"] = StartDateTime;
+			if (postgresRow == null) {
+				row.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, GetOrUploadMachineToPostgres (conn, machine));
+				row.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, Config.GetOrUploadToPostgres (conn));
+				row.Set ("commit", NpgsqlTypes.NpgsqlDbType.Varchar, Commit.GetOrUploadToPostgres (conn));
+				row.Set ("buildURL", NpgsqlTypes.NpgsqlDbType.Varchar, BuildURL);
+				row.Set ("startedAt", NpgsqlTypes.NpgsqlDbType.Date, StartDateTime);
 
 				if (PullRequestURL != null) {
-					var prObj = ParseInterface.NewParseObject ("PullRequest");
-					prObj ["URL"] = PullRequestURL;
-					prObj ["baselineRunSet"] = PullRequestBaselineRunSet;
-					saveList.Add (prObj);
-
-					obj ["pullRequest"] = prObj;
+					var prRow = new PostgresRow ();
+					prRow.Set ("URL", NpgsqlTypes.NpgsqlDbType.Varchar, PullRequestURL);
+					prRow.Set ("baselineRunSet", NpgsqlTypes.NpgsqlDbType.Integer, PullRequestBaselineRunSetId);
+					prId = PostgresInterface.Insert<long> (conn, "PullRequest", prRow, "id");
+					row.Set ("pullRequest", NpgsqlTypes.NpgsqlDbType.Integer, prId);
 				}
+			} else {
+				row.TakeValuesFrom (postgresRow, "rs.");
 			}
 
-			obj ["finishedAt"] = FinishDateTime;
+			row.Set ("finishedAt", NpgsqlTypes.NpgsqlDbType.Date, FinishDateTime);
 
-			obj ["failed"] = averages.Count == 0;
-			obj ["elapsedTimeAverages"] = averages;
-			obj ["elapsedTimeVariances"] = variances;
-			obj ["logURLs"] = logURLs;
+			row.Set ("logURLs", NpgsqlTypes.NpgsqlDbType.Jsonb, logURLs);
 
-			obj ["timedOutBenchmarks"] = await BenchmarkListToParseObjectArray (timedOutBenchmarks, saveList);
-			obj ["crashedBenchmarks"] = await BenchmarkListToParseObjectArray (crashedBenchmarks, saveList);
+			row.Set ("timedOutBenchmarks", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, TimedOutBenchmarks);
+			row.Set ("crashedBenchmarks", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, CrashedBenchmarks);
 
 			Logging.GetLogging ().Info ("uploading run set");
 
-			saveList.Add (obj);
-			await ParseInterface.RunWithRetry (() => ParseObject.SaveAllAsync (saveList));
-			saveList.Clear ();
-
-			parseObject = obj;
+			long runSetId;
+			if (postgresRow == null) {
+				runSetId = PostgresInterface.Insert<long> (conn, "RunSet", row, "id");
+			} else {
+				PostgresInterface.Update (conn, "RunSet", row, "id");
+				runSetId = postgresRow.GetValue<long> ("rs.id").Value;
+			}
 
 			Logging.GetLogging ().Info ("uploading runs");
 
 			foreach (var result in results) {
 				if (result.Config != Config)
 					throw new Exception ("Results must have the same config as their RunSets");
-				await result.UploadRunsToParse (obj, saveList);
+				result.UploadRunsToPostgres (conn, runSetId);
 			}
-			await ParseInterface.RunWithRetry (() => ParseObject.SaveAllAsync (saveList));
+
 			Logging.GetLogging ().Info ("done uploading");
 
-			return obj;
+			return Tuple.Create (runSetId, prId);
 		}
 	}
 }

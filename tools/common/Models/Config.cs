@@ -3,11 +3,13 @@ using System.IO;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using Parse;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Text;
+using System.Linq;
+using Npgsql;
+using Newtonsoft.Json.Linq;
+using Benchmarker.Common;
 
 namespace Benchmarker.Common.Models
 {
@@ -89,7 +91,6 @@ namespace Benchmarker.Common.Models
 
 			return config;
 		}
-
 			
 		public override bool Equals (object other)
 		{
@@ -108,82 +109,73 @@ namespace Benchmarker.Common.Models
 			return Name.GetHashCode ();
 		}
 
-		static bool OptionsEqual (IEnumerable<string> native, IEnumerable<object> parse)
+		static bool EnvironmentVariablesEqual (IDictionary<string, string> native, JToken json)
 		{
-			if (parse == null)
-				return false;
-			foreach (var s in native) {
-				var found = false;
-				foreach (var p in parse) {
-					var ps = p as string;
-					if (s == ps) {
-						found = true;
-						break;
-					}
-				}
-				if (!found)
-					return false;
-			}
-			return true;
-		}
-
-		static bool EnvironmentVariablesEqual (IDictionary<string, string> native, IDictionary<string, object> parse)
-		{
-			if (parse == null)
+			if (native.Count != json.Count ())
 				return false;
 			foreach (var kv in native) {
-				if (!parse.ContainsKey (kv.Key))
+				var jsonValue = json.Value<string> (kv.Key);
+				if (jsonValue == null)
 					return false;
-				var v = parse [kv.Key] as string;
-				if (v != kv.Value)
+				if (jsonValue != kv.Value)
 					return false;
 			}
 			return true;
 		}
 
-		public bool EqualToParseObject (ParseObject o) {
-			if (Name != o.Get<string> ("name"))
+		public bool EqualsPostgresObject (PostgresRow row, string prefix = "")
+		{
+			if (row.GetReference<string> (prefix + "name") != Name)
 				return false;
-			if (MonoExecutable != o.Get<string> ("monoExecutable"))
+
+			if (row.GetReference<string> (prefix + "monoExecutable") != MonoExecutable)
 				return false;
-			if (!OptionsEqual (MonoOptions, o ["monoOptions"] as IEnumerable<object>))
+
+			var envVars = row.GetReference<JToken> (prefix + "monoEnvironmentVariables");
+			if (!EnvironmentVariablesEqual (MonoEnvironmentVariables, envVars))
 				return false;
-			if (!EnvironmentVariablesEqual (MonoEnvironmentVariables, o ["monoEnvironmentVariables"] as IDictionary<string, object>))
+			
+			if (!row.GetReference<string[]> (prefix + "monoOptions").SequenceEqual (MonoOptions))
 				return false;
+
 			return true;
 		}
 
-		public async Task<ParseObject> GetFromParse ()
+		public bool ExistsInPostgres (NpgsqlConnection conn)
 		{
-			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Config")
-				.WhereEqualTo ("name", Name)
-				.WhereEqualTo ("monoExecutable", MonoExecutable)
-				.FindAsync ());
-			Logging.GetLogging ().Info ("FindAsync Config");
-			foreach (var o in results) {
-				if (EqualToParseObject (o)) {
-					Logging.GetLogging ().Info ("found config " + o.ObjectId);
-					return o;
-				}
-			}
-			return null;
+			var parameters = new PostgresRow ();
+			parameters.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
+			var rows = PostgresInterface.Select (conn, "config", new string[] {
+				"name",
+				"monoExecutable",
+				"monoEnvironmentVariables",
+				"monoOptions"
+			}, "name = :name", parameters);
+
+			if (rows.Count () == 0)
+				return false;
+
+			var row = rows.First ();
+
+			if (!EqualsPostgresObject (row))
+				throw new Exception (string.Format ("Error: Config {0} exists but is not the same as the local config of the same name.", Name));
+
+			return true;
 		}
 
-		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
+		public string GetOrUploadToPostgres (NpgsqlConnection conn)
 		{
-			var obj = await GetFromParse ();
-			if (obj != null)
-				return obj;
+			if (ExistsInPostgres (conn))
+				return Name;
 
-			Logging.GetLogging ().Info ("creating new config");
+			Logging.GetLogging ().Info ("config " + Name + " not found - inserting");
 
-			obj = ParseInterface.NewParseObject ("Config");
-			obj ["name"] = Name;
-			obj ["monoExecutable"] = MonoExecutable;
-			obj ["monoOptions"] = MonoOptions;
-			obj ["monoEnvironmentVariables"] = MonoEnvironmentVariables;
-			saveList.Add (obj);
-			return obj;
+			var row = new PostgresRow ();
+			row.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
+			row.Set ("monoExecutable", NpgsqlTypes.NpgsqlDbType.Varchar, MonoExecutable);
+			row.Set ("monoEnvironmentVariables", NpgsqlTypes.NpgsqlDbType.Jsonb, MonoEnvironmentVariables);
+			row.Set ("monoOptions", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text, MonoOptions);
+			return PostgresInterface.Insert<string> (conn, "config", row, "name");
 		}
 	}
 }

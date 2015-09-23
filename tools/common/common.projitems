@@ -19,8 +19,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\RunSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GitHubInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logging.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ParseInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PostgresInterface.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)packages.config" />

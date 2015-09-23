@@ -17,23 +17,6 @@ namespace Parse2Postgres
 		static Dictionary<string, Dictionary<string, long>> idMap = new Dictionary<string, Dictionary<string, long>> ();
 		static Dictionary<string, Dictionary<string, string>> stringIdMap = new Dictionary<string, Dictionary<string, string>> ();
 
-		/*
-		static long LastVal (NpgsqlConnection conn)
-		{
-			using (var cmd = new NpgsqlCommand ()) {
-				cmd.Connection = conn;
-
-				cmd.CommandText = "select lastval()";
-				using (var reader = cmd.ExecuteReader())
-				{
-					if (!reader.Read ())
-						throw new Exception ("no result from lastval()");
-					return reader.GetInt64 (0);
-				}
-			}
-		}
-		*/
-
 		struct PostgresName {
 			public string name;
 			public NpgsqlTypes.NpgsqlDbType type;
@@ -392,20 +375,8 @@ namespace Parse2Postgres
 			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
 			Logging.SetLogging (LogManager.GetLogger<MainClass> ());
 
-			var credentials = Accredit.GetCredentials ("benchmarkerPostgres");
-			var host = credentials ["host"].ToObject<string> ();
-			var port = credentials ["port"].ToObject<int> ();
-			var database = credentials ["database"].ToObject<string> ();
-			var user = credentials ["user"].ToObject<string> ();
-			var password = credentials ["password"].ToObject<string> ();
-
-			var connectionString = string.Format ("Host={0};Port={1};Username={2};Password={3};Database={4};SslMode=Require;TrustServerCertificate=true",
-				                       host, port, user, password, database);
-
-			using (var conn = new NpgsqlConnection(connectionString))
+			using (var conn = PostgresInterface.Connect ())
 			{
-				conn.Open();
-
 				ConvertBenchmarks (conn, exportDir);
 				ConvertMachines (conn, exportDir);
 				ConvertCommits (conn, exportDir);

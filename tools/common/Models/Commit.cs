@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Threading.Tasks;
-using System.Linq;
 using System.Collections.Generic;
-using Parse;
+using Npgsql;
+using System.Linq;
 
 namespace Benchmarker.Common.Models
 {
@@ -17,27 +16,26 @@ namespace Benchmarker.Common.Models
 		{
 		}
 
-		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
+		bool ExistsInPostgres (NpgsqlConnection conn)
 		{
-			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Commit").WhereEqualTo ("hash", Hash).FindAsync ());
-			Logging.GetLogging ().Info ("FindAsync Commit");
-			if (results.Count () > 0)
-				return results.First ();
-
-			if (CommitDate == null)
-				throw new Exception ("Cannot save a commit without a commit date");
-
-			var obj = ParseInterface.NewParseObject ("Commit");
-			obj ["hash"] = Hash;
-			if (Branch != null)
-				obj ["branch"] = Branch;
-			if (MergeBaseHash != null)
-				obj ["mergeBaseHash"] = MergeBaseHash;
-			if (CommitDate != null)
-				obj ["commitDate"] = CommitDate;
-			saveList.Add (obj);
-			return obj;
+			var parameters = new PostgresRow ();
+			parameters.Set ("hash", NpgsqlTypes.NpgsqlDbType.Varchar, Hash);
+			return PostgresInterface.Select (conn, "commit", new string[] { "commitDate" }, "hash = :hash", parameters).Count () > 0;
 		}
 
+		public string GetOrUploadToPostgres (NpgsqlConnection conn)
+		{
+			if (ExistsInPostgres (conn))
+				return Hash;
+
+			Logging.GetLogging ().Info ("commit " + Hash + " not found - inserting");
+
+			var row = new PostgresRow ();
+			row.Set ("hash", NpgsqlTypes.NpgsqlDbType.Varchar, Hash);
+			row.Set ("date", NpgsqlTypes.NpgsqlDbType.Date, CommitDate);
+			row.Set ("branch", NpgsqlTypes.NpgsqlDbType.Varchar, Branch);
+			row.Set ("mergeBase", NpgsqlTypes.NpgsqlDbType.Varchar, MergeBaseHash);
+			return PostgresInterface.Insert<string> (conn, "commit", row, "hash");
+		}
 	}
 }

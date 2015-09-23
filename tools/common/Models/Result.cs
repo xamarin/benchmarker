@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Parse;
-using System.Threading.Tasks;
+using Npgsql;
 
 namespace Benchmarker.Common.Models
 {
@@ -28,39 +27,25 @@ namespace Benchmarker.Common.Models
 			return JsonConvert.DeserializeObject<Result> (content);
 		}
 
-		public Tuple<double, double> AverageAndVarianceWallClockTimeMilliseconds {
-			get {
-				if (runs.Count == 0)
-					return null;
-				
-				var timesInMs = runs.Select (run => run.WallClockTime.TotalMilliseconds).ToArray ();
-				var avg = timesInMs.Average ();
-
-				var sum = 0.0;
-				foreach (var v in timesInMs) {
-					var diff = v - avg;
-					sum += diff * diff;
-				}
-				var variance = sum / runs.Count;
-
-				return Tuple.Create<double, double> (avg, variance);
-			}
-		}
-
 		public class Run {
 			public TimeSpan WallClockTime { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
 		}
 
-		public async Task UploadRunsToParse (ParseObject runSet, List<ParseObject> saveList) {
-			var b = await Benchmark.GetOrUploadToParse (saveList);
+		public void UploadRunsToPostgres (NpgsqlConnection conn, long runSetId) {
+			var b = Benchmark.GetOrUploadToPostgres (conn);
 			foreach (var run in Runs) {
-				var obj = ParseInterface.NewParseObject ("Run");
-				obj ["benchmark"] = b;
-				obj ["runSet"] = runSet;
-				obj ["elapsedMilliseconds"] = run.WallClockTime.TotalMilliseconds;
-				saveList.Add (obj);
+				var row = new PostgresRow ();
+				row.Set ("benchmark", NpgsqlTypes.NpgsqlDbType.Varchar, b);
+				row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Integer, runSetId);
+				var runId = PostgresInterface.Insert<long> (conn, "Run", row, "id");
+
+				var metricRow = new PostgresRow ();
+				metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
+				metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "time");
+				metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, run.WallClockTime.TotalMilliseconds);
+				PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
 			}
 		}
 	}

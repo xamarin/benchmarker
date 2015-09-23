@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
-using Parse;
 using System.IO;
+using Benchmarker;
+using Npgsql;
 
 namespace Benchmarker.Common.Models
 {
@@ -14,7 +14,7 @@ namespace Benchmarker.Common.Models
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
 
-		static Dictionary<string, ParseObject> nameToParseObject;
+		static Dictionary<string, PostgresRow> nameToRow;
 
 		public Benchmark ()
 		{
@@ -49,49 +49,27 @@ namespace Benchmarker.Common.Models
 			return Name.GetHashCode ();
 		}
 
-		static async Task FetchBenchmarks ()
+		static void FetchBenchmarks (NpgsqlConnection conn)
 		{
-			if (nameToParseObject != null)
+			if (nameToRow != null)
 				return;
 
-			nameToParseObject = new Dictionary<string, ParseObject> ();
-			var results = await ParseInterface.RunWithRetry (() => ParseObject.GetQuery ("Benchmark").FindAsync ());
-			Logging.GetLogging ().Info ("FindAsync Benchmark");
-			foreach (var o in results)
-				nameToParseObject [o.Get<string> ("name")] = o;
+			nameToRow = new Dictionary<string, PostgresRow> ();
+			var rows = PostgresInterface.Select (conn, "Benchmark", new string[] { "name" });
+			foreach (var r in rows)
+				nameToRow [r.GetReference<string> ("name")] = r;
 		}
 
-		public static async Task<Benchmark> FromId (string id)
+		public string GetOrUploadToPostgres (NpgsqlConnection conn)
 		{
-			await FetchBenchmarks ();
+			FetchBenchmarks (conn);
 
-			foreach (var kvp in nameToParseObject) {
-				if (kvp.Value.ObjectId == id) {
-					var benchmark = new Benchmark {
-						Name = kvp.Value.Get<string> ("name")
-					};
+			if (nameToRow.ContainsKey (Name))
+				return Name;
 
-					return benchmark;
-				}
-			}
-
-			throw new Exception ("Could not fetch benchmark.");
-		}
-
-		public async Task<ParseObject> GetOrUploadToParse (List<ParseObject> saveList)
-		{
-			await FetchBenchmarks ();
-
-			if (nameToParseObject.ContainsKey (Name))
-				return nameToParseObject [Name];
-
-			var obj = ParseInterface.NewParseObject ("Benchmark");
-			obj ["name"] = Name;
-			saveList.Add (obj);
-
-			nameToParseObject [Name] = obj;
-
-			return obj;
+			var row = new PostgresRow ();
+			row.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
+			return PostgresInterface.Insert<string> (conn, "Benchmark", row, "name");
 		}
 	}
 }

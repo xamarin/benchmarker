@@ -17,6 +17,22 @@ namespace Benchmarker
 
 		static Dictionary<string, JObject> cachedCredentials;
 
+		static void InitializeParse (string applicationId, string dotNetKey)
+		{
+			ParseClient.Initialize (applicationId, dotNetKey);
+			Logging.GetLogging ().Info ("InitializeParse: done");
+			if (ParseUser.CurrentUser != null) {
+				Logging.GetLogging ().Info ("InitializeParse: user -> " + ParseUser.CurrentUser.Username);
+				try {
+					ParseUser.LogOut ();
+				} catch (Exception) {
+					Logging.GetLogging ().Info ("InitializeParse: something fishy");
+				}
+			} else {
+				Logging.GetLogging ().Info ("InitializeParse: nope");
+			}
+		}
+
 		private static void WaitForConfirmation (string key)
 		{
 			Console.Error.WriteLine ("Log in on browser for access, confirmation key {0}", key);
@@ -69,7 +85,7 @@ namespace Benchmarker
 				return cachedCredentials [serviceName];
 
 			// Accredit
-			ParseInterface.InitializeParse ("RAePvLdkN2IHQNZRckrVXzeshpFZTgYif8qu5zuh", "giWKLzMOZa2nrgBjC9YPRF238CTVTpNsMlsIJkr3");
+			InitializeParse ("RAePvLdkN2IHQNZRckrVXzeshpFZTgYif8qu5zuh", "giWKLzMOZa2nrgBjC9YPRF238CTVTpNsMlsIJkr3");
 
 			string key = Guid.NewGuid ().ToString ();
 			string secret = Guid.NewGuid ().ToString ();
@@ -99,8 +115,6 @@ namespace Benchmarker
 			} catch (Exception) {
 				Console.Error.WriteLine ("Warning: Failed to save credentials to file {0}", CredentialsFilename);
 			}
-
-			ParseInterface.InitializeParseForXamarinPerformance ();
 
 			return parsedResponse;
 		}
