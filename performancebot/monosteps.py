@@ -98,7 +98,7 @@ class GithubWritePullrequestComment(LoggingBuildStep):
 
         payload = [
             '`<botmode>`',
-            'Benchmark results: http://xamarin.github.io/benchmarker/front-end/pullrequest.html#%s' % str(parse_pullrequest_id),
+            'Benchmark results: http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id),
             'buildbot logs: %s/builders/%s/builds/%s' % (BUILDBOT_URL, buildername, str(buildnumber)),
             '`</botmode>`'
         ]
