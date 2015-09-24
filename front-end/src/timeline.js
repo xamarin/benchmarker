@@ -74,7 +74,7 @@ class Page extends React.Component {
 	}
 
 	runSetSelected (runSet) {
-		window.open ('runset.html#' + runSet.get ('id'));
+		window.open ('runset.html#id=' + runSet.get ('id'));
 		this.setState ({runSets: this.state.runSets.concat ([runSet])});
 	}
 

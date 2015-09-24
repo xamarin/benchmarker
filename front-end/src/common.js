@@ -162,13 +162,13 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	openConfigDescription () {
         if (this.props.config === undefined)
             return;
-        window.open ('config.html#' + this.props.config.get ('name'))
+        window.open ('config.html#name=' + this.props.config.get ('name'))
 	}
 
 	openMachineDescription () {
         if (this.props.machine === undefined)
             return;
-        window.open ('machine.html#' + this.props.machine.get ('name'))
+        window.open ('machine.html#name=' + this.props.machine.get ('name'))
 	}
 
 	combinationSelected (event: Object) {
@@ -256,7 +256,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetId = selection.runSet.get ('id');
 
 		function openRunSetDescription (id) {
-			return window.open ('runset.html#' + id);
+			return window.open ('runset.html#id=' + id);
 		}
 
 		function renderRunSet (runSet) {
@@ -406,7 +406,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var commitLink = githubCommitLink (commitHash);
 
 		return <div className="Description">
-			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#' + runSet.id}>compare</a>)</h1>
+			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.id}>compare</a>)</h1>
 			{logLinkList}
 			{table}
 		</div>;
