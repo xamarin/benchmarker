@@ -61,7 +61,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     'pwd && ' +
                     'mkdir -p %s && ' % MASTERWORKDIR +
                     'cd %s && ' % MASTERWORKDIR +
-                    'git clone --depth 1 -b master https://github.com/xamarin/benchmarker && ' +
+                    'git clone --depth 1 -b feature-postgresql https://github.com/xamarin/benchmarker && ' +
                     'cd benchmarker/tools && (nuget restore tools.sln || nuget restore tools.sln) ' + #nuget crashes sometimes :-(
                     '&& xbuild /t:compare && ' +
                     'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
@@ -118,7 +118,7 @@ class DebianMonoBuildFactory(BuildFactory):
         step = git.Git(
             repourl='https://github.com/xamarin/benchmarker/',
             workdir='benchmarker',
-            branch='master',
+            branch='feature-postgresql',
             mode='incremental',
             # shallow=True,
             codebase='benchmarker',
