@@ -109,7 +109,7 @@ function processRunSetEntries (objs) {
 }
 
 export function fetchRunSetsForMachineAndConfig (machine, config, success, error) {
-	fetch ('runset?rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
+	fetch ('runset?order=c_commitdate.desc&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		objs => success (processRunSetEntries (objs)), error);
 }
 

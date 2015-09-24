@@ -262,7 +262,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		function renderRunSet (runSet) {
 			var id = runSet.get ('id');
 			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
-				{runSet.get ('startedAt').toString ()}
+				{runSet.commit.get ('commitDate').toString ()}
 			</option>;
 		}
 
