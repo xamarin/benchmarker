@@ -266,7 +266,9 @@ namespace Parse2Postgres
 				new ParameterInfo[] {
 					new ParameterInfo { name = "objectId", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 10 },
 					new ParameterInfo { name = "hash", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 40 },
-					new ParameterInfo { name = "commitDate", type = NpgsqlTypes.NpgsqlDbType.TimestampTZ }
+					new ParameterInfo { name = "commitDate", type = NpgsqlTypes.NpgsqlDbType.TimestampTZ },
+					new ParameterInfo { name = "branch", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 128 },
+					new ParameterInfo { name = "mergeBaseHash", type = NpgsqlTypes.NpgsqlDbType.Varchar, size = 40 },
 				},
 				"hash");
 		}

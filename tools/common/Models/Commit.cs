@@ -32,9 +32,9 @@ namespace Benchmarker.Common.Models
 
 			var row = new PostgresRow ();
 			row.Set ("hash", NpgsqlTypes.NpgsqlDbType.Varchar, Hash);
-			row.Set ("date", NpgsqlTypes.NpgsqlDbType.Date, CommitDate);
+			row.Set ("commitDate", NpgsqlTypes.NpgsqlDbType.Date, CommitDate);
 			row.Set ("branch", NpgsqlTypes.NpgsqlDbType.Varchar, Branch);
-			row.Set ("mergeBase", NpgsqlTypes.NpgsqlDbType.Varchar, MergeBaseHash);
+			row.Set ("mergeBaseHash", NpgsqlTypes.NpgsqlDbType.Varchar, MergeBaseHash);
 			return PostgresInterface.Insert<string> (conn, "commit", row, "hash");
 		}
 	}
