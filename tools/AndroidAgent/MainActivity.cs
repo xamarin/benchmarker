@@ -7,16 +7,18 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
+
+using Benchmarker.Common;
 using System.Reflection;
 using System.Diagnostics;
-using Benchmarker.Common;
+
 using Benchmarks.BH;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
+
 using Java.Util.Logging;
 using Common.Logging;
 using Newtonsoft.Json.Linq;
-using Benchmarker.Common.Models;
 using Nito.AsyncEx;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
@@ -31,7 +33,7 @@ namespace AndroidAgent
 			Logging.SetLogging (new AndroidLogger());
 		}
 
-		string GetMonoVersion ()
+		private static string GetMonoVersion ()
 		{
 			Type type = Type.GetType("Mono.Runtime");
 			if (type != null)
@@ -49,9 +51,10 @@ namespace AndroidAgent
 			button.Text = text;
 		}
 
-		Benchmarker.Common.Models.Result.Run Iteration (string benchmark, int iteration)
+		void Iteration (string benchmark, int iteration, bool isDryRun)
 		{
-			Logging.GetLogging().InfoFormat ("MainActivity | Benchmark {0}: start iteration {1}", benchmark, iteration);
+			var dryRun = isDryRun ? " dryrun" : "";
+			Logging.GetLogging().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": start iteration {2}", dryRun, benchmark, iteration);
 			GC.Collect (1);
 			System.Threading.Thread.Sleep (5 * 1000); // cool down?
 
@@ -70,82 +73,61 @@ namespace AndroidAgent
 				throw new NotImplementedException ();
 			}
 			sw.Stop ();
-			Logging.GetLogging().InfoFormat ("MainActivity | Benchmark {0}: finished iteration {1}, took {2}ms", benchmark, iteration, sw.ElapsedMilliseconds);
-			return new Benchmarker.Common.Models.Result.Run {
-				WallClockTime = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds),
-				Output = "<no stdout>",
-				Error = "<no stderr>"
-			};
+			Logging.GetLogging().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": finished iteration {2}, took {3}ms", dryRun, benchmark, iteration, sw.ElapsedMilliseconds);
 		}
 
-		private Commit GetCommit ()
+		private static void PrintCommit ()
 		{
 			// e.g.: "4.3.0 (master/[a-f0-9A-F]{7..40})"
 			var regex = new Regex ("^[0-9].*\\((.*)/([0-9a-f]+)\\)");
 			var match = regex.Match (GetMonoVersion ());
 
-			var commit = new Commit ();
+			string branch, hash;
 			if (match.Success) {
-				commit.Branch = match.Groups [1].Value;
-				commit.Hash = match.Groups [2].Value;
-				Logging.GetLogging().Debug ("branch: " + commit.Branch + " hash: " + commit.Hash);
+				branch = match.Groups [1].Value;
+				hash = match.Groups [2].Value;
+				Logging.GetLogging().Debug ("branch: " + branch + " hash: " + hash);
 			} else {
-				commit.Branch = "<unknown>";
-				commit.Hash = "<unknown>";
+				branch = "<unknown>";
+				hash = "<unknown>";
 				Logging.GetLogging().Debug ("couldn't read git information: \"" + GetMonoVersion () + "\"");
 			}
 			Octokit.Commit gitHubCommit = null;
 			try {
 				var gitHubClient = GitHubInterface.GitHubClient;
-				Octokit.TreeResponse treeResponse = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", commit.Hash)));
+				Octokit.TreeResponse treeResponse = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", hash)));
 				gitHubCommit = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", treeResponse.Sha)));
 			} catch (Octokit.NotFoundException e) {
-				Logging.GetLogging().Debug ("Commit " + commit.Hash + " not found on GitHub");
+				Logging.GetLogging().Debug ("Commit " + hash + " not found on GitHub");
 				throw e;
 			}
 			if (gitHubCommit == null) {
-				Logging.GetLogging().Debug ("Could not get commit " + commit.Hash + " from GitHub");
+				Logging.GetLogging().Debug ("Could not get commit " + hash + " from GitHub");
 			} else {
-				commit.Hash = gitHubCommit.Sha;
-				commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
-				Logging.GetLogging().Info ("Got commit " + commit.Hash + " from GitHub");
+				hash = gitHubCommit.Sha;
+				// commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
+				Logging.GetLogging().Info ("Got commit " + hash + " from GitHub");
 			}
 
-			return commit;
+			Logging.GetLogging().InfoFormat ("Benchmarker | commit \"{0}\" on branch \"{1}\"", hash, branch);
 		}
 
 		void RunBenchmark (string runSetId, string benchmarkName, string hostname, string architecture)
 		{
-			const int tryRuns = 10;
-			var commit = GetCommit ();
-			var machine = new Machine { Name = hostname, Architecture = architecture };
-			var config = new Config { Name = "default", Mono = String.Empty, MonoOptions = new string[0], MonoEnvironmentVariables = new Dictionary<string, string> (), Count = 10, };
+			const int TRY_RUNS = 10;
+			const int ITERATIONS = 10;
+
+			PrintCommit ();
+			Logging.GetLogging().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
+			Logging.GetLogging ().InfoFormat ("Becnhmarker | configname \"{0}\"", "default");
 			// TODO: buildURL => wrench log?
 			// TODO: logURL => XTC url?
-			var runSet = AsyncContext.Run (() => RunSet.FromId (machine, runSetId, config, commit, null, null));
+			Logging.GetLogging ().InfoFormat ("Benchmarker | runSetId \"{0}\"", runSetId);
 			new Task (() => {
-				var result = new Benchmarker.Common.Models.Result {
-					DateTime = DateTime.Now,
-					Benchmark = new Benchmark { Name = benchmarkName, },
-					Config = config,
-				};
 				try {
-					for (var i = 0; i < (config.Count + tryRuns); i++) {
-						var run = Iteration (benchmarkName, i);
-						if (i < tryRuns) {
-							continue;
-						}
-						if (run != null) {
-							result.Runs.Add (run);
-						} else {
-							Logging.GetLogging().DebugFormat ("no result available for #{0}!", i);
-						}
+					for (var i = 0; i < (ITERATIONS + TRY_RUNS); i++) {
+						Iteration (benchmarkName, i, i < TRY_RUNS);
 					}
-
-					runSet.Results.Add (result);
-					var objectId = runSet.UploadToParseGetObjectId (machine);
-					Logging.GetLogging().InfoFormat ("http://xamarin.github.io/benchmarker/front-end/runset.html#{0}", objectId);
-					Logging.GetLogging().InfoFormat ("{{ \"runSetId\": \"{0}\" }}", objectId);
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
 					Logging.GetLogging().Error (e);
