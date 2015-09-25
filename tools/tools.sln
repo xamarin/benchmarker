@@ -11,13 +11,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidAgent.UITests", "And
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{7940B561-C489-4D75-9582-99B09E6BEEC8}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "common", "common\common.shproj", "{5A8CD6DA-AA95-46D0-9710-752E7C91C62F}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libdbmodel", "libdbmodel\libdbmodel.shproj", "{5A8CD6DA-AA95-46D0-9710-752E7C91C62F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parse2Postgres", "Parse2Postgres\Parse2Postgres.csproj", "{489C560B-9F7C-4520-A791-DDD817BCEF19}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "accredit", "accredit\accredit.shproj", "{08D02AC3-7F08-49F9-9D63-0493AF099B61}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libaccredit", "libaccredit\libaccredit.shproj", "{08D02AC3-7F08-49F9-9D63-0493AF099B61}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Accreditize", "Accreditize\Accreditize.csproj", "{6819955F-90F7-46EB-9F30-53EEB658ACD1}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "liblogging", "liblogging\liblogging.shproj", "{3133E1E8-B5E4-48B9-BE5A-6116CA391CA4}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libgithub", "libgithub\libgithub.shproj", "{87899E9B-1405-4AFF-8C9E-336694B4CAF2}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libpostgres", "libpostgres\libpostgres.shproj", "{F17EC432-3C62-4453-8B71-16F97C2D2977}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

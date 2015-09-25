@@ -68,8 +68,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <Import Project="..\accredit\accredit.projitems" Label="Shared" Condition="Exists('..\accredit\accredit.projitems')" />
-  <Import Project="..\common\common.projitems" Label="Shared" Condition="Exists('..\common\common.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="packages.config" />
