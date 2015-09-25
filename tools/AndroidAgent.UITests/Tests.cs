@@ -54,16 +54,12 @@ namespace AndroidAgent.UITests
 				using (StreamReader reader = new StreamReader (stream)) {
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
 					string runSetId = json.runSetId;
-					string bmUsername = json.bmUsername;
-					string bmPassword = json.bmPassword;
 					string githubAPIKey = json.githubAPIKey;
 
 					app.Screenshot ("init");
 
 					clearAndSetTextField ("runSetId", runSetId);
 					clearAndSetTextField ("benchmark", benchmark);
-					clearAndSetTextField ("bmUsername", bmUsername);
-					clearAndSetTextField ("bmPassword", bmPassword);
 					clearAndSetTextField ("githubAPIKey", githubAPIKey);
 
 					app.Tap (c => c.Marked ("myButton"));

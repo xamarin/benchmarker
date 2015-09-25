@@ -16,16 +16,6 @@
     <AutoCompleteTextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/bmUsername"
-        android:text="benchmarkUsername" />
-    <AutoCompleteTextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/bmPassword"
-        android:text="benchmarkPassword" />
-    <AutoCompleteTextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:id="@+id/githubAPIKey"
         android:text="github API Key" />
     <Button

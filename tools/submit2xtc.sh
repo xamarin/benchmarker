@@ -28,8 +28,6 @@ if [ ! -f $PARAMSJSON ]; then
 fi
 
 # check if the json file has the required fields
-checkjsonfield 'bmUsername'
-checkjsonfield 'bmPassword'
 checkjsonfield 'githubAPIKey'
 checkjsonfield 'runSetId'
 

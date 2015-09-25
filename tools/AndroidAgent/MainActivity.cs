@@ -19,7 +19,6 @@ using Newtonsoft.Json.Linq;
 using Benchmarker.Common.Models;
 using Nito.AsyncEx;
 using System.Text.RegularExpressions;
-using Parse;
 using System.Collections.Generic;
 
 namespace AndroidAgent
@@ -155,14 +154,7 @@ namespace AndroidAgent
 			Logging.GetLogging().InfoFormat ("Benchmark started, run set id {0}", runSetId);
 		}
 
-		private static void InitCommons(string bmUsername, string bmPassword, string githubAPIKey) {
-			ParseInterface.benchmarkerCredentials = JObject.Parse ("{'username': '" + bmUsername + "', 'password': '" + bmPassword + "'}");
-			if (!ParseInterface.Initialize ()) {
-				Logging.GetLogging().Error ("Error: Could not initialize Parse interface.");
-				throw new Exception ("Error: Could not initialize Parse interface.");
-			} else {
-				Logging.GetLogging().Info ("InitCommons: Parse successful");
-			}
+		private static void InitCommons(string githubAPIKey) {
 			GitHubInterface.githubCredentials = githubAPIKey;
 		}
 
@@ -176,10 +168,8 @@ namespace AndroidAgent
 			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
 				var runSetId = FindViewById<TextView> (Resource.Id.runSetId).Text;
 				var benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
-				var bmUsername = FindViewById<TextView> (Resource.Id.bmUsername).Text;
-				var bmPassword = FindViewById<TextView> (Resource.Id.bmPassword).Text;
 				var githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
-				InitCommons (bmUsername, bmPassword, githubAPIKey);
+				InitCommons (githubAPIKey);
 				SetStartButtonText ("running");
 				RunBenchmark (runSetId, benchmarkName, hostname, architecture);
 			};
