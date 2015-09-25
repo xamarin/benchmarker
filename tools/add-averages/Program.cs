@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Parse;
+using Npgsql;
 using Nito.AsyncEx;
 using Benchmarker;
 using Benchmarker.Common;
@@ -8,6 +8,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Common.Logging.Simple;
 using Common.Logging;
 
@@ -17,85 +18,27 @@ namespace DbTool
 	{
 		static string SlackHooksUrl;
 
-		static async Task FixRunSet (ParseObject runSet)
+		static Dictionary<long, IDictionary<string, double[]>> resultsForRunSetId = new Dictionary<long, IDictionary<string, double[]>> ();
+
+		static IDictionary<string, double[]> FetchResultsForRunSet (NpgsqlConnection conn, long runSetId)
 		{
-			var runs = await ParseInterface.PageQueryWithRetry (() => {
-				return ParseObject.GetQuery ("Run")
-					.Include ("benchmark")
-					.WhereEqualTo ("runSet", runSet);
-			});
-			var benchmarkNames = runs.Select (r => (string) (((ParseObject)r ["benchmark"]) ["name"])).Distinct ();
-			Console.WriteLine ("run set {0} has {1} runs {2} benchmarks", runSet.ObjectId, runs.Count (), benchmarkNames.Count ());
-			var averages = new Dictionary <string, double> ();
-			var variances = new Dictionary <string, double> ();
-			foreach (var name in benchmarkNames) {
-				var numbers = runs.Where (r => (string)(((ParseObject)r ["benchmark"]) ["name"]) == name).Select (r => ParseInterface.NumberAsDouble (r ["elapsedMilliseconds"])).ToArray ();
-				var avg = numbers.Average ();
-				averages [name] = avg;
-				var sum = 0.0;
-				foreach (var v in numbers) {
-					var diff = v - avg;
-					sum += diff * diff;
-				}
-				var variance = sum / numbers.Length;
-				variances [name] = variance;
-				Console.WriteLine ("benchmark {0} average {1} variance {2}", name, avg, variance);
+			if (!resultsForRunSetId.ContainsKey (runSetId)) {
+				var whereValues = new PostgresRow ();
+				whereValues.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, runSetId);
+				whereValues.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "time");
+				var rows = PostgresInterface.Select (conn, "\"1\".results",
+					           new string[] {
+						"benchmark",
+						"results"
+					},
+					           "runSet = :runSet and metric = :metric and disabled is not true",
+					           whereValues);
+				var dict = new Dictionary<string, double[]> ();
+				foreach (var row in rows)
+					dict [row.GetReference<string> ("benchmark")] = row.GetReference<double[]> ("results");
+				resultsForRunSetId [runSetId] = dict;
 			}
-			runSet ["elapsedTimeAverages"] = averages;
-			runSet ["elapsedTimeVariances"] = variances;
-			await runSet.SaveAsync ();
-		}
-
-		static async Task AddAverages ()
-		{
-			var runSets = await ParseInterface.PageQueryWithRetry (() => ParseObject.GetQuery ("RunSet"));
-			foreach (var runSet in runSets) {
-				if (runSet.ContainsKey ("elapsedTimeAverages") && runSet.ContainsKey ("elapsedTimeVariances")) {
-					var averages = runSet.Get<Dictionary<string, object>> ("elapsedTimeAverages");
-					var variances = runSet.Get<Dictionary<string, object>> ("elapsedTimeVariances");
-					var averagesKeys = new SortedSet<string> (averages.Keys);
-					var variancesKeys = new SortedSet<string> (variances.Keys);
-					if (averagesKeys.SetEquals (variancesKeys))
-						continue;
-				}
-				await FixRunSet (runSet);
-			}
-			Console.WriteLine ("got {0} run sets", runSets.Count ());
-		}
-
-		static async Task DeleteRunSet (string runSetId)
-		{
-			var runSets = await ParseInterface.PageQueryWithRetry (() => {
-				return ParseObject.GetQuery ("RunSet")
-					.WhereEqualTo ("objectId", runSetId);
-			});
-			if (runSets.Count () != 1)
-				throw new Exception ("Could not fetch run set");
-			var runSet = runSets.First ();
-			var runs = await ParseInterface.PageQueryWithRetry (() => {
-				return ParseObject.GetQuery ("Run")
-					.WhereEqualTo ("runSet", runSet);
-			});
-			Console.WriteLine ("deleting " + runs.Count () + " runs");
-			foreach (var run in runs)
-				await run.DeleteAsync ();
-			await runSet.DeleteAsync ();
-		}
-
-		static Dictionary<string, List<ParseObject>> runsForRunSetId = new Dictionary<string, List<ParseObject>> ();
-
-		static async Task<IEnumerable<ParseObject>> FetchRunsForRunSet (ParseObject runSet)
-		{
-			var id = runSet.ObjectId;
-			if (!runsForRunSetId.ContainsKey (id)) {
-				var runs = await ParseInterface.PageQueryWithRetry (() => {
-					return ParseObject.GetQuery ("Run")
-						.WhereEqualTo ("runSet", runSet)
-						.Include ("benchmark");
-				});
-				runsForRunSetId [id] = runs.ToList ();
-			}
-			return runsForRunSetId [id];
+			return resultsForRunSetId [runSetId];
 		}
 
 		static async Task MakePostRequest (string RequestUrl, MultipartFormDataContent Content)
@@ -122,75 +65,100 @@ namespace DbTool
 			await MakePostRequest (SlackHooksUrl, form);
 		}
 
-		static string SlackCommitString (ParseObject commit)
+		static string SlackCommitString (string hash)
 		{
-			var hash = commit.Get<string> ("hash");
 			var url = "https://github.com/mono/mono/commit/" + hash;
 			return "<" + url + "|" + hash + ">";
 		}
 
-		static async Task<bool> WarnIfNecessary (bool testRun, List<ParseObject> benchmarksToWarn, List<object> warnedBenchmarks,
-			bool faster, ParseObject testRunSet, ParseObject previousRunSet, ParseObject machine, ParseObject config)
+		static async Task<IEnumerable<string>> WarnIfNecessary (bool testRun, List<string> benchmarksToWarn, List<string> warnedBenchmarks,
+			bool faster, PostgresRow testRunSet, PostgresRow previousRunSet, string machineName, string configName)
 		{
-			var newlyWarned = benchmarksToWarn.Where (b => !warnedBenchmarks.Any (wb => ((ParseObject)wb).ObjectId == b.ObjectId)).ToList ();
+			var newlyWarned = benchmarksToWarn.Where (b => !warnedBenchmarks.Contains (b)).ToList ();
 			if (newlyWarned.Count == 0)
-				return false;
-			warnedBenchmarks.AddRange (newlyWarned);
+				return new string[] { };
 
-			var commit = testRunSet.Get<ParseObject> ("commit");
-			var previousCommit = previousRunSet.Get<ParseObject> ("commit");
+			var commit = testRunSet.GetReference<string> ("c_hash");
+			var previousCommit = previousRunSet.GetReference<string> ("c_hash");
 
 			string benchmarksString;
-			var names = newlyWarned.Select (b => b.Get<string> ("name")).ToList ();
-			if (names.Count == 1) {
-				benchmarksString = String.Format ("benchmark `{0}`", names [0]);
-			} else if (names.Count == 2) {
-				benchmarksString = String.Format ("benchmarks `{0}` and `{1}`", names [0], names [1]);
+			if (newlyWarned.Count == 1) {
+				benchmarksString = String.Format ("benchmark `{0}`", newlyWarned [0]);
+			} else if (newlyWarned.Count == 2) {
+				benchmarksString = String.Format ("benchmarks `{0}` and `{1}`", newlyWarned [0], newlyWarned [1]);
 			} else {
-				var allButLast = names.GetRange (0, names.Count - 1).Select (n => String.Format ("`{0}`", n));
-				benchmarksString = String.Format ("benchmarks {0}, and `{1}`", String.Join (", ", allButLast), names.Last ());
+				var allButLast = newlyWarned.GetRange (0, newlyWarned.Count - 1).Select (n => String.Format ("`{0}`", n));
+				benchmarksString = String.Format ("benchmarks {0}, and `{1}`", String.Join (", ", allButLast), newlyWarned.Last ());
 			}
-			var timelineUrl = String.Format ("http://xamarin.github.io/benchmarker/front-end/index.html#{0}+{1}",
-				                  machine.ObjectId, config.ObjectId);
-			var compareUrl = String.Format ("http://xamarin.github.io/benchmarker/front-end/compare.html#{0}+{1}",
-				                 previousRunSet.ObjectId, testRunSet.ObjectId);
+			var timelineUrl = String.Format ("http://xamarin.github.io/benchmarker/front-end/index.html#machine={0}&config={1}",
+				                  machineName, configName);
+			var compareUrl = String.Format ("http://xamarin.github.io/benchmarker/front-end/compare.html#ids={0}+{1}",
+				previousRunSet.GetValue<long> ("rs_id").Value,
+				testRunSet.GetValue<long> ("rs_id").Value);
 			var message = String.Format ("The {0} got {1} between commits {2} and {3} on <{4}|{5}> — <{6}|compare>",
-				              benchmarksString, (faster ? "faster" : "slower"),
-				              SlackCommitString (previousCommit), SlackCommitString (commit),
-				              timelineUrl, machine.Get<string> ("architecture"), compareUrl);
+							             benchmarksString, (faster ? "faster" : "slower"),
+							             SlackCommitString (previousCommit), SlackCommitString (commit),
+										 timelineUrl, testRunSet.GetReference<string> ("m_architecture"), compareUrl);
 			var botName = faster ? "goodbot" : "badbot";
 			if (testRun)
 				Console.WriteLine ("{0}: {1}", botName, message);
 			else
 				await SendSlackMessage (message, "#performance-bots", botName, faster ? ":thumbsup:" : ":red_circle:");
-			return newlyWarned.Count > 0;
+			
+			return newlyWarned;
 		}
 
-		static async Task FindRegressions (string machineId, string configId, bool testRun)
+		static IDictionary<string, double> JsonMapToDictionary (JObject map)
+		{
+			var dict = new Dictionary<string, double> ();
+			foreach (var p in map.Properties ())
+				dict [p.Name] = p.Value.Value<double> ();
+			return dict;
+		}
+
+		static void InsertWarned (NpgsqlConnection conn, long testRunSetId, string benchmark, bool faster)
+		{
+			PostgresRow row = new PostgresRow ();
+			row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, testRunSetId);
+			row.Set ("benchmark", NpgsqlTypes.NpgsqlDbType.Varchar, benchmark);
+			row.Set ("faster", NpgsqlTypes.NpgsqlDbType.Boolean, faster);
+			PostgresInterface.Insert<long> (conn, "RegressionsWarned", row, "id");
+		}
+
+		static async Task FindRegressions (NpgsqlConnection conn, string machineName, string configName, bool testRun, bool onlyNecessary)
 		{
 			const int baselineWindowSize = 5;
 			const int testWindowSize = 3;
 			const double controlLimitSize = 6;
 
-			var machine = await ParseObject.GetQuery ("Machine").GetAsync (machineId);
-			var config = await ParseObject.GetQuery ("Config").GetAsync (configId);
-			var runSets = await ParseInterface.PageQueryWithRetry (() => {
-				return ParseObject.GetQuery ("RunSet")
-					.WhereEqualTo ("config", config)
-					.WhereEqualTo ("machine", machine)
-					.WhereNotEqualTo ("failed", true)
-					.WhereDoesNotExist ("pullRequest")
-					.Include ("commit");
-			});
+			var summaryValues = new PostgresRow ();
+			summaryValues.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, machineName);
+			summaryValues.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, configName);
+			summaryValues.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "time");
+			var runSets = PostgresInterface.Select (conn, "\"1\".summary",
+				new string[] {
+					"rs_id",
+					"rs_startedAt",
+					"c_hash",
+					"rs_timedOutBenchmarks",
+					"rs_crashedBenchmarks",
+					"c_hash",
+					"c_commitDate",
+					"m_architecture",
+					"averages",
+					"variances"
+				},
+				"m_name = :machine and cfg_name = :config and metric = :metric and rs_pullRequest is null",
+				summaryValues);
 			var sortedRunSets = runSets.ToList ();
 			sortedRunSets.Sort ((a, b) => {
-				var aCommitDate = a.Get<ParseObject> ("commit").Get<DateTime> ("commitDate");
-				var bCommitDate = b.Get<ParseObject> ("commit").Get<DateTime> ("commitDate");
+				var aCommitDate = a.GetValue<DateTime> ("c_commitDate").Value;
+				var bCommitDate = b.GetValue<DateTime> ("c_commitDate").Value;
 				var result = aCommitDate.CompareTo (bCommitDate);
 				if (result != 0)
 					return result;
-				var aStartedDate = a.Get<DateTime> ("startedAt");
-				var bStartedDate = b.Get<DateTime> ("startedAt");
+				var aStartedDate = a.GetValue<DateTime> ("rs_startedAt").Value;
+				var bStartedDate = b.GetValue<DateTime> ("rs_startedAt").Value;
 				return aStartedDate.CompareTo (bStartedDate);
 			});
 			var lastWarningIndex = new Dictionary<string, int> ();
@@ -201,12 +169,12 @@ namespace DbTool
 
 				for (var j = 1; j <= baselineWindowSize; ++j) {
 					var baselineRunSet = sortedRunSets [i - j];
-					var averages = baselineRunSet.Get <Dictionary<string, object>> ("elapsedTimeAverages");
-					var variances = baselineRunSet.Get <Dictionary<string, object>> ("elapsedTimeVariances");
+					var averages = JsonMapToDictionary (baselineRunSet.GetReference<JObject> ("averages"));
+					var variances = JsonMapToDictionary (baselineRunSet.GetReference<JObject> ("variances"));
 					foreach (var kvp in averages) {
 						var name = kvp.Key;
-						var average = ParseInterface.NumberAsDouble (kvp.Value);
-						var variance = ParseInterface.NumberAsDouble (variances [name]);
+						var average = kvp.Value;
+						var variance = variances [name];
 						if (!windowAverages.ContainsKey (name)) {
 							windowAverages [name] = 0.0;
 							windowVariances [name] = 0.0;
@@ -225,51 +193,57 @@ namespace DbTool
 					windowVariances [name] /= count; 
 				}
 
-				var testRuns = new List<ParseObject> ();
+				var testResults = new Dictionary<string, List<double>> ();
 				for (var j = 0; j < testWindowSize; ++j) {
-					var runs = await FetchRunsForRunSet (sortedRunSets [i + j]);
-					testRuns.AddRange (runs);
+					var results = FetchResultsForRunSet (conn, sortedRunSets [i + j].GetValue<long> ("rs_id").Value);
+					foreach (var kvp in results) {
+						var benchmark = kvp.Key;
+						if (!testResults.ContainsKey (benchmark))
+							testResults.Add (benchmark, new List<double> ());
+						testResults [benchmark].AddRange (kvp.Value);
+					}
 				}
 
 				var testRunSet = sortedRunSets [i];
 
-				var commitHash = testRunSet.Get<ParseObject> ("commit").Get<string> ("hash");
-				Console.WriteLine ("{0} {1}", testRunSet.ObjectId, commitHash);
+				var commitHash = testRunSet.GetReference<string> ("c_hash");
+				var testRunSetId = testRunSet.GetValue<long> ("rs_id").Value;
+				Console.WriteLine ("{0} {1}", testRunSetId, commitHash);
 
-				var fasterBenchmarks = new List<ParseObject> ();
-				var slowerBenchmarks = new List<ParseObject> ();
+				var fasterBenchmarks = new List<string> ();
+				var slowerBenchmarks = new List<string> ();
 
 				foreach (var kvp in benchmarkCounts) {
-					var name = kvp.Key;
+					var benchmark = kvp.Key;
 					if (kvp.Value < baselineWindowSize)
 						continue;
-					if (lastWarningIndex.ContainsKey (name) && lastWarningIndex [name] >= i - baselineWindowSize)
+					if (lastWarningIndex.ContainsKey (benchmark) && lastWarningIndex [benchmark] >= i - baselineWindowSize)
 						continue;
-					var average = windowAverages [name];
-					var variance = windowVariances [name];
+					var average = windowAverages [benchmark];
+					var variance = windowVariances [benchmark];
 					var stdDev = Math.Sqrt (variance);
 					var lowerControlLimit = average - controlLimitSize * stdDev;
 					var upperControlLimit = average + controlLimitSize * stdDev;
-					var runs = testRuns.Where (o => o.Get<ParseObject> ("benchmark").Get<string> ("name") == name).ToList ();
-					if (runs.Count < 5)
+					if (!testResults.ContainsKey (benchmark))
 						continue;
-					var benchmark = runs [0].Get<ParseObject> ("benchmark");
+					var results = testResults [benchmark];
+					if (results.Count < 5)
+						continue;
 					var numOutliersFaster = 0;
 					var numOutliersSlower = 0;
-					foreach (var run in runs) {
-						var elapsed = ParseInterface.NumberAsDouble (run ["elapsedMilliseconds"]);
+					foreach (var elapsed in results) {
 						if (elapsed < lowerControlLimit)
 							++numOutliersFaster;
 						if (elapsed > upperControlLimit)
 							++numOutliersSlower;
 					}
-					if (numOutliersFaster > runs.Count * 3 / 4) {
-						Console.WriteLine ("+ regression in {0}: {1}/{2}", name, numOutliersFaster, runs.Count);
-						lastWarningIndex [name] = i;
+					if (numOutliersFaster > results.Count * 3 / 4) {
+						Console.WriteLine ("+ regression in {0}: {1}/{2}", benchmark, numOutliersFaster, results.Count);
+						lastWarningIndex [benchmark] = i;
 						fasterBenchmarks.Add (benchmark);
-					} else if (numOutliersSlower > runs.Count * 3 / 4) {
-						Console.WriteLine ("- regression in {0}: {1}/{2}", name, numOutliersSlower, runs.Count);
-						lastWarningIndex [name] = i;
+					} else if (numOutliersSlower > results.Count * 3 / 4) {
+						Console.WriteLine ("- regression in {0}: {1}/{2}", benchmark, numOutliersSlower, results.Count);
+						lastWarningIndex [benchmark] = i;
 						slowerBenchmarks.Add (benchmark);
 					}
 					/*
@@ -282,65 +256,46 @@ namespace DbTool
 				}
 
 				if (fasterBenchmarks.Count != 0 || slowerBenchmarks.Count != 0) {
-					var warnedFasterBenchmarks = new List<object> ();
-					var warnedSlowerBenchmarks = new List<object> ();
-					ParseObject warning = null;
+					var warnedFasterBenchmarks = new List<string> ();
+					var warnedSlowerBenchmarks = new List<string> ();
 
-					if (!testRun) {
-						var warnings = await ParseInterface.PageQueryWithRetry (() => {
-							return ParseObject.GetQuery ("RegressionWarnings")
-								.WhereEqualTo ("runSet", testRunSet);
-						});
+					if (onlyNecessary) {
+						var warningValues = new PostgresRow ();
+						warningValues.Set ("runset", NpgsqlTypes.NpgsqlDbType.Bigint, testRunSetId);
+						var warnings = PostgresInterface.Select (conn, "RegressionsWarned",
+							new string[] {
+								"benchmark",
+								"faster"
+							},
+							"runSet = :runset", warningValues);
 
-						if (warnings.Count () > 1)
-							throw new Exception ("There is more than one RegressionWarning for run set " + testRunSet.ObjectId);
-						
-						if (warnings.Count () == 1)
-							warning = warnings.First ();
-						
-						if (warning != null) {
-							warnedFasterBenchmarks = warning.Get<List<object>> ("fasterBenchmarks");
-							warnedSlowerBenchmarks = warning.Get<List<object>> ("slowerBenchmarks");
+						foreach (var row in warnings) {
+							var benchmark = row.GetReference<string> ("benchmark");
+							if (row.GetValue<bool> ("faster").Value)
+								warnedFasterBenchmarks.Add (benchmark);
+							else
+								warnedSlowerBenchmarks.Add (benchmark);
 						}
 					}
 
 					var previousRunSet = sortedRunSets [i - 1];
-					var warnedAnyFaster = await WarnIfNecessary (testRun, fasterBenchmarks, warnedFasterBenchmarks, true, testRunSet, previousRunSet, machine, config);
-					var warnedAnySlower = await WarnIfNecessary (testRun, slowerBenchmarks, warnedSlowerBenchmarks, false, testRunSet, previousRunSet, machine, config);
-					var warnedAny = warnedAnyFaster || warnedAnySlower;
+					var newlyWarnedFaster = await WarnIfNecessary (testRun, fasterBenchmarks, warnedFasterBenchmarks, true, testRunSet, previousRunSet, machineName, configName);
+					var newlyWarnedSlower = await WarnIfNecessary (testRun, slowerBenchmarks, warnedSlowerBenchmarks, false, testRunSet, previousRunSet, machineName, configName);
 
-					if (!testRun && warnedAny) {
-						if (warning == null) {
-							warning = ParseInterface.NewParseObject ("RegressionWarnings");
-							warning ["runSet"] = testRunSet;
-						}
-
-						warning ["fasterBenchmarks"] = warnedFasterBenchmarks;
-						warning ["slowerBenchmarks"] = warnedSlowerBenchmarks;
-
-						await ParseInterface.RunWithRetry (() => warning.SaveAsync ());
+					if (!testRun) {
+						foreach (var benchmark in newlyWarnedFaster)
+							InsertWarned (conn, testRunSetId, benchmark, true);
+						foreach (var benchmark in newlyWarnedSlower)
+							InsertWarned (conn, testRunSetId, benchmark, false);
 					}
 				}
-
-				await Task.Delay (1000);
-			}
-		}
-
-		static void InitializeParseInterface ()
-		{
-			ParseInterface.benchmarkerCredentials = Accredit.GetCredentials ("benchmarker");
-			if (!ParseInterface.Initialize ()) {
-				Console.Error.WriteLine ("Error: Could not initialize Parse interface.");
-				Environment.Exit (1);
 			}
 		}
 
 		static void UsageAndExit (bool success)
 		{
 			Console.WriteLine ("Usage:");
-			Console.WriteLine ("    DbTool.exe --add-averages");
-			Console.WriteLine ("    DbTool.exe --delete-run-set ID");
-			Console.WriteLine ("    DbTool.exe --find-regressions MACHINE-ID CONFIG-ID [--test-run]");
+			Console.WriteLine ("    DbTool.exe --find-regressions MACHINE-ID CONFIG-ID [--test-run [--only-necessary]]");
 			Environment.Exit (success ? 0 : 1);
 		}
 
@@ -351,23 +306,17 @@ namespace DbTool
 			if (args.Length == 0)
 				UsageAndExit (true);
 
-			if (args [0] == "--add-averages") {
-				InitializeParseInterface ();
-				AsyncContext.Run (() => AddAverages ());
-			} else if (args [0] == "--delete-run-set") {
-				var runSet = args [1];
-				InitializeParseInterface ();
-				AsyncContext.Run (() => DeleteRunSet (runSet));
-			} else if (args [0] == "--find-regressions") {
+			if (args [0] == "--find-regressions") {
 				var machineId = args [1];
 				var configId = args [2];
 				var testRun = args.Length > 3 && args [3] == "--test-run";
+				var onlyNecessary = !testRun || (args.Length > 4 && args [4] == "--only-necessary");
 				if (!testRun) {
 					var credentials = Accredit.GetCredentials ("regressionSlack");
 					SlackHooksUrl = credentials ["hooksURL"].ToString ();
 				}
-				InitializeParseInterface ();
-				AsyncContext.Run (() => FindRegressions (machineId, configId, testRun));
+				var conn = PostgresInterface.Connect ();
+				AsyncContext.Run (() => FindRegressions (conn, machineId, configId, testRun, onlyNecessary));
 			} else {
 				UsageAndExit (false);
 			}

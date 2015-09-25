@@ -41,11 +41,9 @@ namespace Benchmarker.Common
 			}
 		}
 
-		public static IEnumerable<PostgresRow> Select (NpgsqlConnection conn, IDictionary<string, string> tableNames, IEnumerable<string> columnsEnumerable, string whereClause, PostgresRow whereValues) {
-			var tables = string.Join (",", tableNames.Select (kvp => kvp.Value == null ? kvp.Key : kvp.Key + " " + kvp.Value));
+
+		static IEnumerable<PostgresRow> Select (NpgsqlConnection conn, string queryString, IEnumerable<string> columnsEnumerable, PostgresRow whereValues) {
 			var columns = columnsEnumerable.ToArray ();
-			var whereString = whereClause == null ? "" : string.Format ("where {0}", whereClause);
-			var queryString = string.Format ("select {0} from {1} {2}", string.Join (",", columns), tables, whereString);
 			using (var cmd = conn.CreateCommand ()) {
 				cmd.CommandText = queryString;
 				if (whereValues != null)
@@ -62,6 +60,14 @@ namespace Benchmarker.Common
 				}
 				return rows;
 			}
+		}
+
+		public static IEnumerable<PostgresRow> Select (NpgsqlConnection conn, IDictionary<string, string> tableNames, IEnumerable<string> columnsEnumerable, string whereClause, PostgresRow whereValues) {
+			var tables = string.Join (",", tableNames.Select (kvp => kvp.Value == null ? kvp.Key : kvp.Key + " " + kvp.Value));
+			var columns = columnsEnumerable.ToArray ();
+			var whereString = whereClause == null ? "" : string.Format ("where {0}", whereClause);
+			var queryString = string.Format ("select {0} from {1} {2}", string.Join (",", columns), tables, whereString);
+			return Select (conn, queryString, columns, whereValues);
 		}
 
 		public static IEnumerable<PostgresRow> Select (NpgsqlConnection conn, string table, IEnumerable<string> columnsEnumerable, string whereClause = null, PostgresRow whereValues = null) {

@@ -79,6 +79,28 @@ alter table RunSet drop column failed;
 grant select, insert, update, delete on table RunMetric to $BENCHMARKER_USER;
 grant usage, select, update on sequence runmetric_id_seq to $BENCHMARKER_USER;
 
+-- RegressionsWarned
+
+create table RegressionsWarned (
+  id serial primary key,
+  runSet integer references RunSet(id),
+  benchmark varchar(128) references Benchmark(name),
+  faster boolean
+);
+
+insert into regressionsWarned (runSet, benchmark, faster)
+select runset, unnest(fasterbenchmarks), true
+from regressionwarnings;
+
+insert into regressionsWarned (runSet, benchmark, faster)
+select runset, unnest(slowerbenchmarks), false
+from regressionwarnings;
+
+drop table RegressionWarnings;
+
+grant select, insert, update, delete on table RegressionsWarned to $BENCHMARKER_USER;
+grant usage, select, update on sequence regressionswarned_id_seq to $BENCHMARKER_USER;
+
 -- indexes
 
 create index runmetric_run_index on runmetric (run);
