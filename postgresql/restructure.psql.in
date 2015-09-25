@@ -82,3 +82,4 @@ grant usage, select, update on sequence runmetric_id_seq to $BENCHMARKER_USER;
 -- indexes
 
 create index runmetric_run_index on runmetric (run);
+create index run_runset_index on run (runset);
