@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Npgsql;
 using Nito.AsyncEx;
 using Benchmarker;
-using Benchmarker.Common;
 using System.Linq;
 using System.Collections.Generic;
 using System.Net.Http;

@@ -2,7 +2,6 @@
 using Common.Logging;
 using Common.Logging.Simple;
 using Benchmarker;
-using Benchmarker.Common;
 using Newtonsoft.Json;
 
 namespace Accreditize

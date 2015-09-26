@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Common.Logging;
 
-namespace Benchmarker.Common
+namespace Benchmarker
 {
 	public class Logging
 	{

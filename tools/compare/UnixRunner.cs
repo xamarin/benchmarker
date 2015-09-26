@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Benchmarker.Common.Models;
+using Benchmarker.Models;
 
-namespace Benchmarker.Common
+namespace compare
 {
-	public class UnixRunner : Runner
+	public class UnixRunner
 	{
 		ProcessStartInfo info;
 		Config config;

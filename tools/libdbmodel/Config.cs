@@ -9,9 +9,9 @@ using System.Text;
 using System.Linq;
 using Npgsql;
 using Newtonsoft.Json.Linq;
-using Benchmarker.Common;
+using Benchmarker;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
     public class Config
 	{

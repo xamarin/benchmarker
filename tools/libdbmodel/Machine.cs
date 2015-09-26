@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
 	public class Machine
 	{

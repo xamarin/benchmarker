@@ -3,7 +3,7 @@ using Octokit;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace Benchmarker.Common
+namespace Benchmarker
 {
 	public static class GitHubInterface
 	{

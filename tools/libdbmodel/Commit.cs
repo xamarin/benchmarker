@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Npgsql;
 using System.Linq;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
 	public class Commit
 	{

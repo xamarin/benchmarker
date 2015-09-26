@@ -5,7 +5,7 @@ using Npgsql;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Benchmarker.Common
+namespace Benchmarker
 {
 	public class PostgresInterface
 	{

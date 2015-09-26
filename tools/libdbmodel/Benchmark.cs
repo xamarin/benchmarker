@@ -6,7 +6,7 @@ using System.IO;
 using Benchmarker;
 using Npgsql;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
     public class Benchmark
 	{

@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using Benchmarker;
 using Common.Logging;
 using Common.Logging.Simple;
-using Benchmarker.Common;
 
 namespace Parse2Postgres
 {

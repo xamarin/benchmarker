@@ -11,15 +11,17 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)LogProfiler\Counter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogProfiler\Reader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Benchmark.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Commit.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Config.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Machine.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\Result.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\RunSet.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Runner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Benchmark.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Commit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Machine.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Result.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RunSet.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Models\" />
   </ItemGroup>
 </Project>

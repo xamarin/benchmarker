@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Benchmarker;
-using Benchmarker.Common;
-using Benchmarker.Common.Models;
+using Benchmarker.Models;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Nito.AsyncEx;
@@ -43,7 +42,7 @@ class Compare
 		Environment.Exit (exitcode);
 	}
 
-	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, string pullRequestURL, Benchmarker.Common.Git.Repository repository, Config config)
+	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, string pullRequestURL, compare.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
 		var match = Regex.Match (pullRequestURL, @"^https?://github\.com/mono/mono/pull/(\d+)/?$");
@@ -326,7 +325,7 @@ class Compare
 					Environment.Exit (1);
 				}
 
-				var repo = new Benchmarker.Common.Git.Repository (monoRepositoryPath);
+				var repo = new compare.Repository (monoRepositoryPath);
 
 				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, pullRequestURL, repo, config));
 				if (pullRequestBaselineRunSetId == null) {
@@ -356,7 +355,7 @@ class Compare
 
 				Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-				var runner = new UnixRunner (testsDir, config, benchmark, machine, timeout);
+				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout);
 
 				var result = new Result {
 					DateTime = DateTime.Now,

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace Benchmarker.Common.Git
+namespace compare
 {
 	public class Repository
 	{

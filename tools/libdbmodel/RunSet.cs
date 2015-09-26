@@ -5,7 +5,7 @@ using Npgsql;
 using Nito.AsyncEx;
 using Newtonsoft.Json.Linq;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
 	public class RunSet
 	{

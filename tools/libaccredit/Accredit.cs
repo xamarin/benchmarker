@@ -7,7 +7,6 @@ using Parse;
 using System.Threading;
 using System.Net;
 using System.Text;
-using Benchmarker.Common;
 
 namespace Benchmarker
 {

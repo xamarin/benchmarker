@@ -8,7 +8,7 @@ using Android.Views;
 using Android.Widget;
 using Android.OS;
 
-using Benchmarker.Common;
+using Benchmarker;
 using System.Reflection;
 using System.Diagnostics;
 

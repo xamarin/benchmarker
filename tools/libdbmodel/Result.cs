@@ -5,7 +5,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Npgsql;
 
-namespace Benchmarker.Common.Models
+namespace Benchmarker.Models
 {
 	public class Result
 	{

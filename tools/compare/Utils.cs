@@ -1,5 +1,4 @@
 ﻿using System;
-using Benchmarker.Common.Models;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +8,8 @@ using System.Diagnostics;
 using System.Text;
 using System.Collections;
 using System.Text.RegularExpressions;
-using Benchmarker.Common.Git;
-using Benchmarker.Common;
+using Benchmarker;
+using Benchmarker.Models;
 
 namespace compare
 {
