@@ -23,9 +23,9 @@ script:
     - nuget restore tools/tools.sln
     - xbuild /p:Configuration=Release /target:compare tools/tools.sln
     - xbuild /p:Configuration=Release /target:DbTool tools/tools.sln
-    - xbuild /p:Configuration=Release /target:Accreditizetools/tools.sln
+    - xbuild /p:Configuration=Release /target:Accreditize tools/tools.sln
     - xbuild /p:Configuration=Release /target:Parse2Postgres tools/tools.sln
     - xbuild /p:Configuration=Debug /target:compare tools/tools.sln
     - xbuild /p:Configuration=Debug /target:DbTool tools/tools.sln
-    - xbuild /p:Configuration=Debug /target:Accreditizetools/tools.sln
+    - xbuild /p:Configuration=Debug /target:Accreditize tools/tools.sln
     - xbuild /p:Configuration=Debug /target:Parse2Postgres tools/tools.sln
