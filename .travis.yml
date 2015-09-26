@@ -21,13 +21,11 @@ before_script:
 solution: tools/tools.sln
 script:
     - nuget restore tools/tools.sln
-    - xbuild /p:Configuration=Release /target:common tools/tools.sln
     - xbuild /p:Configuration=Release /target:compare tools/tools.sln
     - xbuild /p:Configuration=Release /target:DbTool tools/tools.sln
-    - xbuild /p:Configuration=Release /target:Benchmarks tools/tools.sln
-    - xbuild /p:Configuration=Release /target:accredit tools/tools.sln
-    - xbuild /p:Configuration=Debug /target:common tools/tools.sln
+    - xbuild /p:Configuration=Release /target:Accreditizetools/tools.sln
+    - xbuild /p:Configuration=Release /target:Parse2Postgres tools/tools.sln
     - xbuild /p:Configuration=Debug /target:compare tools/tools.sln
     - xbuild /p:Configuration=Debug /target:DbTool tools/tools.sln
-    - xbuild /p:Configuration=Debug /target:Benchmarks tools/tools.sln
-    - xbuild /p:Configuration=Debug /target:accredit tools/tools.sln
+    - xbuild /p:Configuration=Debug /target:Accreditizetools/tools.sln
+    - xbuild /p:Configuration=Debug /target:Parse2Postgres tools/tools.sln
