@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compare", "compare\compare.csproj", "{57E76AF7-A299-4B39-8F41-44673084DEE3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbTool", "add-averages\DbTool.csproj", "{13565BEF-4FE2-44EB-9882-F1FBC339E723}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbTool", "dbtool\DbTool.csproj", "{13565BEF-4FE2-44EB-9882-F1FBC339E723}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidAgent", "AndroidAgent\AndroidAgent.csproj", "{9D1009D0-41C8-4CC7-8FF2-AAF3B06FB33F}"
 EndProject
