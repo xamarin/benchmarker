@@ -68,6 +68,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <Import Project="..\liblogging\logging.projitems" Label="Shared" Condition="Exists('..\liblogging\logging.projitems')" />
+  <Import Project="..\libaccredit\accredit.projitems" Label="Shared" Condition="Exists('..\libaccredit\accredit.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="packages.config" />

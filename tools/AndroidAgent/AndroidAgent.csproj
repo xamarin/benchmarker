@@ -98,6 +98,8 @@
     <AndroidResource Include="Resources\drawable-xxxhdpi\Icon.png" />
     <AndroidResource Include="Resources\layout\Main.axml" />
   </ItemGroup>
+  <Import Project="..\libgithub\libgithub.projitems" Label="Shared" Condition="Exists('..\libgithub\libgithub.projitems')" />
+  <Import Project="..\liblogging\logging.projitems" Label="Shared" Condition="Exists('..\liblogging\logging.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <ItemGroup>

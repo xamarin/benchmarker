@@ -69,6 +69,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <Import Project="..\libaccredit\accredit.projitems" Label="Shared" Condition="Exists('..\libaccredit\accredit.projitems')" />
+  <Import Project="..\libdbmodel\common.projitems" Label="Shared" Condition="Exists('..\libdbmodel\common.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="packages.config" />
