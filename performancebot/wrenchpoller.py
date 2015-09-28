@@ -83,31 +83,41 @@ class HTMLParserWrenchSingleBuild(HTMLParser):
         HTMLParser.__init__(self, *args, **kwargs)
 
     def handle_starttag(self, tag, attrs):
-        if self.state == 0 and tag == 'a':
+        if self.state == 0 and tag == 'h2':
             self.state = 1
-        elif self.state == 2 and tag == 'td':
+        elif self.state == 1 and tag == 'a':
+            self.state = 2
+        elif self.state == 10 and tag == 'a':
+            self.state = 11
+        elif self.state == 12 and tag == 'td':
             for name, value in attrs:
                 if name != 'class':
                     continue
                 if value == 'success':
-                    self.state = 3
-        elif self.state == 3 and tag == 'a':
+                    self.state = 13
+        elif self.state == 13 and tag == 'a':
             for name, value in attrs:
                 if name != 'href':
                     continue
                 self.potentialLink = value
 
     def handle_endtag(self, tag):
-        if self.state == 1 and tag == 'a':
-            self.state = 0
+        if self.state == 2 and tag == 'a':
+            self.state = 1
+        elif self.state == 11 and tag == 'a':
+            self.state = 10
 
     def handle_data(self, data):
-        if self.state == 1 and data == 'upload-to-storage':
-            self.state = 2
-        elif self.state == 3:
+        if self.state == 2:
+            matcher = re.compile('[0-9a-fA-F]{40}')
+            if matcher.match(data) is not None:
+                self.commit = str(data)
+                self.state = 10
+        elif self.state == 11 and data == 'upload-to-storage':
+            self.state = 12
+        elif self.state == 13:
             if data.startswith('mono-android-') and data.endswith('.pkg'):
-                print "HIT: " + str(data) + ", with: " + self.potentialLink
-                self.dmgpkg = self.potentialLink
+                self.dmgpkg = str(self.potentialLink)
 
 
 # for testing/debugging
@@ -134,13 +144,13 @@ if __name__ == '__main__':
     def test_single_build():
         url = r'https://wrench.internalx.com/Wrench/ViewLane.aspx?lane_id=1845&host_id=163&revision_id=588019'
         parsersinglebuild = HTMLParserWrenchSingleBuild()
-        page = yield _mk_request_wrench_single_build(url, _logger)
-        print page
-        parsersinglebuild.feed(page)
+        parsersinglebuild.feed((yield _mk_request_wrench_single_build(url, _logger)))
+        print "commit: " + parsersinglebuild.commit
+        print "pkg url: " + parsersinglebuild.dmgpkg
 
     @defer.inlineCallbacks
     def run_tests():
-        # _ = yield test_mono_master_monodroid()
+        _ = yield test_mono_master_monodroid()
         _ = yield test_single_build()
         stop_me()
 
