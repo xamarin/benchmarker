@@ -9,7 +9,7 @@ import * as Database from './database.js';
 import React from 'react';
 
 class Controller {
-	startupRunSetIds: Array<string> | void;
+	startupRunSetIds: Array<string>;
 	runSetCounts: Array<Object> | void;
 	runSets: Array<Database.DBRunSet> | void;
 
@@ -25,7 +25,7 @@ class Controller {
 			alert ("error loading run set counts: " + error.toString ());
 		});
 
-		if (this.startupRunSetIds !== undefined) {
+		if (this.startupRunSetIds.length > 0) {
 			Database.fetchRunSets (this.startupRunSetIds,
 				runSets => {
 					this.runSets = runSets;
@@ -39,7 +39,7 @@ class Controller {
 	checkAllDataLoaded () {
 		if (this.runSetCounts === undefined)
 			return;
-		if (this.startupRunSetIds !== undefined && this.runSets === undefined)
+		if (this.startupRunSetIds.length > 0 && this.runSets === undefined)
 			return;
 		this.allDataLoaded ();
 	}
