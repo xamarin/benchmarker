@@ -443,7 +443,13 @@ class BenchmarkChartList extends React.Component {
 }
 
 function start (params) {
-	var controller = new Controller (params ['machine'], params ['config']);
+	var machine = params ['machine'];
+	var config = params ['config'];
+	if (machine === undefined && config === undefined) {
+		machine = 'benchmarker';
+		config = 'auto-sgen-noturbo';
+	}
+	var controller = new Controller (machine, config);
 	controller.loadAsync ();
 }
 
