@@ -45,14 +45,16 @@ RUNSETID=$(mono --debug ./compare.exe \
 echo "runSetId: $RUNSETID"
 
 # insert new runSetId into JSON file
-mv "$PARAMSJSON" "$PARAMSJSON"_template
-cat "$PARAMSJSON"_template | jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
-rm "$PARAMSJSON"_template
+PARAMTMP=$(mktemp /tmp/param_template.json.XXXXXX)
+mv "$PARAMSJSON" "$PARAMTMP"
+cat "$PARAMTMP" | jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
+rm -f "$PARAMTMP"
 
 # build app + uitests
 (cd AndroidAgent && xbuild /p:Configuration=Release /target:SignAndroidPackage )
 (cd AndroidAgent.UITests/ && xbuild /p:Configuration=Release )
 
+XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
 UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
 UITEST="${UITESTS[${#UITESTS[@]} - 1]}" # select most recent version
 # submit to xtc
@@ -67,5 +69,9 @@ mono \
     --fixture AndroidAgent \
     --app-name AndroidAgent \
     --assembly-dir ./AndroidAgent.UITests/bin/Release \
-    --user 'bernhard.urban@xamarin.com'
+    --user 'bernhard.urban@xamarin.com' | tee $XTCUPLOADLOG
+
+XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
+rm -f "$XTCUPLOADLOG"
+echo "submitted job has id $XTCJOBID"
 
