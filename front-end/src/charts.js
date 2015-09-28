@@ -429,7 +429,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
         var zoomFunc;
         if (this.dataProvider.length > 15) {
             zoomFunc = (chart => {
-                chart.zoomToCategoryValues (this.dataProvider [0]["benchmark"], this.dataProvider [9]["benchmark"]);
+                chart.zoomToIndexes (0, 9);
             });
         }
 
@@ -447,6 +447,7 @@ type TimelineAMChartProps = {
 	title: string;
 	data: Object;
 	selectListener: (index: number) => void;
+	zoomInterval: void | {start: number, end: number};
 };
 
 export class TimelineAMChart extends React.Component<TimelineAMChartProps, TimelineAMChartProps, void> {
@@ -515,10 +516,18 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, Timel
                         "dataProvider": this.props.data
 					};
 
+		var zoomFunc;
+		if (this.props.zoomInterval !== undefined) {
+            zoomFunc = (chart => {
+                chart.zoomToIndexes (this.props.zoomInterval.start, this.props.zoomInterval.end);
+            });
+        }
+
 		return <AMChart
 			graphName={this.props.graphName}
 			height={this.props.height}
 			options={timelineOptions}
-			selectListener={this.props.selectListener} />;
+			selectListener={this.props.selectListener}
+			initFunc={zoomFunc} />;
 	}
 }

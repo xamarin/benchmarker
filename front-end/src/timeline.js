@@ -10,9 +10,17 @@ import React from 'react';
 
 class Controller {
 	initialSelectionNames: { machineName: string | void, configName: string | void };
+	initialZoom: boolean;
 	runSetCounts: Array<Object>;
 
 	constructor (machineName, configName) {
+		if (machineName === undefined && configName === undefined) {
+			machineName = 'benchmarker';
+			configName = 'auto-sgen-noturbo';
+			this.initialZoom = true;
+		} else {
+			this.initialZoom = false;
+		}
 		this.initialSelectionNames = { machineName: machineName, configName: configName };
 	}
 
@@ -38,6 +46,7 @@ class Controller {
 				{
 					controller: this,
 					initialSelection: selection,
+					initialZoom: this.initialZoom,
 					runSetCounts: this.runSetCounts,
 					onChange: this.updateForSelection.bind (this)
 				}
@@ -63,6 +72,7 @@ class Page extends React.Component {
 		this.state = {
 			machine: this.props.initialSelection.machine,
 			config: this.props.initialSelection.config,
+			zoom: this.props.initialZoom,
 			runSets: [],
 			sortedResults: [],
 			benchmarkNames: []
@@ -75,7 +85,7 @@ class Page extends React.Component {
 
 	runSetSelected (runSet) {
 		window.open ('runset.html#id=' + runSet.get ('id'));
-		this.setState ({runSets: this.state.runSets.concat ([runSet])});
+		this.setState ({runSets: this.state.runSets.concat ([runSet]), zoom: false});
 	}
 
 	allBenchmarksLoaded (names) {
@@ -109,7 +119,7 @@ class Page extends React.Component {
 		var machine = selection.machine;
 		var config = selection.config;
 
-		this.setState ({machine: machine, config: config, sortedResults: [], benchmarkNames: []});
+		this.setState ({machine: machine, config: config, sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
 		this.props.onChange (selection);
 	}
@@ -120,11 +130,15 @@ class Page extends React.Component {
 		var selected = this.state.machine !== undefined && this.state.config !== undefined;
 
 		if (selected) {
+			var zoomInterval;
+			if (this.state.zoom)
+				zoomInterval = { start: 6, end: this.state.sortedResults.length };
 			chart = <AllBenchmarksChart
 				graphName={'allBenchmarksChart'}
 				machine={this.state.machine}
 				config={this.state.config}
 				sortedResults={this.state.sortedResults}
+				zoomInterval={zoomInterval}
 				runSetSelected={this.runSetSelected.bind (this)}
 				allBenchmarksLoaded={this.allBenchmarksLoaded.bind (this)}
 				/>;
@@ -216,7 +230,8 @@ type TimelineChartProps = {
 	machine: Database.DBObject;
 	config: Database.DBObject;
 	benchmark: string;
-	sortedResults : Array<{ runSet: Database.DBRunSet, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
+	sortedResults: Array<{ runSet: Database.DBRunSet, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
+	zoomInterval: void | {start: number, end: number};
 	runSetSelected: (runSet: Database.DBObject) => void;
 };
 
@@ -245,6 +260,7 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 			graphName={this.props.graphName}
 			height={300}
 			data={this.table}
+			zoomInterval={this.props.zoomInterval}
 			title={this.valueAxisTitle ()}
 			selectListener={this.props.runSetSelected.bind (this)} />;
 	}
@@ -445,10 +461,6 @@ class BenchmarkChartList extends React.Component {
 function start (params) {
 	var machine = params ['machine'];
 	var config = params ['config'];
-	if (machine === undefined && config === undefined) {
-		machine = 'benchmarker';
-		config = 'auto-sgen-noturbo';
-	}
 	var controller = new Controller (machine, config);
 	controller.loadAsync ();
 }
