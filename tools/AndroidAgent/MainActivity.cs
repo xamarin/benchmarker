@@ -22,23 +22,24 @@ using Newtonsoft.Json.Linq;
 using Nito.AsyncEx;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using Java.IO;
 
 namespace AndroidAgent
 {
 	[Activity (Label = "AndroidAgent", MainLauncher = true, Icon = "@drawable/icon")]
 	public class MainActivity : Activity
 	{
+		
 		static MainActivity ()
 		{
-			Logging.SetLogging (new AndroidLogger());
+			Logging.SetLogging (new AndroidLogger ());
 		}
 
 		private static string GetMonoVersion ()
 		{
-			Type type = Type.GetType("Mono.Runtime");
-			if (type != null)
-			{
-				MethodInfo displayName = type.GetMethod("GetDisplayName", BindingFlags.Public | BindingFlags.Static);
+			Type type = Type.GetType ("Mono.Runtime");
+			if (type != null) {
+				MethodInfo displayName = type.GetMethod ("GetDisplayName", BindingFlags.Public | BindingFlags.Static);
 				if (displayName != null)
 					return displayName.Invoke (null, null).ToString ();
 			}
@@ -54,7 +55,7 @@ namespace AndroidAgent
 		void Iteration (string benchmark, int iteration, bool isDryRun)
 		{
 			var dryRun = isDryRun ? " dryrun" : "";
-			Logging.GetLogging().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": start iteration {2}", dryRun, benchmark, iteration);
+			Logging.GetLogging ().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": start iteration {2}", dryRun, benchmark, iteration);
 			GC.Collect (1);
 			System.Threading.Thread.Sleep (5 * 1000); // cool down?
 
@@ -73,7 +74,7 @@ namespace AndroidAgent
 				throw new NotImplementedException ();
 			}
 			sw.Stop ();
-			Logging.GetLogging().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": finished iteration {2}, took {3}ms", dryRun, benchmark, iteration, sw.ElapsedMilliseconds);
+			Logging.GetLogging ().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": finished iteration {2}, took {3}ms", dryRun, benchmark, iteration, sw.ElapsedMilliseconds);
 		}
 
 		private static void PrintCommit ()
@@ -86,11 +87,11 @@ namespace AndroidAgent
 			if (match.Success) {
 				branch = match.Groups [1].Value;
 				hash = match.Groups [2].Value;
-				Logging.GetLogging().Debug ("branch: " + branch + " hash: " + hash);
+				Logging.GetLogging ().Debug ("branch: " + branch + " hash: " + hash);
 			} else {
 				branch = "<unknown>";
 				hash = "<unknown>";
-				Logging.GetLogging().Debug ("couldn't read git information: \"" + GetMonoVersion () + "\"");
+				Logging.GetLogging ().Debug ("couldn't read git information: \"" + GetMonoVersion () + "\"");
 			}
 			Octokit.Commit gitHubCommit = null;
 			try {
@@ -98,19 +99,22 @@ namespace AndroidAgent
 				Octokit.TreeResponse treeResponse = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Tree.Get ("mono", "mono", hash)));
 				gitHubCommit = AsyncContext.Run (() => GitHubInterface.RunWithRetry (() => gitHubClient.GitDatabase.Commit.Get ("mono", "mono", treeResponse.Sha)));
 			} catch (Octokit.NotFoundException e) {
-				Logging.GetLogging().Debug ("Commit " + hash + " not found on GitHub");
+				Logging.GetLogging ().Debug ("Commit " + hash + " not found on GitHub");
 				throw e;
 			}
 			if (gitHubCommit == null) {
-				Logging.GetLogging().Debug ("Could not get commit " + hash + " from GitHub");
+				Logging.GetLogging ().Debug ("Could not get commit " + hash + " from GitHub");
 			} else {
 				hash = gitHubCommit.Sha;
 				// commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
-				Logging.GetLogging().Info ("Got commit " + hash + " from GitHub");
+				Logging.GetLogging ().Info ("Got commit " + hash + " from GitHub");
 			}
 
-			Logging.GetLogging().InfoFormat ("Benchmarker | commit \"{0}\" on branch \"{1}\"", hash, branch);
+			Logging.GetLogging ().InfoFormat ("Benchmarker | commit \"{0}\" on branch \"{1}\"", hash, branch);
 		}
+
+
+		AndroidCPUManagment CpuManager;
 
 		void RunBenchmark (string runSetId, string benchmarkName, string hostname, string architecture)
 		{
@@ -118,7 +122,7 @@ namespace AndroidAgent
 			const int ITERATIONS = 10;
 
 			PrintCommit ();
-			Logging.GetLogging().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
+			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
 			Logging.GetLogging ().InfoFormat ("Becnhmarker | configname \"{0}\"", "default");
 			// TODO: buildURL => wrench log?
 			// TODO: logURL => XTC url?
@@ -131,13 +135,18 @@ namespace AndroidAgent
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
 					RunOnUiThread (() => SetStartButtonText ("failed"));
-					Logging.GetLogging().Error (e);
+					Logging.GetLogging ().Error (e);
+				} finally {
+					if (AndroidCPUManagment.IsRooted ()) {
+						CpuManager.RestoreCPUStates ();
+					}
 				}
 			}).Start ();
-			Logging.GetLogging().InfoFormat ("Benchmark started, run set id {0}", runSetId);
+			Logging.GetLogging ().InfoFormat ("Benchmark started, run set id {0}", runSetId);
 		}
 
-		private static void InitCommons(string githubAPIKey) {
+		private static void InitCommons (string githubAPIKey)
+		{
 			GitHubInterface.githubCredentials = githubAPIKey;
 		}
 
@@ -161,41 +170,16 @@ namespace AndroidAgent
 			v += "\nArchitecture: " + architecture;
 			v += "\nHostname: " + hostname;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
-			Logging.GetLogging().Info (v);
-			if (IsRooted ()) {
+			Logging.GetLogging ().Info (v);
+
+			if (AndroidCPUManagment.IsRooted ()) {
 				Logging.GetLogging ().Info ("Ohai: On a rooted device!");
+				CpuManager = new AndroidCPUManagment ();
+				CpuManager.ConfigurePerformanceMode ();
 			} else {
 				Logging.GetLogging ().Warn ("device not rooted, thus can't set CPU frequency: expect flaky results");
 			}
-			Logging.GetLogging().Info ("OnCreate finished");
-		}
-
-		private Boolean IsRooted() {
-			try {
-				Java.Lang.Process su = Java.Lang.Runtime.GetRuntime ().Exec ("su");
-				Java.IO.DataOutputStream outSu = new Java.IO.DataOutputStream (su.OutputStream);
-				outSu.WriteBytes ("exit\n");
-				outSu.Flush ();
-				su.WaitFor ();
-				return su.ExitValue () == 0;
-			} catch (Java.Lang.Exception _) {
-				return false;
-			}
-		}
-
-		private string[] AvailableCPUFreuquencies() {
-			return null;
-		}
-
-		private string[] AvailableCPUGovenors() {
-			return null;
-		}
-
-		private void SetCPUGovenor() {
-		}
-
-		private void SetCPUFrequency() {
-			return;
+			Logging.GetLogging ().Info ("OnCreate finished");
 		}
 	}
 }

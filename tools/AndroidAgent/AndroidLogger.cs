@@ -127,6 +127,9 @@ namespace AndroidAgent
 			case 3:
 				Android.Util.Log.Info (appname, String.Format (format, args[0], args[1], args[2]));
 				break;
+			case 4:
+				Android.Util.Log.Info (appname, String.Format (format, args[0], args[1], args[2], args[3]));
+				break;
 			default:
 				throw new NotImplementedException ();
 			}
