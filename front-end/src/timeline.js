@@ -73,7 +73,7 @@ class Page extends React.Component {
 			machine: this.props.initialSelection.machine,
 			config: this.props.initialSelection.config,
 			zoom: this.props.initialZoom,
-			runSets: [],
+			runSetIndexes: [],
 			sortedResults: [],
 			benchmarkNames: []
 		};
@@ -83,9 +83,8 @@ class Page extends React.Component {
 		this.fetchSummaries (this.state);
 	}
 
-	runSetSelected (runSet) {
-		window.open ('runset.html#id=' + runSet.get ('id'));
-		this.setState ({runSets: this.state.runSets.concat ([runSet]), zoom: false});
+	runSetSelected (runSet, index) {
+		this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false});
 	}
 
 	allBenchmarksLoaded (names) {
@@ -153,10 +152,22 @@ class Page extends React.Component {
 			chart = <div className="DiagnosticBlock">Please select a machine and config.</div>;
 		}
 
+		var runSetIndexes = this.state.runSetIndexes;
+		var runSets = runSetIndexes.map (i => this.state.sortedResults [i].runSet);
+
 		var comparisonChart;
-		if (this.state.runSets.length > 1) {
+		if (runSets.length > 1) {
 			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart"
-				runSets={this.state.runSets} />;
+				runSets={runSets} />;
+		}
+
+		var runSetSummaries;
+		if (runSetIndexes.length > 0) {
+			runSetSummaries = runSetIndexes.map (i => {
+				var rs = this.state.sortedResults [i].runSet;
+				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
+				return <RunSetSummary runSet={rs} previousRunSet={prev} />;
+			});
 		}
 
 		return <div className="TimelinePage">
@@ -180,9 +191,42 @@ class Page extends React.Component {
 				</div>
 				{chart}
 				<div style={{ clear: 'both' }}></div>
+				{runSetSummaries}
 				{comparisonChart}
 				{benchmarkChartList}
 			</article>
+		</div>;
+	}
+}
+
+type RunSetSummaryProps = {
+	runSet: Database.DBRunSet;
+	previousRunSet: Database.DBRunSet | void;
+}
+
+class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryProps, void> {
+	render () : Object {
+		var runSet = this.props.runSet;
+		var commitHash = runSet.commit.get ('hash');
+		var commitLink = xp_common.githubCommitLink (commitHash);
+
+		var prev = this.props.previousRunSet;
+		var prevItems;
+		if (prev !== undefined) {
+			var prevHash = prev.commit.get ('hash');
+			var prevLink = xp_common.githubCommitLink (prevHash);
+			var compareLink = xp_common.githubCompareLink (prevHash, commitHash);
+			prevItems = [<dt>Previous</dt>,
+				<dd><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
+		}
+
+		var runSetLink = "runset.html#id=" + runSet.get ('id');
+		return <div className="Description">
+			<dl>
+			<dt>Commit</dt>
+			<dd><a href={commitLink}>{commitHash.substring (0, 10)}</a><br /><a href={runSetLink}>Details</a></dd>
+			{prevItems}
+			</dl>
 		</div>;
 	}
 }

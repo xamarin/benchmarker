@@ -417,6 +417,10 @@ export function githubCommitLink (commit: string) : string {
 	return "https://github.com/mono/mono/commit/" + commit;
 }
 
+export function githubCompareLink (base: string, compare: string) : string {
+	return "https://github.com/mono/mono/compare/" + base + "..." + compare;
+}
+
 type NavigationProps = {
 	currentPage: string;
 }

@@ -222,7 +222,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
-					e => this.props.selectListener (e.item.dataContext.dataItem));
+					e => this.props.selectListener (e.item.dataContext.dataItem, e.index));
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
 		} else {
