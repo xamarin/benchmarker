@@ -206,7 +206,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			return true;
 		if (this.props.height !== nextProps.height)
 			return true;
-		if (this.props.options !== nextProps.options)
+		if (!xp_utils.deepEquals (this.props.options, nextProps.options))
 			return true;
 		// FIXME: what do we do with the selectListener?
 		return false;
@@ -218,7 +218,14 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 
 	drawChart (props : AMChartProps) {
 		if (this.chart === undefined) {
-			this.chart = AmCharts.makeChart (props.graphName, props.options);
+			/*
+			 * AMCharts will modify `options.graphs`, so unless we clone it,
+			 * we can't later compare with it to check whether we need to
+			 * update.
+			 */
+			var options = xp_utils.shallowClone (props.options);
+			options.graphs = xp_utils.deepClone (options.graphs);
+			this.chart = AmCharts.makeChart (props.graphName, options);
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
@@ -226,7 +233,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
 		} else {
-            this.chart.graphs = this.props.options.graphs;
+            this.chart.graphs = xp_utils.deepClone (this.props.options.graphs);
             this.chart.dataProvider = this.props.options.dataProvider;
 			var valueAxis = this.props.options.valueAxes [0];
 			if (valueAxis.minimum !== undefined) {
