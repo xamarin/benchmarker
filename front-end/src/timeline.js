@@ -163,11 +163,12 @@ class Page extends React.Component {
 
 		var runSetSummaries;
 		if (runSetIndexes.length > 0) {
-			runSetSummaries = runSetIndexes.map (i => {
+			var divs = runSetIndexes.map (i => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
 				return <RunSetSummary runSet={rs} previousRunSet={prev} />;
 			});
+			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
 
 		return <div className="TimelinePage">
@@ -192,6 +193,7 @@ class Page extends React.Component {
 				{chart}
 				<div style={{ clear: 'both' }}></div>
 				{runSetSummaries}
+				<div style={{ clear: 'both' }}></div>
 				{comparisonChart}
 				{benchmarkChartList}
 			</article>
@@ -221,13 +223,15 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryPro
 		}
 
 		var runSetLink = "runset.html#id=" + runSet.get ('id');
-		return <div className="Description">
+		return <div className="RunSetSummary">
+			<div className="Description">
 			<dl>
 			<dt>Commit</dt>
 			<dd><a href={commitLink}>{commitHash.substring (0, 10)}</a><br /><a href={runSetLink}>Details</a></dd>
 			{prevItems}
 			</dl>
-		</div>;
+			</div>
+			</div>;
 	}
 }
 
