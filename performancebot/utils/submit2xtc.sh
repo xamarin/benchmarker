@@ -4,6 +4,14 @@ set -x
 set -e
 set -o pipefail
 
+if [ $# -ne 2 ]; then
+    echo "usage: $0 <benchmarkerToolsDir> <commit>"
+    exit 1
+fi
+
+cd $1
+COMMITSHA="$2"
+
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
 
@@ -11,11 +19,6 @@ function checkjsonfield()
 {
     (cat "$PARAMSJSON" | jq -e '.'$1 > /dev/null) || (echo "file $PARAMSJSON must contain field $1" && exit 4)
 }
-
-if [ $# -ne 1 ]; then
-    echo "./submit2xtc.sh <commit sha1>"
-    exit 1
-fi
 
 if [ ! -f $XTCAPIKEY ]; then
     echo "$XTCAPIKEY file must exist"
@@ -31,8 +34,8 @@ fi
 checkjsonfield 'githubAPIKey'
 checkjsonfield 'runSetId'
 
-COMMITSHA="$1"
-
+xbuild /t:clean
+rm -rf AndroidAgent/{bin,obj}
 xbuild /p:Configuration=Release /target:compare
 
 # generate run-set id for nexus5
