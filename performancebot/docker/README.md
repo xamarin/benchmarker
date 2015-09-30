@@ -23,7 +23,7 @@ at least `docker=1.7.1` is required:
 `scp Dockerfile.master` from another machine:
 
     $ docker build -f Dockerfile.master -t pbot-master .
-    $ docker run -p 80:8010 -p 9989:9989 -p 9999:9999 -v /ebs:/ebs -it pbot-master
+    $ docker run --name pbotmaster -p 9989:9989 -p 9999:9999 -v /ebs:/ebs -it pbot-master
 
 wait after initialization is done, if you see the shell prompt press `CTRL+P
 CTRL+Q` in order to detach from the container.
@@ -33,6 +33,15 @@ machine:
 
     $ export EC2PBOTMASTERIP=ip.of.the.master.com
     $ make ec2-deploy
+
+`scp nginx-ssl-reverse-proxy` from another machine and setup the HTTPS reverse proxy:
+
+    $ cd nginx-ssl-reverse-proxy
+    $ ./setup_certs.sh
+    $ docker build -t nginx-ssl-reverse-proxy .
+    $ docker run -d -p 443:443 --link pbotmaster:lamp nginxsslproxy
+
+It will map port `8010` from buildbot to `443`.
 
 # Slave setup
 `scp Dockerfile.ec2slave` from another machine. Note that you need to configure
