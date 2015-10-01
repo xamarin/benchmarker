@@ -22,6 +22,8 @@ MONO_SOURCETARBALL_PULLREQUEST_URL = JENKINS_URL + '/job/build-source-tarball-mo
 
 BUILDBOT_URL = 'https://performancebot.mono-project.com'
 
+BOSTON_NAS_URL = r'http://storage.bos.internalx.com'
+
 
 class Lane(object):
     Master, PullRequest = range(2)

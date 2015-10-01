@@ -1,42 +1,27 @@
-# Jenkins Poller
+# Wrench Poller
 from twisted.python import log
-from twisted.internet import defer, reactor
-from twisted.web.client import getPage
-
-from buildbot.status.builder import SUCCESS, FAILURE
-
-from buildbot.process.buildstep import BuildStep, LoggingBuildStep
-from buildbot.changes import base
-from buildbot.util import epoch2datetime
-
-from HTMLParser import HTMLParser
-import operator
-import requests
-import json
-from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD, Lane
-import re
-
-import credentials
-
-
-import itertools
-import os
-import re
-import urllib
-
-from twisted.internet import defer
-from twisted.internet import utils
-from twisted.python import log
+from twisted.internet import defer, reactor, utils
+from twisted.web.client import Agent, getPage
 
 from buildbot import config
+from buildbot.changes import base
+from buildbot.util import epoch2datetime
 from buildbot.util.state import StateMixin
+
+from constants import BOSTON_NAS_URL
+
+import itertools
+import json
+import re
+import os
+import urllib
 
 
 # based on upstream GitPoller
 class BostonNASPoller(base.PollingChangeSource, StateMixin):
-    compare_attrs = ["repourl", "branches", "workdir", "pollInterval", "gitbin", "usetimestamps", "category", "project", "pollAtLaunch"]
+    compare_attrs = ["repourl", "branches", "wrenchlane", "workdir", "pollInterval", "gitbin", "usetimestamps", "category", "project", "pollAtLaunch"]
 
-    def __init__(self, repourl, branches=None, branch=None, workdir=None, pollInterval=10 * 60, gitbin='git', usetimestamps=True,
+    def __init__(self, repourl, branches=None, branch=None, wrenchlane=None, workdir=None, pollInterval=20 * 60, gitbin='git', usetimestamps=True,
                  category=None, project=None, fetch_refspec=None, encoding='utf-8', pollAtLaunch=False):
 
         base.PollingChangeSource.__init__(self, name=repourl, pollInterval=pollInterval, pollAtLaunch=pollAtLaunch)
@@ -50,23 +35,27 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
         elif not branches:
             branches = ['master']
 
+        if wrenchlane is None:
+            config.error("bostonnaspoller: need to specify wrenchlane")
+
         self.repourl = repourl
         self.branches = branches
+        self.wrenchlane = wrenchlane
         self.encoding = encoding
         self.gitbin = gitbin
         self.workdir = workdir
         self.usetimestamps = usetimestamps
         self.category = category
         self.project = project
-        self.changeCount = 0
-        self.lastRev = {}
+        self.knownRevs = []
+        self.dbName = 'knownRevsASDF'
 
         if fetch_refspec is not None:
             config.error("bostonnaspoller: fetch_refspec is no longer supported. "
                          "Instead, only the given branches are downloaded.")
 
         if self.workdir is None:
-            self.workdir = 'bostonnaspoller-work'
+            self.workdir = 'bostonnaspoller-%s-work' % self.wrenchlane
 
     def startService(self):
         # make our workdir absolute, relative to the master's basedir
@@ -74,11 +63,11 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
             self.workdir = os.path.join(self.master.basedir, self.workdir)
             log.msg("bostonnaspoller: using workdir '%s'" % self.workdir)
 
-        d = self.getState('lastRev', {})
+        d = self.getState(self.dbName, [])
 
-        def setLastRev(lastRev):
-            self.lastRev = lastRev
-        d.addCallback(setLastRev)
+        def setKnownRevs(knownRevs):
+            self.knownRevs = knownRevs
+        d.addCallback(setKnownRevs)
         d.addCallback(lambda _: base.PollingChangeSource.startService(self))
         d.addErrback(log.err, 'while initializing bostonnaspoller repository')
 
@@ -141,17 +130,13 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
         refspecs = ['+%s:%s' % (self._removeHeads(branch), self._trackerBranch(branch)) for branch in branches]
         yield self._dovccmd('fetch', [self.repourl] + refspecs, path=self.workdir)
 
-        revs = {}
         for branch in branches:
             try:
-                rev = yield self._dovccmd('rev-parse', [self._trackerBranch(branch)], path=self.workdir)
-                revs[branch] = str(rev)
-                yield self._process_changes(revs[branch], branch)
+                yield self._process_changes(branch)
             except Exception:
                 log.err(_why="trying to poll branch %s of %s" % (branch, self.repourl))
 
-        self.lastRev.update(revs)
-        yield self.setState('lastRev', self.lastRev)
+        yield self.setState(self.dbName, self.knownRevs)
 
     def _decode(self, git_output):
         return git_output.decode(self.encoding)
@@ -208,39 +193,34 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
             return git_output
         d.addCallback(process)
         return d
+    
+    def _construct_boston_url(self, rev):
+        return '%s/%s/%s/%s/' % (BOSTON_NAS_URL, self.wrenchlane, rev[:2], rev)
 
     @defer.inlineCallbacks
-    def _process_changes(self, newRev, branch):
+    def _process_changes(self, branch):
         """
-        Read changes since last change.
-
-        - Read list of commit hashes.
-        - Extract details from each commit.
+        check if builds are available.
         - Add changes to database.
         """
 
-        # initial run, don't parse all history
-        if not self.lastRev:
-            return
-        if newRev in self.lastRev.values():
-            # TODO: no new changes on this branch
-            # should we just use the lastRev again, but with a different branch?
-            pass
-
         # get the change list
-        revListArgs = ([r'--format=%H', r'%s' % newRev] + [r'^%s' % rev for rev in self.lastRev.values()] + [r'--'])
-        self.changeCount = 0
+        revListArgs = [r'--format=%H', r'--since', r'8 weeks ago', self._trackerBranch(branch)]
         results = yield self._dovccmd('log', revListArgs, path=self.workdir)
-
-        # process oldest change first
         revList = results.split()
-        revList.reverse()
-        self.changeCount = len(revList)
-        self.lastRev[branch] = newRev
 
-        log.msg('bostonnaspoller: processing %d changes: %s from "%s"' % (self.changeCount, revList, self.repourl))
+        log.msg('bostonnaspoller: processing %d changes: %s from "%s"' % (len(revList), revList, self.repourl))
 
         for rev in revList:
+            if rev in self.knownRevs:
+                continue
+
+            pageExists = yield _exists_d(self._construct_boston_url(rev) + '/manifest')
+            if not pageExists:
+                continue
+            
+            self.knownRevs.append(rev)
+
             dl = defer.DeferredList([self._get_commit_timestamp(rev), self._get_commit_author(rev), self._get_commit_files(rev), self._get_commit_comments(rev)], consumeErrors=True)
             results = yield dl
 
@@ -270,25 +250,31 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
         return d
 
 
-def _mk_request_wrench_build_matrix(base_url, lane, logger):
-    url = (base_url + '/Wrench/index.aspx?lane=' + lane).encode('ascii', 'ignore')
+def _mk_request_manifest(base_url, wrenchlane, rev, logger):
+    url = "%s/%s/%s/%s/metadata.json" % (base_url, wrenchlane, rev[:2], rev)
     if logger:
         logger("request: " + str(url))
-    params = credentials.getWrenchHeader()
-    return getPage(url, headers=params)
+    return getPage(url)
 
-def _mk_request_wrench_single_build(url, logger):
-    url = url.encode('ascii', 'ignore')
-    if logger:
-        logger("request: " + str(url))
-    params = credentials.getWrenchHeader()
-    return getPage(url, headers=params)
+@defer.inlineCallbacks
+def _fetch_pkg_name(base_url, wrenchlane, rev, prefix, suffix, logger):
+    j = json.loads((yield _mk_request_manifest(base_url, wrenchlane, rev, logger)))
+    for filename in j.keys():
+        if filename.startswith(prefix) and filename.endswith(suffix):
+            defer.returnValue("%s/%s/%s/%s/%s" % (base_url, wrenchlane, rev[:2], rev, filename))
+    assert False, "storage blew up?"
+    defer.returnValue(None)
 
-def _exists(url):
-    response = requests.head(url)
-    print response.status_code, response.text, response.headers
-    return response.status_code in (200, 301, 302)
+def _exists_d(url):
+    def handleResponse(r):
+        return r.code in (200, 301, 302)
 
+    def handleError(reason):
+        reason.printTraceback()
+
+    d = Agent(reactor).request('POST', url)
+    d.addCallbacks(handleResponse, handleError)
+    return d
 
 # for testing/debugging
 if __name__ == '__main__':
@@ -302,17 +288,17 @@ if __name__ == '__main__':
     def _logger(msg):
         print msg
 
-    def test_commits_monodroid():
-
-
+    @defer.inlineCallbacks
     def test_check_boston_nas():
         url= r'http://storage.bos.internalx.com/mono-master-monodroid/13/1354dc1044387ad7b2919db1ba08db510e61a8db/mono-android-5.0.99-209.pkg'
-        print "does it exists? " + str(_exists(url))
+        e = yield _exists_d(url)
+        print "does it exists? " + str(e)
+        pkg = yield _fetch_pkg_name(BOSTON_NAS_URL, 'mono-master-monodroid', '1354dc1044387ad7b2919db1ba08db510e61a8db', 'mono-android', '.pkg', _logger)
+        print "download: " + pkg
 
     @defer.inlineCallbacks
     def run_tests():
-        _ = yield getPage('http://google.com')
-        _ = test_check_boston_nas()
+        _ = yield test_check_boston_nas()
         stop_me()
 
     run_tests()

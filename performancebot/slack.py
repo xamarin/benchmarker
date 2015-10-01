@@ -33,6 +33,9 @@ class StatusPush(StatusReceiverMultiService):
     #pylint: enable=W0613
 
     def buildFinished(self, builderName, build, result):
+        if 'xyz_' in builderName:
+            return
+
         url = None
         try:
             #pylint: disable=E1101
