@@ -12,7 +12,7 @@
 
     cd tools
     nuget restore tools.sln
-    xbuild
+    xbuild /target:compare
 
 ### Running
 
