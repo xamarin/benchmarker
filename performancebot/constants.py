@@ -9,6 +9,8 @@ PROPERTYNAME_JENKINSBUILDURL = 'jenkins-buildURL'
 PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 PROPERTYNAME_JENKINSGITHUBPULLREQUEST = 'jenkins-pullrequestid'
 
+PROPERTYNAME_BOSTONNAS_PKGURL = 'bostonnas-package-url'
+
 FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 
 JENKINS_URL = 'https://jenkins.mono-project.com'

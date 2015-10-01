@@ -7,8 +7,10 @@ from buildbot import config
 from buildbot.changes import base
 from buildbot.util import epoch2datetime
 from buildbot.util.state import StateMixin
+from buildbot.process.buildstep import LoggingBuildStep
+from buildbot.status.builder import SUCCESS, FAILURE
 
-from constants import BOSTON_NAS_URL
+from constants import BOSTON_NAS_URL, PROPERTYNAME_BOSTONNAS_PKGURL
 
 import itertools
 import json
@@ -18,7 +20,7 @@ import urllib
 
 
 # based on upstream GitPoller
-class BostonNASPoller(base.PollingChangeSource, StateMixin):
+class BostonNasPoller(base.PollingChangeSource, StateMixin):
     compare_attrs = ["repourl", "branches", "wrenchlane", "workdir", "pollInterval", "gitbin", "usetimestamps", "category", "project", "pollAtLaunch"]
 
     def __init__(self, repourl, branches=None, branch=None, wrenchlane=None, workdir=None, pollInterval=20 * 60, gitbin='git', usetimestamps=True,
@@ -29,14 +31,14 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
             project = ''
 
         if branch and branches:
-            config.error("bostonnaspoller: can't specify both branch and branches")
+            config.error("BostonNasPoller: can't specify both branch and branches")
         elif branch:
             branches = [branch]
         elif not branches:
             branches = ['master']
 
         if wrenchlane is None:
-            config.error("bostonnaspoller: need to specify wrenchlane")
+            config.error("BostonNasPoller: need to specify wrenchlane")
 
         self.repourl = repourl
         self.branches = branches
@@ -51,17 +53,17 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
         self.dbName = 'knownRevsASDF'
 
         if fetch_refspec is not None:
-            config.error("bostonnaspoller: fetch_refspec is no longer supported. "
+            config.error("BostonNasPoller: fetch_refspec is no longer supported. "
                          "Instead, only the given branches are downloaded.")
 
         if self.workdir is None:
-            self.workdir = 'bostonnaspoller-%s-work' % self.wrenchlane
+            self.workdir = 'BostonNasPoller-%s-work' % self.wrenchlane
 
     def startService(self):
         # make our workdir absolute, relative to the master's basedir
         if not os.path.isabs(self.workdir):
             self.workdir = os.path.join(self.master.basedir, self.workdir)
-            log.msg("bostonnaspoller: using workdir '%s'" % self.workdir)
+            log.msg("BostonNasPoller: using workdir '%s'" % self.workdir)
 
         d = self.getState(self.dbName, [])
 
@@ -69,12 +71,12 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
             self.knownRevs = knownRevs
         d.addCallback(setKnownRevs)
         d.addCallback(lambda _: base.PollingChangeSource.startService(self))
-        d.addErrback(log.err, 'while initializing bostonnaspoller repository')
+        d.addErrback(log.err, 'while initializing BostonNasPoller repository')
 
         return d
 
     def describe(self):
-        str = ('bostonnaspoller watching the remote git repository ' + self.repourl)
+        str = ('BostonNasPoller watching the remote git repository ' + self.repourl)
 
         if self.branches:
             if self.branches is True:
@@ -157,7 +159,7 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
                 try:
                     stamp = float(git_output)
                 except Exception, e:
-                    log.msg('bostonnaspoller: caught exception converting output \'%s\' to timestamp' % git_output)
+                    log.msg('BostonNasPoller: caught exception converting output \'%s\' to timestamp' % git_output)
                     raise e
                 return stamp
             else:
@@ -209,7 +211,7 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
         results = yield self._dovccmd('log', revListArgs, path=self.workdir)
         revList = results.split()
 
-        log.msg('bostonnaspoller: processing %d changes: %s from "%s"' % (len(revList), revList, self.repourl))
+        log.msg('BostonNasPoller: processing %d changes: %s from "%s"' % (len(revList), revList, self.repourl))
 
         for rev in revList:
             if rev in self.knownRevs:
@@ -252,6 +254,7 @@ class BostonNASPoller(base.PollingChangeSource, StateMixin):
 
 def _mk_request_manifest(base_url, wrenchlane, rev, logger):
     url = "%s/%s/%s/%s/metadata.json" % (base_url, wrenchlane, rev[:2], rev)
+    url = url.encode('ascii', 'ignore')
     if logger:
         logger("request: " + str(url))
     return getPage(url)
@@ -275,6 +278,40 @@ def _exists_d(url):
     d = Agent(reactor).request('POST', url)
     d.addCallbacks(handleResponse, handleError)
     return d
+
+class BostonNasGetPackageUrlStep(LoggingBuildStep):
+    def __init__(self, base_url, wrenchlane, prefix, suffix, *args, **kwargs):
+        self.base_url = base_url
+        self.wrenchlane = wrenchlane
+        self.prefix = prefix
+        self.suffix = suffix
+        LoggingBuildStep.__init__(self, name="BostonNasGetPackageUrlStep", haltOnFailure=True, *args, **kwargs)
+
+    def start(self):
+        #pylint: disable=E1101
+        stdoutlogger = self.addLog("stdio").addStdout
+        #pylint: enable=E1101
+        self.logger = lambda msg: stdoutlogger(msg + "\n")
+        dfrd = self._do_request()
+        dfrd.addCallbacks(self._finished_ok, self._finished_failure)
+
+    @defer.inlineCallbacks
+    def _do_request(self):
+        rev = self.getProperty('revision')
+        url = yield _fetch_pkg_name(self.base_url, self.wrenchlane, rev, self.prefix, self.suffix, self.logger)
+        self.setProperty(PROPERTYNAME_BOSTONNAS_PKGURL, url)
+
+    def _finished_ok(self, res):
+        log.msg("BostonNasGetPackageUrlStep success")
+        self.finished(SUCCESS)
+        return res
+
+    def _finished_failure(self, res):
+        errmsg = "BostonNasGetPackageUrlStep failed: %s" % str(res)
+        log.msg(errmsg)
+        self.logger(errmsg)
+        self.finished(FAILURE)
+        return None
 
 # for testing/debugging
 if __name__ == '__main__':
