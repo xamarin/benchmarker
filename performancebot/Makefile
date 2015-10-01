@@ -39,7 +39,7 @@ ec2-stop:
 # follow buildbot master log messages
 ec2-follow-log:
 	@$(CONTAINERCHECK) 1
-	ssh $(REMOTEHOST) 'tail -f $(PBOTMASTERROOT)/twistd.log'
+	ssh $(REMOTEHOST) "tail -f $(PBOTMASTERROOT)/twistd.log | stdbuf -i0 -o0 -e0 grep -v -E 'HTTP.*ClientFactory'"
 
 # deploy buildbot configuration from this working directory and reconfig buildbot instance; if reconfig fails, the old configuration is restored
 ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh benchmarkerCredentials public_html templates
