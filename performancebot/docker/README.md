@@ -44,9 +44,9 @@ machine:
 It will map port `8010` from buildbot to `443`.
 
 # Slave setup
-`scp Dockerfile.ec2slave` from another machine. Note that you need to configure
-the master configuration accordingly with `$WANTED_SLAVE_NAME` and
-`$SECRET_SLAVE_PASSWORD`:
+`scp Dockerfile.ec2slave run_ec2slave.sh` from another machine. Note that you
+need to configure the master configuration accordingly with
+`$WANTED_SLAVE_NAME` and `$SECRET_SLAVE_PASSWORD`:
 
     $ docker build -f Dockerfile.ec2slave -t pbot-slave .
     $ docker run -h $WANTED_SLAVE_NAME -it pbot-slave ip.of.the.master.com $SECRET_SLAVE_PASSWORD
