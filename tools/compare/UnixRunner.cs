@@ -118,7 +118,8 @@ namespace compare
 					}
 
 					return new Result.Run {
-						WallClockTime = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds),
+						Metric = Result.Run.MetricType.Time,
+						Value = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds),
 						Output = stdout.Result,
 						Error = stderr.Result,
 					};

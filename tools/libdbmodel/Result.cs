@@ -28,9 +28,36 @@ namespace Benchmarker.Models
 		}
 
 		public class Run {
-			public TimeSpan WallClockTime { get; set; }
+			public enum MetricType {
+				Time
+			};
+
+			public MetricType Metric { get; set; }
+			public object Value { get; set; }
 			public string Output { get; set; }
 			public string Error { get; set; }
+
+			public string MetricName {
+				get {
+					switch (Metric) {
+					case MetricType.Time:
+						return "time";
+					default:
+						throw new Exception ("unknown metric type");
+					}
+				}
+			}
+
+			public object PostgresValue {
+				get {
+					switch (Metric) {
+					case MetricType.Time:
+						return ((TimeSpan)Value).TotalMilliseconds;
+					default:
+						throw new Exception ("unknown metric type");
+					}
+				}
+			}
 		}
 
 		public void UploadRunsToPostgres (NpgsqlConnection conn, long runSetId) {
@@ -43,8 +70,8 @@ namespace Benchmarker.Models
 
 				var metricRow = new PostgresRow ();
 				metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
-				metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "time");
-				metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, run.WallClockTime.TotalMilliseconds);
+				metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, run.MetricName);
+				metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, run.PostgresValue);
 				PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
 			}
 		}
