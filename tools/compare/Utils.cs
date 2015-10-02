@@ -110,7 +110,10 @@ namespace compare
 					Console.Error.WriteLine ("Error: No mono executable specified.");
 					Environment.Exit (1);
 				}
-				info.FileName = cfg.Mono;
+				var monoPath = cfg.Mono;
+				if (Path.GetDirectoryName (monoPath) != "")
+					monoPath = Path.GetFullPath (monoPath);
+				info.FileName = monoPath;
 			}
 
 			foreach (var env in cfg.processedMonoEnvironmentVariables)
