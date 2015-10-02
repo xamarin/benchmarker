@@ -30,7 +30,8 @@ namespace Benchmarker.Models
 		public class Run {
 			public enum MetricType {
 				Time,
-				MemoryIntegral
+				MemoryIntegral,
+				Instructions
 			};
 
 			public MetricType Metric { get; set; }
@@ -43,6 +44,8 @@ namespace Benchmarker.Models
 						return "time";
 					case MetricType.MemoryIntegral:
 						return "memory-integral";
+					case MetricType.Instructions:
+						return "instructions";
 					default:
 						throw new Exception ("unknown metric type");
 					}
@@ -56,6 +59,8 @@ namespace Benchmarker.Models
 						return ((TimeSpan)Value).TotalMilliseconds;
 					case MetricType.MemoryIntegral:
 						return (double)Value;
+					case MetricType.Instructions:
+						return (double)(long)Value;
 					default:
 						throw new Exception ("unknown metric type");
 					}

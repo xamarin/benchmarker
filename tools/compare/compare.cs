@@ -150,7 +150,7 @@ class Compare
 		return SumArray (l, start, middle) + SumArray (l, middle, end);
 	}
 
-	static double MemoryIntegral (string massifFilename) {
+	static Tuple<double, long> MemoryIntegral (string massifFilename) {
 		var snapshotRegexp = new Regex ("^snapshot=\\d+");
 		var keyValueRegexp = new Regex ("^(\\w+)=(\\w+)");
 		var lines = File.ReadLines (massifFilename);
@@ -182,7 +182,7 @@ class Compare
 			var value = (memA * dTime + memB * dTime) / 2.0;
 			values.Add (value);
 		}
-		return SumArray (values, 0, values.Count);
+		return Tuple.Create (SumArray (values, 0, values.Count), entries.Last ().Item1);
 	}
 
 	public static void Main (string[] args)
@@ -442,19 +442,22 @@ class Compare
 					var elapsedMilliseconds = runner.Run (out timedOut);
 						
 					if (elapsedMilliseconds != null) {
-						Result.Run run;
 						if (valgrindMassif == null) {
-							run = new Result.Run {
+							result.Runs.Add (new Result.Run {
 								Metric = Result.Run.MetricType.Time,
 								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
-							};
+							});
 						} else {
-							run = new Result.Run {
+							var results = MemoryIntegral (valgrindOutputFilename);
+							result.Runs.Add (new Result.Run {
 								Metric = Result.Run.MetricType.MemoryIntegral,
-								Value = MemoryIntegral (valgrindOutputFilename)
-							};
+								Value = results.Item1
+							});
+							result.Runs.Add (new Result.Run {
+								Metric = Result.Run.MetricType.Instructions,
+								Value = results.Item2
+							});
 						}
-						result.Runs.Add (run);
 						someSuccess = true;
 					} else {
 						if (timedOut)
