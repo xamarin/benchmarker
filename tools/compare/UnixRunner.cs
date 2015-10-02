@@ -15,13 +15,18 @@ namespace compare
 		Machine machine;
 		string arguments;
 		int defaultTimeoutSeconds;
+		string fileName;
+		string runTool;
+		string runToolArguments;
 
-		public UnixRunner (string testsDirectory, Config _config, Benchmark _benchmark, Machine _machine, int _timeoutSeconds)
+		public UnixRunner (string testsDirectory, Config _config, Benchmark _benchmark, Machine _machine, int _timeoutSeconds, string _runTool, string _runToolArguments)
 		{
 			config = _config;
 			benchmark = _benchmark;
 			machine = _machine;
 			defaultTimeoutSeconds = _timeoutSeconds;
+			runTool = _runTool;
+			runToolArguments = _runToolArguments;
 
 			info = compare.Utils.NewProcessStartInfo (_config);
 
@@ -34,7 +39,12 @@ namespace compare
 				commandLine = commandLine.Skip (1).ToArray ();
 			}
 
+			fileName = info.FileName;
+
 			arguments = String.Join (" ", config.MonoOptions.Concat (commandLine));
+			/* Run with timing */
+			if (!config.NoMono)
+				arguments = "--stats " + arguments;
 		}
 
 		public string GetEnvironmentVariable (string key)
@@ -50,7 +60,7 @@ namespace compare
 			info.EnvironmentVariables.Add (key, value);
 		}
 
-		public Result.Run Run (string profilesDirectory, string profileFilename, out bool timedOut)
+		public long? Run (string profilesDirectory, string profileFilename, out bool timedOut)
 		{
 			timedOut = false;
 
@@ -60,18 +70,21 @@ namespace compare
 				else
 					Debug.Assert (profileFilename == null);
 				
-				Console.Out.WriteLine ("\t$> {0} {1} {2}", compare.Utils.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
-
-				/* Run with timing */
-				if (config.NoMono)
+				if (profilesDirectory == null) {
 					info.Arguments = arguments;
-				else
-					info.Arguments = "--stats " + arguments;
-
-				if (profilesDirectory != null) {
+				} else {
 					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
-						profilesDirectory, profileFilename)) + info.Arguments;
+						profilesDirectory, profileFilename)) + arguments;
 				}
+
+				if (runTool == null) {
+					info.FileName = fileName;
+				} else {
+					info.FileName = runTool;
+					info.Arguments = runToolArguments + " " + fileName + " " + info.Arguments;
+				}
+
+				Console.Out.WriteLine ("\t$> {0} {1} {2}", compare.Utils.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
 
 				int timeout;
 				if (machine != null) {
@@ -117,12 +130,7 @@ namespace compare
 						return null;
 					}
 
-					return new Result.Run {
-						Metric = Result.Run.MetricType.Time,
-						Value = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds),
-						Output = stdout.Result,
-						Error = stderr.Result,
-					};
+					return sw.ElapsedMilliseconds;
 				}
 			} catch (Exception exc) {
 				Console.Out.WriteLine ("Exception: {0}", exc);
@@ -130,7 +138,7 @@ namespace compare
 			}
 		}
 
-		public Result.Run Run (out bool timedOut)
+		public long? Run (out bool timedOut)
 		{
 			return Run (null, null, out timedOut);
 		}

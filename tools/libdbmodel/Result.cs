@@ -29,30 +29,33 @@ namespace Benchmarker.Models
 
 		public class Run {
 			public enum MetricType {
-				Time
+				Time,
+				MemoryIntegral
 			};
 
 			public MetricType Metric { get; set; }
 			public object Value { get; set; }
-			public string Output { get; set; }
-			public string Error { get; set; }
 
 			public string MetricName {
 				get {
 					switch (Metric) {
 					case MetricType.Time:
 						return "time";
+					case MetricType.MemoryIntegral:
+						return "memory-integral";
 					default:
 						throw new Exception ("unknown metric type");
 					}
 				}
 			}
 
-			public object PostgresValue {
+			public double PostgresValue {
 				get {
 					switch (Metric) {
 					case MetricType.Time:
 						return ((TimeSpan)Value).TotalMilliseconds;
+					case MetricType.MemoryIntegral:
+						return (double)Value;
 					default:
 						throw new Exception ("unknown metric type");
 					}

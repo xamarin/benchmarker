@@ -22,22 +22,26 @@ class Compare
 		Console.Error.WriteLine ("    compare.exe [options]");
 		Console.Error.WriteLine ("    compare.exe [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <config-file>");
 		Console.Error.WriteLine ("Options:");
-		Console.Error.WriteLine ("        --help              display this help");
-		Console.Error.WriteLine ("    -c, --config-file       the config file");
-		Console.Error.WriteLine ("    -b, --benchmarks        benchmarks to run, separated by commas; default to all of them");
-		Console.Error.WriteLine ("                               ex: -b ahcbench,db,message,raytracer2");
-		Console.Error.WriteLine ("    -l, --list-benchmarks   list all available benchmarks");
-		Console.Error.WriteLine ("        --machine           machine to list benchmarks or to create run set for");
-		Console.Error.WriteLine ("    -t, --timeout           execution timeout for each benchmark, in seconds; default to no timeout");
-		Console.Error.WriteLine ("        --commit            the hash of the commit being tested");
-		Console.Error.WriteLine ("        --git-repo          the directory of the Git repository");
-		Console.Error.WriteLine ("        --create-run-set    just create a run set, don't run any benchmarks");
-		Console.Error.WriteLine ("        --pull-request-url  GitHub URL of a pull request to create the run set with");
-		Console.Error.WriteLine ("        --mono-repository   Path of your local Mono repository");
-		Console.Error.WriteLine ("        --run-set-id        the Parse ID of the run set to amend");
-		Console.Error.WriteLine ("        --build-url         the URL of the binary build");
-		Console.Error.WriteLine ("        --log-url           the URL where the log files will be accessible");
-		Console.Error.WriteLine ("        --root              will be substituted for $ROOT in the config");
+		Console.Error.WriteLine ("        --help                  display this help");
+		Console.Error.WriteLine ("    -c, --config-file FILE      the config file");
+		Console.Error.WriteLine ("    -b, --benchmarks LIST       benchmarks to run, separated by commas; default to all of them");
+		Console.Error.WriteLine ("                                  ex: -b ahcbench,db,message,raytracer2");
+		Console.Error.WriteLine ("    -l, --list-benchmarks       list all available benchmarks");
+		Console.Error.WriteLine ("        --machine NAME          machine to list benchmarks or to create run set for");
+		Console.Error.WriteLine ("    -t, --timeout SECONDS       execution timeout for each benchmark, in seconds; default to no timeout");
+		Console.Error.WriteLine ("        --commit HASH           the hash of the commit being tested");
+		Console.Error.WriteLine ("        --git-repo DIR          the directory of the Git repository");
+		Console.Error.WriteLine ("        --create-run-set        just create a run set, don't run any benchmarks");
+		Console.Error.WriteLine ("        --pull-request-url URL  GitHub URL of a pull request to create the run set with");
+		Console.Error.WriteLine ("        --mono-repository DIR   Path of your local Mono repository");
+		Console.Error.WriteLine ("        --run-set-id ID         the Parse ID of the run set to amend");
+		Console.Error.WriteLine ("        --build-url URL         the URL of the binary build");
+		Console.Error.WriteLine ("        --log-url URL           the URL where the log files will be accessible");
+		Console.Error.WriteLine ("        --root DIR              will be substituted for $ROOT in the config");
+		Console.Error.WriteLine ("        --valgrind-massif VALGRIND FILE");
+		Console.Error.WriteLine ("                                run the benchmark with Valgrind's Massif tool");
+		Console.Error.WriteLine ("                                  VALGRIND is the path to the valgrind binary");
+		Console.Error.WriteLine ("                                  FILE is the output filename");
 
 		Environment.Exit (exitcode);
 	}
@@ -131,6 +135,56 @@ class Compare
 		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
 	}
 
+	static Tuple<long, long> ParseMassifEntry (Dictionary<string, string> dict) {
+		var time = dict ["time"];
+		var bytes = dict ["mem_heap_B"];
+		return Tuple.Create (Int64.Parse (time), Int64.Parse (bytes));
+	}
+
+	static double SumArray (List<double> l, int start, int end) {
+		if (start == end)
+			return 0.0;
+		if (start + 1 == end)
+			return l [start];
+		var middle = start + (end - start) / 2;
+		return SumArray (l, start, middle) + SumArray (l, middle, end);
+	}
+
+	static double MemoryIntegral (string massifFilename) {
+		var snapshotRegexp = new Regex ("^snapshot=\\d+");
+		var keyValueRegexp = new Regex ("^(\\w+)=(\\w+)");
+		var lines = File.ReadLines (massifFilename);
+		Dictionary<string, string> dict = null;
+		var entries = new List<Tuple<long, long>> ();
+		foreach (var line in lines) {
+			if (snapshotRegexp.Match (line).Success) {
+				if (dict != null)
+					entries.Add (ParseMassifEntry (dict));
+				dict = new Dictionary<string, string> ();
+			} else {
+				var match = keyValueRegexp.Match (line);
+				if (!match.Success)
+					continue;
+				dict.Add (match.Groups [1].Value, match.Groups [2].Value);
+			}
+		}
+		if (dict != null)
+			entries.Add (ParseMassifEntry (dict));
+		var values = new List<double> ();
+		for (var i = 1; i < entries.Count; ++i) {
+			var entryA = entries [i - 1];
+			var entryB = entries [i];
+			var timeA = (double)entryA.Item1 / 1000000000.0;
+			var memA = (double)entryA.Item2 / (1024.0 * 1024.0);
+			var timeB = (double)entryB.Item1 / 1000000000.0;
+			var memB = (double)entryB.Item2 / (1024.0 * 1024.0);
+			var dTime = timeB - timeA;
+			var value = (memA * dTime + memB * dTime) / 2.0;
+			values.Add (value);
+		}
+		return SumArray (values, 0, values.Count);
+	}
+
 	public static void Main (string[] args)
 	{
 		string[] benchmarkNames = null;
@@ -148,6 +202,8 @@ class Compare
 		string machineName = null;
 		bool justCreateRunSet = false;
 		bool justListBenchmarks = false;
+		string valgrindMassif = null;
+		string valgrindOutputFilename = null;
 
 		var optindex = 0;
 
@@ -182,6 +238,9 @@ class Compare
 				runSetId = Int64.Parse (args [++optindex]);
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
+			} else if (args [optindex] == "--valgrind-massif") {
+				valgrindMassif = args [++optindex];
+				valgrindOutputFilename = args [++optindex];
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
 				timeout = timeout <= 0 ? -1 : timeout;
@@ -348,6 +407,9 @@ class Compare
 		if (!justCreateRunSet) {
 			var someSuccess = false;
 
+			var runTool = valgrindMassif;
+			var runToolArguments = valgrindMassif != null ? string.Format ("--tool=massif --massif-out-file={0} --max-snapshots=1000 --detailed-freq=100 --pages-as-heap=yes", valgrindOutputFilename) : null;
+
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
 				// Run the benchmarks
 				if (config.Count <= 0)
@@ -355,7 +417,7 @@ class Compare
 
 				Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
-				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout);
+				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout, runTool, runToolArguments);
 
 				var result = new Result {
 					DateTime = DateTime.Now,
@@ -366,18 +428,32 @@ class Compare
 				var haveTimedOut = false;
 				var haveCrashed = false;
 
-				for (var i = 0; i < config.Count + 1; ++i) {
+				var count = valgrindMassif == null ? config.Count + 1 : 1;
+
+				for (var i = 0; i < count; ++i) {
 					bool timedOut;
 
 					Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
-					var run = runner.Run (out timedOut);
-
-					// skip first one
-					if (i == 0)
+					// skip first one if running for time
+					if (valgrindMassif == null && i == 0)
 						continue;
 
-					if (run != null) {
+					var elapsedMilliseconds = runner.Run (out timedOut);
+						
+					if (elapsedMilliseconds != null) {
+						Result.Run run;
+						if (valgrindMassif == null) {
+							run = new Result.Run {
+								Metric = Result.Run.MetricType.Time,
+								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
+							};
+						} else {
+							run = new Result.Run {
+								Metric = Result.Run.MetricType.MemoryIntegral,
+								Value = MemoryIntegral (valgrindOutputFilename)
+							};
+						}
 						result.Runs.Add (run);
 						someSuccess = true;
 					} else {
