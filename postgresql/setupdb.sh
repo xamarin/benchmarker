@@ -119,7 +119,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-cat views.psql.in | sed "s/\$POSTGREST_USER/$POSTGREST_USER/g" | sed "s/\$POSTGREST_PASSWORD/$POSTGREST_PASSWORD/g" | psql -d "$DATABASE" -f -
+cat views.psql.in | sed "s/\$POSTGREST_USER/$POSTGREST_USER/g" | sed "s/\$POSTGREST_PASSWORD/$POSTGREST_PASSWORD/g" | sed "s/\$BENCHMARKER_USER/$BENCHMARKER_USER/g" | psql -d "$DATABASE" -f -
 if [ $? -ne 0 ] ; then
     echo "Error: psql failed."
     exit 1
