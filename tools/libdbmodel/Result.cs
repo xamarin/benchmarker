@@ -27,7 +27,7 @@ namespace Benchmarker.Models
 			return JsonConvert.DeserializeObject<Result> (content);
 		}
 
-		public class Run {
+		public class RunMetric {
 			public enum MetricType {
 				Time,
 				MemoryIntegral,
@@ -68,6 +68,15 @@ namespace Benchmarker.Models
 			}
 		}
 
+		public class Run {
+			List<RunMetric> runMetrics;
+			public List<RunMetric> RunMetrics { get { return runMetrics; } }
+
+			public Run () {
+				runMetrics = new List<RunMetric> ();
+			}
+		}
+
 		public void UploadRunsToPostgres (NpgsqlConnection conn, long runSetId) {
 			var b = Benchmark.GetOrUploadToPostgres (conn);
 			foreach (var run in Runs) {
@@ -76,11 +85,13 @@ namespace Benchmarker.Models
 				row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Integer, runSetId);
 				var runId = PostgresInterface.Insert<long> (conn, "Run", row, "id");
 
-				var metricRow = new PostgresRow ();
-				metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
-				metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, run.MetricName);
-				metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, run.PostgresValue);
-				PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
+				foreach (var runMetric in run.RunMetrics) {
+					var metricRow = new PostgresRow ();
+					metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
+					metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, runMetric.MetricName);
+					metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, runMetric.PostgresValue);
+					PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
+				}
 			}
 		}
 	}

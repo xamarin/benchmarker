@@ -442,22 +442,25 @@ class Compare
 					var elapsedMilliseconds = runner.Run (out timedOut);
 						
 					if (elapsedMilliseconds != null) {
+						var run = new Result.Run ();
+
 						if (valgrindMassif == null) {
-							result.Runs.Add (new Result.Run {
-								Metric = Result.Run.MetricType.Time,
+							run.RunMetrics.Add (new Result.RunMetric {
+								Metric = Result.RunMetric.MetricType.Time,
 								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
 							});
 						} else {
 							var results = MemoryIntegral (valgrindOutputFilename);
-							result.Runs.Add (new Result.Run {
-								Metric = Result.Run.MetricType.MemoryIntegral,
+							run.RunMetrics.Add (new Result.RunMetric {
+								Metric = Result.RunMetric.MetricType.MemoryIntegral,
 								Value = results.Item1
 							});
-							result.Runs.Add (new Result.Run {
-								Metric = Result.Run.MetricType.Instructions,
+							run.RunMetrics.Add (new Result.RunMetric {
+								Metric = Result.RunMetric.MetricType.Instructions,
 								Value = results.Item2
 							});
 						}
+						result.Runs.Add (run);
 						someSuccess = true;
 					} else {
 						if (timedOut)
