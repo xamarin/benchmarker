@@ -27,6 +27,16 @@ RUN pip install buildbot
 RUN pip install buildbot-slave
 RUN git clone https://github.com/xamarin/benchmarker/ /tmp/benchmarker
 
+RUN cd /tmp && \
+	curl -O http://valgrind.org/downloads/valgrind-3.11.0.tar.bz2 && \
+	tar -jxf valgrind-3.11.0.tar.bz2 && \
+	cd valgrind-3.11.0 && \
+	./autogen.sh && \
+	./configure --prefix=/opt/valgrind && \
+	make -j4 && \
+	make install
+RUN rm -rf /tmp/valgrind*
+
 ADD run_ec2slave.sh /usr/local/bin/run_ec2slave.sh
 RUN chmod +x /usr/local/bin/run_ec2slave.sh
 ENTRYPOINT ["/usr/local/bin/run_ec2slave.sh"]
