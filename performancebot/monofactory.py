@@ -62,7 +62,8 @@ class DebianMonoBuildFactory(BuildFactory):
                     'mkdir -p %s && ' % MASTERWORKDIR +
                     'cd %s && ' % MASTERWORKDIR +
                     'git clone --depth 1 -b master https://github.com/xamarin/benchmarker && ' +
-                    'cd benchmarker/tools && (/usr/bin/cli --version || true) && (MONO_OPTIONS=--debug nuget restore tools.sln || nuget restore tools.sln) ' + #nuget crashes sometimes :-(
+                    'cd benchmarker/tools && (/usr/bin/cli --version || true) && ' +
+                    '(for run in {1..20}; do MONO_OPTIONS=--debug nuget restore tools.sln && break; done) ' + #nuget crashes sometimes :-(
                     '&& xbuild /t:compare && ' +
                     'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
                 )
