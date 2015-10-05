@@ -73,7 +73,8 @@ class DebianMonoBuildFactory(BuildFactory):
     def cleanup_master_workdir(self):
         step = MasterShellCommand(
             name="cleanup_master_workdir",
-            command=['bash', '-x', '-c', Interpolate('rm -rf %s' % MASTERWORKDIR)]
+            command=['bash', '-x', '-c', Interpolate('rm -rf %s' % MASTERWORKDIR)],
+            alwaysRun=True
         )
         self.addStep(step)
 
