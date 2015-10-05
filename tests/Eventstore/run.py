@@ -8,7 +8,7 @@ exitcode = 0
 cmd = ' '.join (sys.argv [1:])
 
 def server ():
-    pserver = subprocess.Popen ("%s EventStore.ClusterNode.exe" % (mono), shell=True, stdout=sys.stderr)
+    pserver = subprocess.Popen ("%s EventStore.ClusterNode.exe --force" % (mono), shell=True, stdout=sys.stderr)
     kill.acquire ()
     pserver.kill ()
     pserver.wait ()
@@ -16,9 +16,9 @@ def server ():
 def client ():
     time.sleep (10)
 
-    if subprocess.Popen("%s EventStore.TestClient.exe --command ping" % (mono), shell=True, stdout=sys.stderr).wait () == 0:
+    if subprocess.Popen("%s EventStore.TestClient.exe --force --command ping" % (mono), shell=True, stdout=sys.stderr).wait () == 0:
         start = time.time ()
-        s = subprocess.Popen("%s EventStore.TestClient.exe --command '%s'" % (mono, cmd if len (cmd.strip ()) > 0 else "wrfl 10 1000000"), shell=True, stdout=sys.stderr).wait ()
+        s = subprocess.Popen("%s EventStore.TestClient.exe --force --command '%s'" % (mono, cmd if len (cmd.strip ()) > 0 else "wrfl 10 1000000"), shell=True, stdout=sys.stderr).wait ()
         end = time.time ()
         if s == 0:
             print (end - start)
