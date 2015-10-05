@@ -341,24 +341,24 @@ type RunSetDescriptionProps = {
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, void> {
 	constructor (props) {
 		super (props);
-		this.invalidateState (props.runSet);
+		this.state = {};
+		this.fetchResults (props.runSet);
 	}
 
-	invalidateState (runSet) {
-		this.state = {};
-
-		Database.fetch ('results?runset=eq.' + this.props.runSet.get ('id'),
+	fetchResults (runSet) {
+		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
 		objs => {
 			if (runSet !== this.props.runSet)
 				return;
-			this.setState ({results: objs})
+			this.setState ({ results: objs });
 		}, error => {
 			alert ("error loading results: " + error.toString ());
 		});
 	}
 
 	componentWillReceiveProps (nextProps) {
-		this.invalidateState (nextProps.runSet);
+		this.setState ({ results: undefined });
+		this.fetchResults (nextProps.runSet);
 	}
 
 	render () {
