@@ -9,19 +9,20 @@ import * as Database from './database.js';
 import React from 'react';
 
 class Controller {
-	initialSelectionNames: { machineName: string | void, configName: string | void };
+	initialSelectionNames: { machineName: string | void, configName: string | void, metric: string | void };
 	initialZoom: boolean;
 	runSetCounts: Array<Object>;
 
-	constructor (machineName, configName) {
-		if (machineName === undefined && configName === undefined) {
+	constructor (machineName, configName, metric) {
+		if (machineName === undefined && configName === undefined && metric === undefined) {
 			machineName = 'benchmarker';
 			configName = 'auto-sgen-noturbo';
+			metric = 'time';
 			this.initialZoom = true;
 		} else {
 			this.initialZoom = false;
 		}
-		this.initialSelectionNames = { machineName: machineName, configName: configName };
+		this.initialSelectionNames = { machineName: machineName, configName: configName, metric: metric };
 	}
 
 	loadAsync () {
@@ -36,9 +37,10 @@ class Controller {
 	allDataLoaded () {
 		var selection = Database.findRunSetCount (this.runSetCounts,
 			this.initialSelectionNames.machineName,
-			this.initialSelectionNames.configName);
+			this.initialSelectionNames.configName,
+			this.initialSelectionNames.metric);
 		if (selection === undefined)
-			selection = { machine: undefined, config: undefined };
+			selection = { machine: undefined, config: undefined, metric: undefined };
 
 		React.render (
 			React.createElement (
@@ -60,9 +62,10 @@ class Controller {
 	updateForSelection (selection) {
 		var machine = selection.machine;
 		var config = selection.config;
-		if (machine === undefined || config === undefined)
+		var metric = selection.metric;
+		if (machine === undefined || config === undefined || metric === undefined)
 			return;
-		xp_common.setLocationForDict ({ machine: machine.get ('name'), config: config.get ('name') });
+		xp_common.setLocationForDict ({ machine: machine.get ('name'), config: config.get ('name'), metric: metric });
 	}
 }
 
@@ -72,6 +75,7 @@ class Page extends React.Component {
 		this.state = {
 			machine: this.props.initialSelection.machine,
 			config: this.props.initialSelection.config,
+			metric: this.props.initialSelection.metric,
 			zoom: this.props.initialZoom,
 			runSetIndexes: [],
 			sortedResults: [],
@@ -94,11 +98,12 @@ class Page extends React.Component {
 	fetchSummaries (selection) {
 		var machine = selection.machine;
 		var config = selection.config;
+		var metric = selection.metric;
 
-		if (machine === undefined || config === undefined)
+		if (machine === undefined || config === undefined || metric === undefined)
 			return;
 
-		Database.fetchSummaries ('time', machine, config,
+		Database.fetchSummaries (machine, config, metric,
 			objs => {
 				objs.sort ((a, b) => {
 					var aDate = a.runSet.commit.get ('commitDate');
@@ -117,8 +122,9 @@ class Page extends React.Component {
 	selectionChanged (selection) {
 		var machine = selection.machine;
 		var config = selection.config;
+		var metric = selection.metric;
 
-		this.setState ({machine: machine, config: config, sortedResults: [], benchmarkNames: [], zoom: false});
+		this.setState ({machine: machine, config: config, metric: metric, sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
 		this.props.onChange (selection);
 	}
@@ -126,7 +132,7 @@ class Page extends React.Component {
 	render () {
 		var chart;
 		var benchmarkChartList;
-		var selected = this.state.machine !== undefined && this.state.config !== undefined;
+		var selected = this.state.machine !== undefined && this.state.config !== undefined && this.state.metric !== undefined;
 
 		if (selected) {
 			var zoomInterval;
@@ -136,6 +142,7 @@ class Page extends React.Component {
 				graphName={'allBenchmarksChart'}
 				machine={this.state.machine}
 				config={this.state.config}
+				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
 				zoomInterval={zoomInterval}
 				runSetSelected={this.runSetSelected.bind (this)}
@@ -145,6 +152,7 @@ class Page extends React.Component {
 				benchmarkNames={this.state.benchmarkNames}
 				machine={this.state.machine}
 				config={this.state.config}
+				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
 				runSetSelected={this.runSetSelected.bind (this)}
 				/>;
@@ -177,9 +185,11 @@ class Page extends React.Component {
 				<div className="outer">
 					<div className="inner">
 						<xp_common.CombinedConfigSelector
+							includeMetric={true}
 							runSetCounts={this.props.runSetCounts}
 							machine={this.state.machine}
 							config={this.state.config}
+							metric={this.state.metric}
 							onChange={this.selectionChanged.bind (this)}
 							showControls={false} />
 						<xp_common.MachineDescription
@@ -277,6 +287,7 @@ type TimelineChartProps = {
 	graphName: string;
 	machine: Database.DBObject;
 	config: Database.DBObject;
+	metric: string,
 	benchmark: string;
 	sortedResults: Array<{ runSet: Database.DBRunSet, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
 	zoomInterval: void | {start: number, end: number};
@@ -295,8 +306,12 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 	}
 
 	componentWillReceiveProps (nextProps) {
-		if (this.props.machine === nextProps.machine && this.props.config === nextProps.config && this.props.sortedResults === nextProps.sortedResults)
+		if (this.props.machine === nextProps.machine &&
+				this.props.config === nextProps.config &&
+				this.props.metric === nextProps.metric &&
+				this.props.sortedResults === nextProps.sortedResults) {
 			return;
+		}
 		this.invalidateState (nextProps);
 	}
 
@@ -323,9 +338,22 @@ class TimelineChart extends React.Component<TimelineChartProps, TimelineChartPro
 	}
 }
 
+function axisNameForMetric (metric: string, relative: boolean) : string {
+	switch (metric) {
+		case 'time':
+			return relative ? "Relative wall clock time" : "Wall clock time";
+		case 'memory-integral':
+			return relative ? "Relative memory usage" : "MB * Giga Instructions";
+		case 'instructions':
+			return relative ? "Relative # of instructions" : "Number of instructions";
+		default:
+			return "Unknown metric";
+	}
+}
+
 class AllBenchmarksChart extends TimelineChart {
 	valueAxisTitle () : string {
-		return "Relative wall clock time";
+		return axisNameForMetric (this.props.metric, true);
 	}
 
 	computeTable (nextProps) {
@@ -426,7 +454,7 @@ function formatDuration (t: number) : string {
 
 class BenchmarkChart extends TimelineChart {
 	valueAxisTitle () : string {
-		return "Wall clock time";
+		return axisNameForMetric (this.props.metric, false);
 	}
 
 	computeTable (nextProps) {
@@ -492,6 +520,7 @@ class BenchmarkChartList extends React.Component {
 					sortedResults={this.props.sortedResults}
 					machine={this.props.machine}
 					config={this.props.config}
+					metric={this.props.metric}
 					benchmark={name}
 					runSetSelected={this.props.runSetSelected}
 					/>
@@ -509,8 +538,9 @@ class BenchmarkChartList extends React.Component {
 function start (params) {
 	var machine = params ['machine'];
 	var config = params ['config'];
-	var controller = new Controller (machine, config);
+	var metric = params ['metric'];
+	var controller = new Controller (machine, config, metric);
 	controller.loadAsync ();
 }
 
-xp_common.parseLocationHashForDict (['machine', 'config'], start);
+xp_common.parseLocationHashForDict (['machine', 'config', 'metric'], start);

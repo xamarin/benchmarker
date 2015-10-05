@@ -242,6 +242,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			}
 			if (valueAxis.guides !== undefined)
 				this.chart.valueAxes [0].guides = valueAxis.guides;
+			this.chart.valueAxes [0].title = valueAxis.title;
 			this.chart.validateData ();
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);

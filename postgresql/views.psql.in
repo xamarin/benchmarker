@@ -40,13 +40,17 @@ group by runset, metric
 runset rs, commit c, machine m, config cfg
 where results.runset = rs.id and rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
-create view "1".runset as
-select c.hash as c_hash, c.commitDate as c_commitDate,
-       rs.id as rs_id, rs.startedAt as rs_startedAt, rs.finishedAt as rs_finishedAt, rs.buildURL as rs_buildURL, rs.logURLs as rs_logURLs, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedOutBenchmarks as rs_timedOutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
+create view "1".runsetcount as
+select array_agg(rs.id) as ids,
        m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
-from runset rs, commit c, machine m, config cfg
-where rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
+       rs.metric
+from (select distinct irs.id, rm.metric, irs.machine, irs.config
+      from runset irs, run r, runmetric rm
+      where irs.pullrequest is null and rm.run = r.id and r.runset = irs.id) rs,
+     machine m, config cfg
+where rs.machine = m.name and rs.config = cfg.name
+group by rs.metric, m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexecutable, cfg.monoenvironmentvariables, cfg.monooptions;
 
 create view "1".results as
 select r.runset, r.benchmark, b.disabled, rm.metric, array_agg(rm.result) as results

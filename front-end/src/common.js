@@ -95,28 +95,43 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 type MachineConfigSelection = {
 	machine: string | void;
 	config: string | void;
+	metric: string | void;
 };
 
 type RunSetCountArray = Array<{ machine: Database.DBObject, config: Database.DBObject, count: number }>;
 
 type ConfigSelectorProps = {
+	includeMetric: boolean;
 	runSetCounts: RunSetCountArray;
 	machine: string | void;
 	config: string | void;
+	metric: string | void;
 	onChange: (selection: MachineConfigSelection) => void;
 };
 
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
+	runSetCounts () {
+		if (this.props.includeMetric)
+			return this.props.runSetCounts;
+		return Database.combineRunSetCountsAcrossMetric (this.props.runSetCounts);
+	}
+
 	render () : Object {
 		var userStringForRSC = r => {
-			return r.machine.get ('name') + " / " + r.config.get ('name');
+			var s = r.machine.get ('name') + " / " + r.config.get ('name');
+			if (this.props.includeMetric)
+				s = s + " / " + r.metric;
+			return s;
 		};
 
-		var valueStringForEntry = (machine, config) => {
-			return machine.get ('name') + '+' + config.get ('name');
+		var valueStringForRSC = (rsc) => {
+			var s = rsc.machine.get ('name') + '+' + rsc.config.get ('name');
+			if (this.props.includeMetric)
+				s = s + '+' + rsc.metric;
+			return s;
 		}
 
-		var histogram = xp_utils.sortArrayLexicographicallyBy (this.props.runSetCounts, r => userStringForRSC (r).toLowerCase ());
+		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
 
 		var machines = {};
 		for (var i = 0; i < histogram.length; ++i) {
@@ -126,24 +141,31 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		function renderEntry (entry) {
-			var string = valueStringForEntry (entry.machine, entry.config);
+		function renderRSC (entry) {
+			var string = valueStringForRSC (entry);
+			var displayString = entry.config.get ('name');
+			if (this.props.includeMetric)
+				displayString = displayString + " / " + entry.metric;
+			displayString = displayString + " (" + entry.count + ")";
 			return <option
 				value={string}
 				key={string}>
-				{entry.config.get ('name')} ({entry.count})
+				{displayString}
 			</option>;
 		}
 
 		function renderGroup (machines, machineName) {
 			return <optgroup label={machineName}>
-				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (renderEntry.bind (this))}
+				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (renderRSC.bind (this))}
 			</optgroup>;
 		}
 
 		var machine = this.props.machine;
 		var config = this.props.config;
-		var selectedValue = (machine === undefined || config === undefined) ? undefined : valueStringForEntry (machine, config);
+		var metric = this.props.metric;
+		var selectedValue;
+		if (!(machine === undefined || config === undefined || (this.props.includeMetric && metric === undefined)))
+			selectedValue = valueStringForRSC (this.props);
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
@@ -174,7 +196,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 
 	combinationSelected (event: Object) {
 		var names = event.target.value.split ('+');
-		var rsc = Database.findRunSetCount (this.props.runSetCounts, names [0], names [1]);
+		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
 		this.props.onChange (rsc);
 	}
 }
@@ -269,6 +291,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 		var configSelector =
 			<CombinedConfigSelector
+				includeMetric={false}
 				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
 				config={selection.config}
@@ -298,6 +321,19 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 }
 
+function descriptiveMetricName (metric: string) : string {
+	switch (metric) {
+		case 'time':
+			return "Elapsed Times (ms)";
+		case 'instructions':
+			return "Instruction count";
+		case 'memory-integral':
+			return "Memory usage (MB * Giga Instructions)";
+		default:
+			return "Unknown metric";
+	}
+}
+
 type RunSetDescriptionProps = {
 	runSet: Database.DBObject | void;
 };
@@ -311,7 +347,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	invalidateState (runSet) {
 		this.state = {};
 
-		Database.fetch ('results?metric=eq.time&runset=eq.' + this.props.runSet.get ('id'),
+		Database.fetch ('results?runset=eq.' + this.props.runSet.get ('id'),
 		objs => {
 			if (runSet !== this.props.runSet)
 				return;
@@ -359,28 +395,37 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			table = <div className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
 			var resultsByBenchmark = {};
+			var metricsDict = {};
 			for (var i = 0; i < this.state.results.length; ++i) {
 				var result = this.state.results [i];
-				resultsByBenchmark [result ['benchmark']] = { elapsed: result ['results'], disabled: result ['disabled'] };
+				var benchmark = result ['benchmark'];
+				var metric = result ['metric'];
+				var entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] };
+				entry.metrics [metric] = result ['results'];
+				resultsByBenchmark [benchmark] = entry;
+
+				metricsDict [metric] = {};
 			}
 			var crashedBenchmarks = runSet.get ('crashedBenchmarks');
 			var timedOutBenchmarks = runSet.get ('timedOutBenchmarks');
 			var benchmarkNames = Object.keys (resultsByBenchmark);
 			benchmarkNames.sort ();
+			var metrics = Object.keys (metricsDict);
+			metrics.sort ();
+			var tableHeaders = [];
+			metrics.forEach (m => {
+				tableHeaders.push (<th>{descriptiveMetricName (m)}</th>);
+				tableHeaders.push (<th>Bias due to Outliers</th>);
+			});
 			table = <table>
 				<tr>
 					<th>Benchmark</th>
 					<th>Status</th>
-					<th>Elapsed Times (ms)</th>
-					<th>Bias due to Outliers</th>
+					{tableHeaders}
 				</tr>
 				{benchmarkNames.map (name => {
-					var result = resultsByBenchmark [name]
-					var elapsed = result.elapsed;
+					var result = resultsByBenchmark [name];
 					var disabled = result.disabled;
-					elapsed.sort ();
-					var elapsedString = elapsed.join (", ");
-					var variance = Outliers.outlierVariance (elapsed);
 					var statusIcons = [];
 					if (crashedBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
@@ -389,15 +434,24 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					if (statusIcons.length === 0)
 						statusIcons.push (<span className="statusIcon good fa fa-check" title="Good"></span>);
 
+					var metricColumns = [];
+					metrics.forEach (m => {
+						var dataPoints = result.metrics [m];
+						dataPoints.sort ();
+						var dataPointsString = dataPoints.join (", ");
+						var variance = Outliers.outlierVariance (dataPoints);
+						metricColumns.push (<td>{dataPointsString}</td>);
+						metricColumns.push (<td>
+								<div className="degree" title={variance}>
+									<div className={variance}>&nbsp;</div>
+								</div>
+							</td>);
+					});
+
 					return <tr className={disabled ? 'disabled' : ''}>
 						<td><code>{name}</code>{disabled ? ' (disabled)' : ''}</td>
 						<td className="statusColumn">{statusIcons}</td>
-						<td>{elapsedString}</td>
-						<td>
-							<div className="degree" title={variance}>
-								<div className={variance}>&nbsp;</div>
-							</div>
-						</td>
+						{metricColumns}
 					</tr>;
 				})}
 			</table>;

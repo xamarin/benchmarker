@@ -68,20 +68,44 @@ export function fetchRunSetCounts (success, error) {
 				var machine = new DBObject (r, 'm_');
 				var config = new DBObject (r, 'cfg_');
 				var ids = r ['ids'];
-				return { machine: machine, config: config, ids: ids, count: ids.length };
+				var metric = r ['metric'];
+				return { machine: machine, config: config, metric: metric, ids: ids, count: ids.length };
 			});
 			success (results);
 		}, error);
 }
 
-export function findRunSetCount (runSetCounts, machineName, configName) {
+export function combineRunSetCountsAcrossMetric (runSetCounts) {
+	var dict = {};
+	runSetCounts.forEach (rsc => {
+		var key = rsc.machine.get ('name') + '+' + rsc.config.get ('name');
+		if (!(key in dict))
+			dict [key] = [];
+		dict [key] = dict [key].concat ([rsc]);
+	});
+	var newList = [];
+	Object.keys (dict).forEach (k => {
+		var rscs = dict [k];
+		var rsc = xp_utils.shallowClone (rscs [0]);
+		for (var i = 1; i < rscs.length; ++i)
+			rsc.ids = rsc.ids.concat (rscs [i].ids);
+		rsc.metric = undefined;
+		rsc.ids = xp_utils.uniqStringArray (rsc.ids);
+		rsc.count = rsc.ids.length;
+		newList.push (rsc);
+	});
+	return newList;
+}
+
+export function findRunSetCount (runSetCounts, machineName, configName, metric) {
 	return xp_utils.find (runSetCounts, rsc => {
 		return rsc.machine.get ('name') === machineName &&
-			rsc.config.get ('name') === configName;
+			rsc.config.get ('name') === configName &&
+			rsc.metric === metric;
 	});
 }
 
-export function fetchSummaries (metric, machine, config, success, error) {
+export function fetchSummaries (machine, config, metric, success, error) {
 	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		objs => {
 			var results = [];
