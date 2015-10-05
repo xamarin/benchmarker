@@ -49,8 +49,8 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
         self.usetimestamps = usetimestamps
         self.category = category
         self.project = project
-        self.knownRevs = []
-        self.dbName = 'knownRevsASDF'
+        self.known_revs = []
+        self.db_name = 'knownRevsASDF'
 
         if fetch_refspec is not None:
             config.error("BostonNasPoller: fetch_refspec is no longer supported. "
@@ -65,57 +65,60 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
             self.workdir = os.path.join(self.master.basedir, self.workdir)
             log.msg("BostonNasPoller: using workdir '%s'" % self.workdir)
 
-        d = self.getState(self.dbName, [])
+        dfrd = self.getState(self.db_name, [])
 
-        def setKnownRevs(knownRevs):
-            self.knownRevs = knownRevs
-        d.addCallback(setKnownRevs)
-        d.addCallback(lambda _: base.PollingChangeSource.startService(self))
-        d.addErrback(log.err, 'while initializing BostonNasPoller repository')
+        def setknown_revs(known_revs):
+            self.known_revs = known_revs
+        dfrd.addCallback(setknown_revs)
+        dfrd.addCallback(lambda _: base.PollingChangeSource.startService(self))
+        dfrd.addErrback(log.err, 'while initializing BostonNasPoller repository')
 
-        return d
+        return dfrd
 
     def describe(self):
-        str = ('BostonNasPoller watching the remote git repository ' + self.repourl)
+        desc = ('BostonNasPoller watching the remote git repository ' + self.repourl)
 
         if self.branches:
             if self.branches is True:
-                str += ', branches: ALL'
+                desc += ', branches: ALL'
             elif not callable(self.branches):
-                str += ', branches: ' + ', '.join(self.branches)
+                desc += ', branches: ' + ', '.join(self.branches)
 
         if not self.master:
-            str += " [STOPPED - check log]"
+            desc += " [STOPPED - check log]"
 
-        return str
+        return desc
 
-    def _getBranches(self):
-        d = self._dovccmd('ls-remote', [self.repourl])
+    def _get_branches(self):
+        dfrd = self._dovccmd('ls-remote', [self.repourl])
 
-        @d.addCallback
-        def parseRemote(rows):
+        def parse_remote(rows):
             branches = []
             for row in rows.splitlines():
                 if '\t' not in row:
                     # Not a useful line
                     continue
-                sha, ref = row.split("\t")
+                _, ref = row.split("\t")
                 branches.append(ref)
             return branches
-        return d
 
-    def _headsFilter(self, branch):
+        dfrd.addCallback(parse_remote)
+        return dfrd
+
+    @staticmethod
+    def _heads_filter(branch):
         """Filter out remote references that don't begin with 'refs/heads'."""
         return branch.startswith("refs/heads/")
 
-    def _removeHeads(self, branch):
+    @staticmethod
+    def _remove_heads(branch):
         """Remove 'refs/heads/' prefix from remote references."""
         if branch.startswith("refs/heads/"):
             branch = branch[11:]
         return branch
 
-    def _trackerBranch(self, branch):
-        return "refs/buildbot/%s/%s" % (urllib.quote(self.repourl, ''), self._removeHeads(branch))
+    def _tracker_branch(self, branch):
+        return "refs/buildbot/%s/%s" % (urllib.quote(self.repourl, ''), self._remove_heads(branch))
 
     @defer.inlineCallbacks
     def poll(self):
@@ -123,13 +126,13 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
 
         branches = self.branches
         if branches is True or callable(branches):
-            branches = yield self._getBranches()
+            branches = yield self._get_branches()
             if callable(self.branches):
                 branches = filter(self.branches, branches)
             else:
-                branches = filter(self._headsFilter, branches)
+                branches = filter(self._heads_filter, branches)
 
-        refspecs = ['+%s:%s' % (self._removeHeads(branch), self._trackerBranch(branch)) for branch in branches]
+        refspecs = ['+%s:%s' % (self._remove_heads(branch), self._tracker_branch(branch)) for branch in branches]
         yield self._dovccmd('fetch', [self.repourl] + refspecs, path=self.workdir)
 
         for branch in branches:
@@ -138,64 +141,66 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
             except Exception:
                 log.err(_why="trying to poll branch %s of %s" % (branch, self.repourl))
 
-        yield self.setState(self.dbName, self.knownRevs)
+        yield self.setState(self.db_name, self.known_revs)
 
     def _decode(self, git_output):
         return git_output.decode(self.encoding)
 
     def _get_commit_comments(self, rev):
         args = ['--no-walk', r'--format=%s%n%b', rev, '--']
-        d = self._dovccmd('log', args, path=self.workdir)
-        d.addCallback(self._decode)
-        return d
+        dfrd = self._dovccmd('log', args, path=self.workdir)
+        dfrd.addCallback(self._decode)
+        return dfrd
 
     def _get_commit_timestamp(self, rev):
         # unix timestamp
         args = ['--no-walk', r'--format=%ct', rev, '--']
-        d = self._dovccmd('log', args, path=self.workdir)
+        dfrd = self._dovccmd('log', args, path=self.workdir)
 
         def process(git_output):
             if self.usetimestamps:
                 try:
                     stamp = float(git_output)
-                except Exception, e:
+                except Exception, exception:
                     log.msg('BostonNasPoller: caught exception converting output \'%s\' to timestamp' % git_output)
-                    raise e
+                    raise exception
                 return stamp
             else:
                 return None
-        d.addCallback(process)
-        return d
+        dfrd.addCallback(process)
+        return dfrd
 
     def _get_commit_files(self, rev):
         args = ['--name-only', '--no-walk', r'--format=%n', rev, '--']
-        d = self._dovccmd('log', args, path=self.workdir)
+        dfrd = self._dovccmd('log', args, path=self.workdir)
 
-        def decode_file(file):
+        def decode_file(filename):
             # git use octal char sequences in quotes when non ASCII
-            match = re.match('^"(.*)"$', file)
+            match = re.match('^"(.*)"$', filename)
             if match:
-                file = match.groups()[0].decode('string_escape')
-            return self._decode(file)
+                filename = match.groups()[0].decode('string_escape')
+            return self._decode(filename)
 
         def process(git_output):
-            fileList = [decode_file(file) for file in itertools.ifilter(lambda s: len(s), git_output.splitlines())]
-            return fileList
-        d.addCallback(process)
-        return d
+            def _length(string):
+                return len(string)
+            return [decode_file(filename) for filename in itertools.ifilter(_length, git_output.splitlines())]
+
+        dfrd.addCallback(process)
+        return dfrd
 
     def _get_commit_author(self, rev):
         args = ['--no-walk', r'--format=%aN <%aE>', rev, '--']
-        d = self._dovccmd('log', args, path=self.workdir)
+        dfrd = self._dovccmd('log', args, path=self.workdir)
 
         def process(git_output):
             git_output = self._decode(git_output)
             if len(git_output) == 0:
                 raise EnvironmentError('could not get commit author for rev')
             return git_output
-        d.addCallback(process)
-        return d
-    
+        dfrd.addCallback(process)
+        return dfrd
+
     def _construct_boston_url(self, rev):
         return '%s/%s/%s/%s/' % (BOSTON_NAS_URL, self.wrenchlane, rev[:2], rev)
 
@@ -207,24 +212,24 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
         """
 
         # get the change list
-        revListArgs = [r'--format=%H', r'--since', r'8 weeks ago', self._trackerBranch(branch)]
-        results = yield self._dovccmd('log', revListArgs, path=self.workdir)
-        revList = results.split()
+        rev_list_args = [r'--format=%H', r'--since', r'8 weeks ago', self._tracker_branch(branch)]
+        results = yield self._dovccmd('log', rev_list_args, path=self.workdir)
+        rev_list = results.split()
 
-        log.msg('BostonNasPoller: processing %d changes: %s from "%s"' % (len(revList), revList, self.repourl))
+        log.msg('BostonNasPoller: processing %d changes: %s from "%s"' % (len(rev_list), rev_list, self.repourl))
 
-        for rev in revList:
-            if rev in self.knownRevs:
+        for rev in rev_list:
+            if rev in self.known_revs:
                 continue
 
-            pageExists = yield _exists_d(self._construct_boston_url(rev) + '/manifest')
-            if not pageExists:
+            page_exists = yield _exists_d(self._construct_boston_url(rev) + '/manifest')
+            if not page_exists:
                 continue
-            
-            self.knownRevs.append(rev)
 
-            dl = defer.DeferredList([self._get_commit_timestamp(rev), self._get_commit_author(rev), self._get_commit_files(rev), self._get_commit_comments(rev)], consumeErrors=True)
-            results = yield dl
+            self.known_revs.append(rev)
+
+            dfrd_list = defer.DeferredList([self._get_commit_timestamp(rev), self._get_commit_author(rev), self._get_commit_files(rev), self._get_commit_comments(rev)], consumeErrors=True)
+            results = yield dfrd_list
 
             # check for failures
             failures = [r[1] for r in results if not r[0]]
@@ -235,11 +240,11 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
             timestamp, author, files, comments = [r[1] for r in results]
             yield self.master.addChange(
                 author=author, revision=rev, files=files, comments=comments, when_timestamp=epoch2datetime(timestamp),
-                branch=self._removeHeads(branch), category=self.category, project=self.project, repository=self.repourl, src='git'
+                branch=self._remove_heads(branch), category=self.category, project=self.project, repository=self.repourl, src='git'
             )
 
     def _dovccmd(self, command, args, path=None):
-        d = utils.getProcessOutputAndValue(self.gitbin, [command] + args, path=path, env=os.environ)
+        dfrd = utils.getProcessOutputAndValue(self.gitbin, [command] + args, path=path, env=os.environ)
 
         def _convert_nonzero_to_failure(res, command, args, path):
             "utility to handle the result of getProcessOutputAndValue"
@@ -248,8 +253,8 @@ class BostonNasPoller(base.PollingChangeSource, StateMixin):
                 raise EnvironmentError('command %s %s in %s on repourl %s failed with exit code %d: %s'
                                        % (command, args, path, self.repourl, code, stderr))
             return stdout.strip()
-        d.addCallback(_convert_nonzero_to_failure, command, args, path)
-        return d
+        dfrd.addCallback(_convert_nonzero_to_failure, command, args, path)
+        return dfrd
 
 
 def _mk_request_manifest(base_url, wrenchlane, rev, logger):
@@ -269,18 +274,19 @@ def _fetch_pkg_name(base_url, wrenchlane, rev, prefix, suffix, logger):
     defer.returnValue(None)
 
 def _exists_d(url):
-    def handleResponse(r):
-        return r.code in (200, 301, 302)
+    def handle_response(response):
+        return response.code in (200, 301, 302)
 
-    def handleError(reason):
+    def handle_error(reason):
         reason.printTraceback()
 
-    d = Agent(reactor).request('POST', url)
-    d.addCallbacks(handleResponse, handleError)
-    return d
+    dfrd = Agent(reactor).request('POST', url)
+    dfrd.addCallbacks(handle_response, handle_error)
+    return dfrd
 
 class BostonNasGetPackageUrlStep(LoggingBuildStep):
     def __init__(self, base_url, wrenchlane, prefix, suffix, *args, **kwargs):
+        self.logger = None
         self.base_url = base_url
         self.wrenchlane = wrenchlane
         self.prefix = prefix
@@ -327,9 +333,9 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def test_check_boston_nas():
-        url= r'http://storage.bos.internalx.com/mono-master-monodroid/13/1354dc1044387ad7b2919db1ba08db510e61a8db/mono-android-5.0.99-209.pkg'
-        e = yield _exists_d(url)
-        print "does it exists? " + str(e)
+        url = r'http://storage.bos.internalx.com/mono-master-monodroid/13/1354dc1044387ad7b2919db1ba08db510e61a8db/mono-android-5.0.99-209.pkg'
+        exists = yield _exists_d(url)
+        print "does it exists? " + str(exists)
         pkg = yield _fetch_pkg_name(BOSTON_NAS_URL, 'mono-master-monodroid', '1354dc1044387ad7b2919db1ba08db510e61a8db', 'mono-android', '.pkg', _logger)
         print "download: " + pkg
 

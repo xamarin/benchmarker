@@ -305,7 +305,7 @@ def gen_guard_benchmark_run(benchmark):
     return lambda s: _benchmark_retry(benchmark, s) and _benchmark_filter(benchmark, s)
 
 
-def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, attach_files):
+def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, attach_files=None):
     steps = []
     cmd1 = ['mono',
             'tools/compare.exe',
