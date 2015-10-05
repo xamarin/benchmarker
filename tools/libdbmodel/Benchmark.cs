@@ -13,6 +13,7 @@ namespace Benchmarker.Models
 		public string Name { get; set; }
 		public string TestDirectory { get; set; }
 		public string[] CommandLine { get; set; }
+		public string[] ClientCommandLine { get; set; }
 
 		static Dictionary<string, PostgresRow> nameToRow;
 
