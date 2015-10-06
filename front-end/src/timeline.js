@@ -87,7 +87,8 @@ class Page extends React.Component {
 		this.fetchSummaries (this.state);
 	}
 
-	runSetSelected (runSet, index) {
+	runSetSelected (runSet) {
+		var index = xp_utils.findIndex (this.state.sortedResults, r => r.runSet === runSet);
 		this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false});
 	}
 
