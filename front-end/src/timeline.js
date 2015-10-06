@@ -125,7 +125,7 @@ class Page extends React.Component {
 		var config = selection.config;
 		var metric = selection.metric;
 
-		this.setState ({machine: machine, config: config, metric: metric, sortedResults: [], benchmarkNames: [], zoom: false});
+		this.setState ({machine: machine, config: config, metric: metric, runSetIndexes: [], sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
 		this.props.onChange (selection);
 	}
