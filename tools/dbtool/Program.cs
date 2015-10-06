@@ -291,10 +291,22 @@ namespace DbTool
 			}
 		}
 
+		static void DeleteRunSet (NpgsqlConnection conn, long id) {
+			var values = new PostgresRow ();
+			values.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, id);
+			var numRows = PostgresInterface.Delete (conn, "RunMetric", "run in (select id from Run where runSet = :runSet)", values);
+			Console.WriteLine ("deleted {0} run metrics", numRows);
+			numRows = PostgresInterface.Delete (conn, "Run", "runSet = :runSet", values);
+			Console.WriteLine ("deleted {0} runs", numRows);
+			numRows = PostgresInterface.Delete (conn, "RunSet", "id = :runSet", values);
+			Console.WriteLine ("deleted {0} run sets", numRows);
+		}
+
 		static void UsageAndExit (bool success)
 		{
 			Console.WriteLine ("Usage:");
 			Console.WriteLine ("    DbTool.exe --find-regressions MACHINE-ID CONFIG-ID [--test-run [--only-necessary]]");
+			Console.WriteLine ("               --delete-run-set ID");
 			Environment.Exit (success ? 0 : 1);
 		}
 
@@ -316,6 +328,10 @@ namespace DbTool
 				}
 				var conn = PostgresInterface.Connect ();
 				AsyncContext.Run (() => FindRegressions (conn, machineId, configId, testRun, onlyNecessary));
+			} else if (args [0] == "--delete-run-set") {
+				var runSetId = Int64.Parse (args [1]);
+				var conn = PostgresInterface.Connect ();
+				DeleteRunSet (conn, runSetId);
 			} else {
 				UsageAndExit (false);
 			}

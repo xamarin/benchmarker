@@ -108,6 +108,16 @@ namespace Benchmarker
 					throw new Exception ("Error: Could not update row in " + table);
 			}
 		}
+
+		public static int Delete (NpgsqlConnection conn, string table, string whereClause, PostgresRow row) {
+			var columns = row.Columns;
+			var commandString = string.Format ("delete from {0} where {1}", table, whereClause);
+			using (var cmd = conn.CreateCommand ()) {
+				cmd.CommandText = commandString;
+				AddParameters (cmd, row);
+				return cmd.ExecuteNonQuery ();
+			}
+		}
 	}
 
 	public class PostgresRow
