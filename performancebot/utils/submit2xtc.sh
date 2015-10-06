@@ -16,11 +16,6 @@ XBUILDANDROID="$3"
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
 
-function checkjsonfield()
-{
-    (cat "$PARAMSJSON" | jq -e '.'$1 > /dev/null) || (echo "file $PARAMSJSON must contain field $1" && exit 4)
-}
-
 if [ ! -f $XTCAPIKEY ]; then
     echo "$XTCAPIKEY file must exist"
     exit 2
@@ -31,29 +26,10 @@ if [ ! -f $PARAMSJSON ]; then
     exit 3
 fi
 
-# check if the json file has the required fields
-checkjsonfield 'githubAPIKey'
-checkjsonfield 'runSetId'
-
 nuget restore tools.sln
 xbuild /t:clean
 rm -rf AndroidAgent/{bin,obj}
 xbuild /p:Configuration=Release /target:compare
-
-# generate run-set id for nexus5
-RUNSETID=$(mono --debug ./compare.exe \
-    --commit $COMMITSHA \
-    --create-run-set \
-    --machine "Nexus-5_4.4.4" -- ../tests/ ../benchmarks/ ../machines/ ../configs/default.conf \
-    | grep runSetId | jq .runSetId)
-
-echo "runSetId: $RUNSETID"
-
-# insert new runSetId into JSON file
-PARAMTMP=$(mktemp /tmp/param_template.json.XXXXXX)
-mv "$PARAMSJSON" "$PARAMTMP"
-cat "$PARAMTMP" | jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
-rm -f "$PARAMTMP"
 
 # build app + uitests
 (cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
