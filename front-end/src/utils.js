@@ -111,6 +111,31 @@ export function sortArrayNumericallyBy<T> (arr: Array<T>, keyFunc: (v: T) => num
 	return copy;
 }
 
+function padLeft (s: string, c: string, len: number) : string {
+    while (s.length < len)
+        s = c + s;
+    return s;
+}
+
+export function formatDate (date: Date) : string {
+    var monthNames = [
+        "Jan", "Feb", "Mar", "Apr",
+        "May", "Jun", "Jul", "Aug",
+        "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    var day = date.getDate ().toString ();
+    var monthIndex = date.getMonth ();
+    var year = date.getFullYear ().toString ();
+    var hour = date.getHours ().toString ();
+    var minute = date.getMinutes ().toString ();
+
+    var dayFormatted = padLeft (day, "0", 2) + " " + monthNames[monthIndex] + " " + year;
+    var timeFormatted = padLeft (hour, "0", 2) + ":" + padLeft (minute, "0", 2);
+
+    return dayFormatted + " " + timeFormatted;
+}
+
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 export function deepEquals () : boolean {
     var i, l, leftChain, rightChain;
