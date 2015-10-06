@@ -53,12 +53,10 @@ namespace AndroidAgent.UITests
 			using (Stream stream = assembly.GetManifestResourceStream ("AndroidAgent.UITests.params.json")) {
 				using (StreamReader reader = new StreamReader (stream)) {
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
-					string runSetId = json.runSetId;
 					string githubAPIKey = json.githubAPIKey;
 
 					app.Screenshot ("init");
 
-					clearAndSetTextField ("runSetId", runSetId);
 					clearAndSetTextField ("benchmark", benchmark);
 					clearAndSetTextField ("githubAPIKey", githubAPIKey);
 

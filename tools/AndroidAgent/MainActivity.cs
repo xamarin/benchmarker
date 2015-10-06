@@ -116,7 +116,7 @@ namespace AndroidAgent
 
 		AndroidCPUManagment CpuManager;
 
-		void RunBenchmark (string runSetId, string benchmarkName, string hostname, string architecture)
+		void RunBenchmark (string benchmarkName, string hostname, string architecture)
 		{
 			const int TRY_RUNS = 10;
 			const int ITERATIONS = 10;
@@ -124,9 +124,6 @@ namespace AndroidAgent
 			PrintCommit ();
 			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
 			Logging.GetLogging ().InfoFormat ("Becnhmarker | configname \"{0}\"", "default");
-			// TODO: buildURL => wrench log?
-			// TODO: logURL => XTC url?
-			Logging.GetLogging ().InfoFormat ("Benchmarker | runSetId \"{0}\"", runSetId);
 			new Task (() => {
 				try {
 					for (var i = 0; i < (ITERATIONS + TRY_RUNS); i++) {
@@ -142,7 +139,6 @@ namespace AndroidAgent
 					}
 				}
 			}).Start ();
-			Logging.GetLogging ().InfoFormat ("Benchmark started, run set id {0}", runSetId);
 		}
 
 		private static void InitCommons (string githubAPIKey)
@@ -158,12 +154,11 @@ namespace AndroidAgent
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
 			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
-				var runSetId = FindViewById<TextView> (Resource.Id.runSetId).Text;
 				var benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
 				var githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
 				InitCommons (githubAPIKey);
 				SetStartButtonText ("running");
-				RunBenchmark (runSetId, benchmarkName, hostname, architecture);
+				RunBenchmark (benchmarkName, hostname, architecture);
 			};
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();
