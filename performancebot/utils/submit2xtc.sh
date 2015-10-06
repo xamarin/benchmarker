@@ -4,13 +4,14 @@ set -x
 set -e
 set -o pipefail
 
-if [ $# -ne 2 ]; then
-    echo "usage: $0 <benchmarkerToolsDir> <commit>"
+if [ $# -ne 3 ]; then
+    echo "usage: $0 <benchmarkerToolsDir> <commit> <xbuild-android>"
     exit 1
 fi
 
 cd $1
 COMMITSHA="$2"
+XBUILDANDROID="$3"
 
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
@@ -34,6 +35,7 @@ fi
 checkjsonfield 'githubAPIKey'
 checkjsonfield 'runSetId'
 
+nuget restore tools.sln
 xbuild /t:clean
 rm -rf AndroidAgent/{bin,obj}
 xbuild /p:Configuration=Release /target:compare
@@ -54,8 +56,8 @@ cat "$PARAMTMP" | jq 'to_entries | map(if .key == "runSetId" then . + {"value":'
 rm -f "$PARAMTMP"
 
 # build app + uitests
-(cd AndroidAgent && xbuild /p:Configuration=Release /target:SignAndroidPackage )
-(cd AndroidAgent.UITests/ && xbuild /p:Configuration=Release )
+(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
+(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
 
 XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
 UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
