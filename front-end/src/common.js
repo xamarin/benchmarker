@@ -150,7 +150,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 						machine: rsc.machine,
 						config: rsc.config,
 						metric: rsc.metric,
-						displayString: this.props.featuredTimelines [index].get ('name')
+						displayString: this.props.featuredTimelines [index].get ('name'),
+						count: rsc.count
 					};
 					continue;
 				}
@@ -167,8 +168,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				displayString = entry.config.get ('name');
 				if (this.props.includeMetric)
 					displayString = displayString + " / " + entry.metric;
-				displayString = displayString + " (" + entry.count + ")";
-			}
+				}
+			displayString = displayString + " (" + entry.count + ")";
 			return <option
 				value={string}
 				key={string}>
