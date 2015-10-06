@@ -461,7 +461,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var commitLink = githubCommitLink (commitHash);
 
 		return <div className="Description">
-			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.id}>compare</a>)</h1>
+			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
 			{table}
 		</div>;
