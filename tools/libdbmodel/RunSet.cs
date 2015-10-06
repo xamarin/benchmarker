@@ -147,7 +147,7 @@ namespace Benchmarker.Models
 				row.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, Config.GetOrUploadToPostgres (conn));
 				row.Set ("commit", NpgsqlTypes.NpgsqlDbType.Varchar, Commit.GetOrUploadToPostgres (conn));
 				row.Set ("buildURL", NpgsqlTypes.NpgsqlDbType.Varchar, BuildURL);
-				row.Set ("startedAt", NpgsqlTypes.NpgsqlDbType.Date, StartDateTime);
+				row.Set ("startedAt", NpgsqlTypes.NpgsqlDbType.TimestampTZ, StartDateTime);
 
 				if (PullRequestURL != null) {
 					var prRow = new PostgresRow ();
@@ -160,7 +160,7 @@ namespace Benchmarker.Models
 				row.TakeValuesFrom (postgresRow, "rs.");
 			}
 
-			row.Set ("finishedAt", NpgsqlTypes.NpgsqlDbType.Date, FinishDateTime);
+			row.Set ("finishedAt", NpgsqlTypes.NpgsqlDbType.TimestampTZ, FinishDateTime);
 
 			row.Set ("logURLs", NpgsqlTypes.NpgsqlDbType.Jsonb, logURLs);
 
