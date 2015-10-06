@@ -103,6 +103,7 @@ type RunSetCountArray = Array<{ machine: Database.DBObject, config: Database.DBO
 type ConfigSelectorProps = {
 	includeMetric: boolean;
 	runSetCounts: RunSetCountArray;
+	featuredTimelines: Array<Database.DBObject>;
 	machine: string | void;
 	config: string | void;
 	metric: string | void;
@@ -134,24 +135,54 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
 
 		var machines = {};
+		var featuredRSCs = [];
 		for (var i = 0; i < histogram.length; ++i) {
 			var rsc = histogram [i];
 			var machineName = rsc.machine.get ('name');
+
+			if (this.props.featuredTimelines !== undefined) {
+				var configName = rsc.config.get ('name');
+				var index = xp_utils.findIndex (this.props.featuredTimelines, ftl => {
+					return ftl.get ('machine') === machineName && ftl.get ('config') === configName && ftl.get ('metric') === rsc.metric;
+				});
+				if (index >= 0) {
+					featuredRSCs [index] = {
+						machine: rsc.machine,
+						config: rsc.config,
+						metric: rsc.metric,
+						displayString: this.props.featuredTimelines [index].get ('name')
+					};
+					continue;
+				}
+			}
+
 			machines [machineName] = machines [machineName] || [];
 			machines [machineName].push (rsc);
 		}
 
 		function renderRSC (entry) {
 			var string = valueStringForRSC (entry);
-			var displayString = entry.config.get ('name');
-			if (this.props.includeMetric)
-				displayString = displayString + " / " + entry.metric;
-			displayString = displayString + " (" + entry.count + ")";
+			var displayString = entry.displayString;
+			if (displayString === undefined) {
+				displayString = entry.config.get ('name');
+				if (this.props.includeMetric)
+					displayString = displayString + " / " + entry.metric;
+				displayString = displayString + " (" + entry.count + ")";
+			}
 			return <option
 				value={string}
 				key={string}>
 				{displayString}
 			</option>;
+		}
+
+		function renderFeaturedTimelines () {
+			if (this.props.featuredTimelines === undefined)
+				return undefined;
+
+			return <optgroup label="Featured">
+				{featuredRSCs.map (renderRSC.bind (this))}
+			</optgroup>
 		}
 
 		function renderGroup (machines, machineName) {
@@ -175,6 +206,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
 			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
+				{renderFeaturedTimelines.bind (this) ()}
 				{Object.keys (machines).map (renderGroup.bind (this, machines))}
 			</select>
 			{aboutConfig}{aboutMachine}

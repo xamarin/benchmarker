@@ -174,3 +174,7 @@ export function fetchParseObjectIds (parseIds, success, error) {
 			success (ids);
 		}, error);
 }
+
+export function fetchFeaturedTimelines (success, error) {
+	fetchAndWrap ('featuredtimelines?order=name', success, error);
+}

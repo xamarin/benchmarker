@@ -69,6 +69,9 @@ select pr.id as pr_id, pr.url as pr_url,
 from pullrequest as pr, runset as blrs, runset as prrs, commit as blc, commit as prc, machine as m, config cfg
 where pr.baselinerunset = blrs.id and prrs.pullrequest = pr.id and blc.hash = blrs.commit and prc.hash = prrs.commit and blrs.machine = m.name and blrs.config = cfg.name;
 
+create view "1".featuredtimelines as
+select * from featuredtimelines;
+
 create user $POSTGREST_USER login encrypted password '$POSTGREST_PASSWORD';
 grant usage on schema "1" to $POSTGREST_USER;
 grant select on all tables in schema "1" to $POSTGREST_USER;

@@ -12,6 +12,7 @@ class Controller {
 	initialSelectionNames: { machineName: string | void, configName: string | void, metric: string | void };
 	initialZoom: boolean;
 	runSetCounts: Array<Object>;
+	featuredTimelines: Array<Database.DBObject>;
 
 	constructor (machineName, configName, metric) {
 		if (machineName === undefined && configName === undefined && metric === undefined) {
@@ -28,10 +29,25 @@ class Controller {
 	loadAsync () {
 		Database.fetchRunSetCounts (runSetCounts => {
 			this.runSetCounts = runSetCounts;
-			this.allDataLoaded ();
+			this.checkAllDataLoaded ();
 		}, error => {
 			alert ("error loading run set counts: " + error.toString ());
 		});
+
+		Database.fetchFeaturedTimelines (featuredTimelines => {
+			this.featuredTimelines = featuredTimelines;
+			this.checkAllDataLoaded ();
+		}, error => {
+			alert ("error loading featured run sets: " + error.toString ());
+		});
+	}
+
+	checkAllDataLoaded () {
+		if (this.runSetCounts === undefined)
+			return;
+		if (this.featuredTimelines === undefined)
+			return;
+		this.allDataLoaded ();
 	}
 
 	allDataLoaded () {
@@ -50,6 +66,7 @@ class Controller {
 					initialSelection: selection,
 					initialZoom: this.initialZoom,
 					runSetCounts: this.runSetCounts,
+					featuredTimelines: this.featuredTimelines,
 					onChange: this.updateForSelection.bind (this)
 				}
 			),
@@ -188,6 +205,7 @@ class Page extends React.Component {
 						<xp_common.CombinedConfigSelector
 							includeMetric={true}
 							runSetCounts={this.props.runSetCounts}
+							featuredTimelines={this.props.featuredTimelines}
 							machine={this.state.machine}
 							config={this.state.config}
 							metric={this.state.metric}
