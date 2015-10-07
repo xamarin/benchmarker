@@ -93,19 +93,17 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 }
 
 type MachineConfigSelection = {
-	machine: string | void;
-	config: string | void;
-	metric: string | void;
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	metric: string;
 };
-
-type RunSetCountArray = Array<{ machine: Database.DBObject, config: Database.DBObject, count: number }>;
 
 type ConfigSelectorProps = {
 	includeMetric: boolean;
-	runSetCounts: RunSetCountArray;
+	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
-	machine: string | void;
-	config: string | void;
+	machine: Database.DBObject | void;
+	config: Database.DBObject | void;
 	metric: string | void;
 	onChange: (selection: MachineConfigSelection) => void;
 };
@@ -125,10 +123,10 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var valueStringForRSC = (rsc) => {
-			var s = rsc.machine.get ('name') + '+' + rsc.config.get ('name');
+		var valueStringForRSC = (machine, config, metric) => {
+			var s = machine.get ('name') + '+' + config.get ('name');
 			if (this.props.includeMetric)
-				s = s + '+' + rsc.metric;
+				s = s + '+' + metric;
 			return s;
 		}
 
@@ -150,6 +148,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 						machine: rsc.machine,
 						config: rsc.config,
 						metric: rsc.metric,
+						ids: [], // just for typechecking purposes
 						displayString: this.props.featuredTimelines [index].get ('name'),
 						count: rsc.count
 					};
@@ -161,9 +160,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		function renderRSC (entry) {
-			var string = valueStringForRSC (entry);
-			var displayString = entry.displayString;
+		function renderRSC (entry: Database.RunSetCount, displayString: string | void) {
+			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
 				if (this.props.includeMetric)
@@ -182,13 +180,13 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				return undefined;
 
 			return <optgroup label="Featured">
-				{featuredRSCs.map (renderRSC.bind (this))}
+				{featuredRSCs.map (rsc => renderRSC.call (this, rsc, rsc.displayString))}
 			</optgroup>
 		}
 
 		function renderGroup (machines, machineName) {
 			return <optgroup label={machineName}>
-				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (renderRSC.bind (this))}
+				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (rsc => renderRSC.call (this, rsc, undefined))}
 			</optgroup>;
 		}
 
@@ -197,7 +195,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var metric = this.props.metric;
 		var selectedValue;
 		if (!(machine === undefined || config === undefined || (this.props.includeMetric && metric === undefined)))
-			selectedValue = valueStringForRSC (this.props);
+			selectedValue = valueStringForRSC (machine, config, metric);
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
@@ -230,7 +228,10 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	combinationSelected (event: Object) {
 		var names = event.target.value.split ('+');
 		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
-		this.props.onChange (rsc);
+		if (rsc !== undefined)
+			this.props.onChange (rsc);
+		else
+			console.log ("Couldn't find run set count.");
 	}
 }
 
@@ -241,14 +242,18 @@ type RunSetSelection = {
 }
 
 type RunSetSelectorProps = {
-	runSetCounts: RunSetCountArray;
+	runSetCounts: Array<Database.RunSetCount>;
 	selection: RunSetSelection;
 	onChange: (selection: RunSetSelection) => void;
 };
 
-export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, void> {
+type RunSetSelectorState = {
+	runSets: Array<Database.DBRunSet> | void;
+};
 
-	constructor (props) {
+export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, RunSetSelectorState> {
+
+	constructor (props: RunSetSelectorProps) {
 		super (props);
 		this.state = { runSets: undefined };
 	}
@@ -257,7 +262,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.fetchData (this.props);
 	}
 
-	componentWillReceiveProps (nextProps) {
+	componentWillReceiveProps (nextProps: RunSetSelectorProps) {
 		function getName (obj) {
 			if (obj === undefined)
 				return undefined;
@@ -273,7 +278,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.fetchData (nextProps);
 	}
 
-	fetchData (props) {
+	fetchData (props: RunSetSelectorProps) {
 		var machine = props.selection.machine;
 		var config = props.selection.config;
 
@@ -288,6 +293,8 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 
 	runSetSelected (event: Object) {
+		if (this.state.runSets === undefined)
+			return;
 		var selection = this.props.selection;
 		var runSetId = event.target.value;
 		var runSet = Database.findRunSet (this.state.runSets, runSetId);
@@ -368,17 +375,21 @@ function descriptiveMetricName (metric: string) : string {
 }
 
 type RunSetDescriptionProps = {
-	runSet: Database.DBObject | void;
+	runSet: Database.DBRunSet;
 };
 
-export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, void> {
-	constructor (props) {
+type RunSetDescriptionState = {
+	results: Array<Object> | void;
+};
+
+export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, RunSetDescriptionState> {
+	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = {};
+		this.state = { results: undefined };
 		this.fetchResults (props.runSet);
 	}
 
-	fetchResults (runSet) {
+	fetchResults (runSet: Database.DBRunSet) {
 		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
 		objs => {
 			if (runSet !== this.props.runSet)
@@ -389,12 +400,12 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		});
 	}
 
-	componentWillReceiveProps (nextProps) {
+	componentWillReceiveProps (nextProps: RunSetDescriptionProps) {
 		this.setState ({ results: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
-	render () {
+	render () : React.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
 		var buildLink;
@@ -460,9 +471,9 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					var result = resultsByBenchmark [name];
 					var disabled = result.disabled;
 					var statusIcons = [];
-					if (crashedBenchmarks.indexOf (name) !== -1)
+					if (Array.isArray (crashedBenchmarks) && crashedBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-					if (timedOutBenchmarks.indexOf (name) !== -1)
+					if (Array.isArray (timedOutBenchmarks) && timedOutBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
 					if (statusIcons.length === 0)
 						statusIcons.push (<span className="statusIcon good fa fa-check" title="Good"></span>);
@@ -536,7 +547,7 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 
 }
 
-export function parseLocationHashForDict (items, startFunc) {
+export function parseLocationHashForDict (items: Array<string>, startFunc: (keyMap: Object) => void) {
 	var hash = window.location.hash.substring (1);
 
 	if (hash.length === 0) {
@@ -575,7 +586,7 @@ export function parseLocationHashForDict (items, startFunc) {
 	})
 }
 
-export function setLocationForDict (dict) {
+export function setLocationForDict (dict: Object) {
 	var components = [];
 	var keys = Object.keys (dict);
 	for (var i = 0; i < keys.length; ++i) {
@@ -585,7 +596,7 @@ export function setLocationForDict (dict) {
 	window.location.hash = components.join ("&");
 }
 
-export function parseLocationHashForArray (key, startFunc) {
+export function parseLocationHashForArray (key: string, startFunc: (keyArray: Array<string | number>) => void) {
 	var hash = window.location.hash.substring (1);
 
 	if (hash.length === 0) {
@@ -600,13 +611,13 @@ export function parseLocationHashForArray (key, startFunc) {
 		return;
 	}
 
-	var ids = hash.split ('+');
+	var ids = hash.split ('+').map (parseInt);
 	Database.fetchParseObjectIds (ids, startFunc,
 		error => {
 			alert ("Error: " + error.toString ());
 		});
 }
 
-export function setLocationForArray (key, ids) {
+export function setLocationForArray (key: string, ids: Array<string>) {
 	window.location.hash = key + "=" + ids.join ("+");
 }

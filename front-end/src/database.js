@@ -63,7 +63,7 @@ export function fetchAndWrap (query: string, success: (results: Array<DBObject>)
 	}, error);
 }
 
-type RunSetCount = {
+export type RunSetCount = {
 	machine: DBObject,
 	config: DBObject,
 	metric: string,
