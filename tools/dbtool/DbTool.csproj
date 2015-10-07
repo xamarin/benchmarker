@@ -55,7 +55,7 @@
       <HintPath>..\packages\Octokit.0.16.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="Npgsql">
-      <HintPath>..\packages\Npgsql.3.0.2\lib\net45\Npgsql.dll</HintPath>
+      <HintPath>..\packages\Npgsql.3.0.3\lib\net45\Npgsql.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="Parse.NetFx45">
