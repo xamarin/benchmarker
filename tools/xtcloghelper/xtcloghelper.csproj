@@ -6,7 +6,7 @@
     <ProjectGuid>{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>xtclog</RootNamespace>
-    <AssemblyName>xtclog</AssemblyName>
+    <AssemblyName>xtcloghelper</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
@@ -21,7 +21,6 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
