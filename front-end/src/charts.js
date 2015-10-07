@@ -178,7 +178,7 @@ type AMChartProps = {
 	graphName: string;
 	height: number;
 	options: Object;
-	selectListener: (runSet: Database.DBObject) => void;
+	selectListener: (dataItem: any) => void;
     initFunc: ((chart: AmChart) => void) | void;
 };
 
@@ -229,7 +229,7 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
-					e => this.props.selectListener (e.item.dataContext.dataItem, e.index));
+					e => this.props.selectListener (e.item.dataContext.dataItem));
             if (this.props.initFunc !== undefined)
                 this.props.initFunc (this.chart);
 		} else {
@@ -289,7 +289,6 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
 				var runSetIndexById = {};
 	            runSets.forEach ((rs, i) => {
-	                this.resultsByIndex [i] = [];
 	                runSetIndexById [rs.get ('id')] = i;
 	            });
 
@@ -436,9 +435,9 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
         var zoomFunc;
         if (this.dataProvider.length > 15) {
-            zoomFunc = (chart => {
+            zoomFunc = (chart: AmChart) => {
                 chart.zoomToIndexes (0, 9);
-            });
+            };
         }
 
         return <AMChart
@@ -454,7 +453,7 @@ type TimelineAMChartProps = {
 	height: number;
 	title: string;
 	data: Object;
-	selectListener: (index: number) => void;
+	selectListener: (runSet: Database.DBRunSet) => void;
 	zoomInterval: void | {start: number, end: number};
 };
 
@@ -525,9 +524,12 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, Timel
 					};
 
 		var zoomFunc;
-		if (this.props.zoomInterval !== undefined) {
+		var zoomInterval = this.props.zoomInterval;
+		if (zoomInterval !== undefined) {
+			var start = zoomInterval.start;
+			var end = zoomInterval.end;
             zoomFunc = (chart => {
-                chart.zoomToIndexes (this.props.zoomInterval.start, this.props.zoomInterval.end);
+                chart.zoomToIndexes (start, end);
             });
         }
 
