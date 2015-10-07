@@ -101,16 +101,6 @@ drop table RegressionWarnings;
 grant select, insert, update, delete on table RegressionsWarned to $BENCHMARKER_USER;
 grant usage, select, update on sequence regressionswarned_id_seq to $BENCHMARKER_USER;
 
--- FeaturedTimelines
-
-create table FeaturedTimelines (
-       id serial primary key,
-       name varchar(128),
-       machine varchar(128) references Machine(name),
-       config varchar(128) references Config(name),
-       metric varchar(32)
-);
-
 -- indexes
 
 create index runmetric_run_index on runmetric (run);

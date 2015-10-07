@@ -1,0 +1,18 @@
+-- FeaturedTimelines
+
+create table FeaturedTimelines (
+       id serial primary key,
+       name varchar(128),
+       machine varchar(128) references Machine(name),
+       config varchar(128) references Config(name),
+       metric varchar(32)
+);
+
+-- XTC Job IDs
+create table XamarinTestcloudJobIDs (
+       id serial primary key,
+       job varchar(36)
+);
+
+grant select, insert, update, delete on table XamarinTestcloudJobIDs to $BENCHMARKER_USER;
+grant usage, select, update on sequence xamarintestcloudjobids_id_seq to $BENCHMARKER_USER;
