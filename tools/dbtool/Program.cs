@@ -124,11 +124,29 @@ namespace DbTool
 			PostgresInterface.Insert<long> (conn, "RegressionsWarned", row, "id");
 		}
 
+		static bool checkExists (NpgsqlConnection conn, string table, string column, string value)
+		{
+			PostgresRow row = new PostgresRow ();
+			row.Set (column, NpgsqlTypes.NpgsqlDbType.Varchar, value);
+			var matches = PostgresInterface.Select (conn, "\"1\"." + table, new string[] { "1" }, column + " = :" + column, row);
+			return matches != null && matches.Any ();
+		}
+
 		static async Task FindRegressions (NpgsqlConnection conn, string machineName, string configName, bool testRun, bool onlyNecessary)
 		{
 			const int baselineWindowSize = 5;
 			const int testWindowSize = 3;
 			const double controlLimitSize = 6;
+
+			if (!checkExists (conn, "machine", "name", machineName)) {
+				Console.WriteLine ("machine \"{0}\" unknown", machineName);
+				UsageAndExit (false);
+			}
+
+			if (!checkExists (conn, "config", "name", configName)) {
+				Console.WriteLine ("config \"{0}\" unknown", configName);
+				UsageAndExit (false);
+			}
 
 			var summaryValues = new PostgresRow ();
 			summaryValues.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, machineName);
