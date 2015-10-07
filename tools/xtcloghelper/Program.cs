@@ -2,6 +2,7 @@
 using System;
 using Common.Logging.Simple;
 using Common.Logging;
+using Npgsql;
 
 namespace xtclog
 {
@@ -24,13 +25,24 @@ namespace xtclog
 				UsageAndExit (true);
 
 			if (args [0] == "--push") {
-				
+				if (args.Length <= 1) {
+					UsageAndExit (false);
+				}
+				string xtcJobId = args [1];
+				var connection = PostgresInterface.Connect ();
+				PushXTCJobId (connection, xtcJobId);
 			} else if (args [0] == "--crawl-logs") {
 				Console.WriteLine ("NIY");
 				Environment.Exit (3);
 			} else {
 				UsageAndExit (false);
 			}
+		}
+
+		private static void PushXTCJobId(NpgsqlConnection conn, string xtcJobId) {
+			PostgresRow row = new PostgresRow ();
+			row.Set ("job", NpgsqlTypes.NpgsqlDbType.Varchar, xtcJobId);
+			PostgresInterface.Insert<long> (conn, "XamarinTestcloudJobIDs", row, "id");
 		}
 	}
 }
