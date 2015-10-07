@@ -231,7 +231,9 @@ app.post ('/getCredentials', function (req, res) {
         var credentialsObject = credentialsRequest.get ('credentials');
         responseString = credentialsObject.get ('responseString');
         responseContentType = credentialsObject.get ('responseContentType');
-
+        if (!responseContentType) {
+            responseContentType = "text/plain";
+        }
         return destroyRequestAndResponse (credentialsRequest, credentialsResponse);
     }).then (function () {
         res.type (responseContentType);
