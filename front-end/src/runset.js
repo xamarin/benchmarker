@@ -100,7 +100,7 @@ class Page extends React.Component {
 		if (this.state.selection.runSet === undefined)
 			detail = <div className='diagnostic'>Please select a run set.</div>;
 		else
-			detail = <xp_common.RunSetDescription controller={this.props.controller} runSet={this.state.selection.runSet} />;
+			detail = <xp_common.RunSetDescription runSet={this.state.selection.runSet} />;
 
 		return <div className="RunSetPage">
 			<header>
@@ -109,7 +109,6 @@ class Page extends React.Component {
 			<article>
 				<div className="panel">
 					<xp_common.RunSetSelector
-						controller={this.props.controller}
 						selection={this.state.selection}
 						runSetCounts={this.props.runSetCounts}
 						onChange={this.handleChange.bind (this)} />

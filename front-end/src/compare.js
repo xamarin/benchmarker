@@ -95,7 +95,6 @@ class Page extends React.Component {
 			// FIXME: metric
 			chart = <xp_charts.ComparisonAMChart
 				graphName="comparisonChart"
-				controller={this.props.controller}
 				runSets={runSets}
 				metric="time" />;
 		} else {

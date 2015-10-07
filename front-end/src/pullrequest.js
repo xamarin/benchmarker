@@ -59,7 +59,6 @@ class Controller {
 					</div>
                     <xp_charts.ComparisonAMChart
                         graphName="comparisonChart"
-                        controller={this}
                         runSets={runSets}
 						metric="time"
                         runSetLabels={["Baseline", "Pull request"]} />

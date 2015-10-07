@@ -259,7 +259,6 @@ type ComparisonAMChartProps = {
 	metric: string;
 	runSetLabels: Array<string> | void;
 	graphName: string;
-    controller: xp_common.Controller;
 };
 
 export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, ComparisonAMChartProps, void> {
