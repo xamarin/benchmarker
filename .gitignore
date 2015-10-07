@@ -33,5 +33,7 @@ results.pre-json
 
 accredit/cloud-code/cloud/credentials.js
 accredit/cloud-code/config/global.json
+accredit/cloud-code/.parse.local
+accredit/cloud-code/.parse.project
 
 xtc-api-key
