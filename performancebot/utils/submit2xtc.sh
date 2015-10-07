@@ -29,7 +29,6 @@ fi
 nuget restore tools.sln
 xbuild /t:clean
 rm -rf AndroidAgent/{bin,obj}
-xbuild /p:Configuration=Release /target:compare
 
 # build app + uitests
 (cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
