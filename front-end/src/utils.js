@@ -138,7 +138,7 @@ export function formatDate (date: Date) : string {
 
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 export function deepEquals () : boolean {
-    var i, l, leftChain, rightChain;
+    var leftChain = [], rightChain = [];
 
     function compare2Objects (x, y) {
         var p;
@@ -238,11 +238,11 @@ export function deepEquals () : boolean {
         // throw "Need two or more arguments to compare";
     }
 
-    for (i = 1, l = arguments.length; i < l; i++) {
+    for (var i = 1, l = arguments.length; i < l; i++) {
         leftChain = []; //Todo: this can be cached
         rightChain = [];
 
-        if (!compare2Objects(arguments[0], arguments[i])) {
+        if (!compare2Objects (arguments[0], arguments[i])) {
             return false;
         }
     }
@@ -251,7 +251,8 @@ export function deepEquals () : boolean {
 }
 
 // http://stackoverflow.com/questions/728360/most-elegant-way-to-clone-a-javascript-object
-export function shallowClone (obj: Object) : Object {
+export function shallowClone<T> (toCopy: T) : T {
+    var obj: any = toCopy;
     if (null == obj || "object" != typeof obj) return obj;
     var copy = obj.constructor();
     for (var attr in obj) {
@@ -261,11 +262,12 @@ export function shallowClone (obj: Object) : Object {
 }
 
 // http://stackoverflow.com/questions/4459928/how-to-deep-clone-in-javascript
-export function deepClone (item: Object) : Object {
+export function deepClone<T> (toCopy: T) : T {
+    var item: any = toCopy;
     if (!item) { return item; } // null, undefined values check
 
     var types = [ Number, String, Boolean ];
-    var result;
+    var result: any;
 
     // normalizing primitives if someone did new String('aaa'), or new Number('444');
     types.forEach(function(type) {
@@ -276,17 +278,20 @@ export function deepClone (item: Object) : Object {
 
     if (typeof result == "undefined") {
         if (Object.prototype.toString.call( item ) === "[object Array]") {
-            result = [];
+            var arr: any = [];
             item.forEach(function(child, index, array) {
-                result[index] = deepClone( child );
+                arr [index] = deepClone( child );
             });
+            return arr;
         } else if (typeof item == "object") {
             // testing that this is DOM
             if (item.nodeType && typeof item.cloneNode == "function") {
-                var result = item.cloneNode( true );
+                var func: any = item.cloneNode( true );
+                return func;
             } else if (!item.prototype) { // check that this is a literal
                 if (item instanceof Date) {
-                    result = new Date(item);
+                    var date: any = new Date(item);
+                    return date;
                 } else {
                     // it is an object literal
                     result = {};

@@ -23,7 +23,7 @@ function computeStandardDeviation (samples: Array<number>): number {
 	return Math.sqrt (samples.reduce ((sum, x) => sum + (x - mean) * (x - mean), 0) / n);
 }
 
-function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => number)): object {
+function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => number)): number {
 	var n = samples.length;
 	var resampled = [];
 	for (var i = 0; i < n; ++i)
