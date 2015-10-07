@@ -115,7 +115,8 @@ export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: 
 	});
 }
 
-type Summary = { runSet: DBRunSet, averages: { [benchmark: string]: number } };
+export type BenchmarkValues = { [benchmark: string]: number };
+type Summary = { runSet: DBRunSet, averages: BenchmarkValues, variances: BenchmarkValues };
 
 export function fetchSummaries (machine: DBObject, config: DBObject, metric: string, success: (results: Array<Summary>) => void, error: ErrorFunc): void {
 	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),

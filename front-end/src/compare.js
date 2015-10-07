@@ -9,7 +9,7 @@ import * as Database from './database.js';
 import React from 'react';
 
 class Controller {
-	startupRunSetIds: Array<string>;
+	startupRunSetIds: Array<number>;
 	runSetCounts: Array<Object> | void;
 	runSets: Array<Database.DBRunSet> | void;
 
@@ -160,7 +160,7 @@ class RunSetSelectorList extends React.Component {
 }
 
 function start (startupRunSetIds) {
-	var controller = new Controller (startupRunSetIds);
+	var controller = new Controller (startupRunSetIds.map (id => { if (typeof id === "string") return parseInt (id); else return id; }));
 	controller.loadAsync ();
 }
 

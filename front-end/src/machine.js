@@ -7,7 +7,7 @@ import * as Database from './database.js';
 import React from 'react';
 
 class Controller {
-	machineName: string | void;
+	machineName: string;
 	machine: Database.DBObject | void;
 
 	constructor (machineName) {

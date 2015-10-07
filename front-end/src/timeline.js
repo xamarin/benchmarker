@@ -11,7 +11,7 @@ import React from 'react';
 class Controller {
 	initialSelectionNames: { machineName: string | void, configName: string | void, metric: string | void };
 	initialZoom: boolean;
-	runSetCounts: Array<Object>;
+	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
 
 	constructor (machineName, configName, metric) {
@@ -51,10 +51,16 @@ class Controller {
 	}
 
 	allDataLoaded () {
-		var selection = Database.findRunSetCount (this.runSetCounts,
-			this.initialSelectionNames.machineName,
-			this.initialSelectionNames.configName,
-			this.initialSelectionNames.metric);
+		var selection;
+		if (this.initialSelectionNames.machineName !== undefined &&
+				this.initialSelectionNames.configName !== undefined &&
+				this.initialSelectionNames.metric !== undefined &&
+				this.runSetCounts !== undefined) {
+			selection = Database.findRunSetCount (this.runSetCounts,
+				this.initialSelectionNames.machineName,
+				this.initialSelectionNames.configName,
+				this.initialSelectionNames.metric);
+		}
 		if (selection === undefined)
 			selection = { machine: undefined, config: undefined, metric: undefined };
 
@@ -290,9 +296,7 @@ function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) {
 	return tooltip;
 }
 
-type BenchmarkValueArray = Array<{ [benchmark: string]: number }>;
-
-function runSetIsBroken (runSet: Database.DBObject, averages: BenchmarkValueArray) {
+function runSetIsBroken (runSet: Database.DBObject, averages: Database.BenchmarkValues) {
 	var timedOutBenchmarks = runSet.get ('timedOutBenchmarks') || [];
 	var crashedBenchmarks = runSet.get ('crashedBenchmarks') || [];
 	var timedOutOrCrashedBenchmarks = timedOutBenchmarks.concat (crashedBenchmarks);
@@ -310,7 +314,7 @@ type TimelineChartProps = {
 	config: Database.DBObject;
 	metric: string,
 	benchmark: string;
-	sortedResults: Array<{ runSet: Database.DBRunSet, averages: BenchmarkValueArray, variances: BenchmarkValueArray }>;
+	sortedResults: Array<{ runSet: Database.DBRunSet, averages: Database.BenchmarkValues, variances: Database.BenchmarkValues }>;
 	zoomInterval: void | {start: number, end: number};
 	runSetSelected: (runSet: Database.DBObject) => void;
 };

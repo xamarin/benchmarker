@@ -10,7 +10,7 @@ import React from 'react';
 import GitHub from 'github-api';
 
 class Controller {
-	pullRequestId: string | void;
+	pullRequestId: string;
 	dbRow: Object | void;
 
 	constructor (pullRequestId) {
@@ -30,6 +30,8 @@ class Controller {
 	allDataLoaded () {
         if (this.pullRequestId === undefined)
             return;
+		if (this.dbRow === undefined)
+			return;
 
         var prRunSet = new Database.DBObject (this.dbRow, 'prrs_');
         var pullRequest = new Database.DBObject (this.dbRow, 'pr_');

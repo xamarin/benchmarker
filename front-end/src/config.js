@@ -7,7 +7,7 @@ import * as Database from './database.js';
 import React from 'react';
 
 class Controller {
-	configName: string | void;
+	configName: string;
 	config: Database.DBObject | void;
 
 	constructor (configName) {
