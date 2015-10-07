@@ -256,6 +256,7 @@ function formatPercentage (x: number) : string {
 
 type ComparisonAMChartProps = {
     runSets: Array<Database.DBRunSet>;
+	metric: string;
 	runSetLabels: Array<string> | void;
 	graphName: string;
     controller: xp_common.Controller;
@@ -282,7 +283,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
     invalidateState (runSets: Array<Database.DBRunSet>) : void {
         this.resultsByIndex = [];
 
-		Database.fetch ('results?metric=eq.time&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','),
+		Database.fetch ('results?metric=eq.' + this.props.metric + '&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','),
 			objs => {
 				if (runSets !== this.props.runSets)
 					return;

@@ -39,6 +39,7 @@ class Controller {
 
         var runSets = [baselineRunSet, prRunSet];
 
+		// FIXME: metric
 		React.render (
 			<div className="PullRequestPage">
 				<xp_common.Navigation currentPage="" />
@@ -60,6 +61,7 @@ class Controller {
                         graphName="comparisonChart"
                         controller={this}
                         runSets={runSets}
+						metric="time"
                         runSetLabels={["Baseline", "Pull request"]} />
 					<div style={{ clear: 'both' }}></div>
 					<h2>Pull Request Run Set</h2>

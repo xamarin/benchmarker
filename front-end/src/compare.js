@@ -92,10 +92,12 @@ class Page extends React.Component {
 
 		var chart;
 		if (runSets.length > 1) {
+			// FIXME: metric
 			chart = <xp_charts.ComparisonAMChart
 				graphName="comparisonChart"
 				controller={this.props.controller}
-				runSets={runSets} />;
+				runSets={runSets}
+				metric="time" />;
 		} else {
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 		}

@@ -183,8 +183,10 @@ class Page extends React.Component {
 
 		var comparisonChart;
 		if (runSets.length > 1) {
-			comparisonChart = <xp_charts.ComparisonAMChart graphName="comparisonChart"
-				runSets={runSets} />;
+			comparisonChart = <xp_charts.ComparisonAMChart
+				graphName="comparisonChart"
+				runSets={runSets}
+				metric={this.state.metric} />;
 		}
 
 		var runSetSummaries;
