@@ -18,12 +18,12 @@ tools/*/obj
 tools/*/bin
 tools/*/*/obj
 tools/*/*/bin
-tools/benchmarkerCredentials
 tools/AndroidAgent.UITests/params.json
 
 front-end/build
 front-end/node_modules
 
+benchmarkerCredentials
 wrench-results
 wrench-results.old
 results-test
