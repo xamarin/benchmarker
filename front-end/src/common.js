@@ -44,7 +44,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 		var envVarsList = envVars.length === 0
 			? <span className="diagnostic">No environment variables specified.</span>
 			: <ul>
-			{envVars.map (name => <li><code>{name + "=" + envVarsMap [name]}</code></li>)}
+			{envVars.map ((name, i) => <li key={"var" + i.toString ()}><code>{name + "=" + envVarsMap [name]}</code></li>)}
 		</ul>;
 		var options = config.get ('monoOptions') || [];
 		var optionsList = options.length === 0
@@ -185,7 +185,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		}
 
 		function renderGroup (machines, machineName) {
-			return <optgroup label={machineName}>
+			return <optgroup key={"group" + machineName} label={machineName}>
 				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (rsc => renderRSC.call (this, rsc, undefined))}
 			</optgroup>;
 		}
@@ -426,17 +426,17 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				anchor.href = url;
 
 				var shortUrl = <span>{anchor.hostname}/&hellip;{anchor.pathname.substring (anchor.pathname.lastIndexOf ('/'))}</span>;
-				logLinks.push(<li><a href={url}><code>{key}</code> ({shortUrl})</a></li>);
+				logLinks.push(<li key={"link" + key}><a href={url}><code>{key}</code> ({shortUrl})</a></li>);
 			}
 			if (logLinks.length === 0) {
 				logLinkList = undefined;
 			} else {
-				logLinkList = <ul>{logLinks}</ul>;
+				logLinkList = <ul key="logLinks">{logLinks}</ul>;
 			}
 		}
 
 		if (this.state.results === undefined) {
-			table = <div className='DiagnosticBlock'>Loading run data&hellip;</div>;
+			table = <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
 			var resultsByBenchmark = {};
 			var metricsDict = {};
@@ -458,13 +458,13 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			metrics.sort ();
 			var tableHeaders = [];
 			metrics.forEach (m => {
-				tableHeaders.push (<th>{descriptiveMetricName (m)}</th>);
-				tableHeaders.push (<th>Bias due to Outliers</th>);
+				tableHeaders.push (<th key={"metricValues" + m}>{descriptiveMetricName (m)}</th>);
+				tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
 			});
-			table = <table>
-				<tr>
-					<th>Benchmark</th>
-					<th>Status</th>
+			table = <table key="table">
+				<tr key="header">
+					<th key="name">Benchmark</th>
+					<th key="status">Status</th>
 					{tableHeaders}
 				</tr>
 				{benchmarkNames.map (name => {
@@ -472,11 +472,11 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					var disabled = result.disabled;
 					var statusIcons = [];
 					if (Array.isArray (crashedBenchmarks) && crashedBenchmarks.indexOf (name) !== -1)
-						statusIcons.push (<span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
+						statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
 					if (Array.isArray (timedOutBenchmarks) && timedOutBenchmarks.indexOf (name) !== -1)
-						statusIcons.push (<span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
+						statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
 					if (statusIcons.length === 0)
-						statusIcons.push (<span className="statusIcon good fa fa-check" title="Good"></span>);
+						statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
 
 					var metricColumns = [];
 					metrics.forEach (m => {
@@ -484,17 +484,17 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 						dataPoints.sort ();
 						var dataPointsString = dataPoints.join (", ");
 						var variance = Outliers.outlierVariance (dataPoints);
-						metricColumns.push (<td>{dataPointsString}</td>);
-						metricColumns.push (<td>
+						metricColumns.push (<td key={"metricValues" + m}>{dataPointsString}</td>);
+						metricColumns.push (<td key={"metricDegree" + m}>
 								<div className="degree" title={variance}>
 									<div className={variance}>&nbsp;</div>
 								</div>
 							</td>);
 					});
 
-					return <tr className={disabled ? 'disabled' : ''}>
-						<td><code>{name}</code>{disabled ? ' (disabled)' : ''}</td>
-						<td className="statusColumn">{statusIcons}</td>
+					return <tr key={"benchmark" + name} className={disabled ? 'disabled' : ''}>
+						<td key="name"><code>{name}</code>{disabled ? ' (disabled)' : ''}</td>
+						<td key="status" className="statusColumn">{statusIcons}</td>
 						{metricColumns}
 					</tr>;
 				})}
@@ -505,7 +505,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var commitLink = githubCommitLink (commitHash);
 
 		return <div className="Description">
-			<h1><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
+			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
 			{table}
 		</div>;

@@ -201,7 +201,7 @@ class Page extends React.Component {
 			var divs = runSetIndexes.map (i => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
-				return <RunSetSummary runSet={rs} previousRunSet={prev} />;
+				return <RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
 			});
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
@@ -256,8 +256,8 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryPro
 			var prevHash = prev.commit.get ('hash');
 			var prevLink = xp_common.githubCommitLink (prevHash);
 			var compareLink = xp_common.githubCompareLink (prevHash, commitHash);
-			prevItems = [<dt>Previous</dt>,
-				<dd><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
+			prevItems = [<dt key="previousName">Previous</dt>,
+				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
 		}
 
 		var runSetLink = "runset.html#id=" + runSet.get ('id');

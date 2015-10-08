@@ -143,7 +143,7 @@ class RunSetSelectorList extends React.Component {
 			var runSet = selection.runSet;
 			var machine = selection.machine;
 			var config = selection.config;
-			return <section>
+			return <section key={"selector" + index.toString ()}>
 				<xp_common.RunSetSelector
 					runSetCounts={this.props.runSetCounts}
 					selection={{runSet: runSet, machine: machine, config: config}}
