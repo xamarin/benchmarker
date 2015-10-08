@@ -1,6 +1,5 @@
 buildbot.tac
 state.sqlite
-credentials.py
 *.pyc
 http.log
 twistd.log*

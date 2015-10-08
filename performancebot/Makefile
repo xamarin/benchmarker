@@ -8,7 +8,7 @@ endif
 
 PBOTMASTERROOT:=/ebs/pbot-master/performancebot
 REMOTEHOST=ubuntu@$(EC2PBOTMASTERIP)
-PYTHONFILES:=master.cfg jenkinspoller.py monofactory.py monosteps.py slack.py googleoauth2.py constants.py checkretry.py wrenchpoller.py
+PYTHONFILES:=master.cfg jenkinspoller.py monofactory.py monosteps.py slack.py googleoauth2.py constants.py checkretry.py wrenchpoller.py credentials.py
 
 # check that there is only a given number of docker containers are running, that ensures we're interacting with the correct one.
 CONTAINERCHECK=check() { test `ssh $(REMOTEHOST) "docker ps | grep pbot-master | awk '{print $$1}' | wc -l"` -eq $$1 || (echo "more than $$1 container is running on the ec2 instance"; exit 1) }; check
@@ -41,8 +41,13 @@ ec2-follow-log:
 	@$(CONTAINERCHECK) 1
 	ssh $(REMOTEHOST) "tail -f $(PBOTMASTERROOT)/twistd.log | stdbuf -i0 -o0 -e0 grep -v -E 'HTTP.*ClientFactory'"
 
+benchmarkerCredentials: credentials.py FORCE
+	(cd ../tools/Accreditize && xbuild /p:Configuration=Debug)
+	python $< ../tools/Accreditize/bin/Debug/Accreditize.exe
+FORCE:
+
 # deploy buildbot configuration from this working directory and reconfig buildbot instance; if reconfig fails, the old configuration is restored
-ec2-deploy: $(PYTHONFILES) credentials.py forcec0state.sh benchmarkerCredentials public_html templates
+ec2-deploy: $(PYTHONFILES) forcec0state.sh benchmarkerCredentials public_html templates
 	@$(CONTAINERCHECK) 1
 	@ssh $(REMOTEHOST) 'mkdir -p /ebs/tmp'
 	# copy files.
