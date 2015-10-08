@@ -27,8 +27,6 @@ namespace Benchmarker
 				} catch (Exception) {
 					Logging.GetLogging ().Info ("InitializeParse: something fishy");
 				}
-			} else {
-				Logging.GetLogging ().Info ("InitializeParse: nope");
 			}
 		}
 
@@ -85,6 +83,8 @@ namespace Benchmarker
 
 			// Accredit
 			InitializeParse ("RAePvLdkN2IHQNZRckrVXzeshpFZTgYif8qu5zuh", "giWKLzMOZa2nrgBjC9YPRF238CTVTpNsMlsIJkr3");
+
+			Logging.GetLogging ().InfoFormat ("Accredit: requesting credentials for service {0}", serviceName);
 
 			string key = Guid.NewGuid ().ToString ();
 			string secret = Guid.NewGuid ().ToString ();
