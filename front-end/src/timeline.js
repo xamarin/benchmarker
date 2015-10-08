@@ -112,7 +112,8 @@ class Page extends React.Component {
 
 	runSetSelected (runSet) {
 		var index = xp_utils.findIndex (this.state.sortedResults, r => r.runSet === runSet);
-		this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false});
+		if (this.state.runSetIndexes.indexOf (index) < 0)
+			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false});
 	}
 
 	allBenchmarksLoaded (names) {
