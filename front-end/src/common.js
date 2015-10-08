@@ -525,26 +525,40 @@ type NavigationProps = {
 }
 
 export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
+	openDeployment () {
+		var lastSlashIndex = window.location.href.search ("/[^/]+$");
+		var path = window.location.href.substring (lastSlashIndex + 1);
+		var deploymentLink = "http://xamarin.github.io/benchmarker/front-end/" + path;
+		window.open (deploymentLink);
+		return false;
+	}
 
 	render () : Object {
+		var deploymentLink;
+		if (window.location.protocol === 'file:') {
+			deploymentLink =
+				<a title="Go to the deployed page"
+					className="deselected deployment"
+					onClick={this.openDeployment.bind (this)}>Deployment</a>
+		}
+
 		var classFor = (page) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
 		return <div className="Navigation">
-			<ul>
-				<li
-					title="View a timeline of all benchmarks"
-					className={classFor ('timeline')}>
-					<a href="index.html">Timeline</a>
-				</li>
-				<li
-					title="Compare the results of multiple run sets"
-					className={classFor ('compare')}>
-					<a href="compare.html">Compare</a>
-				</li>
-			</ul>
+			<div className="NavigationSection" />
+			<div className="NavigationSection Center" >
+				<a title="View a timeline of all benchmarks"
+					className={classFor ('timeline')}
+					href="index.html">Timeline</a>
+				<a title="Compare the results of multiple run sets"
+					className={classFor ('compare')}
+					href="compare.html">Compare</a>
+			</div>
+			<div className="NavigationSection Right" >
+				{deploymentLink}
+			</div>
 		</div>;
 	}
-
 }
 
 export function parseLocationHashForDict (items: Array<string>, startFunc: (keyMap: Object) => void) {

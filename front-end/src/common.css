@@ -171,34 +171,38 @@ th {
 .Navigation {
 	background: #2C3E50;
 	margin: 0 0 16px 0;
+	display: flex;
+	flex-direction: row;
 }
 
-.Navigation > ul {
-	width: 50%;
-	height: 100%;
-	margin: 0 auto;
-	list-style-type: none;
-	text-align: center;
+.Navigation > .NavigationSection {
+	display: flex;
+	flex: 1 1 auto;
+	flex-basis: 0;
+}
+
+.Navigation > .Center {
+	justify-content: center;
+}
+
+.Navigation > .Right {
+	justify-content: flex-end;
+}
+
+.Navigation > * > a {
 	padding: 0;
-}
-
-.Navigation > ul > li {
-	display: inline-block;
-}
-
-.Navigation > ul > li > a {
+	display: flex;
 	color: #BDC3C7;
-	display: inline-block;
 	padding: 16px;
 	text-decoration: none;
 }
 
-.Navigation > ul > li.selected > a {
+.Navigation > * > a.selected {
 	background: #FFFFFF;
 	color: #2C3E50;
 }
 
-.Navigation > ul > li.deselected > a:focus, .Navigation > ul > li.deselected > a:hover {
+.Navigation > * > a.deselected:focus, .Navigation > * > a.deselected:hover {
 	color: #FFFFFF;
 	background: #3A526A;
 }
