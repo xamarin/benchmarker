@@ -55,6 +55,10 @@ def slave_github():
     pass
 slave_github.accredit_key = 'gitHub'
 
+def slave_slack():
+    pass
+slave_slack.accredit_key = 'regressionSlack'
+
 
 
 
