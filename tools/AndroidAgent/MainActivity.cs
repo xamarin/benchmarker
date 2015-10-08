@@ -123,7 +123,7 @@ namespace AndroidAgent
 
 			PrintCommit ();
 			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
-			Logging.GetLogging ().InfoFormat ("Becnhmarker | configname \"{0}\"", "default");
+			Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"", "default");
 			new Task (() => {
 				try {
 					for (var i = 0; i < (ITERATIONS + TRY_RUNS); i++) {
