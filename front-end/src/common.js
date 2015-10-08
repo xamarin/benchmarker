@@ -525,7 +525,7 @@ type NavigationProps = {
 }
 
 export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
-	openDeployment () {
+	openDeployment () : boolean {
 		var lastSlashIndex = window.location.href.search ("/[^/]+$");
 		var path = window.location.href.substring (lastSlashIndex + 1);
 		var deploymentLink = "http://xamarin.github.io/benchmarker/front-end/" + path;
