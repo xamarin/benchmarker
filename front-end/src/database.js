@@ -49,7 +49,7 @@ export function fetch (query: string, success: (results: Array<Object>) => void,
 			return;
 		}
 
-        success (JSON.parse (request.responseText));
+		success (JSON.parse (request.responseText));
 	};
 
 	request.open('GET', url, true);
@@ -173,12 +173,13 @@ export function fetchParseObjectIds (parseIds: Array<string>, success: (results:
 	fetch ('parseobjectid?parseid=in.' + parseIds.join (','),
 		objs => {
 			var ids = [];
-			for (var i = 0; i < objs.length; ++i) {
+			var i;
+			for (i = 0; i < objs.length; ++i) {
 				var o = objs [i];
 				var j = xp_utils.findIndex (parseIds, id => id === o ['parseid']);
 				ids [j] = o ['integerkey'] || o ['varcharkey'];
 			}
-			for (var i = 0; i < parseIds.length; ++i) {
+			for (i = 0; i < parseIds.length; ++i) {
 				if (!ids [i]) {
 					error ("Not all Parse IDs found.");
 					return;

@@ -293,7 +293,7 @@ function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) {
 	if (includeBroken) {
 		var timedOutBenchmarks = joinBenchmarkNames (runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
 		var crashedBenchmarks = joinBenchmarkNames (runSet.get ('crashedBenchmarks'), "\nCrashed: ");
-	 	tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
+		tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
 	}
 	return tooltip;
 }

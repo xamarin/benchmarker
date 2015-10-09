@@ -1,6 +1,6 @@
 /* @flow */
 
-/* global AmCharts */
+/* global AmCharts, AmChart */
 
 "use strict";
 
@@ -15,8 +15,9 @@ function calculateRunsRange (data: Array<number>): Range {
 	var min: number | void;
 	var max: number | void;
 	var sum = 0;
+	var v;
 	for (var i = 0; i < data.length; ++i) {
-		var v = data [i];
+		v = data [i];
 		if (min === undefined || v < min)
 			min = v;
 		if (max === undefined || v > max)
@@ -24,13 +25,13 @@ function calculateRunsRange (data: Array<number>): Range {
 		sum += v;
 	}
 	var mean = sum / data.length;
-    sum = 0;
-    for (i = 0; i < data.length; ++i) {
-        var v = data [i];
-        var diff = v - mean;
-        sum += diff * diff;
-    }
-    var stddev = Math.sqrt (sum) / data.length;
+	sum = 0;
+	for (i = 0; i < data.length; ++i) {
+		v = data [i];
+		var diff = v - mean;
+		sum += diff * diff;
+	}
+	var stddev = Math.sqrt (sum) / data.length;
 	if (min === undefined || max === undefined)
 		min = max = 0;
 	return [min, mean - stddev, mean + stddev, max];
@@ -48,45 +49,45 @@ type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
 function dataArrayForResults (resultsByIndex : Array<{[benchmark: string]: Object}>): (DataArray | void) {
-    for (var i = 0; i < resultsByIndex.length; ++i) {
-        if (resultsByIndex [i] === undefined)
-            return undefined;
-    }
+	for (var i = 0; i < resultsByIndex.length; ++i) {
+		if (resultsByIndex [i] === undefined)
+			return undefined;
+	}
 
-    var commonBenchmarkNames;
+	var commonBenchmarkNames;
 
-    for (i = 0; i < resultsByIndex.length; ++i) {
-        var results = resultsByIndex [i];
-        var benchmarkNames = Object.keys (results);
-        if (commonBenchmarkNames === undefined) {
-            commonBenchmarkNames = benchmarkNames;
-            continue;
-        }
-        commonBenchmarkNames = xp_utils.intersectArray (benchmarkNames, commonBenchmarkNames);
-    }
+	for (i = 0; i < resultsByIndex.length; ++i) {
+		var results = resultsByIndex [i];
+		var benchmarkNames = Object.keys (results);
+		if (commonBenchmarkNames === undefined) {
+			commonBenchmarkNames = benchmarkNames;
+			continue;
+		}
+		commonBenchmarkNames = xp_utils.intersectArray (benchmarkNames, commonBenchmarkNames);
+	}
 
-    if (commonBenchmarkNames === undefined || commonBenchmarkNames.length === 0)
-        return;
+	if (commonBenchmarkNames === undefined || commonBenchmarkNames.length === 0)
+		return;
 
 	commonBenchmarkNames.sort ();
 
-    var dataArray = [];
+	var dataArray = [];
 
-    for (i = 0; i < commonBenchmarkNames.length; ++i) {
-        var benchmarkName = commonBenchmarkNames [i];
-        var row = [benchmarkName, []];
-        var mean = undefined;
-        for (var j = 0; j < resultsByIndex.length; ++j) {
+	for (i = 0; i < commonBenchmarkNames.length; ++i) {
+		var benchmarkName = commonBenchmarkNames [i];
+		var row = [benchmarkName, []];
+		var mean = undefined;
+		for (var j = 0; j < resultsByIndex.length; ++j) {
 			var data = resultsByIndex [j][benchmarkName]['results'];
-            var range = calculateRunsRange (data);
-            if (mean === undefined)
+			var range = calculateRunsRange (data);
+			if (mean === undefined)
 				mean = rangeMean (range);
 			row [1].push (normalizeRange (mean, range));
-        }
-        dataArray.push (row);
-    }
+		}
+		dataArray.push (row);
+	}
 
-    return dataArray;
+	return dataArray;
 }
 
 function rangeInBenchmarkRow (row: BenchmarkRow, runSetIndex: number) : Range {
@@ -126,52 +127,52 @@ function sortDataArrayByDifference (dataArray: DataArray) : DataArray {
 }
 
 function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
-    var commitHashes = runSets.map (rs => rs.commit.get ('hash'));
-    var commitHistogram = xp_utils.histogramOfStrings (commitHashes);
+	var commitHashes = runSets.map (rs => rs.commit.get ('hash'));
+	var commitHistogram = xp_utils.histogramOfStrings (commitHashes);
 
-    var includeCommit = commitHistogram.length > 1;
+	var includeCommit = commitHistogram.length > 1;
 
-    var includeStartedAt = false;
-    for (var i = 0; i < commitHistogram.length; ++i) {
-        if (commitHistogram [i] [1] > 1)
-            includeStartedAt = true;
-    }
+	var includeStartedAt = false;
+	for (var i = 0; i < commitHistogram.length; ++i) {
+		if (commitHistogram [i] [1] > 1)
+			includeStartedAt = true;
+	}
 
-    var machines = runSets.map (rs => rs.machine.get ('name'));
-    var includeMachine = xp_utils.uniqStringArray (machines).length > 1;
+	var machines = runSets.map (rs => rs.machine.get ('name'));
+	var includeMachine = xp_utils.uniqStringArray (machines).length > 1;
 
-    var configs = runSets.map (rs => rs.config.get ('name'));
-    var includeConfigs = xp_utils.uniqStringArray (configs).length > 1;
+	var configs = runSets.map (rs => rs.config.get ('name'));
+	var includeConfigs = xp_utils.uniqStringArray (configs).length > 1;
 
-    var formatRunSet = runSet => {
-        var str = "";
-        if (includeCommit) {
+	var formatRunSet = runSet => {
+		var str = "";
+		if (includeCommit) {
 			var commit = runSet.commit;
-            str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
-        }
-        if (includeMachine) {
+			str = commit.get ('hash') + " (" + commit.get ('commitDate') + ")";
+		}
+		if (includeMachine) {
 			var machine = runSet.machine;
-            if (str !== "")
-                str = str + "\n";
-            str = str + machine.get ('name');
-        }
-        if (includeConfigs) {
-            var config = runSet.config;
-            if (includeMachine)
-                str = str + " / ";
-            else if (str !== "")
-                str = str + "\n";
-            str = str + config.get ('name');
-        }
-        if (includeStartedAt) {
-            if (str !== "")
-                str = str + "\n";
-            str = str + runSet.get ('startedAt');
-        }
-        return str;
-    };
+			if (str !== "")
+				str = str + "\n";
+			str = str + machine.get ('name');
+		}
+		if (includeConfigs) {
+			var config = runSet.config;
+			if (includeMachine)
+				str = str + " / ";
+			else if (str !== "")
+				str = str + "\n";
+			str = str + config.get ('name');
+		}
+		if (includeStartedAt) {
+			if (str !== "")
+				str = str + "\n";
+			str = str + runSet.get ('startedAt');
+		}
+		return str;
+	};
 
-    return runSets.map (formatRunSet);
+	return runSets.map (formatRunSet);
 }
 
 type AMChartProps = {
@@ -230,28 +231,28 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 				this.chart.addListener (
 					'clickGraphItem',
 					e => this.props.selectListener (e.item.dataContext.dataItem));
-            if (this.props.initFunc !== undefined)
-                this.props.initFunc (this.chart);
+			if (this.props.initFunc !== undefined)
+				this.props.initFunc (this.chart);
 		} else {
-            this.chart.graphs = xp_utils.deepClone (this.props.options.graphs);
-            this.chart.dataProvider = this.props.options.dataProvider;
+			this.chart.graphs = xp_utils.deepClone (this.props.options.graphs);
+			this.chart.dataProvider = this.props.options.dataProvider;
 			var valueAxis = this.props.options.valueAxes [0];
 			if (valueAxis.minimum !== undefined) {
-	            this.chart.valueAxes [0].minimum = valueAxis.minimum;
-	            this.chart.valueAxes [0].maximum = valueAxis.maximum;
+				this.chart.valueAxes [0].minimum = valueAxis.minimum;
+				this.chart.valueAxes [0].maximum = valueAxis.maximum;
 			}
 			if (valueAxis.guides !== undefined)
 				this.chart.valueAxes [0].guides = valueAxis.guides;
 			this.chart.valueAxes [0].title = valueAxis.title;
 			this.chart.validateData ();
-            if (this.props.initFunc !== undefined)
-                this.props.initFunc (this.chart);
+			if (this.props.initFunc !== undefined)
+				this.props.initFunc (this.chart);
 		}
 	}
 }
 
 function formatPercentage (x: number) : string {
-    return (x * 100).toPrecision (4) + "%";
+	return (x * 100).toPrecision (4) + "%";
 }
 
 type ComparisonAMChartProps = {
@@ -270,9 +271,9 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 	guides: Array<Object>;
 
     constructor (props : ComparisonAMChartProps) {
-        super (props);
+		super (props);
 
-        this.invalidateState (props.runSets);
+		this.invalidateState (props.runSets);
     }
 
     componentWillReceiveProps (nextProps : ComparisonAMChartProps) {
@@ -288,18 +289,18 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 					return;
 
 				var runSetIndexById = {};
-	            runSets.forEach ((rs, i) => {
-	                runSetIndexById [rs.get ('id')] = i;
-	            });
+				runSets.forEach ((rs, i) => {
+					runSetIndexById [rs.get ('id')] = i;
+				});
 
-	            objs.forEach (r => {
-	                var i = runSetIndexById [r ['runset']];
-	                if (this.resultsByIndex [i] === undefined)
-	                    this.resultsByIndex [i] = {};
-	                this.resultsByIndex [i][r ['benchmark']] = r;
-	            });
+				objs.forEach (r => {
+					var i = runSetIndexById [r ['runset']];
+					if (this.resultsByIndex [i] === undefined)
+						this.resultsByIndex [i] = {};
+					this.resultsByIndex [i][r ['benchmark']] = r;
+				});
 
-	            this.runsLoaded ();
+				this.runsLoaded ();
 			}, error => {
 				alert ("error loading results: " + error.toString ());
 			});
@@ -320,7 +321,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
         var labels = this.props.runSetLabels || runSetLabels (this.props.runSets);
 
-        for (var i = 0; i < this.props.runSets.length; ++i) {
+        for (i = 0; i < this.props.runSets.length; ++i) {
 			var label = labels [i];
 			var avg = runSetMean (dataArray, i);
             var stdDevBar : Object = {

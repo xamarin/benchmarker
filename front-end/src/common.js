@@ -128,7 +128,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			if (this.props.includeMetric)
 				s = s + '+' + metric;
 			return s;
-		}
+		};
 
 		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
 
@@ -166,7 +166,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				displayString = entry.config.get ('name');
 				if (this.props.includeMetric)
 					displayString = displayString + " / " + entry.metric;
-				}
+			}
 			displayString = displayString + " (" + entry.count + ")";
 			return <option
 				value={string}
@@ -181,7 +181,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 
 			return <optgroup label="Featured">
 				{featuredRSCs.map (rsc => renderRSC.call (this, rsc, rsc.displayString))}
-			</optgroup>
+			</optgroup>;
 		}
 
 		function renderGroup (machines, machineName) {
@@ -214,15 +214,15 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	}
 
 	openConfigDescription () {
-        if (this.props.config === undefined)
-            return;
-        window.open ('config.html#name=' + this.props.config.get ('name'))
+		if (this.props.config === undefined)
+			return;
+		window.open ('config.html#name=' + this.props.config.get ('name'));
 	}
 
 	openMachineDescription () {
-        if (this.props.machine === undefined)
-            return;
-        window.open ('machine.html#name=' + this.props.machine.get ('name'))
+		if (this.props.machine === undefined)
+			return;
+		window.open ('machine.html#name=' + this.props.machine.get ('name'));
 	}
 
 	combinationSelected (event: Object) {
@@ -252,7 +252,6 @@ type RunSetSelectorState = {
 };
 
 export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, RunSetSelectorState> {
-
 	constructor (props: RunSetSelectorProps) {
 		super (props);
 		this.state = { runSets: undefined };
@@ -295,7 +294,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	runSetSelected (event: Object) {
 		if (this.state.runSets === undefined)
 			return;
-		var selection = this.props.selection;
 		var runSetId = event.target.value;
 		var runSet = Database.findRunSet (this.state.runSets, runSetId);
 		if (runSet !== undefined)
@@ -313,7 +311,6 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		var runSets = this.state.runSets;
 
 		var runSetId = undefined;
-		var filteredRunSets = undefined;
 
 		if (selection.runSet !== undefined)
 			runSetId = selection.runSet.get ('id');
@@ -363,14 +360,14 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 function descriptiveMetricName (metric: string) : string {
 	switch (metric) {
-		case 'time':
-			return "Elapsed Times (ms)";
-		case 'instructions':
-			return "Instruction count";
-		case 'memory-integral':
-			return "Memory usage (MB * Giga Instructions)";
-		default:
-			return "Unknown metric";
+	case 'time':
+		return "Elapsed Times (ms)";
+	case 'instructions':
+		return "Instruction count";
+	case 'memory-integral':
+		return "Memory usage (MB * Giga Instructions)";
+	default:
+		return "Unknown metric";
 	}
 }
 
@@ -412,8 +409,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var logURLs = runSet.get ('logURLs');
 		var logLinks = [];
 		var logLinkList;
-		var timedOutBenchmarks;
-		var crashedBenchmarks;
 		var table;
 
 		if (buildURL !== undefined)
@@ -542,7 +537,7 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 			deploymentLink =
 				<a title="Go to the deployed page"
 					className="deselected deployment"
-					onClick={this.openDeployment.bind (this)}>Deployment</a>
+					onClick={this.openDeployment.bind (this)}>Deployment</a>;
 		}
 
 		var classFor = (page) =>
@@ -600,7 +595,7 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 		startFunc (keyMap);
 	}, error => {
 		alert ("Error: " + error.toString ());
-	})
+	});
 }
 
 export function setLocationForDict (dict: Object) {

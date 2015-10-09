@@ -48,7 +48,7 @@ function computeOutlierVariance (
 	var outlierVariance = function (x) {
 		var delta = n - x;
 		return (delta / n) * (variance - delta * sampledVariance);
-	}
+	};
 	var cMax = function (x) {
 		var k = mn - x;
 		var d = k * k;
@@ -57,7 +57,7 @@ function computeOutlierVariance (
 		var k1 = variance - n * sampledVariance + nd;
 		var det = k1 * k1 - 4 * sampledVariance * k0;
 		return Math.floor (-2 * k0 / (k1 + Math.sqrt (det)));
-	}
+	};
 	var result = minBy (outlierVariance, 1, minBy (cMax, 0, mgMin)) / variance;
 	if (isNaN (result))
 		result = 0;
