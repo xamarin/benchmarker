@@ -11,7 +11,7 @@
         "lint": {
             "cmd": "make",
             "args": [ "lint" ],
-            "errorMatch": "^(?<file>[^:\\n]+): line (?<line>\\d+), col (?<col>\\d+), "
+            "errorMatch": "\n(?<file>[^:\\n]+): line (?<line>\\d+), col (?<col>\\d+), "
         }
     }
 }

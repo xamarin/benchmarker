@@ -5,29 +5,22 @@
     // I write for browser
     "browser": true,
     // in CommonJS
-    "node": true
+    "es6": true
   },
-  "plugins": ["react"],
+  "extends": "eslint:recommended",
+  "plugins": ["react" /*, "flowtype" */],
   "ecmaFeatures": {
-      "jsx": true
+      "jsx": true,
+      "modules": true,
+      "classed": true
   },
   // To give you an idea how to override rule options:
   "rules": {
-    "no-spaced-func": [0],
-    "quotes": [0],
-    "curly": [0],
-    "no-alert": [0],
-    "no-console": [0],
-    "no-use-before-define": [0],
-//    "no-extra-strict": [0],
-    "comma-dangle": [0],
-    "no-loop-func": [0],
-    "camelcase": [0],
-//    "no-unused-vars": [2, {"args": "none"}],
-    "no-undef-init": [0],
-    "global-strict": [0]
-//    "eol-last": [0],
-//    "no-mixed-requires": [0],
-//    "no-underscore-dangle": [0]
+      "semi": [2, "always"],
+      "indent": [0],
+      //"indent": [2, "tab"],
+      "linebreak-style": [2, "unix"],
+      "no-unused-vars": [0],
+      "no-console": [0]
   }
 }
