@@ -533,7 +533,7 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 
 	render () : Object {
 		var deploymentLink;
-		if (window.location.protocol === 'file:') {
+		if (process.env.NODE_ENV !== 'production') {
 			deploymentLink =
 				<a title="Go to the deployed page"
 					className="deselected deployment"
