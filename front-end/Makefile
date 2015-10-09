@@ -30,13 +30,16 @@ clean :
 build :
 	@mkdir -p build
 
+server :
+	@echo 'Connect to http://localhost:8080/webpack-dev-server/index.html'
+	@webpack-dev-server --devtool=inline-source-map
+
 # Pages
 
 define PAGE_RULE
 build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js build
-	@echo "Building page '$1'..."
-	@webpack --devtool=inline-source-map src/$1.js --output-file build/$1.js
-
+	@echo 'Packing webs...'
+	@webpack --optimize-minimize
 endef
 
 $(foreach PAGE,$(PAGES),$(eval $(call PAGE_RULE,$(PAGE))))

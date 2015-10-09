@@ -34,3 +34,11 @@ Each module registers a callback with the `start` function from `common.js`, whi
 [amCharts]: http://www.amcharts.com/
 [webpack]: http://webpack.github.io/
 [flow]: http://flowtype.org/
+
+## Development
+
+Run
+
+    make server
+
+and point your browser to the URL it reports.
