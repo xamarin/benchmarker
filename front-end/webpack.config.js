@@ -1,3 +1,5 @@
+var webpack = require ('webpack');
+
 module.exports = {
     entry: {
         compare: "./src/compare.js",
@@ -17,5 +19,12 @@ module.exports = {
     		  loader: 'babel',
     		},
         ]
-    }
+    },
+    plugins: [
+        new webpack.DefinePlugin({
+            'process.env': {
+                'NODE_ENV': '"production"'
+            }
+        })
+    ]
 };
