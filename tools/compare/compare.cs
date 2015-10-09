@@ -402,6 +402,8 @@ class Compare
 				PullRequestURL = pullRequestURL,
 				PullRequestBaselineRunSetId = pullRequestBaselineRunSetId
 			};
+
+			Console.Error.WriteLine ("Set start time to {0}", runSet.StartDateTime);
 		}
 
 		if (!justCreateRunSet) {
@@ -487,6 +489,7 @@ class Compare
 		}
 		
 		runSet.FinishDateTime = DateTime.Now;
+		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime, runSet.FinishDateTime);
 
 		Console.WriteLine ("uploading");
 		try {
