@@ -7,6 +7,7 @@ import * as xp_utils from './utils.js';
 import * as xp_charts from './charts.js';
 import * as Database from './database.js';
 import React from 'react';
+import ReactDOM from 'react-dom';
 import GitHub from 'github-api';
 
 class Controller {
@@ -42,7 +43,7 @@ class Controller {
         var runSets = [baselineRunSet, prRunSet];
 
 		// FIXME: metric
-		React.render (
+		ReactDOM.render (
 			<div className="PullRequestPage">
 				<xp_common.Navigation currentPage="" />
                 <article>

@@ -7,6 +7,7 @@ import * as xp_common from './common.js';
 import * as xp_charts from './charts.js';
 import * as Database from './database.js';
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 class Controller {
 	startupRunSetIds: Array<number>;
@@ -49,7 +50,7 @@ class Controller {
 		if (runSets === undefined)
 			runSets = [];
 
-		React.render (
+		ReactDOM.render (
 			React.createElement (
 				Page,
 				{

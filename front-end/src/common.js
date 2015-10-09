@@ -462,11 +462,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
 			});
 			table = <table key="table">
+				<thead>
 				<tr key="header">
 					<th key="name">Benchmark</th>
 					<th key="status">Status</th>
 					{tableHeaders}
 				</tr>
+				</thead>
+				<tbody>
 				{benchmarkNames.map (name => {
 					var result = resultsByBenchmark [name];
 					var disabled = result.disabled;
@@ -498,7 +501,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 						{metricColumns}
 					</tr>;
 				})}
-			</table>;
+			</tbody></table>;
 		}
 
 		var commitHash = runSet.get ('commit');

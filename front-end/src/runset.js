@@ -6,6 +6,7 @@ import * as xp_utils from './utils.js';
 import * as xp_common from './common.js';
 import * as Database from './database.js';
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 class Controller {
 	startupRunSetId: number | void;
@@ -56,7 +57,7 @@ class Controller {
 			};
 		}
 
-		React.render (
+		ReactDOM.render (
 			React.createElement (
 				Page,
 				{

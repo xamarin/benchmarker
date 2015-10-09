@@ -7,6 +7,7 @@ import * as xp_utils from './utils.js';
 import * as xp_charts from './charts.js';
 import * as Database from './database.js';
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 class Controller {
 	initialSelectionNames: { machineName: string | void, configName: string | void, metric: string | void };
@@ -64,7 +65,7 @@ class Controller {
 		if (selection === undefined)
 			selection = { machine: undefined, config: undefined, metric: undefined };
 
-		React.render (
+		ReactDOM.render (
 			React.createElement (
 				Page,
 				{

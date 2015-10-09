@@ -5,6 +5,7 @@
 import * as xp_common from './common.js';
 import * as Database from './database.js';
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 class Controller {
 	machineName: string;
@@ -25,7 +26,7 @@ class Controller {
 	}
 
 	allDataLoaded () {
-		React.render (
+		ReactDOM.render (
 			<div className="MachinePage">
 				<xp_common.Navigation currentPage="" />
 				<article>
