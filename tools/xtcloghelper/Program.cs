@@ -47,6 +47,7 @@ namespace xtclog
 					Console.WriteLine ("guid: \"{0}\"", guid);
 					ResultCollection results = AsyncContext.Run (() => xtcapi.TestRuns.Results (guid));
 					Console.WriteLine ("finished? " + results.Finished);
+					Console.WriteLine ("json: " + results.ToString ());
 				}
 				string text = System.IO.File.ReadAllText("/Users/bernhardu/work/benchmarker/tools/device-log-test.log");
 				var runSet = ProcessLog (text);

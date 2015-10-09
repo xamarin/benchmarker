@@ -465,6 +465,8 @@ namespace Xamarin.TestCloud.Api.V0
     {
         
         public List<Result> Results { get; set; }
+
+        public Logs Logs { get; set; }
         
         public bool Finished { get; set; }
         
@@ -472,11 +474,11 @@ namespace Xamarin.TestCloud.Api.V0
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("ResultCollection");
-            sb.AppendFormat("  {0}{1}\n", "Results".PadRight(20), "\n----\n" + String.Join(", \n", Results.Select(a => a.ToString()).ToArray()));
-            
-            sb.AppendFormat("  {0}{1}\n", "Finished".PadRight(20), Finished);
-            return sb.ToString();
+            sb.AppendLine ("ResultCollection");
+            sb.AppendFormat ("  {0}{1}\n", "Results".PadRight(20), "\n----\n" + String.Join(", \n", Results.Select(a => a.ToString()).ToArray()));
+            sb.AppendFormat ("  {0}{1}\n", "Logs".PadRight (20), Logs);
+            sb.AppendFormat ("  {0}{1}\n", "Finished".PadRight(20), Finished);
+            return sb.ToString ();
         }
     }
     // The result of one test on one device
@@ -503,6 +505,38 @@ namespace Xamarin.TestCloud.Api.V0
             return sb.ToString();
         }
     }
+
+	public class Logs
+	{
+		public List<Device> Devices { get; set; }
+		public string NunitXmlZip { get; set; }
+
+		public override string ToString ()
+		{
+			var sb = new StringBuilder ();
+			sb.AppendLine ("Logs");
+			sb.AppendFormat ("  {0}{1}\n", "Devices".PadRight(20), "\n----\n" + String.Join(", \n", Devices.Select(a => a.ToString()).ToArray()));
+			sb.AppendFormat ("  {0}{1}\n", "NunitXmlZip".PadRight (20), NunitXmlZip);
+			return sb.ToString ();
+		}
+	}
+
+	public class Device
+	{
+		public string DeviceConfigurationId { get; set; }
+		public string DeviceLog { get; set; }
+		public string TestLog { get; set; }
+
+		public override string ToString ()
+		{
+			var sb = new StringBuilder();
+			sb.AppendLine("Device");
+			sb.AppendFormat("  {0}{1}\n", "DeviceConfigurationId".PadRight(20), DeviceConfigurationId);
+			sb.AppendFormat("  {0}{1}\n", "DeviceLog".PadRight(20), DeviceLog);
+			sb.AppendFormat("  {0}{1}\n", "TestLog".PadRight(20), TestLog);
+			return sb.ToString();
+		}
+	}
     // A mobile app uploaded to Xamarin Test Cloud
     public class App
     {
