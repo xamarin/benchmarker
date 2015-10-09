@@ -790,12 +790,14 @@ namespace Xamarin.TestCloud.Api.V0
 
                 try {
                     var response = await client.SendAsync (request);
-
                     int statusCode = (int)response.StatusCode;
-
                     if (statusCode == 302) {
                         request = new HttpRequestMessage (httpMethod, new Uri (response.Headers.GetValues ("Location").FirstOrDefault ()));
-                        response = await client.SendAsync (request);
+                        using(var client2 = new HttpClient (httpClientHandler))
+                        {
+                            response = await client2.SendAsync (request);
+                            statusCode = (int) response.StatusCode;
+                        }
                     }
 
                     if (!(statusCode >= 200 && statusCode <= 299)) {
