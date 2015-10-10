@@ -1,5 +1,7 @@
 /* @flow */
 
+/* global process */
+
 "use strict";
 
 import * as xp_utils from './utils.js';
