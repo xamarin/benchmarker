@@ -53,8 +53,12 @@ namespace Benchmarker
 				using (var reader = cmd.ExecuteReader ()) {
 					while (reader.Read ()) {
 						var row = new PostgresRow ();
-						for (var i = 0; i < columns.Length; ++i)
-							row.Set (columns [i], NpgsqlTypes.NpgsqlDbType.Unknown, reader.GetValue (i));
+						for (var i = 0; i < columns.Length; ++i) {
+							var value = reader.GetValue (i);
+							if (value.GetType () == typeof(DateTime))
+								value = (object)TimeZoneInfo.ConvertTimeToUtc ((DateTime)value);
+							row.Set (columns [i], NpgsqlTypes.NpgsqlDbType.Unknown, value);
+						}
 						rows.Add (row);
 					}
 				}
