@@ -89,17 +89,18 @@ namespace xtclog
 
 		public const int BENCHMARK_ITERATIONS = 10;
 
-
-		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (string logUrl)
+		static bm.Commit ParseCommit (string log)
 		{
-			string log = DownloadLog (logUrl);
-
 			string regex_commit = @"I\/benchmarker\(\s*\d+\): Benchmarker \| commit ""(?<hash>[0-9A-Za-z]{40})"" on branch ""(?<branch>[\w\-_\.]+)""";
 			Match match_commit = Regex.Match (log, regex_commit);
 			var commit = new bm.Commit ();
 			commit.Hash = match_commit.Groups ["hash"].Value;
 			commit.Branch = match_commit.Groups ["branch"].Value;
+			return commit;
+		}
 
+		static bm.Machine ParseMachine (string log)
+		{
 			string regex_machine = @"I\/benchmarker\(\s*\d+\): Benchmarker \| hostname ""(?<hostname>[\w\s\.]+)"" architecture ""(?<architecture>[\w\-]+)""";
 			Match match_machine = Regex.Match (log, regex_machine);
 			var machine = new bm.Machine {
@@ -107,16 +108,46 @@ namespace xtclog
 				Architecture = match_machine.Groups ["architecture"].Value
 			};
 			Console.WriteLine ("machine name: " + machine.Name);
+			return machine;
+		}
 
+		static bm.Config ParseConfig (string log)
+		{
 			string regex_config = @"I\/benchmarker\(\s*\d+\): Benchmarker \| configname ""(?<name>[\w\-\.]+)""";
 			Match match_config = Regex.Match (log, regex_config);
-			var config = new bm.Config {
+			return new bm.Config {
 				Name = match_config.Groups ["name"].Value,
 				Mono = String.Empty,
 				MonoOptions = new string[0],
 				MonoEnvironmentVariables = new Dictionary<string, string> (),
 				Count = BENCHMARK_ITERATIONS
 			};
+		}
+
+		static Dictionary<string, List<TimeSpan>> ParseRuns (string log)
+		{
+			string regex_runs = @"I\/benchmarker\(\s*\d+\): Benchmarker \| Benchmark ""(?<name>[\w\-_\d]+)"": finished iteration (?<iteration>\d+), took (?<time>\d+)ms";
+			Dictionary<string, List<TimeSpan>> bench_results = new Dictionary<string, List<TimeSpan>> ();
+			foreach (Match match_run in Regex.Matches (log, regex_runs)) {
+				string name = match_run.Groups ["name"].Value;
+				string iteration = match_run.Groups ["iteration"].Value;
+				string time = match_run.Groups ["time"].Value;
+				if (!bench_results.ContainsKey (name)) {
+					bench_results.Add (name, new List<TimeSpan> ());
+				}
+				bench_results [name].Add (TimeSpan.FromMilliseconds (Int64.Parse (time)));
+				Console.WriteLine ("{0}, Iteration #{1}: {2}ms", name, iteration, time);
+			}
+			return bench_results;
+		}
+
+		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (string logUrl)
+		{
+			string log = DownloadLog (logUrl);
+
+			var commit = ParseCommit (log);
+			var machine = ParseMachine (log);
+			var config = ParseConfig (log);
 
 			var runSet = new bm.RunSet {
 				StartDateTime = DateTime.Now, // TODO: get more precise data from log
@@ -124,20 +155,8 @@ namespace xtclog
 				Commit = commit,
 				LogURL = logUrl
 			};
-			
-			string regex_runs = @"I\/benchmarker\(\s*\d+\): Benchmarker \| Benchmark ""(?<name>[\w\-_\d]+)"": finished iteration (?<iteration>\d+), took (?<time>\d+)ms";
-			Dictionary<string, List<TimeSpan>> bench_results = new Dictionary<string, List<TimeSpan>> ();
-			foreach (Match match_run in Regex.Matches(log, regex_runs)) {
-				string name = match_run.Groups ["name"].Value;
-				string iteration = match_run.Groups ["iteration"].Value;
-				string time = match_run.Groups ["time"].Value;
 
-				if (!bench_results.ContainsKey (name)) {
-					bench_results.Add (name, new List<TimeSpan> ());
-				}
-				bench_results [name].Add (TimeSpan.FromMilliseconds (Int64.Parse (time)));
-				Console.WriteLine ("{0}, Iteration #{1}: {2}ms", name, iteration, time);
-			}
+			var bench_results = ParseRuns (log);
 
 			foreach (string benchmark in bench_results.Keys) {
 				var result = new bm.Result {
