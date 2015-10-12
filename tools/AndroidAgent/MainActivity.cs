@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Diagnostics;
 
 using Benchmarks.BH;
+using Benchmarks.BinaryTrees;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -63,6 +64,9 @@ namespace AndroidAgent
 			switch (benchmark) {
 			case "bh":
 				BH.Main (new string[] { "-b", "400", "-s", "200" }, Logging.GetLogging ());
+				break;
+			case "binarytree":
+				BinaryTrees.Main (new string[] { "17" }, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());

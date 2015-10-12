@@ -40,6 +40,7 @@
     <Compile Include="BH\HG.cs" />
     <Compile Include="BH\MathVector.cs" />
     <Compile Include="BH\Node.cs" />
+    <Compile Include="binarytree.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>

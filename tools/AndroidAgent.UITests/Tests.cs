@@ -36,6 +36,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkBinarytree ()
+		{
+			RunBenchmarkHelper ("binarytree");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");
@@ -52,6 +58,9 @@ namespace AndroidAgent.UITests
 			var assembly = Assembly.GetExecutingAssembly ();
 			using (Stream stream = assembly.GetManifestResourceStream ("AndroidAgent.UITests.params.json")) {
 				using (StreamReader reader = new StreamReader (stream)) {
+					// wait for init, dropping root commands can take a while
+					System.Threading.Thread.Sleep (5000);
+
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
 					string githubAPIKey = json.githubAPIKey;
 
