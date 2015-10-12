@@ -39,7 +39,7 @@ server :
 define PAGE_RULE
 build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js build
 	@echo 'Packing webs...'
-	@webpack --optimize-minimize
+	@webpack --optimize-minimize --bail
 endef
 
 $(foreach PAGE,$(PAGES),$(eval $(call PAGE_RULE,$(PAGE))))
