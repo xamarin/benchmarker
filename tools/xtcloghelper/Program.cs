@@ -23,7 +23,7 @@ namespace xtclog
 
 		public static void Main (string[] args)
 		{
-			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
+			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter ();
 			Logging.SetLogging (LogManager.GetLogger<MainClass> ());
 
 			if (args.Length == 0)
@@ -46,24 +46,33 @@ namespace xtclog
 					var guid = Guid.Parse (xtcjobid);
 					Console.WriteLine ("guid: \"{0}\"", guid);
 					ResultCollection results = AsyncContext.Run (() => xtcapi.TestRuns.Results (guid));
-					Console.WriteLine ("finished? " + results.Finished);
-					Console.WriteLine ("json: " + results.ToString ());
+
+					if (results.Logs.Devices.Count > 1) {
+						Console.WriteLine ("found more than one device in logs, not supported: " + results.Logs.Devices);
+						Environment.Exit (2);
+					}
+					foreach (var device in results.Logs.Devices) {
+						Console.WriteLine ("device id: " + device.DeviceConfigurationId);
+						Console.WriteLine ("devicelog url: " + device.DeviceLog);
+
+						var tuple = ProcessLog (device.DeviceLog);
+						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
+					}
 				}
-				string text = System.IO.File.ReadAllText("/Users/bernhardu/work/benchmarker/tools/device-log-test.log");
-				var runSet = ProcessLog (text);
-				// TODO: runSet.UploadToPostgres (dbConnection, machine);
 			} else {
 				UsageAndExit (false);
 			}
 		}
 
-		private static void PushXTCJobId(NpgsqlConnection conn, string xtcJobId) {
+		private static void PushXTCJobId (NpgsqlConnection conn, string xtcJobId)
+		{
 			PostgresRow row = new PostgresRow ();
 			row.Set ("job", NpgsqlTypes.NpgsqlDbType.Varchar, xtcJobId);
 			PostgresInterface.Insert<long> (conn, "XamarinTestcloudJobIDs", row, "id");
 		}
 
-		private static List<string> PullXTCJobIds(NpgsqlConnection conn) {
+		private static List<string> PullXTCJobIds (NpgsqlConnection conn)
+		{
 			var l = new List<string> ();
 			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"job"}, null, null)) {
 				l.Add (s.GetReference<string> ("job"));
@@ -71,8 +80,17 @@ namespace xtclog
 			return l;
 		}
 
-		private static bm.RunSet ProcessLog(string log) {
-			string logURL = null; // TODO
+		private static string DownloadLog (string url)
+		{
+			using (var wc = new System.Net.WebClient ()) {
+				return wc.DownloadString (url);
+			}
+		}
+
+		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (string logUrl)
+		{
+			string log = DownloadLog (logUrl);
+
 			string regex_commit = @"I\/benchmarker\(\s*\d+\): Benchmarker \| commit ""(?<hash>[0-9A-Za-z]{40})"" on branch ""(?<branch>[\w\-_\.]+)""";
 			Match match_commit = Regex.Match (log, regex_commit);
 			var commit = new bm.Commit ();
@@ -85,6 +103,7 @@ namespace xtclog
 				Name = match_machine.Groups ["hostname"].Value,
 				Architecture = match_machine.Groups ["architecture"].Value
 			};
+			Console.WriteLine ("machine name: " + machine.Name);
 
 			string regex_config = @"I\/benchmarker\(\s*\d+\): Benchmarker \| configname ""(?<name>[\w\-\.]+)""";
 			Match match_config = Regex.Match (log, regex_config);
@@ -100,7 +119,7 @@ namespace xtclog
 				StartDateTime = DateTime.Now, // TODO: get more precise data from log
 				Config = config,
 				Commit = commit,
-				LogURL = logURL
+				LogURL = logUrl
 			};
 			
 			string regex_runs = @"I\/benchmarker\(\s*\d+\): Benchmarker \| Benchmark ""(?<name>[\w\-_\d]+)"": finished iteration (?<iteration>\d+), took (?<time>\d+)ms";
@@ -120,7 +139,7 @@ namespace xtclog
 			foreach (string benchmark in bench_results.Keys) {
 				var result = new bm.Result {
 					DateTime = DateTime.Now,
-					Benchmark = new bm.Benchmark { Name = benchmark},
+					Benchmark = new bm.Benchmark { Name = benchmark },
 					Config = config
 				};
 
@@ -134,7 +153,8 @@ namespace xtclog
 				}
 				runSet.Results.Add (result);
 			}
-			return runSet;
+
+			return new Tuple<bm.RunSet, bm.Machine>(runSet, machine);
 		}
 	}
 }
