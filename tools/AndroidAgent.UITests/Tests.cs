@@ -42,6 +42,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkBisort ()
+		{
+			RunBenchmarkHelper ("bisort");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");

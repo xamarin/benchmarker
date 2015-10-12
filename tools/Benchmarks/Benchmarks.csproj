@@ -41,6 +41,8 @@
     <Compile Include="BH\MathVector.cs" />
     <Compile Include="BH\Node.cs" />
     <Compile Include="binarytree.cs" />
+    <Compile Include="BiSort\BiSort.cs" />
+    <Compile Include="BiSort\Value.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -53,5 +55,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="BH\" />
+    <Folder Include="BiSort\" />
   </ItemGroup>
 </Project>
