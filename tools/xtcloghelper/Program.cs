@@ -41,9 +41,11 @@ namespace xtclog
 				var xtcapikey = Accredit.GetCredentials ("xtcapikey") ["xtcapikey"].ToString ();
 				var xtcapi = new Client (xtcapikey);
 
-				foreach (var xtcjobid in PullXTCJobIds (connection)) {
-					Console.WriteLine ("XTC Job ID Pending: " + xtcjobid);
-					var guid = Guid.Parse (xtcjobid);
+				foreach (var xtcjobtuple in PullXTCJobIds (connection)) {
+					var xtcjobid = xtcjobtuple.Item1;
+					var xtcjobguid = xtcjobtuple.Item2;
+					Console.WriteLine ("XTC Job ID Pending: " + xtcjobtuple);
+					var guid = Guid.Parse (xtcjobguid);
 					Console.WriteLine ("guid: \"{0}\"", guid);
 					ResultCollection results = AsyncContext.Run (() => xtcapi.TestRuns.Results (guid));
 
@@ -58,6 +60,7 @@ namespace xtclog
 						var tuple = ProcessLog (device.DeviceLog);
 						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 					}
+					DeleteXTCJobId (connection, xtcjobid);
 				}
 			} else {
 				UsageAndExit (false);
@@ -71,11 +74,24 @@ namespace xtclog
 			PostgresInterface.Insert<long> (conn, "XamarinTestcloudJobIDs", row, "id");
 		}
 
-		private static List<string> PullXTCJobIds (NpgsqlConnection conn)
+		private static void DeleteXTCJobId (NpgsqlConnection conn, long xtcJobId)
 		{
-			var l = new List<string> ();
-			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"job"}, null, null)) {
-				l.Add (s.GetReference<string> ("job"));
+			PostgresRow row = new PostgresRow ();
+			row.Set ("id", NpgsqlTypes.NpgsqlDbType.Bigint, xtcJobId);
+			PostgresInterface.Delete (conn, "XamarinTestcloudJobIDs", "id = :id", row);
+		}
+
+		private static List<Tuple<long, string>> PullXTCJobIds (NpgsqlConnection conn)
+		{
+			var l = new List<Tuple<long,string>> ();
+			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"id", "job"}, null, null)) {
+				long? dbid = s.GetValue<long> ("id");
+				if (dbid.HasValue) {
+					l.Add (new Tuple<long, string> (dbid.Value, s.GetReference<string> ("job")));
+				} else {
+					Console.WriteLine ("error: invalid id in database");
+					Environment.Exit (3);
+				}
 			}
 			return l;
 		}
