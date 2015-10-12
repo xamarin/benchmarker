@@ -11,7 +11,7 @@ fi
 
 cd $1
 COMMITSHA="$2"
-XBUILDANDROID="$3"
+XBUILDANDROID=$(greadlink -f "$3" || readlink -f "$3")
 
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
