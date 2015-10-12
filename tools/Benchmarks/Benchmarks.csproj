@@ -43,6 +43,7 @@
     <Compile Include="binarytree.cs" />
     <Compile Include="BiSort\BiSort.cs" />
     <Compile Include="BiSort\Value.cs" />
+    <Compile Include="except.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>

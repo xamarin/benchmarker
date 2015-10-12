@@ -15,6 +15,7 @@ using System.Diagnostics;
 using Benchmarks.BH;
 using Benchmarks.BinaryTrees;
 using Benchmarks.BiSort;
+using Benchmarks.Except;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -71,6 +72,9 @@ namespace AndroidAgent
 				break;
 			case "bisort":
 				BiSort.Main (new string[] { "-s", "1500000" }, Logging.GetLogging ());
+				break;
+			case "except":
+				except.Main (new string[] { "1500000" }, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
