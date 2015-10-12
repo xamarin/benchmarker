@@ -44,6 +44,17 @@
     <Compile Include="BiSort\BiSort.cs" />
     <Compile Include="BiSort\Value.cs" />
     <Compile Include="except.cs" />
+    <Compile Include="GrandeTracer\Interval.cs" />
+    <Compile Include="GrandeTracer\Isect.cs" />
+    <Compile Include="GrandeTracer\Light.cs" />
+    <Compile Include="GrandeTracer\Primitive.cs" />
+    <Compile Include="GrandeTracer\Ray.cs" />
+    <Compile Include="GrandeTracer\Raytracer.cs" />
+    <Compile Include="GrandeTracer\Scene.cs" />
+    <Compile Include="GrandeTracer\Sphere.cs" />
+    <Compile Include="GrandeTracer\Surface.cs" />
+    <Compile Include="GrandeTracer\Vec.cs" />
+    <Compile Include="GrandeTracer\View.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -57,5 +68,6 @@
   <ItemGroup>
     <Folder Include="BH\" />
     <Folder Include="BiSort\" />
+    <Folder Include="GrandeTracer\" />
   </ItemGroup>
 </Project>

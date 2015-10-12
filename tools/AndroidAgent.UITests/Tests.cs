@@ -54,6 +54,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkGrandeTracer ()
+		{
+			RunBenchmarkHelper ("grandetracer");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");
