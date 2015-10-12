@@ -87,6 +87,9 @@ namespace xtclog
 			}
 		}
 
+		public const int BENCHMARK_ITERATIONS = 10;
+
+
 		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (string logUrl)
 		{
 			string log = DownloadLog (logUrl);
@@ -112,7 +115,7 @@ namespace xtclog
 				Mono = String.Empty,
 				MonoOptions = new string[0],
 				MonoEnvironmentVariables = new Dictionary<string, string> (),
-				Count = 10
+				Count = BENCHMARK_ITERATIONS
 			};
 
 			var runSet = new bm.RunSet {
@@ -143,6 +146,7 @@ namespace xtclog
 					Config = config
 				};
 
+				int count = 0;
 				foreach (TimeSpan t in bench_results[benchmark]) {
 					var run = new bm.Result.Run ();
 					run.RunMetrics.Add (new bm.Result.RunMetric {
@@ -150,8 +154,12 @@ namespace xtclog
 						Value = t
 					});
 					result.Runs.Add (run);
+					count++;
 				}
 				runSet.Results.Add (result);
+				if (count < BENCHMARK_ITERATIONS) {
+					runSet.CrashedBenchmarks.Add (benchmark);
+				}
 			}
 
 			return new Tuple<bm.RunSet, bm.Machine>(runSet, machine);
