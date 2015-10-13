@@ -64,6 +64,7 @@
     <Compile Include="health\Results.cs" />
     <Compile Include="health\Village.cs" />
     <Compile Include="lists.cs" />
+    <Compile Include="mandelbrot.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>

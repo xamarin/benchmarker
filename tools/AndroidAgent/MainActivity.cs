@@ -22,6 +22,7 @@ using graph8 = Benchmarks.Graph8;
 using Benchmarks.Hash3;
 using Benchmarks.Health;
 using Benchmarks.Lists;
+using Benchmarks.Mandelbrot;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -99,6 +100,9 @@ namespace AndroidAgent
 				break;
 			case "lists":
 				Lists.Main (new string[] { "30000" }, Logging.GetLogging ());
+				break;
+			case "mandelbrot":
+				Mandelbrot.Main (new string[] { "6400" }, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());

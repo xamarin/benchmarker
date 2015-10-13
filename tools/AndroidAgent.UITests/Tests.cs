@@ -92,6 +92,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkMandelbrot ()
+		{
+			RunBenchmarkHelper ("mandelbrot");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");
