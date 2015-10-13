@@ -19,6 +19,7 @@ create table Machine (
 create table Commit (
        objectId varchar(10),
        hash varchar(40) primary key,
+       product varchar(128),
        commitDate timestamp with time zone,
        branch varchar(128),
        mergeBaseHash varchar(40)

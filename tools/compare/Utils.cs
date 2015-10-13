@@ -142,7 +142,9 @@ namespace compare
 				return null;
 			}
 
-			var commit = new Commit ();
+			var commit = new Commit {
+				Product = "mono"
+			};
 			var info = NewProcessStartInfo (cfg);
 			if (!String.IsNullOrEmpty (info.FileName)) {
 				/* Run without timing with --version */
