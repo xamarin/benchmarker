@@ -21,6 +21,7 @@ using graph4 = Benchmarks.Graph4;
 using graph8 = Benchmarks.Graph8;
 using Benchmarks.Hash3;
 using Benchmarks.Health;
+using Benchmarks.Lists;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -95,6 +96,9 @@ namespace AndroidAgent
 				break;
 			case "health":
 				Health.Main (new string[] { "-l", "10", "-t", "40" }, Logging.GetLogging ());
+				break;
+			case "lists":
+				Lists.Main (new string[] { "30000" }, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
