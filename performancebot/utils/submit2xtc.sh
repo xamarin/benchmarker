@@ -4,14 +4,15 @@ set -x
 set -e
 set -o pipefail
 
-if [ $# -ne 3 ]; then
-    echo "usage: $0 <benchmarkerToolsDir> <commit> <xbuild-android>"
+if [ $# -ne 4 ]; then
+    echo "usage: $0 <benchmarkerToolsDir> <commit> <build-url> <xbuild-android>"
     exit 1
 fi
 
 cd $1
 COMMITSHA="$2"
-XBUILDANDROID=$(greadlink -f "$3" || readlink -f "$3")
+BUILDURL="$3"
+XBUILDANDROID="$4"
 
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
@@ -30,8 +31,21 @@ nuget restore tools.sln
 xbuild /t:clean
 rm -rf AndroidAgent/{bin,obj}
 
+# build compare
+xbuild /p:Configuration=Release /target:compare
+
 # build xtcloghelper
 xbuild /t:xtcloghelper /p:Configuration=Debug
+
+# generate run-set id for nexus5
+RUNSETID=$(mono --debug ./compare.exe \
+    --commit $COMMITSHA \
+    --build-url $BUILDURL \
+    --create-run-set \
+    --machine "Nexus-5_4.4.4" -- ../tests/ ../benchmarks/ ../machines/ ../configs/default.conf \
+    | grep runSetId | grep -o -E '\d+')
+
+echo "runSetId: $RUNSETID"
 
 # build app + uitests
 (cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
@@ -57,5 +71,5 @@ mono \
 XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
 rm -f "$XTCUPLOADLOG"
 echo "submitted job has id $XTCJOBID"
-mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID"
+mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
 

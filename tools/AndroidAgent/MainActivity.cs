@@ -13,6 +13,10 @@ using System.Reflection;
 using System.Diagnostics;
 
 using Benchmarks.BH;
+using Benchmarks.BinaryTrees;
+using Benchmarks.BiSort;
+using Benchmarks.Except;
+using Benchmarks.GrandeTracer;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -63,6 +67,18 @@ namespace AndroidAgent
 			switch (benchmark) {
 			case "bh":
 				BH.Main (new string[] { "-b", "400", "-s", "200" }, Logging.GetLogging ());
+				break;
+			case "binarytree":
+				BinaryTrees.Main (new string[] { "17" }, Logging.GetLogging ());
+				break;
+			case "bisort":
+				BiSort.Main (new string[] { "-s", "1500000" }, Logging.GetLogging ());
+				break;
+			case "except":
+				except.Main (new string[] { "1500000" }, Logging.GetLogging ());
+				break;
+			case "grandetracer":
+				RayTracer.Main (new string[] { }, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
