@@ -435,14 +435,15 @@ class Compare
 				for (var i = 0; i < count; ++i) {
 					bool timedOut;
 
-					Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
+					if (valgrindMassif == null)
+						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
-					// skip first one if running for time
+					var elapsedMilliseconds = runner.Run (out timedOut);
+
+					// if running for time, the first one is the dry run
 					if (valgrindMassif == null && i == 0)
 						continue;
 
-					var elapsedMilliseconds = runner.Run (out timedOut);
-						
 					if (elapsedMilliseconds != null) {
 						var run = new Result.Run ();
 
