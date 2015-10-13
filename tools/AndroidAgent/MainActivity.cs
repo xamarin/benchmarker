@@ -17,6 +17,7 @@ using Benchmarks.BinaryTrees;
 using Benchmarks.BiSort;
 using Benchmarks.Except;
 using Benchmarks.GrandeTracer;
+using graph4 = Benchmarks.Graph4;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -79,6 +80,9 @@ namespace AndroidAgent
 				break;
 			case "grandetracer":
 				RayTracer.Main (new string[] { }, Logging.GetLogging ());
+				break;
+			case "graph4":
+				graph4.Node.Main (Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());
