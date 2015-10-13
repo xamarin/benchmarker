@@ -20,7 +20,7 @@ class Compare
 
 		Console.Error.WriteLine ("Usage:");
 		Console.Error.WriteLine ("    compare.exe [options]");
-		Console.Error.WriteLine ("    compare.exe [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <config-file>");
+		Console.Error.WriteLine ("    compare.exe [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <products-dir> <config-file>");
 		Console.Error.WriteLine ("Options:");
 		Console.Error.WriteLine ("        --help                  display this help");
 		Console.Error.WriteLine ("    -c, --config-file FILE      the config file");
@@ -46,10 +46,10 @@ class Compare
 		Environment.Exit (exitcode);
 	}
 
-	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, string pullRequestURL, compare.Repository repository, Config config)
+	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, Product product, string pullRequestURL, compare.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
-		var match = Regex.Match (pullRequestURL, @"^https?://github\.com/mono/mono/pull/(\d+)/?$");
+		var match = Regex.Match (pullRequestURL, product.PullRequestRegexp);
 		if (match == null) {
 			Console.Error.WriteLine ("Error: Cannot parse pull request URL.");
 			Environment.Exit (1);
@@ -68,7 +68,7 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		var masterSha = repository.Fetch ("git@github.com:mono/mono.git", "master");
+		var masterSha = repository.Fetch (product.GitRepositoryUrl, "master");
 		if (masterSha == null) {
 			Console.Error.WriteLine ("Error: Could not fetch master.");
 			Environment.Exit (1);
@@ -271,9 +271,9 @@ class Compare
 
 		InitCommons ();
 
-		string testsDir, benchmarksDir, machinesDir;
+		string testsDir, benchmarksDir, machinesDir, productsDir;
 
-		if (args.Length - optindex == 4) {
+		if (args.Length - optindex == 5) {
 			if (configFile != null) {
 				Console.Error.WriteLine ("Error: You must not specify the config file twice.");
 				Environment.Exit (1);
@@ -282,6 +282,7 @@ class Compare
 			testsDir = args [optindex++];
 			benchmarksDir = args [optindex++];
 			machinesDir = args [optindex++];
+			productsDir = args [optindex++];
 			configFile = args [optindex++];
 		} else if (args.Length - optindex == 0) {
 			var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
@@ -300,6 +301,7 @@ class Compare
 			testsDir = Path.Combine (root, "tests");
 			benchmarksDir = Path.Combine (root, "benchmarks");
 			machinesDir = Path.Combine (root, "machines");
+			productsDir = Path.Combine (root, "products");
 
 			if (configFile == null)
 				configFile = Path.Combine (root, "configs", "default-sgen.conf");
@@ -308,6 +310,7 @@ class Compare
 			return;
 		}
 
+		var product = compare.Utils.LoadProductFromFile ("mono", productsDir);
 		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
 			Console.Error.WriteLine ("Error: Could not load all benchmarks.");
@@ -353,7 +356,7 @@ class Compare
 			machine.Architecture = hostarch.Item2;
 		}
 
-		var commit = AsyncContext.Run (() => compare.Utils.GetCommit (config, commitFromCmdline, gitRepoDir));
+		var commit = AsyncContext.Run (() => compare.Utils.GetCommit (config, product, commitFromCmdline, gitRepoDir));
 
 		if (commit == null) {
 			Console.Error.WriteLine ("Error: Could not get commit");
@@ -386,7 +389,7 @@ class Compare
 
 				var repo = new compare.Repository (monoRepositoryPath);
 
-				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, pullRequestURL, repo, config));
+				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, product, pullRequestURL, repo, config));
 				if (pullRequestBaselineRunSetId == null) {
 					Console.Error.WriteLine ("Error: No appropriate baseline run set found.");
 					Environment.Exit (1);

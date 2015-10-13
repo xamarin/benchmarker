@@ -80,6 +80,11 @@ namespace compare
 			}
 		}
 
+		public static Product LoadProductFromFile (string productName, string directory) {
+			var filename = Path.Combine (directory, String.Format ("{0}.conf", productName));
+			return Product.LoadFromString (File.ReadAllText (filename));
+		}
+
 		public static Tuple<string, string> LocalHostnameAndArch () {
 			Utsname utsname;
 			var res = Syscall.uname (out utsname);
@@ -135,7 +140,7 @@ namespace compare
 		}
 
 
-		public async static Task<Commit> GetCommit (Config cfg, string optionalCommitHash, string optionalGitRepoDir)
+		public async static Task<Commit> GetCommit (Config cfg, Product product, string optionalCommitHash, string optionalGitRepoDir)
 		{
 			if (cfg.NoMono && optionalCommitHash == null) {
 				// FIXME: return a dummy commit
@@ -143,7 +148,7 @@ namespace compare
 			}
 
 			var commit = new Commit {
-				Product = "mono"
+				Product = product
 			};
 			var info = NewProcessStartInfo (cfg);
 			if (!String.IsNullOrWhiteSpace (info.FileName)) {

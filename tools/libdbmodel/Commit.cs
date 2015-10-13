@@ -8,7 +8,7 @@ namespace Benchmarker.Models
 	public class Commit
 	{
 		public string Hash { get; set; }
-		public string Product { get; set; }
+		public Product Product { get; set; }
 		public string Branch { get; set; }
 		public string MergeBaseHash { get; set; }
 		public DateTime? CommitDate { get; set; }
@@ -21,7 +21,7 @@ namespace Benchmarker.Models
 		{
 			var parameters = new PostgresRow ();
 			parameters.Set ("hash", NpgsqlTypes.NpgsqlDbType.Varchar, Hash);
-			parameters.Set ("product", NpgsqlTypes.NpgsqlDbType.Varchar, Product);
+			parameters.Set ("product", NpgsqlTypes.NpgsqlDbType.Varchar, Product.Name);
 			return PostgresInterface.Select (conn, "commit", new string[] { "commitDate" }, "hash = :hash and product = :product", parameters).Count () > 0;
 		}
 
@@ -34,7 +34,7 @@ namespace Benchmarker.Models
 
 			var row = new PostgresRow ();
 			row.Set ("hash", NpgsqlTypes.NpgsqlDbType.Varchar, Hash);
-			row.Set ("product", NpgsqlTypes.NpgsqlDbType.Varchar, Product);
+			row.Set ("product", NpgsqlTypes.NpgsqlDbType.Varchar, Product.Name);
 			row.Set ("commitDate", NpgsqlTypes.NpgsqlDbType.TimestampTZ, CommitDate);
 			row.Set ("branch", NpgsqlTypes.NpgsqlDbType.Varchar, Branch);
 			row.Set ("mergeBaseHash", NpgsqlTypes.NpgsqlDbType.Varchar, MergeBaseHash);
