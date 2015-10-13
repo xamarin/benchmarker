@@ -20,7 +20,6 @@ class Compare
 
 		Console.Error.WriteLine ("Usage:");
 		Console.Error.WriteLine ("    compare.exe [options]");
-		Console.Error.WriteLine ("    compare.exe [options] [--] <tests-dir> <benchmarks-dir> <machines-dir> <products-dir> <config-file>");
 		Console.Error.WriteLine ("Options:");
 		Console.Error.WriteLine ("        --help                  display this help");
 		Console.Error.WriteLine ("    -c, --config-file FILE      the config file");
@@ -271,44 +270,31 @@ class Compare
 
 		InitCommons ();
 
-		string testsDir, benchmarksDir, machinesDir, productsDir;
-
-		if (args.Length - optindex == 5) {
-			if (configFile != null) {
-				Console.Error.WriteLine ("Error: You must not specify the config file twice.");
-				Environment.Exit (1);
-			}
-
-			testsDir = args [optindex++];
-			benchmarksDir = args [optindex++];
-			machinesDir = args [optindex++];
-			productsDir = args [optindex++];
-			configFile = args [optindex++];
-		} else if (args.Length - optindex == 0) {
-			var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
-			var exeName = Path.GetFileName (exeLocation);
-			var exeDir = Path.GetDirectoryName (exeLocation);
-			if (exeName != "compare.exe") {
-				Console.Error.WriteLine ("Error: Executable is not `compare.exe`.  Please specify all paths manually.");
-				Environment.Exit (1);
-			}
-			if (Path.GetFileName (exeDir) != "tools") {
-				Console.Error.WriteLine ("Error: Executable is not in the `tools` directory.  Please specify all paths manually.");
-				Environment.Exit (1);
-			}
-			var root = Path.GetDirectoryName (exeDir);
-
-			testsDir = Path.Combine (root, "tests");
-			benchmarksDir = Path.Combine (root, "benchmarks");
-			machinesDir = Path.Combine (root, "machines");
-			productsDir = Path.Combine (root, "products");
-
-			if (configFile == null)
-				configFile = Path.Combine (root, "configs", "default-sgen.conf");
-		} else {
+		if (args.Length - optindex != 0) {
 			UsageAndExit (null, 1);
 			return;
 		}
+
+		var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
+		var exeName = Path.GetFileName (exeLocation);
+		var exeDir = Path.GetDirectoryName (exeLocation);
+		if (exeName != "compare.exe") {
+			Console.Error.WriteLine ("Error: Executable is not `compare.exe`.  Please specify all paths manually.");
+			Environment.Exit (1);
+		}
+		if (Path.GetFileName (exeDir) != "tools") {
+			Console.Error.WriteLine ("Error: Executable is not in the `tools` directory.  Please specify all paths manually.");
+			Environment.Exit (1);
+		}
+		var root = Path.GetDirectoryName (exeDir);
+
+		var testsDir = Path.Combine (root, "tests");
+		var benchmarksDir = Path.Combine (root, "benchmarks");
+		var machinesDir = Path.Combine (root, "machines");
+		var productsDir = Path.Combine (root, "products");
+
+		if (configFile == null)
+			configFile = Path.Combine (root, "configs", "default-sgen.conf");
 
 		var product = compare.Utils.LoadProductFromFile ("mono", productsDir);
 		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);

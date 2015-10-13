@@ -62,25 +62,23 @@ class CreateRunSetIdStep(ParsingShellCommand):
         mono_version = self.getProperty(PROPERTYNAME_MONOVERSION)
         git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
         config_name = self.getProperty('config_name')
-        cmd1 = ['mono', 'tools/compare.exe', '--create-run-set']
+        cmd = ['mono', 'tools/compare.exe', '--create-run-set']
         if pullrequestid is not None:
-            cmd1.append('--pull-request-url')
-            cmd1.append('https://github.com/mono/mono/pull/%s' % str(pullrequestid))
-            cmd1.append('--mono-repository')
-            cmd1.append('../mono')
+            cmd.append('--pull-request-url')
+            cmd.append('https://github.com/mono/mono/pull/%s' % str(pullrequestid))
+            cmd.append('--mono-repository')
+            cmd.append('../mono')
         if build_url is not None:
-            cmd1.append('--build-url')
-            cmd1.append(build_url)
+            cmd.append('--build-url')
+            cmd.append(build_url)
         if git_commit is not None:
-            cmd1.append('--commit')
-            cmd1.append(git_commit)
-        cmd2 = ['--root', self.install_root(mono_version),
-                'tests/',
-                'benchmarks/',
-                'machines/',
-                'configs/%s.conf' % (config_name)
-               ]
-        self.setCommand(cmd1 + cmd2)
+            cmd.append('--commit')
+            cmd.append(git_commit)
+        cmd.append('--config-file')
+        cmd.append('configs/%s.conf' % (config_name))
+        cmd.append('--root')
+        cmd.append(self.install_root(mono_version))
+        self.setCommand(cmd)
         ShellCommand.start(self)
 
 class GithubWritePullrequestComment(LoggingBuildStep):

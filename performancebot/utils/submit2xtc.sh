@@ -42,7 +42,8 @@ RUNSETID=$(mono --debug ./compare.exe \
     --commit $COMMITSHA \
     --build-url $BUILDURL \
     --create-run-set \
-    --machine "Nexus-5_4.4.4" -- ../tests/ ../benchmarks/ ../machines/ ../configs/default.conf \
+    --machine "Nexus-5_4.4.4" \
+    --config-file ../configs/default.conf \
     | grep runSetId | grep -o -E '\d+')
 
 echo "runSetId: $RUNSETID"
