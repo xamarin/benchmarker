@@ -106,7 +106,7 @@ namespace compare
 			};
 
 			if (!cfg.NoMono) {
-				if (String.IsNullOrEmpty (cfg.Mono)) {
+				if (string.IsNullOrWhiteSpace (cfg.Mono)) {
 					Console.Error.WriteLine ("Error: No mono executable specified.");
 					Environment.Exit (1);
 				}
@@ -146,7 +146,7 @@ namespace compare
 				Product = "mono"
 			};
 			var info = NewProcessStartInfo (cfg);
-			if (!String.IsNullOrEmpty (info.FileName)) {
+			if (!String.IsNullOrWhiteSpace (info.FileName)) {
 				/* Run without timing with --version */
 				info.Arguments = "--version";
 

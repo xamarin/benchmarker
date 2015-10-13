@@ -25,7 +25,7 @@ namespace Benchmarker.Models
 		{
 			var benchmark = JsonConvert.DeserializeObject<Benchmark> (jsonContent);
 
-			if (String.IsNullOrEmpty (benchmark.TestDirectory))
+			if (String.IsNullOrWhiteSpace (benchmark.TestDirectory))
 				throw new InvalidDataException ("TestDirectory");
 			if (benchmark.CommandLine == null || benchmark.CommandLine.Length == 0)
 				throw new InvalidDataException ("CommandLine");
