@@ -16,7 +16,7 @@ namespace xtclog
 		static void UsageAndExit (bool success)
 		{
 			Console.WriteLine ("Usage:");
-			Console.WriteLine ("    xtcloghelper.exe --push XTCJOBID");
+			Console.WriteLine ("    xtcloghelper.exe --push XTCJOBID RUNSETID");
 			Console.WriteLine ("                     --crawl-logs");
 			Environment.Exit (success ? 0 : 1);
 		}
@@ -30,12 +30,13 @@ namespace xtclog
 				UsageAndExit (true);
 
 			if (args [0] == "--push") {
-				if (args.Length <= 1) {
+				if (args.Length <= 2) {
 					UsageAndExit (false);
 				}
-				string xtcJobId = args [1];
+				string xtcJobGuid = args [1];
+				long runSetId = Int64.Parse(args [2]);
 				var connection = PostgresInterface.Connect ();
-				PushXTCJobId (connection, xtcJobId);
+				PushXTCJobId (connection, xtcJobGuid, runSetId);
 			} else if (args [0] == "--crawl-logs") {
 				var connection = PostgresInterface.Connect ();
 				var xtcapikey = Accredit.GetCredentials ("xtcapikey") ["xtcapikey"].ToString ();
@@ -67,10 +68,11 @@ namespace xtclog
 			}
 		}
 
-		private static void PushXTCJobId (NpgsqlConnection conn, string xtcJobId)
+		private static void PushXTCJobId (NpgsqlConnection conn, string xtcJobGuid, long runSetId)
 		{
 			PostgresRow row = new PostgresRow ();
-			row.Set ("job", NpgsqlTypes.NpgsqlDbType.Varchar, xtcJobId);
+			row.Set ("job", NpgsqlTypes.NpgsqlDbType.Varchar, xtcJobGuid);
+			row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, runSetId);
 			PostgresInterface.Insert<long> (conn, "XamarinTestcloudJobIDs", row, "id");
 		}
 

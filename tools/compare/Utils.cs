@@ -106,7 +106,7 @@ namespace compare
 			};
 
 			if (!cfg.NoMono) {
-				if (cfg.Mono == null) {
+				if (String.IsNullOrEmpty (cfg.Mono)) {
 					Console.Error.WriteLine ("Error: No mono executable specified.");
 					Environment.Exit (1);
 				}
