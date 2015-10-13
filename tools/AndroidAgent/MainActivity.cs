@@ -19,6 +19,7 @@ using Benchmarks.Except;
 using Benchmarks.GrandeTracer;
 using graph4 = Benchmarks.Graph4;
 using graph8 = Benchmarks.Graph8;
+using Benchmarks.Hash3;
 using Benchmarks.Nbody;
 using Benchmarks.Strcat;
 
@@ -87,6 +88,9 @@ namespace AndroidAgent
 				break;
 			case "graph8":
 				graph8.Node.Main (Logging.GetLogging ());
+				break;
+			case "hash3":
+				Hash3.Main (new string[] { "1000000"}, Logging.GetLogging ());
 				break;
 			case "n-body":
 				NBody.Main (new string[] { "5000000" }, Logging.GetLogging ());

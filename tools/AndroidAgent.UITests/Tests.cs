@@ -74,6 +74,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkHash3 ()
+		{
+			RunBenchmarkHelper ("hash3");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");
