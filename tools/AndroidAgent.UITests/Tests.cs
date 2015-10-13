@@ -66,6 +66,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkGraph8 ()
+		{
+			RunBenchmarkHelper ("graph8");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");
