@@ -43,8 +43,9 @@ namespace xtclog
 				var xtcapi = new Client (xtcapikey);
 
 				foreach (var xtcjobtuple in PullXTCJobIds (connection)) {
-					var xtcjobid = xtcjobtuple.Item1;
-					var xtcjobguid = xtcjobtuple.Item2;
+					long xtcjobid = xtcjobtuple.Item1;
+					string xtcjobguid = xtcjobtuple.Item2;
+					long runsetid = xtcjobtuple.Item3;
 					Console.WriteLine ("XTC Job ID Pending: " + xtcjobtuple);
 					var guid = Guid.Parse (xtcjobguid);
 					Console.WriteLine ("guid: \"{0}\"", guid);
@@ -63,7 +64,7 @@ namespace xtclog
 						Console.WriteLine ("device id: " + device.DeviceConfigurationId);
 						Console.WriteLine ("devicelog url: " + device.DeviceLog);
 
-						var tuple = ProcessLog (device.DeviceLog);
+						var tuple = ProcessLog (connection, device.DeviceLog, runsetid);
 						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 					}
 					DeleteXTCJobId (connection, xtcjobid);
@@ -88,13 +89,14 @@ namespace xtclog
 			PostgresInterface.Delete (conn, "XamarinTestcloudJobIDs", "id = :id", row);
 		}
 
-		private static List<Tuple<long, string>> PullXTCJobIds (NpgsqlConnection conn)
+		private static List<Tuple<long, string, long>> PullXTCJobIds (NpgsqlConnection conn)
 		{
-			var l = new List<Tuple<long,string>> ();
-			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"id", "job"}, null, null)) {
+			var l = new List<Tuple<long, string, long>> ();
+			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"id", "job", "runset"}, null, null)) {
 				long? dbid = s.GetValue<long> ("id");
-				if (dbid.HasValue) {
-					l.Add (new Tuple<long, string> (dbid.Value, s.GetReference<string> ("job")));
+				long? runset = s.GetValue<long> ("runset");
+				if (dbid.HasValue && runset.HasValue) {
+					l.Add (new Tuple<long, string, long> (dbid.Value, s.GetReference<string> ("job"), runset.Value));
 				} else {
 					Console.WriteLine ("error: invalid id in database");
 					Environment.Exit (3);
@@ -164,7 +166,7 @@ namespace xtclog
 			return bench_results;
 		}
 
-		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (string logUrl)
+		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId)
 		{
 			string log = DownloadLog (logUrl);
 
@@ -172,12 +174,7 @@ namespace xtclog
 			var machine = ParseMachine (log);
 			var config = ParseConfig (log);
 
-			var runSet = new bm.RunSet {
-				StartDateTime = DateTime.Now, // TODO: get more precise data from log
-				Config = config,
-				Commit = commit,
-				LogURL = logUrl
-			};
+			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, logUrl);
 
 			var bench_results = ParseRuns (log);
 
