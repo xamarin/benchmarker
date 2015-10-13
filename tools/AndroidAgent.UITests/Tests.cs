@@ -80,6 +80,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkHealth ()
+		{
+			RunBenchmarkHelper ("health");
+		}
+
+		[Test]
 		public void RunBenchmarkNbody ()
 		{
 			RunBenchmarkHelper ("n-body");

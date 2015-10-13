@@ -58,6 +58,11 @@
     <Compile Include="graph4.cs" />
     <Compile Include="graph8.cs" />
     <Compile Include="hash3.cs" />
+    <Compile Include="health\Health.cs" />
+    <Compile Include="health\Hospital.cs" />
+    <Compile Include="health\Patient.cs" />
+    <Compile Include="health\Results.cs" />
+    <Compile Include="health\Village.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -72,5 +77,6 @@
     <Folder Include="BH\" />
     <Folder Include="BiSort\" />
     <Folder Include="GrandeTracer\" />
+    <Folder Include="health\" />
   </ItemGroup>
 </Project>
