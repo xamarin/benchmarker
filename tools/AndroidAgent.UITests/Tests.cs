@@ -19,6 +19,8 @@ namespace AndroidAgent.UITests
 		public void BeforeEachTest ()
 		{
 			app = ConfigureApp.Android.StartApp ();
+			// wait for init, dropping root commands can take a while (TODO: better idea?)
+			System.Threading.Thread.Sleep (10000);
 		}
 
 		private void clearAndSetTextField (string id, string value)
@@ -88,9 +90,6 @@ namespace AndroidAgent.UITests
 			var assembly = Assembly.GetExecutingAssembly ();
 			using (Stream stream = assembly.GetManifestResourceStream ("AndroidAgent.UITests.params.json")) {
 				using (StreamReader reader = new StreamReader (stream)) {
-					// wait for init, dropping root commands can take a while
-					System.Threading.Thread.Sleep (5000);
-
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
 					string githubAPIKey = json.githubAPIKey;
 
