@@ -50,6 +50,11 @@ namespace xtclog
 					Console.WriteLine ("guid: \"{0}\"", guid);
 					ResultCollection results = AsyncContext.Run (() => xtcapi.TestRuns.Results (guid));
 
+					if (!results.Finished) {
+						Console.WriteLine ("Job \"{0}\" not finished yet, skip processing", xtcjobguid);
+						continue;
+					}
+
 					if (results.Logs.Devices.Count > 1) {
 						Console.WriteLine ("found more than one device in logs, not supported: " + results.Logs.Devices);
 						Environment.Exit (2);
