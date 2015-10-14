@@ -25,7 +25,7 @@ namespace Benchmarker.Models
 		{
 			var benchmark = JsonConvert.DeserializeObject<Benchmark> (jsonContent);
 
-			if (String.IsNullOrEmpty (benchmark.TestDirectory))
+			if (String.IsNullOrWhiteSpace (benchmark.TestDirectory))
 				throw new InvalidDataException ("TestDirectory");
 			if (benchmark.CommandLine == null || benchmark.CommandLine.Length == 0)
 				throw new InvalidDataException ("CommandLine");
@@ -70,7 +70,10 @@ namespace Benchmarker.Models
 
 			var row = new PostgresRow ();
 			row.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
-			return PostgresInterface.Insert<string> (conn, "Benchmark", row, "name");
+			PostgresInterface.Insert<string> (conn, "Benchmark", row, "name");
+
+			nameToRow [Name] = row;
+			return Name;
 		}
 	}
 }

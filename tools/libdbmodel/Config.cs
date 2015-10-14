@@ -57,7 +57,7 @@ namespace Benchmarker.Models
 		{
 			var config = JsonConvert.DeserializeObject<Config> (content);
 
-			if (String.IsNullOrEmpty (config.Name))
+			if (String.IsNullOrWhiteSpace (config.Name))
 				throw new InvalidDataException ("Configuration does not have a `Name`.");
 
 			if (config.NoMono) {
@@ -66,7 +66,7 @@ namespace Benchmarker.Models
 				Debug.Assert (config.UnsavedMonoEnvironmentVariables == null || config.UnsavedMonoEnvironmentVariables.Count == 0);
 			}
 
-			if (String.IsNullOrEmpty (config.Mono)) {
+			if (String.IsNullOrWhiteSpace (config.Mono)) {
 				config.Mono = String.Empty;
 			} else if (root != null) {
 				config.Mono = config.Mono.Replace (rootVarString, root);

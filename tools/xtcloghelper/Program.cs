@@ -174,7 +174,7 @@ namespace xtclog
 			var machine = ParseMachine (log);
 			var config = ParseConfig (log);
 
-			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, logUrl);
+			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, null, logUrl);
 
 			var bench_results = ParseRuns (log);
 

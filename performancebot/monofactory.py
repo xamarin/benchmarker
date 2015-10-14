@@ -309,24 +309,20 @@ def gen_guard_benchmark_run(benchmark):
 
 def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, attach_files=None):
     steps = []
-    cmd1 = ['mono',
-            'tools/compare.exe',
-            '--benchmarks', benchmark_name,
-            '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
-            '--root', root_renderer()
-           ]
-    cmd2 = ['--commit', commit_renderer(),
-            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
-            'tests/',
-            'benchmarks/',
-            'machines/',
-            Interpolate('configs/%(prop:config_name)s.conf')
-           ]
+    cmd = ['mono',
+           'tools/compare.exe',
+           '--benchmarks', benchmark_name,
+           '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
+           '--root', root_renderer(),
+           '--main-product', 'mono', commit_renderer(),
+           '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
+           '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
+          ]
     steps.append(
         ShellCommand(
             name=benchmark_name,
             description="benchmark " + benchmark_name,
-            command=cmd1 + compare_args + cmd2,
+            command=cmd + compare_args,
             timeout=45*60,
             doStepIf=gen_guard_benchmark_run(benchmark_name),
             logfiles=attach_files,
@@ -347,4 +343,3 @@ class DetermineMonoRevision(object):
             return props['got_revision']['mono']
         return "failed revision lookup"
     #pylint: enable=C0103,R0201
-

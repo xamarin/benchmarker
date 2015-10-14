@@ -17,6 +17,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Machine.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Result.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RunSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Product.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)packages.config" />
