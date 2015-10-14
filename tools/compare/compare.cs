@@ -28,11 +28,12 @@ class Compare
 		Console.Error.WriteLine ("    -l, --list-benchmarks       list all available benchmarks");
 		Console.Error.WriteLine ("        --machine NAME          machine to list benchmarks or to create run set for");
 		Console.Error.WriteLine ("    -t, --timeout SECONDS       execution timeout for each benchmark, in seconds; default to no timeout");
-		Console.Error.WriteLine ("        --commit HASH           the hash of the commit being tested");
-		Console.Error.WriteLine ("        --git-repo DIR          the directory of the Git repository");
+		Console.Error.WriteLine ("        --main-product PRODUCT HASH");
+		Console.Error.WriteLine ("        --secondary-product PRODUCT HASH");
+		Console.Error.WriteLine ("                                specify one main and any number of secondary products");
 		Console.Error.WriteLine ("        --create-run-set        just create a run set, don't run any benchmarks");
 		Console.Error.WriteLine ("        --pull-request-url URL  GitHub URL of a pull request to create the run set with");
-		Console.Error.WriteLine ("        --mono-repository DIR   Path of your local Mono repository");
+		Console.Error.WriteLine ("        --mono-repository DIR   Path of your local Mono repository (for pull requests)");
 		Console.Error.WriteLine ("        --run-set-id ID         the Parse ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url URL         the URL of the binary build");
 		Console.Error.WriteLine ("        --log-url URL           the URL where the log files will be accessible");
@@ -131,7 +132,7 @@ class Compare
 		LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
 		Logging.SetLogging (LogManager.GetLogger<Compare> ());
 
-		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["publicReadAccessToken"].ToString ();
+		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["privateReadAccessToken"].ToString ();
 	}
 
 	static Tuple<long, long> ParseMassifEntry (Dictionary<string, string> dict) {
@@ -189,8 +190,6 @@ class Compare
 		string[] benchmarkNames = null;
 		//var pausetime = false;
 		var timeout = -1;
-		string commitFromCmdline = null;
-		string gitRepoDir = null;
 		string rootFromCmdline = null;
 		string buildURL = null;
 		string logURL = null;
@@ -203,6 +202,26 @@ class Compare
 		bool justListBenchmarks = false;
 		string valgrindMassif = null;
 		string valgrindOutputFilename = null;
+		Commit mainCommit = null;
+		List<Commit> secondaryCommits = new List<Commit> ();
+
+		var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
+		var exeName = Path.GetFileName (exeLocation);
+		var exeDir = Path.GetDirectoryName (exeLocation);
+		if (exeName != "compare.exe") {
+			Console.Error.WriteLine ("Error: Executable is not `compare.exe`.  Please specify all paths manually.");
+			Environment.Exit (1);
+		}
+		if (Path.GetFileName (exeDir) != "tools") {
+			Console.Error.WriteLine ("Error: Executable is not in the `tools` directory.  Please specify all paths manually.");
+			Environment.Exit (1);
+		}
+		var root = Path.GetDirectoryName (exeDir);
+
+		var testsDir = Path.Combine (root, "tests");
+		var benchmarksDir = Path.Combine (root, "benchmarks");
+		var machinesDir = Path.Combine (root, "machines");
+		var productsDir = Path.Combine (root, "products");
 
 		var optindex = 0;
 
@@ -219,10 +238,6 @@ class Compare
 				justListBenchmarks = true;
 			} else if (args [optindex] == "--machine") {
 				machineName = args [++optindex];
-			} else if (args [optindex] == "--commit") {
-				commitFromCmdline = args [++optindex];
-			} else if (args [optindex] == "--git-repo") {
-				gitRepoDir = args [++optindex];
 			} else if (args [optindex] == "--build-url") {
 				buildURL = args [++optindex];
 			} else if (args [optindex] == "--log-url") {
@@ -237,6 +252,20 @@ class Compare
 				runSetId = Int64.Parse (args [++optindex]);
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
+			} else if (args [optindex] == "--main-product") {
+				var name = args [++optindex];
+				var hash = args [++optindex];
+				if (mainCommit != null) {
+					Console.Error.WriteLine ("Error: Only one --main-product is supported.");
+					UsageAndExit ();
+				}
+				var product = compare.Utils.LoadProductFromFile (name, productsDir);
+				mainCommit = new Commit { Product = product, Hash = hash };
+			} else if (args [optindex] == "--secondary-product") {
+				var name = args [++optindex];
+				var hash = args [++optindex];
+				var product = compare.Utils.LoadProductFromFile (name, productsDir);
+				secondaryCommits.Add (new Commit { Product = product, Hash = hash });
 			} else if (args [optindex] == "--valgrind-massif") {
 				valgrindMassif = args [++optindex];
 				valgrindOutputFilename = args [++optindex];
@@ -268,35 +297,14 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		InitCommons ();
-
 		if (args.Length - optindex != 0) {
 			UsageAndExit (null, 1);
 			return;
 		}
 
-		var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
-		var exeName = Path.GetFileName (exeLocation);
-		var exeDir = Path.GetDirectoryName (exeLocation);
-		if (exeName != "compare.exe") {
-			Console.Error.WriteLine ("Error: Executable is not `compare.exe`.  Please specify all paths manually.");
-			Environment.Exit (1);
-		}
-		if (Path.GetFileName (exeDir) != "tools") {
-			Console.Error.WriteLine ("Error: Executable is not in the `tools` directory.  Please specify all paths manually.");
-			Environment.Exit (1);
-		}
-		var root = Path.GetDirectoryName (exeDir);
-
-		var testsDir = Path.Combine (root, "tests");
-		var benchmarksDir = Path.Combine (root, "benchmarks");
-		var machinesDir = Path.Combine (root, "machines");
-		var productsDir = Path.Combine (root, "products");
-
 		if (configFile == null)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
 
-		var product = compare.Utils.LoadProductFromFile ("mono", productsDir);
 		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
 			Console.Error.WriteLine ("Error: Could not load all benchmarks.");
@@ -318,6 +326,11 @@ class Compare
 			}
 			Environment.Exit (0);
 		}
+
+		if (mainCommit == null)
+			mainCommit = new Commit { Product = compare.Utils.LoadProductFromFile ("mono", productsDir) };
+
+		InitCommons ();
 
 		var gitHubClient = GitHubInterface.GitHubClient;
 
@@ -342,15 +355,11 @@ class Compare
 			machine.Architecture = hostarch.Item2;
 		}
 
-		var commit = AsyncContext.Run (() => compare.Utils.GetCommit (config, product, commitFromCmdline, gitRepoDir));
-
-		if (commit == null) {
-			Console.Error.WriteLine ("Error: Could not get commit");
-			Environment.Exit (1);
-		}
-		if (commit.CommitDate == null) {
-			Console.Error.WriteLine ("Error: Could not get a commit date.");
-			Environment.Exit (1);
+		foreach (var commit in new Commit[] { mainCommit }.Concat (secondaryCommits)) {
+			if (!AsyncContext.Run (() => compare.Utils.CompleteCommit (config, commit))) {
+				Console.Error.WriteLine ("Error: Could not get commit for product {0}.", commit.Product.Name);
+				Environment.Exit (1);
+			}
 		}
 
 		RunSet runSet;
@@ -359,7 +368,7 @@ class Compare
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (dbConnection, machine, runSetId.Value, config, commit, buildURL, logURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (dbConnection, machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -375,7 +384,7 @@ class Compare
 
 				var repo = new compare.Repository (monoRepositoryPath);
 
-				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, product, pullRequestURL, repo, config));
+				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, mainCommit.Product, pullRequestURL, repo, config));
 				if (pullRequestBaselineRunSetId == null) {
 					Console.Error.WriteLine ("Error: No appropriate baseline run set found.");
 					Environment.Exit (1);
@@ -385,7 +394,8 @@ class Compare
 			runSet = new RunSet {
 				StartDateTime = DateTime.Now,
 				Config = config,
-				Commit = commit,
+				Commit = mainCommit,
+				SecondaryCommits = secondaryCommits,
 				BuildURL = buildURL,
 				LogURL = logURL,
 				PullRequestURL = pullRequestURL,

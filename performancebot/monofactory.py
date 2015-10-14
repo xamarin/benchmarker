@@ -314,7 +314,7 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
            '--benchmarks', benchmark_name,
            '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
            '--root', root_renderer(),
-           '--commit', commit_renderer(),
+           '--main-product', 'mono', commit_renderer(),
            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
            '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
           ]

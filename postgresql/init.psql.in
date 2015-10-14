@@ -44,6 +44,7 @@ create table RunSet (
        failed boolean,
        logURLs jsonb,
        commit varchar(40) references Commit(hash),
+       secondaryCommits varchar(40)[],
        machine varchar(128) references Machine(name),
        config varchar(128) references Config(name),
        pullRequest integer,

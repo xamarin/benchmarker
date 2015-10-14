@@ -39,7 +39,7 @@ xbuild /t:xtcloghelper /p:Configuration=Debug
 
 # generate run-set id for nexus5
 RUNSETID=$(mono --debug ./compare.exe \
-    --commit $COMMITSHA \
+    --main-product mono $COMMITSHA \
     --build-url $BUILDURL \
     --create-run-set \
     --machine "Nexus-5_4.4.4" \

@@ -72,7 +72,8 @@ class CreateRunSetIdStep(ParsingShellCommand):
             cmd.append('--build-url')
             cmd.append(build_url)
         if git_commit is not None:
-            cmd.append('--commit')
+            cmd.append('--main-product')
+            cmd.append('mono')
             cmd.append(git_commit)
         cmd.append('--config-file')
         cmd.append('configs/%s.conf' % (config_name))
