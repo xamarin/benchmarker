@@ -28,12 +28,14 @@ clean :
 	@echo 'Cleaning...'
 	@rm -rf build
 
-build :
-	@mkdir -p build
-
+.PHONY :
 server :
 	@echo 'Connect to http://localhost:8080/webpack-dev-server/index.html'
 	@webpack-dev-server --devtool=inline-source-map
+
+.PHONY :
+flow :
+	( mv node_modules node_modules_save ; flow check ; ERR=$$? ; mv node_modules_save node_modules ; exit $$ERR )
 
 # Pages
 
@@ -55,6 +57,9 @@ endef
 
 $(foreach DEP,$(DEPS),$(eval $(call DEP_RULE,$(DEP))))
 
+build :
+	@mkdir -p build
+
 # Styles
 
 define STYLE_RULE
@@ -65,6 +70,3 @@ build/$1.css : src/$1.css Makefile build
 endef
 
 $(foreach STYLE,$(STYLES),$(eval $(call STYLE_RULE,$(STYLE))))
-
-flow :
-	( mv node_modules node_modules_save ; flow check ; ERR=$$? ; mv node_modules_save node_modules ; exit $$ERR )
