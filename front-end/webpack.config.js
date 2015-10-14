@@ -7,7 +7,8 @@ module.exports = {
         machine: "./src/machine.js",
         timeline: "./src/timeline.js",
         runset: "./src/runset.js",
-        pullrequest: "./src/pullrequest.js"
+        pullrequest: "./src/pullrequest.js",
+        pullrequests: "./src/pullrequests.js"
     },
     output: {
         filename: "./build/[name].js"

@@ -8,6 +8,7 @@ import * as xp_utils from './utils.js';
 import * as Database from './database.js';
 import * as Outliers from './outliers.js';
 import React from 'react';
+import GitHub from 'github-api';
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -552,6 +553,9 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 				<a title="Compare the results of multiple run sets"
 					className={classFor ('compare')}
 					href="compare.html">Compare</a>
+				<a title="View benchmark results for pull requests"
+					className={classFor ('pullRequests')}
+					href="pullrequests.html">Pull Requests</a>
 			</div>
 			<div className="NavigationSection Right" >
 				{deploymentLink}
@@ -633,4 +637,24 @@ export function parseLocationHashForArray (key: string, startFunc: (keyArray: Ar
 
 export function setLocationForArray (key: string, ids: Array<string>) {
 	window.location.hash = key + "=" + ids.join ("+");
+}
+
+export function pullRequestIdFromUrl (url: string): number | void {
+	var match = url.match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
+	if (match === null)
+		return undefined;
+	return Number (match [1]);
+}
+
+export function getPullRequestInfo (url: string, success: (info: Object) => void): void {
+	var id = pullRequestIdFromUrl (url);
+	if (id === undefined)
+		return;
+	var github = new GitHub ({
+		// HACK: A read-only access token to allow higher rate limits.
+		token: '319339f37f8f19b7b5ba92ebfcbdb965871440e0',
+		auth: 'oauth'
+	});
+	var repo = github.getRepo ("mono", "mono");
+	repo.getPull (id, (err, info) => success (info));
 }

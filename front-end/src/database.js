@@ -37,6 +37,10 @@ export class DBRunSet extends DBObject {
 type ErrorFunc = (err: any) => void;
 
 export function fetch (query: string, success: (results: Array<Object>) => void, error: ErrorFunc): void {
+	return fetchWithHeaders (query, {}, success, error);
+}
+
+export function fetchWithHeaders (query: string, headers: Object, success: (results: Array<Object>) => void, error: ErrorFunc): void {
 	var request = new XMLHttpRequest();
 	var url = 'http://performancebot.mono-project.com:81/' + query;
 
@@ -44,8 +48,8 @@ export function fetch (query: string, success: (results: Array<Object>) => void,
 		if (this.readyState !== 4)
 			return;
 
-		if (this.status !== 200) {
-			error ("database fetch failed");
+		if (!(this.status >= 200 && this.status < 300)) {
+			error ("database fetch failed (" + this.status.toString () + ")");
 			return;
 		}
 
@@ -53,6 +57,7 @@ export function fetch (query: string, success: (results: Array<Object>) => void,
 	};
 
 	request.open('GET', url, true);
+	Object.keys (headers).forEach (header => request.setRequestHeader (header, headers [header]));
 	request.send();
 }
 
