@@ -82,11 +82,11 @@ namespace Benchmarks.Graph4
 		{
 			Random r = new Random (31415);
 			//Node g = otherRandomGraph (8000000, 128, r);
-			Node g = randomGraph (1000000, r);
+			Node g = randomGraph (100000, r);
 			logger.InfoFormat ("long graph constructed");
 			for (int i = 0; i < 30; ++i) {
 				//otherRandomGraph (1000000, 128, r);
-				randomGraph (100000, r);
+				randomGraph (10000, r);
 			}
 			logger.InfoFormat ("done");
 			logger.InfoFormat ("nodes: " + g.countNodes ());
