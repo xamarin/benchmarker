@@ -154,7 +154,6 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 						displayString: this.props.featuredTimelines [index].get ('name'),
 						count: rsc.count
 					};
-					continue;
 				}
 			}
 
