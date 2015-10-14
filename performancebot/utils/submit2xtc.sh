@@ -4,15 +4,16 @@ set -x
 set -e
 set -o pipefail
 
-if [ $# -ne 4 ]; then
-    echo "usage: $0 <benchmarkerToolsDir> <commit> <build-url> <xbuild-android>"
+if [ $# -ne 5 ]; then
+    echo "usage: $0 <benchmarkerToolsDir> <mono-commit> <monodroid-commit> <build-url> <xbuild-android>"
     exit 1
 fi
 
 cd $1
-COMMITSHA="$2"
-BUILDURL="$3"
-XBUILDANDROID="$4"
+MONOCOMMITSHA="$2"
+MONODROIDCOMMITSHA="$3"
+BUILDURL="$4"
+XBUILDANDROID="$5"
 
 PARAMSJSON="AndroidAgent.UITests/params.json"
 XTCAPIKEY="../xtc-api-key"
@@ -39,7 +40,8 @@ xbuild /t:xtcloghelper /p:Configuration=Debug
 
 # generate run-set id for nexus5
 RUNSETID=$(mono --debug ./compare.exe \
-    --main-product mono $COMMITSHA \
+    --main-product mono $MONOCOMMITSHA \
+    --secondary-product monodroid $MONODROIDCOMMITSHA \
     --build-url $BUILDURL \
     --create-run-set \
     --machine "Nexus-5_4.4.4" \
