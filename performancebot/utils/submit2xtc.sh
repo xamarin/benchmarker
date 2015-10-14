@@ -62,7 +62,7 @@ mono \
     `cat $XTCAPIKEY` \
     --devices aba2bb7e \
     --async \
-    --fixture-chunk \
+    --test-chunk \
     --fixture AndroidAgent \
     --app-name AndroidAgent \
     --assembly-dir ./AndroidAgent.UITests/bin/Release \
