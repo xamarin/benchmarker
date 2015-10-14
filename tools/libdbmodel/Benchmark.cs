@@ -70,7 +70,10 @@ namespace Benchmarker.Models
 
 			var row = new PostgresRow ();
 			row.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
-			return PostgresInterface.Insert<string> (conn, "Benchmark", row, "name");
+			PostgresInterface.Insert<string> (conn, "Benchmark", row, "name");
+
+			nameToRow [Name] = row;
+			return Name;
 		}
 	}
 }
