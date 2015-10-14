@@ -70,7 +70,7 @@ namespace Benchmarker.Models
 			return machine.Name;
 		}
 
-		public static RunSet FromId (NpgsqlConnection conn, Machine machine, long id, Config config, Commit commit, List<Commit> secondaryCommits, string buildURL, string logURL)
+		public static RunSet FromId (NpgsqlConnection conn, Machine machine, long id, Config config, Commit mainCommit, List<Commit> secondaryCommits, string buildURL, string logURL)
 		{
 			var whereValues = new PostgresRow ();
 			whereValues.Set ("id", NpgsqlTypes.NpgsqlDbType.Integer, id);
@@ -101,14 +101,14 @@ namespace Benchmarker.Models
 				BuildURL = row.GetReference<string> ("rs.buildURL"),
 				LogURL = logURL,
 				Config = config,
-				Commit = commit,
+				Commit = mainCommit,
 				SecondaryCommits = secondaryCommits,
 				TimedOutBenchmarks = row.GetReference<string[]> ("rs.timedOutBenchmarks").ToList (),
 				CrashedBenchmarks = row.GetReference<string[]> ("rs.crashedBenchmarks").ToList ()
 			};
 
-			if (commit.Hash != row.GetReference<string> ("rs.commit"))
-				throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", commit.Hash, row.GetReference<string> ("rs.commit")));
+			if (mainCommit.Hash != row.GetReference<string> ("rs.commit"))
+				throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", mainCommit.Hash, row.GetReference<string> ("rs.commit")));
 			if (buildURL != null && buildURL != runSet.BuildURL)
 				throw new Exception ("Build URL does not match the one in the database.");
 			if (machine.Name != row.GetReference<string> ("m.name") || machine.Architecture != row.GetReference<string> ("m.architecture"))
@@ -116,10 +116,12 @@ namespace Benchmarker.Models
 			if (!config.EqualsPostgresObject (row, "c."))
 				throw new Exception ("Config does not match the one in the database.");
 
-			var secondaryHashes = row.GetReference<string[]> ("rs.secondaryCommits") ?? new string[] {};
-			if (secondaryHashes.Length != secondaryCommits.Count || secondaryCommits.Any (c => !secondaryHashes.Contains (c.Hash)))
-				throw new Exception ("Secondary commits do not match the ones in the database.");
-			
+			if (secondaryCommits != null) {
+				var secondaryHashes = row.GetReference<string[]> ("rs.secondaryCommits") ?? new string[] { };
+				if (secondaryHashes.Length != secondaryCommits.Count || secondaryCommits.Any (c => !secondaryHashes.Contains (c.Hash)))
+					throw new Exception ("Secondary commits do not match the ones in the database.");
+			}
+
 			return runSet;
 		}
 
