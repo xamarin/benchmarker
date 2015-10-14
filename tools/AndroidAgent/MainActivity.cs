@@ -162,7 +162,7 @@ namespace AndroidAgent
 
 		void RunBenchmark (string benchmarkName, string hostname, string architecture)
 		{
-			const int TRY_RUNS = 3;
+			const int DRY_RUNS = 3;
 			const int ITERATIONS = 10;
 
 			PrintCommit ();
@@ -170,8 +170,8 @@ namespace AndroidAgent
 			Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"", "default");
 			new Task (() => {
 				try {
-					for (var i = 0; i < (ITERATIONS + TRY_RUNS); i++) {
-						Iteration (benchmarkName, i, i < TRY_RUNS);
+					for (var i = 0; i < (ITERATIONS + DRY_RUNS); i++) {
+						Iteration (benchmarkName, i, i < DRY_RUNS);
 					}
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
