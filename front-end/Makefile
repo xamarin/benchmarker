@@ -8,6 +8,7 @@ STYLES = common compare style timeline pullrequest runset font-awesome.min
 # Sources and targets
 
 COMMON_SOURCES = $(addprefix src/,$(addsuffix .js,$(COMMON)))
+PAGE_SOURCES = $(addprefix src/,$(addsuffix .js,$(PAGES)))
 PAGE_TARGETS = $(addprefix build/,$(addsuffix .js,$(PAGES)))
 STYLE_TARGETS = $(addprefix build/,$(addsuffix .css,$(STYLES)))
 DEP_TARGETS = $(addprefix node_modules/,$(DEPS))
@@ -36,13 +37,12 @@ server :
 
 # Pages
 
-define PAGE_RULE
-build/$1.js : src/$1.js $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js build
+$(PAGE_TARGETS) : build/witness
+
+build/witness : $(PAGE_SOURCES) $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpack.config.js build
 	@echo 'Packing webs...'
 	@webpack --optimize-minimize --bail
-endef
-
-$(foreach PAGE,$(PAGES),$(eval $(call PAGE_RULE,$(PAGE))))
+	@touch build/witness
 
 # Dependencies
 
