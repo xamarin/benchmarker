@@ -30,8 +30,10 @@ namespace Benchmarker
 		static void AddParameters (NpgsqlCommand cmd, PostgresRow row) {
 			foreach (var column in row.Columns) {
 				var type = row.ColumnType (column);
-				var param = cmd.Parameters.Add (column, type);
 				var obj = row.GetReference<object> (column);
+				if (obj != null && type == NpgsqlTypes.NpgsqlDbType.Unknown && obj.GetType () == typeof(string[]))
+					type = NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar;
+				var param = cmd.Parameters.Add (column, type);
 				if (obj == null)
 					param.Value = DBNull.Value;
 				else if (type == NpgsqlTypes.NpgsqlDbType.Jsonb)
