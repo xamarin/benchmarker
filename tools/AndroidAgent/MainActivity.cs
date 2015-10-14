@@ -162,7 +162,7 @@ namespace AndroidAgent
 
 		void RunBenchmark (string benchmarkName, string hostname, string architecture)
 		{
-			const int TRY_RUNS = 10;
+			const int TRY_RUNS = 3;
 			const int ITERATIONS = 10;
 
 			PrintCommit ();
