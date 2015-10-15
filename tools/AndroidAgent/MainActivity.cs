@@ -25,6 +25,7 @@ using Benchmarks.Lists;
 using Benchmarks.Mandelbrot;
 using Benchmarks.Nbody;
 using Benchmarks.Objinst;
+using Benchmarks.OneList;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -110,6 +111,9 @@ namespace AndroidAgent
 				break;
 			case "objinst":
 				Objinst.Main (new string[] { "4000000" }, Logging.GetLogging ());
+				break;
+			case "onelist":
+				OneList.Main ();
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });

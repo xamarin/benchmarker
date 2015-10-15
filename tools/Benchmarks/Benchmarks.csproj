@@ -66,6 +66,7 @@
     <Compile Include="lists.cs" />
     <Compile Include="mandelbrot.cs" />
     <Compile Include="objinst.cs" />
+    <Compile Include="onelist.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
