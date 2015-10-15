@@ -92,17 +92,10 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
     constructor (props) {
         super (props);
         this.state = { gitHubInfo: undefined };
-
-        var pr = this.props.pullRequest;
-        var match = pr.get ('URL').match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
-        if (match !== null) {
-            var github = new GitHub ({});
-            var repo = github.getRepo ("mono", "mono");
-            repo.getPull (match [1], (err, info) => {
-                if (info !== undefined)
-                    this.setState ({ gitHubInfo: info });
-            });
-        }
+		xp_common.getPullRequestInfo (
+			this.props.pullRequest.get ('URL'),
+			info => this.setState ({ gitHubInfo: info })
+		);
     }
 
 	render () : Object {

@@ -309,3 +309,15 @@ export function deepClone<T> (toCopy: T) : T {
 
     return result;
 }
+
+export function intersperse<T> (element: T, array: Array<T>): Array<T> {
+	var first = true;
+	var result = [];
+	for (var i = 0; i < array.length; ++i) {
+		if (!first)
+			result.push (element);
+		first = false;
+		result.push (array [i]);
+	}
+	return result;
+}
