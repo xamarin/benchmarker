@@ -66,7 +66,6 @@ mono \
     --devices aba2bb7e \
     --async \
     --test-chunk \
-    --fixture AndroidAgent \
     --app-name AndroidAgent \
     --assembly-dir ./AndroidAgent.UITests/bin/Release \
     --user 'bernhard.urban@xamarin.com' | tee $XTCUPLOADLOG
