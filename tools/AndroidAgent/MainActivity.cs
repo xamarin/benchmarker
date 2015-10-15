@@ -29,6 +29,7 @@ using Benchmarks.OneList;
 using Benchmarks.Perimeter;
 using Benchmarks.Raytracer2;
 using Benchmarks.Raytracer3;
+using Benchmarks.SciMark;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -126,6 +127,21 @@ namespace AndroidAgent
 				break;
 			case "raytracer3":
 				RayTracer3.Main (new string[] { "120" }, Logging.GetLogging ());
+				break;
+			case "scimark-fft":
+				ScimarkEntrypoint.Main (new string[] { "fft" }, Logging.GetLogging ());
+				break;
+			case "scimark-sor":
+				ScimarkEntrypoint.Main (new string[] { "sor" }, Logging.GetLogging ());
+				break;
+			case "scimark-mc":
+				ScimarkEntrypoint.Main (new string[] { "mc" }, Logging.GetLogging ());
+				break;
+			case "scimark-mm":
+				ScimarkEntrypoint.Main (new string[] { "mm" }, Logging.GetLogging ());
+				break;
+			case "scimark-lu":
+				ScimarkEntrypoint.Main (new string[] { "lu" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });

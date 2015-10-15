@@ -134,6 +134,36 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkScimarkFFT ()
+		{
+			RunBenchmarkHelper ("scimark-fft");
+		}
+
+		[Test]
+		public void RunBenchmarkScimarkSOR ()
+		{
+			RunBenchmarkHelper ("scimark-sor");
+		}
+
+		[Test]
+		public void RunBenchmarkScimarkMC ()
+		{
+			RunBenchmarkHelper ("scimark-mc");
+		}
+
+		[Test]
+		public void RunBenchmarkScimarkMM ()
+		{
+			RunBenchmarkHelper ("scimark-mm");
+		}
+
+		[Test]
+		public void RunBenchmarkScimarkLU ()
+		{
+			RunBenchmarkHelper ("scimark-lu");
+		}
+
+		[Test]
 		public void RunBenchmarkStrcat ()
 		{
 			RunBenchmarkHelper ("strcat");

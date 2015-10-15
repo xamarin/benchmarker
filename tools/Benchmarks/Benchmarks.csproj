@@ -79,6 +79,16 @@
     <Compile Include="Perimeter\WhiteNode.cs" />
     <Compile Include="raytracer2.cs" />
     <Compile Include="raytracer3.cs" />
+    <Compile Include="SciMark\Constants.cs" />
+    <Compile Include="SciMark\FFT.cs" />
+    <Compile Include="SciMark\LU.cs" />
+    <Compile Include="SciMark\MonteCarlo.cs" />
+    <Compile Include="SciMark\Random.cs" />
+    <Compile Include="SciMark\SOR.cs" />
+    <Compile Include="SciMark\SparseCompRow.cs" />
+    <Compile Include="SciMark\Stopwatch.cs" />
+    <Compile Include="SciMark\kernel.cs" />
+    <Compile Include="SciMark\ScimarkEntrypoint.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -95,5 +105,6 @@
     <Folder Include="GrandeTracer\" />
     <Folder Include="health\" />
     <Folder Include="Perimeter\" />
+    <Folder Include="SciMark\" />
   </ItemGroup>
 </Project>
