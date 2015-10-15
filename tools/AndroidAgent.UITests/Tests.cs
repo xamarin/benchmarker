@@ -116,6 +116,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkPerimeter ()
+		{
+			RunBenchmarkHelper ("perimeter");
+		}
+
+		[Test]
 		public void RunBenchmarkStrcat ()
 		{
 			RunBenchmarkHelper ("strcat");

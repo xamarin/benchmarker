@@ -67,6 +67,16 @@
     <Compile Include="mandelbrot.cs" />
     <Compile Include="objinst.cs" />
     <Compile Include="onelist.cs" />
+    <Compile Include="Perimeter\BlackNode.cs" />
+    <Compile Include="Perimeter\GreyNode.cs" />
+    <Compile Include="Perimeter\NorthEast.cs" />
+    <Compile Include="Perimeter\NorthWest.cs" />
+    <Compile Include="Perimeter\Perimeter.cs" />
+    <Compile Include="Perimeter\Quadrant.cs" />
+    <Compile Include="Perimeter\QuadTreeNode.cs" />
+    <Compile Include="Perimeter\SouthEast.cs" />
+    <Compile Include="Perimeter\SouthWest.cs" />
+    <Compile Include="Perimeter\WhiteNode.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -82,5 +92,6 @@
     <Folder Include="BiSort\" />
     <Folder Include="GrandeTracer\" />
     <Folder Include="health\" />
+    <Folder Include="Perimeter\" />
   </ItemGroup>
 </Project>

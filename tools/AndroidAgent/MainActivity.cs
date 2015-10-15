@@ -26,6 +26,7 @@ using Benchmarks.Mandelbrot;
 using Benchmarks.Nbody;
 using Benchmarks.Objinst;
 using Benchmarks.OneList;
+using Benchmarks.Perimeter;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -114,6 +115,9 @@ namespace AndroidAgent
 				break;
 			case "onelist":
 				OneList.Main ();
+				break;
+			case "perimeter":
+				Perimeter.Main (new string[] { "-l", "17" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });
