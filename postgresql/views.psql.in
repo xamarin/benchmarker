@@ -14,17 +14,12 @@ select * from machine;
 create view "1".parseobjectid as
 select * from parseobjectid;
 
-create view "1".runsetcount as
-select array_agg(rs.id) as ids,
-       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
-from runset rs, machine m, config cfg
-where rs.pullrequest is null and rs.machine = m.name and rs.config = cfg.name
-group by m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexecutable, cfg.monoenvironmentvariables, cfg.monooptions;
+create view "1".commit as
+select * from commit;
 
 create view "1".summary as
 select results.runset as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
-       c.hash as c_hash, c.commitDate as c_commitDate,
+       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product,
        m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
        cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
        results.metric, results.averages, results.variances from (
@@ -39,6 +34,14 @@ group by runset, metric
 ) as results,
 runset rs, commit c, machine m, config cfg
 where results.runset = rs.id and rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
+
+create or replace view "1".runset as
+select c.hash as c_hash, c.commitdate as c_commitdate, c.product as c_product,
+       rs.id as rs_id, rs.startedat as rs_startedat, rs.finishedat as rs_finishedat, rs.buildurl as rs_buildurl, rs.logurls as rs_logurls, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedoutbenchmarks as rs_timedoutbenchmarks, rs.crashedbenchmarks as rs_crashedbenchmarks, rs.secondarycommits as rs_secondarycommits,
+       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
+from runset rs, commit c, machine m, config cfg
+where rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
 create view "1".runsetcount as
 select array_agg(rs.id) as ids,

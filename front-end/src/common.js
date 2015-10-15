@@ -379,28 +379,40 @@ type RunSetDescriptionProps = {
 
 type RunSetDescriptionState = {
 	results: Array<Object> | void;
+	secondaryCommits: Array<Object> | void;
 };
 
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = { results: undefined };
+		this.state = { results: undefined, secondaryCommits: undefined };
 		this.fetchResults (props.runSet);
 	}
 
 	fetchResults (runSet: Database.DBRunSet) {
 		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
-		objs => {
-			if (runSet !== this.props.runSet)
-				return;
-			this.setState ({ results: objs });
-		}, error => {
-			alert ("error loading results: " + error.toString ());
-		});
+			objs => {
+				if (runSet !== this.props.runSet)
+					return;
+				this.setState ({ results: objs });
+			}, error => {
+				alert ("error loading results: " + error.toString ());
+			});
+		var secondaryCommits = runSet.get ('secondaryCommits');
+		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
+			Database.fetch ('commit?hash=in.' + secondaryCommits.join (','),
+				objs => {
+					if (runSet !== this.props.runSet)
+						return;
+					this.setState ({ secondaryCommits: objs });
+				}, error => {
+					alert ("error loading commits: " + error.toString ());
+				});
+		}
 	}
 
 	componentWillReceiveProps (nextProps: RunSetDescriptionProps) {
-		this.setState ({ results: undefined });
+		this.setState ({ results: undefined, secondaryCommits: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
@@ -412,6 +424,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var logLinks = [];
 		var logLinkList;
 		var table;
+		var secondaryProductsList;
 
 		if (buildURL !== undefined)
 			buildLink = <a href={buildURL}>build</a>;
@@ -430,6 +443,25 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			} else {
 				logLinkList = <ul key="logLinks">{logLinks}</ul>;
 			}
+		}
+
+		var secondaryCommits = runSet.get ('secondaryCommits');
+		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
+			var elements;
+			if (this.state.secondaryCommits === undefined) {
+				elements = secondaryCommits.map (c => {
+					var short = c.substring (0, 10);
+					return <li key={"commit" + c}>{short}</li>;
+					});
+			} else {
+				elements = this.state.secondaryCommits.map (c => {
+					var short = c ['hash'].substring (0, 10);
+					var link = githubCommitLink (c ['product'], c ['hash']);
+					return <li key={"commit" + c ['hash']}><a href={link}>{c ['product']} {short}</a></li>;
+					});
+			}
+			secondaryProductsList = [<h1 key="secondaryProductsHeader">Secondary products</h1>,
+				<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
 		}
 
 		if (this.state.results === undefined) {
@@ -502,18 +534,32 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		}
 
 		var commitHash = runSet.get ('commit');
-		var commitLink = githubCommitLink (commitHash);
+		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
+		var commitLink = githubCommitLink (product, commitHash);
 
 		return <div className="Description">
 			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
+			{secondaryProductsList}
 			{table}
 		</div>;
 	}
 }
 
-export function githubCommitLink (commit: string) : string {
-	return "https://github.com/mono/mono/commit/" + commit;
+export function githubCommitLink (product: string, commit: string) : string {
+	var repo = "";
+	switch (product) {
+		case 'mono':
+			repo = "mono/mono";
+			break;
+		case 'monodroid':
+			repo = "xamarin/monodroid";
+			break;
+		default:
+			alert ("Unknown product " + product);
+			return "";
+	}
+	return "https://github.com/" + repo + "/commit/" + commit;
 }
 
 export function githubCompareLink (base: string, compare: string) : string {
@@ -628,7 +674,7 @@ export function parseLocationHashForArray (key: string, startFunc: (keyArray: Ar
 		return;
 	}
 
-	var ids = hash.split ('+').map (parseInt);
+	var ids = hash.split ('+');
 	Database.fetchParseObjectIds (ids, startFunc,
 		error => {
 			alert ("Error: " + error.toString ());

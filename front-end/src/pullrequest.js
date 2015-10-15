@@ -110,7 +110,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
             title = info.title;
 
 		var description = undefined;
-		var commit = <a href={xp_common.githubCommitLink (baselineHash)}>{baselineHash.substring (0, 10)}</a>;
+		var commit = <a href={xp_common.githubCommitLink ('mono', baselineHash)}>{baselineHash.substring (0, 10)}</a>;
         if (info !== undefined && info.user !== undefined) {
 			var user = <a href={info.user ["html_url"]}>{info.user.login}</a>;
 			description = <p>Authored by {user}, based on {commit}.</p>;

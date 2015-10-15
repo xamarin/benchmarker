@@ -249,13 +249,13 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryPro
 	render () : Object {
 		var runSet = this.props.runSet;
 		var commitHash = runSet.commit.get ('hash');
-		var commitLink = xp_common.githubCommitLink (commitHash);
+		var commitLink = xp_common.githubCommitLink (runSet.commit.get ('product'), commitHash);
 
 		var prev = this.props.previousRunSet;
 		var prevItems;
 		if (prev !== undefined) {
 			var prevHash = prev.commit.get ('hash');
-			var prevLink = xp_common.githubCommitLink (prevHash);
+			var prevLink = xp_common.githubCommitLink (prev.commit.get ('product'), prevHash);
 			var compareLink = xp_common.githubCompareLink (prevHash, commitHash);
 			prevItems = [<dt key="previousName">Previous</dt>,
 				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
