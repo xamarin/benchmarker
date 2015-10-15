@@ -31,7 +31,7 @@ clean :
 .PHONY :
 server :
 	@echo 'Connect to http://localhost:8080/webpack-dev-server/index.html'
-	@webpack-dev-server --devtool=inline-source-map
+	@DEV_SERVER=true webpack-dev-server --devtool=inline-source-map
 
 .PHONY :
 flow :

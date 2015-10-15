@@ -1,5 +1,16 @@
 var webpack = require ('webpack');
 
+var plugins;
+if (!process.env ['DEV_SERVER']) {
+    plugins = [
+        new webpack.DefinePlugin({
+            'process.env': {
+                'NODE_ENV': '"production"'
+            }
+        })
+    ];
+}
+
 module.exports = {
     entry: {
         compare: "./src/compare.js",
@@ -21,11 +32,5 @@ module.exports = {
     		},
         ]
     },
-    plugins: [
-        new webpack.DefinePlugin({
-            'process.env': {
-                'NODE_ENV': '"production"'
-            }
-        })
-    ]
+    plugins: plugins
 };
