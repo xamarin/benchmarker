@@ -128,6 +128,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkRaytracer3 ()
+		{
+			RunBenchmarkHelper ("raytracer3");
+		}
+
+		[Test]
 		public void RunBenchmarkStrcat ()
 		{
 			RunBenchmarkHelper ("strcat");

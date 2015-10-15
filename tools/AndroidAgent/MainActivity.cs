@@ -28,6 +28,7 @@ using Benchmarks.Objinst;
 using Benchmarks.OneList;
 using Benchmarks.Perimeter;
 using Benchmarks.Raytracer2;
+using Benchmarks.Raytracer3;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -97,7 +98,7 @@ namespace AndroidAgent
 				graph8.Node.Main (Logging.GetLogging ());
 				break;
 			case "hash3":
-				Hash3.Main (new string[] { "50000"}, Logging.GetLogging ());
+				Hash3.Main (new string[] { "50000" }, Logging.GetLogging ());
 				break;
 			case "health":
 				Health.Main (new string[] { "-l", "5", "-t", "8" }, Logging.GetLogging ());
@@ -122,6 +123,9 @@ namespace AndroidAgent
 				break;
 			case "raytracer2":
 				RayTracer2.Main (new string[] { "150" }, Logging.GetLogging ());
+				break;
+			case "raytracer3":
+				RayTracer3.Main (new string[] { "200" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });

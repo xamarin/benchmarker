@@ -78,6 +78,7 @@
     <Compile Include="Perimeter\SouthWest.cs" />
     <Compile Include="Perimeter\WhiteNode.cs" />
     <Compile Include="raytracer2.cs" />
+    <Compile Include="raytracer3.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
