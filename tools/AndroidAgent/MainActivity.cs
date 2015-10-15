@@ -27,6 +27,7 @@ using Benchmarks.Nbody;
 using Benchmarks.Objinst;
 using Benchmarks.OneList;
 using Benchmarks.Perimeter;
+using Benchmarks.Raytracer2;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -118,6 +119,9 @@ namespace AndroidAgent
 				break;
 			case "perimeter":
 				Perimeter.Main (new string[] { "-l", "17" }, Logging.GetLogging ());
+				break;
+			case "raytracer2":
+				RayTracer2.Main (new string[] { "150" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });
