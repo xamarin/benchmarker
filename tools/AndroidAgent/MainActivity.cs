@@ -122,10 +122,10 @@ namespace AndroidAgent
 				Perimeter.Main (new string[] { "-l", "17" }, Logging.GetLogging ());
 				break;
 			case "raytracer2":
-				RayTracer2.Main (new string[] { "150" }, Logging.GetLogging ());
+				RayTracer2.Main (new string[] { "120" }, Logging.GetLogging ());
 				break;
 			case "raytracer3":
-				RayTracer3.Main (new string[] { "200" }, Logging.GetLogging ());
+				RayTracer3.Main (new string[] { "120" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "400000" });
