@@ -99,19 +99,19 @@ namespace AndroidAgent
 				graph8.Node.Main (Logging.GetLogging ());
 				break;
 			case "hash3":
-				Hash3.Main (new string[] { "50000" }, Logging.GetLogging ());
+				Hash3.Main (new string[] { "400000" }, Logging.GetLogging ());
 				break;
 			case "health":
-				Health.Main (new string[] { "-l", "5", "-t", "8" }, Logging.GetLogging ());
+				Health.Main (new string[] { "-l", "10", "-t", "16" }, Logging.GetLogging ());
 				break;
 			case "lists":
 				Lists.Main (new string[] { "1000" }, Logging.GetLogging ());
 				break;
 			case "mandelbrot":
-				Mandelbrot.Main (new string[] { "150" }, Logging.GetLogging ());
+				Mandelbrot.Main (new string[] { "1500" }, Logging.GetLogging ());
 				break;
 			case "n-body":
-				NBody.Main (new string[] { "50000" }, Logging.GetLogging ());
+				NBody.Main (new string[] { "400000" }, Logging.GetLogging ());
 				break;
 			case "objinst":
 				Objinst.Main (new string[] { "4000000" }, Logging.GetLogging ());
@@ -144,7 +144,7 @@ namespace AndroidAgent
 				ScimarkEntrypoint.Main (new string[] { "lu" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
-				strcat.Main (new string[] { "400000" });
+				strcat.Main (new string[] { "40000000" });
 				break;
 			default:
 				throw new NotImplementedException ();
