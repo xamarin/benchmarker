@@ -10,9 +10,9 @@ before_script:
     - sudo pip2 install buildbot
     - sudo pip2 install requests
     - EC2PBOTMASTERIP=dummy make -C performancebot pylint
+    - npm i -g webpack
     - npm i -g eslint@1.1.0 # force this version until newer version than 1.3.1 is available (https://github.com/eslint/eslint/issues/3591)
-    - npm i -g babel-eslint
-    - npm i -g eslint-plugin-react
+    - npm i -g tslint
     - make -C front-end
     - make -C front-end lint
     - make -C accredit/cloud-code lint

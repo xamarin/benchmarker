@@ -183,19 +183,19 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				{displayString}
 			</option>;
 		}
-		
+
 		function renderFeaturedTimelines () {
 			if (this.props.featuredTimelines === undefined)
 				return undefined;
 
 			return <optgroup label="Featured">
-				{featuredRSCs.map (rsc => renderRSC.call (this, rsc, rsc.displayString))}
+				{featuredRSCs.map (frsc => renderRSC.call (this, frsc, frsc.displayString))}
 			</optgroup>;
 		}
 
-		function renderGroup (machines: MachinesMap, machineName: string) {
-			return <optgroup key={"group" + machineName} label={machineName}>
-				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (rsc => renderRSC.call (this, rsc, undefined))}
+		function renderGroup (machinesMap: MachinesMap, name: string) {
+			return <optgroup key={"group" + name} label={name}>
+				{xp_utils.sortArrayNumericallyBy (machinesMap [name], x => -x.count).map (mrsc => renderRSC.call (this, mrsc, undefined))}
 			</optgroup>;
 		}
 
@@ -238,10 +238,11 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var target: any = event.target;
 		var names = target.value.split ('+');
 		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
-		if (rsc !== undefined)
+		if (rsc !== undefined) {
 			this.props.onChange (rsc);
-		else
+		} else {
 			console.log ("Couldn't find run set count.");
+		}
 	}
 }
 
@@ -480,7 +481,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			var resultsByBenchmark = {};
 			var metricsDict = {};
 			for (var i = 0; i < this.state.results.length; ++i) {
-				var result = this.state.results [i];
+				let result = this.state.results [i];
 				var benchmark = result ['benchmark'];
 				var metric = result ['metric'];
 				var entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] };
@@ -632,9 +633,9 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 	var components = hash.split ('&');
 	var parsed = {};
 	var error = false;
-	for (var i = 0; i < components.length; ++i) {
+	for (let i = 0; i < components.length; ++i) {
 		var kv = components [i].split ('=');
-		if (kv.length != 2) {
+		if (kv.length !== 2) {
 			error = true;
 			break;
 		}
@@ -655,8 +656,8 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 		var keyMap = {};
 		keys.forEach ((k, i) => keyMap [items [i]] = k);
 		startFunc (keyMap);
-	}, error => {
-		alert ("Error: " + error.toString ());
+	}, err => {
+		alert ("Error: " + err.toString ());
 	});
 }
 

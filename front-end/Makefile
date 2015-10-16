@@ -21,7 +21,7 @@ all : $(PAGE_TARGETS) $(STYLE_TARGETS)
 .PHONY : lint
 lint :
 	@echo 'Linting...'
-	@eslint -f compact src
+	@tslint src/*.ts src/*.tsx
 
 .PHONY : clean
 clean :

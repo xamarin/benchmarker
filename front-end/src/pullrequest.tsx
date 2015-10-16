@@ -6,7 +6,6 @@
 "use strict";
 
 import * as xp_common from './common.tsx';
-import * as xp_utils from './utils.ts';
 import * as xp_charts from './charts.tsx';
 import * as Database from './database.ts';
 import React = require ('react');

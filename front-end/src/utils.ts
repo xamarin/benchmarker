@@ -1,8 +1,6 @@
-/* @flow */
-
 "use strict";
 
-export function findIndex<T> (arr : Array<T>, f: (v: T) => boolean) : number {
+export function findIndex<T> (arr: Array<T>, f: (v: T) => boolean) : number {
     for (var i = 0; i < arr.length; ++i) {
 		if (f (arr [i]))
 			return i;
@@ -139,6 +137,20 @@ export function formatDate (date: Date) : string {
     return dayFormatted + " " + timeFormatted;
 }
 
+export function intersperse<T> (element: T, array: Array<T>): Array<T> {
+    var first = true;
+    var result = [];
+    for (var i = 0; i < array.length; ++i) {
+        if (!first)
+            result.push (element);
+        first = false;
+        result.push (array [i]);
+    }
+    return result;
+}
+
+/* tslint:disable: triple-equals */
+
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 export function deepEquals (...args: any[]) : boolean {
     var leftChain = [], rightChain = [];
@@ -197,8 +209,7 @@ export function deepEquals (...args: any[]) : boolean {
         for (p in y) {
             if (y.hasOwnProperty(p) !== x.hasOwnProperty(p)) {
                 return false;
-            }
-            else if (typeof y[p] !== typeof x[p]) {
+            } else if (typeof y[p] !== typeof x[p]) {
                 return false;
             }
         }
@@ -206,8 +217,7 @@ export function deepEquals (...args: any[]) : boolean {
         for (p in x) {
             if (y.hasOwnProperty(p) !== x.hasOwnProperty(p)) {
                 return false;
-            }
-            else if (typeof y[p] !== typeof x[p]) {
+            } else if (typeof y[p] !== typeof x[p]) {
                 return false;
             }
 
@@ -237,12 +247,12 @@ export function deepEquals (...args: any[]) : boolean {
     }
 
     if (arguments.length < 1) {
-        return true; //Die silently? Don't know how to handle such case, please help...
+        return true; // Die silently? Don't know how to handle such case, please help...
         // throw "Need two or more arguments to compare";
     }
 
     for (var i = 1, l = arguments.length; i < l; i++) {
-        leftChain = []; //Todo: this can be cached
+        leftChain = []; // Todo: this can be cached
         rightChain = [];
 
         if (!compare2Objects (arguments[0], arguments[i])) {
@@ -310,17 +320,5 @@ export function deepClone<T> (toCopy: T) : T {
         }
     }
 
-    return result;
-}
-
-export function intersperse<T> (element: T, array: Array<T>): Array<T> {
-    var first = true;
-    var result = [];
-    for (var i = 0; i < array.length; ++i) {
-        if (!first)
-            result.push (element);
-        first = false;
-        result.push (array [i]);
-    }
     return result;
 }

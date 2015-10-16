@@ -224,7 +224,7 @@ class Page extends React.Component<PageProps, PageState> {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
 				var elem = <RunSetSummary runSet={rs} previousRunSet={prev} />;
-				elem.key = "runSet" + i.toString ();  
+				elem.key = "runSet" + i.toString ();
 				return elem;
 			});
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
@@ -337,13 +337,13 @@ interface TimelineChartProps {
 	graphName: string;
 	machine: Database.DBObject;
 	config: Database.DBObject;
-	metric: string,
+	metric: string;
 	sortedResults: Array<Database.Summary>;
 	zoomInterval: {start: number, end: number};
 	runSetSelected: (runSet: Database.DBObject) => void;
 };
 
-class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
+abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
 	table : Array<Object>;
 
 	valueAxisTitle () : string {
@@ -377,13 +377,11 @@ class TimelineChart<Props extends TimelineChartProps> extends React.Component<Pr
 			selectListener={this.props.runSetSelected.bind (this)} />;
 	}
 
-	computeTable (nextProps) {
-	}
+	abstract computeTable (nextProps: Props) : void;
 
 	invalidateState (nextProps) {
 		this.table = undefined;
 		this.computeTable (nextProps);
-		//this.forceUpdate ();
 	}
 }
 

@@ -5,7 +5,6 @@
 
 "use strict";
 
-import * as xp_utils from './utils.ts';
 import * as xp_common from './common.tsx';
 import * as Database from './database.ts';
 import React = require ('react');
@@ -32,10 +31,11 @@ class Controller {
 			return;
 		Database.fetchRunSet (this.startupRunSetId,
 			runSet => {
-				if (runSet === undefined)
+				if (runSet === undefined) {
 					this.startupRunSetId = undefined;
-				else
+				} else {
 					this.runSet = runSet;
+				}
 				this.checkAllDataLoaded ();
 			}, error => {
 				alert ("error loading run set: " + error.toString ());
@@ -111,10 +111,11 @@ class Page extends React.Component<PageProps, PageState> {
 
 	render () {
 		var detail;
-		if (this.state.selection.runSet === undefined)
+		if (this.state.selection.runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
-		else
+		} else {
 			detail = <xp_common.RunSetDescription runSet={this.state.selection.runSet} />;
+		}
 
 		return <div className="RunSetPage">
 			<header>

@@ -110,19 +110,21 @@ function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
 function sortDataArrayByDifference (dataArray: DataArray) : DataArray {
 	var differences = {};
 	for (var i = 0; i < dataArray.length; ++i) {
-		var row = dataArray [i];
+		let row = dataArray [i];
 		var min = Number.MAX_VALUE;
 		var max = Number.MIN_VALUE;
 		for (var j = 0; j < row [1].length; ++j) {
 			var avg = rangeMean (rangeInBenchmarkRow (row, j));
-			if (min === undefined)
+			if (min === undefined) {
 				min = avg;
-			else
+			} else {
 				min = Math.min (min, avg);
-			if (max === undefined)
+			}
+			if (max === undefined) {
 				max = avg;
-			else
+			} else {
 				max = Math.max (max, avg);
+			}
 		}
 		differences [row [0]] = max - min;
 	}
@@ -161,10 +163,11 @@ function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
 		}
 		if (includeConfigs) {
 			var config = runSet.config;
-			if (includeMachine)
+			if (includeMachine) {
 				str = str + " / ";
-			else if (str !== "")
+			} else if (str !== "") {
 				str = str + "\n";
+			}
 			str = str + config.get ('name');
 		}
 		if (includeStartedAt) {
@@ -376,15 +379,17 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 entry ["lowhighavg" + j] = lowhighavg;
                 entry ["lowhigherror" + j] = range [3] - range [0];
 
-                if (min === undefined)
+                if (min === undefined) {
                     min = range [0];
-                else
+				} else {
                     min = Math.min (min, range [0]);
+				}
 
-                if (max === undefined)
+                if (max === undefined) {
                     max = range [3];
-                else
+				} else {
                     max = Math.max (max, range [3]);
+				}
 
                 entry ["stdBalloon" + j] = formatPercentage (range [1]) + "–" + formatPercentage (range [2]);
                 entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);

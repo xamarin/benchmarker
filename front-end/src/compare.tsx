@@ -166,7 +166,7 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 				<button onClick={this.removeSelector.bind (this, index)}>&minus;&ensp;Remove</button>
 				<div style={{ clear: 'both' }}></div>
 			</section>;
-		}
+		};
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector)}
 			<footer><button onClick={this.addSelector.bind (this)}>+&ensp;Add Run Set</button></footer>

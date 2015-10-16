@@ -156,16 +156,17 @@ export function fetchRunSetsForMachineAndConfig (machine: DBObject, config: DBOb
 }
 
 export function findRunSet (runSets: Array<DBRunSet>, id: number): DBRunSet {
-	return xp_utils.find (runSets, rs => rs.get ('id') == id);
+	return xp_utils.find (runSets, rs => rs.get ('id') === id);
 }
 
 export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) {
 	fetch ('runset?rs_id=eq.' + id,
 		objs => {
-			if (objs.length === 0)
+			if (objs.length === 0) {
 				success (undefined);
-			else
+			} else {
 				success (processRunSetEntries (objs) [0]);
+			}
 		}, error);
 }
 
