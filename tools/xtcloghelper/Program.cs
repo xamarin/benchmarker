@@ -1,13 +1,16 @@
-﻿using Benchmarker;
-using bm = Benchmarker.Models;
-using System;
-using System.Text.RegularExpressions;
-using Common.Logging.Simple;
-using Common.Logging;
-using Npgsql;
+﻿using System;
 using System.Collections.Generic;
-using Xamarin.TestCloud.Api.V0;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
+using Benchmarker;
+using Common.Logging;
+using Common.Logging.Simple;
 using Nito.AsyncEx;
+using Npgsql;
+using Xamarin.TestCloud.Api.V0;
+using bm = Benchmarker.Models;
 
 namespace xtclog
 {
@@ -34,7 +37,7 @@ namespace xtclog
 					UsageAndExit (false);
 				}
 				string xtcJobGuid = args [1];
-				long runSetId = Int64.Parse(args [2]);
+				long runSetId = Int64.Parse (args [2]);
 				var connection = PostgresInterface.Connect ();
 				PushXTCJobId (connection, xtcJobGuid, runSetId);
 			} else if (args [0] == "--crawl-logs") {
@@ -105,10 +108,29 @@ namespace xtclog
 			return l;
 		}
 
-		private static string DownloadLog (string url)
+		private const int ZIP_LEAD_BYTES = 0x04034b50;
+
+		private static bool hasZipFileHeader (byte[] data)
+		{
+			Debug.Assert (data != null && data.Length >= 4);
+			return (BitConverter.ToInt32 (data, 0) == ZIP_LEAD_BYTES);
+		}
+
+		private static List<string> DownloadLogs (string url)
 		{
 			using (var wc = new System.Net.WebClient ()) {
-				return wc.DownloadString (url);
+				var logs = new List<string> ();
+				byte[] data = wc.DownloadData (url);
+
+				// when tests are chunked, XTC API returns a ZIP file containing all logs instead of a single log file.
+				if (hasZipFileHeader (data)) {
+					foreach (var file in new ZipArchive (new MemoryStream (data)).Entries) {
+						logs.Add (new StreamReader(file.Open ()).ReadToEnd ());
+					}
+				} else {
+					logs.Add (System.Text.Encoding.UTF8.GetString (data));
+				}
+				return logs;
 			}
 		}
 
@@ -168,15 +190,21 @@ namespace xtclog
 
 		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId)
 		{
-			string log = DownloadLog (logUrl);
+			List<string> logs = DownloadLogs (logUrl);
 
-			var commit = ParseCommit (log);
-			var machine = ParseMachine (log);
-			var config = ParseConfig (log);
+			var commit = ParseCommit (logs [0]);
+			var machine = ParseMachine (logs [0]);
+			var config = ParseConfig (logs [0]);
 
 			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, null, logUrl);
 
-			var bench_results = ParseRuns (log);
+			Dictionary<string, List<TimeSpan>> bench_results = new Dictionary<string, List<TimeSpan>> ();
+			foreach (string log in logs) {
+				var tmp = ParseRuns (log);
+				foreach (string benchmark in tmp.Keys) {
+					bench_results [benchmark] = tmp [benchmark];
+				}
+			}
 
 			foreach (string benchmark in bench_results.Keys) {
 				var result = new bm.Result {
@@ -201,7 +229,7 @@ namespace xtclog
 				}
 			}
 
-			return new Tuple<bm.RunSet, bm.Machine>(runSet, machine);
+			return new Tuple<bm.RunSet, bm.Machine> (runSet, machine);
 		}
 	}
 }
