@@ -89,6 +89,7 @@
     <Compile Include="SciMark\Stopwatch.cs" />
     <Compile Include="SciMark\kernel.cs" />
     <Compile Include="SciMark\ScimarkEntrypoint.cs" />
+    <Compile Include="Euler\Euler.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -106,5 +107,6 @@
     <Folder Include="health\" />
     <Folder Include="Perimeter\" />
     <Folder Include="SciMark\" />
+    <Folder Include="Euler\" />
   </ItemGroup>
 </Project>

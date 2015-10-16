@@ -15,6 +15,7 @@ using System.Diagnostics;
 using Benchmarks.BH;
 using Benchmarks.BinaryTrees;
 using Benchmarks.BiSort;
+using Benchmarks.Euler;
 using Benchmarks.Except;
 using Benchmarks.GrandeTracer;
 using graph4 = Benchmarks.Graph4;
@@ -85,6 +86,9 @@ namespace AndroidAgent
 				break;
 			case "bisort":
 				BiSort.Main (new string[] { "-s", "1500000" }, Logging.GetLogging ());
+				break;
+			case "euler":
+				Euler.Main (new string[] { }, Logging.GetLogging ());
 				break;
 			case "except":
 				except.Main (new string[] { "500000" }, Logging.GetLogging ());

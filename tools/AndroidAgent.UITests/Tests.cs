@@ -50,6 +50,12 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
+		public void RunBenchmarkEuler ()
+		{
+			RunBenchmarkHelper ("euler");
+		}
+
+		[Test]
 		public void RunBenchmarkExcept ()
 		{
 			RunBenchmarkHelper ("except");
