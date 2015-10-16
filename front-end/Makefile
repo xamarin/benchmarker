@@ -1,14 +1,14 @@
 # Stuff you should feel safe changing
 
 PAGES = compare config machine timeline runset pullrequest pullrequests
-COMMON = common utils charts database outliers
-DEPS = babel-loader react github-api react-dom
+COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
+DEPS = react github-api react-dom ts-loader typescript
 STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min
 
 # Sources and targets
 
-COMMON_SOURCES = $(addprefix src/,$(addsuffix .js,$(COMMON)))
-PAGE_SOURCES = $(addprefix src/,$(addsuffix .js,$(PAGES)))
+COMMON_SOURCES = $(addprefix src/,$(COMMON))
+PAGE_SOURCES = $(addprefix src/,$(addsuffix .tsx,$(PAGES)))
 PAGE_TARGETS = $(addprefix build/,$(addsuffix .js,$(PAGES)))
 STYLE_TARGETS = $(addprefix build/,$(addsuffix .css,$(STYLES)))
 DEP_TARGETS = $(addprefix node_modules/,$(DEPS))

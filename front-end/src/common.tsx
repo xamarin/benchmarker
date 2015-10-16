@@ -1,14 +1,19 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/github-api/github-api.d.ts"/>
+
 /* @flow */
 
 /* global process */
 
 "use strict";
 
-import * as xp_utils from './utils.js';
-import * as Database from './database.js';
-import * as Outliers from './outliers.js';
-import React from 'react';
-import GitHub from 'github-api';
+declare var process: any;
+
+import * as xp_utils from './utils.ts';
+import * as Database from './database.ts';
+import * as Outliers from './outliers.ts';
+import React = require ('react');
+import GitHub = require ('github-api');
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -24,12 +29,12 @@ export var xamarinColors = {
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
 type ConfigDescriptionProps = {
-	config: Database.DBObject | void;
+	config: Database.DBObject;
 	omitHeader: boolean;
 };
 
-export class ConfigDescription extends React.Component<ConfigDescriptionProps, ConfigDescriptionProps, void> {
-	render () : Object {
+export class ConfigDescription extends React.Component<ConfigDescriptionProps, void> {
+	render () : JSX.Element {
 		var config = this.props.config;
 
 		if (config === undefined)
@@ -69,12 +74,12 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 }
 
 type MachineDescriptionProps = {
-	machine: Database.DBObject | void;
+	machine: Database.DBObject;
 	omitHeader: boolean;
 };
 
-export class MachineDescription extends React.Component<MachineDescriptionProps, MachineDescriptionProps, void> {
-	render () : Object {
+export class MachineDescription extends React.Component<MachineDescriptionProps, void> {
+	render () : JSX.Element {
 		var machine = this.props.machine;
 
 		if (machine === undefined)
@@ -105,20 +110,21 @@ type ConfigSelectorProps = {
 	includeMetric: boolean;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
-	machine: Database.DBObject | void;
-	config: Database.DBObject | void;
-	metric: string | void;
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	metric: string;
+	showControls: boolean;
 	onChange: (selection: MachineConfigSelection) => void;
 };
 
-export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
+export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, void> {
 	runSetCounts () {
 		if (this.props.includeMetric)
 			return this.props.runSetCounts;
 		return Database.combineRunSetCountsAcrossMetric (this.props.runSetCounts);
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var userStringForRSC = r => {
 			var s = r.machine.get ('name') + " / " + r.config.get ('name');
 			if (this.props.includeMetric)
@@ -126,7 +132,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var valueStringForRSC = (machine, config, metric) => {
+		var valueStringForRSC = (machine: Database.DBObject, config: Database.DBObject, metric: string) => {
 			var s = machine.get ('name') + '+' + config.get ('name');
 			if (this.props.includeMetric)
 				s = s + '+' + metric;
@@ -135,7 +141,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 
 		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
 
-		var machines = {};
+		type MachinesMap = { [name: string]: Array<Database.RunSetCount> };
+		var machines: MachinesMap = {};
 		var featuredRSCs = [];
 		for (var i = 0; i < histogram.length; ++i) {
 			var rsc = histogram [i];
@@ -162,7 +169,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		function renderRSC (entry: Database.RunSetCount, displayString: string | void) {
+		function renderRSC (entry: Database.RunSetCount, displayString: string) {
 			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
@@ -176,7 +183,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				{displayString}
 			</option>;
 		}
-
+		
 		function renderFeaturedTimelines () {
 			if (this.props.featuredTimelines === undefined)
 				return undefined;
@@ -186,7 +193,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			</optgroup>;
 		}
 
-		function renderGroup (machines, machineName) {
+		function renderGroup (machines: MachinesMap, machineName: string) {
 			return <optgroup key={"group" + machineName} label={machineName}>
 				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (rsc => renderRSC.call (this, rsc, undefined))}
 			</optgroup>;
@@ -206,7 +213,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
-			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
+			<select size={6} value={selectedValue} onChange={this.combinationSelected.bind (this)}>
 				{renderFeaturedTimelines.bind (this) ()}
 				{Object.keys (machines).map (renderGroup.bind (this, machines))}
 			</select>
@@ -227,8 +234,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		window.open ('machine.html#name=' + this.props.machine.get ('name'));
 	}
 
-	combinationSelected (event: Object) {
-		var names = event.target.value.split ('+');
+	combinationSelected (event: React.FormEvent) {
+		var target: any = event.target;
+		var names = target.value.split ('+');
 		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
 		if (rsc !== undefined)
 			this.props.onChange (rsc);
@@ -237,10 +245,10 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	}
 }
 
-type RunSetSelection = {
-	machine: Database.DBObject | void;
-	config: Database.DBObject | void;
-	runSet: Database.DBObject | void;
+export type RunSetSelection = {
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	runSet: Database.DBRunSet;
 }
 
 type RunSetSelectorProps = {
@@ -250,10 +258,10 @@ type RunSetSelectorProps = {
 };
 
 type RunSetSelectorState = {
-	runSets: Array<Database.DBRunSet> | void;
+	runSets: Array<Database.DBRunSet>;
 };
 
-export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, RunSetSelectorState> {
+export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorState> {
 	constructor (props: RunSetSelectorProps) {
 		super (props);
 		this.state = { runSets: undefined };
@@ -293,10 +301,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		});
 	}
 
-	runSetSelected (event: Object) {
+	runSetSelected (event: React.FormEvent) {
 		if (this.state.runSets === undefined)
 			return;
-		var runSetId = event.target.value;
+		var target: any = event.target;
+		var runSetId: number = target.value;
 		var runSet = Database.findRunSet (this.state.runSets, runSetId);
 		if (runSet !== undefined)
 			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
@@ -306,7 +315,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: undefined});
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var selection = this.props.selection;
 		var machine = selection.machine;
 		var config = selection.config;
@@ -317,11 +326,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (selection.runSet !== undefined)
 			runSetId = selection.runSet.get ('id');
 
-		function openRunSetDescription (id) {
+		function openRunSetDescription (id: number) {
 			return window.open ('runset.html#id=' + id);
 		}
 
-		function renderRunSet (runSet) {
+		function renderRunSet (runSet: Database.DBRunSet) {
 			var id = runSet.get ('id');
 			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
 				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}
@@ -330,6 +339,8 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 		var configSelector =
 			<CombinedConfigSelector
+				featuredTimelines={undefined}
+				metric={undefined}
 				includeMetric={false}
 				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
@@ -345,8 +356,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
-				size="6"
-				selectedIndex="-1"
+				size={6}
 				value={runSetId}
 				onChange={this.runSetSelected.bind (this)}>
 				{runSets.map (renderRunSet)}
@@ -378,11 +388,11 @@ type RunSetDescriptionProps = {
 };
 
 type RunSetDescriptionState = {
-	results: Array<Object> | void;
-	secondaryCommits: Array<Object> | void;
+	results: Array<Object>;
+	secondaryCommits: Array<Object>;
 };
 
-export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, RunSetDescriptionState> {
+export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
 		this.state = { results: undefined, secondaryCommits: undefined };
@@ -394,7 +404,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			objs => {
 				if (runSet !== this.props.runSet)
 					return;
-				this.setState ({ results: objs });
+				this.setState ({ results: objs } as any);
 			}, error => {
 				alert ("error loading results: " + error.toString ());
 			});
@@ -404,7 +414,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				objs => {
 					if (runSet !== this.props.runSet)
 						return;
-					this.setState ({ secondaryCommits: objs });
+					this.setState ({ secondaryCommits: objs } as any);
 				}, error => {
 					alert ("error loading commits: " + error.toString ());
 				});
@@ -416,7 +426,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		this.fetchResults (nextProps.runSet);
 	}
 
-	render () : React.Element  {
+	render () : JSX.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
 		var buildLink;
@@ -452,16 +462,16 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				elements = secondaryCommits.map (c => {
 					var short = c.substring (0, 10);
 					return <li key={"commit" + c}>{short}</li>;
-					});
+				});
 			} else {
 				elements = this.state.secondaryCommits.map (c => {
-					var short = c ['hash'].substring (0, 10);
+					var short = c ['hash'].substring(0, 10);
 					var link = githubCommitLink (c ['product'], c ['hash']);
 					return <li key={"commit" + c ['hash']}><a href={link}>{c ['product']} {short}</a></li>;
-					});
+				});
 			}
 			secondaryProductsList = [<h1 key="secondaryProductsHeader">Secondary products</h1>,
-				<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
+					<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
 		}
 
 		if (this.state.results === undefined) {
@@ -537,6 +547,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
 		var commitLink = githubCommitLink (product, commitHash);
 
+
 		return <div className="Description">
 			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
@@ -556,7 +567,7 @@ export function githubCommitLink (product: string, commit: string) : string {
 			repo = "xamarin/monodroid";
 			break;
 		default:
-			alert ("Unknown product " + product);
+			alert("Unknown product " + product);
 			return "";
 	}
 	return "https://github.com/" + repo + "/commit/" + commit;
@@ -570,7 +581,7 @@ type NavigationProps = {
 	currentPage: string;
 }
 
-export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
+export class Navigation extends React.Component<NavigationProps, void> {
 	openDeployment () : boolean {
 		var lastSlashIndex = window.location.href.search ("/[^/]+$");
 		var path = window.location.href.substring (lastSlashIndex + 1);
@@ -579,7 +590,7 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 		return false;
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var deploymentLink;
 		if (process.env.NODE_ENV !== 'production') {
 			deploymentLink =
@@ -685,7 +696,7 @@ export function setLocationForArray (key: string, ids: Array<string>) {
 	window.location.hash = key + "=" + ids.join ("+");
 }
 
-export function pullRequestIdFromUrl (url: string): number | void {
+export function pullRequestIdFromUrl (url: string): number {
 	var match = url.match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
 	if (match === null)
 		return undefined;

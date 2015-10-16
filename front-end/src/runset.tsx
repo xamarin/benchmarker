@@ -1,17 +1,20 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_utils from './utils.js';
-import * as xp_common from './common.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as xp_utils from './utils.ts';
+import * as xp_common from './common.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
-	startupRunSetId: number | void;
-	runSetCounts: Array<Object>;
-	runSet: Object | void;
+	startupRunSetId: number;
+	runSetCounts: Array<Database.RunSetCount>;
+	runSet: Database.DBRunSet;
 
 	constructor (startupRunSetId) {
 		this.startupRunSetId = startupRunSetId;
@@ -81,7 +84,17 @@ class Controller {
 	}
 }
 
-class Page extends React.Component {
+type PageProps = {
+	initialSelection: xp_common.RunSetSelection;
+	runSetCounts: Array<Database.RunSetCount>;
+	onChange: (selection: xp_common.RunSetSelection) => void;
+};
+
+type PageState = {
+	selection: xp_common.RunSetSelection;
+};
+
+class Page extends React.Component<PageProps, PageState> {
 	constructor (props) {
 		super (props);
 		this.state = {selection: this.props.initialSelection};

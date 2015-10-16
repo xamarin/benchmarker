@@ -2,7 +2,7 @@
 
 "use strict";
 
-import * as xp_utils from './utils.js';
+import * as xp_utils from './utils.ts';
 
 export class DBObject {
 	data: Object;
@@ -112,7 +112,7 @@ export function combineRunSetCountsAcrossMetric (runSetCounts: Array<RunSetCount
 	return newList;
 }
 
-export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: string, configName: string, metric: string): RunSetCount | void {
+export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: string, configName: string, metric: string): RunSetCount {
 	return xp_utils.find (runSetCounts, rsc => {
 		return rsc.machine.get ('name') === machineName &&
 			rsc.config.get ('name') === configName &&
@@ -121,7 +121,7 @@ export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: 
 }
 
 export type BenchmarkValues = { [benchmark: string]: number };
-type Summary = { runSet: DBRunSet, averages: BenchmarkValues, variances: BenchmarkValues };
+export type Summary = { runSet: DBRunSet, averages: BenchmarkValues, variances: BenchmarkValues };
 
 export function fetchSummaries (machine: DBObject, config: DBObject, metric: string, success: (results: Array<Summary>) => void, error: ErrorFunc): void {
 	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
@@ -155,11 +155,11 @@ export function fetchRunSetsForMachineAndConfig (machine: DBObject, config: DBOb
 		objs => success (processRunSetEntries (objs)), error);
 }
 
-export function findRunSet (runSets: Array<DBRunSet>, id: number): DBRunSet | void {
+export function findRunSet (runSets: Array<DBRunSet>, id: number): DBRunSet {
 	return xp_utils.find (runSets, rs => rs.get ('id') == id);
 }
 
-export function fetchRunSet (id: number, success: (rs: DBRunSet | void) => void, error: ErrorFunc) {
+export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) {
 	fetch ('runset?rs_id=eq.' + id,
 		objs => {
 			if (objs.length === 0)

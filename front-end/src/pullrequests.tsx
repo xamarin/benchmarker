@@ -1,15 +1,18 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as xp_utils from './utils.js';
-import * as Database from './database.js';
-import React from 'react';
+import * as xp_common from './common.tsx';
+import * as xp_utils from './utils.ts';
+import * as Database from './database.ts';
+import React = require ('react');
 
 class Controller {
 
-	pullRequests : Array<Object> | void;
+	pullRequests : Array<Object>;
 	limit: number;
 	offset: number;
 
@@ -43,7 +46,6 @@ class Controller {
 			React.createElement (
 				Page,
 				{
-					controller: this,
 					pullRequests: this.pullRequests
 				}
 			),
@@ -53,7 +55,15 @@ class Controller {
 
 }
 
-class Page extends React.Component {
+type PageProps = {
+	pullRequests: Array<Object>;
+};
+
+type PageState = {
+	infos: Array<[number, any]>;
+};
+
+class Page extends React.Component<PageProps, PageState> {
 
 	constructor (props) {
 		super (props);
@@ -61,11 +71,11 @@ class Page extends React.Component {
 		this.props.pullRequests.forEach (
 			pullRequest =>
 				xp_common.getPullRequestInfo (
-					pullRequest.pr_url,
-					info => this.setState ({ infos: this.state.infos.concat ([[pullRequest.pr_id, info]]) })));
+					pullRequest ['pr_url'],
+					info => this.setState ({ infos: this.state.infos.concat ([[pullRequest ['pr_id'], info]]) })));
 	}
 
-	render () {
+	render () : JSX.Element {
 		function renderRow (pullRequest) {
 			var info;
 			var infos = this.state.infos;
@@ -116,7 +126,7 @@ class Page extends React.Component {
 					</thead>
 					<tbody>
 						{ this.props.pullRequests
-							.sort ((a, b) => new Date (b.prrs_startedat) - new Date (a.prrs_startedat))
+							.sort ((a, b) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
 							.map (renderRow.bind (this)) }
 					</tbody>
 				</table>

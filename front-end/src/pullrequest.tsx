@@ -1,18 +1,20 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as xp_utils from './utils.js';
-import * as xp_charts from './charts.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
-import GitHub from 'github-api';
+import * as xp_common from './common.tsx';
+import * as xp_utils from './utils.ts';
+import * as xp_charts from './charts.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
 	pullRequestId: string;
-	dbRow: Object | void;
+	dbRow: Object;
 
 	constructor (pullRequestId) {
 		this.pullRequestId = pullRequestId;
@@ -34,9 +36,9 @@ class Controller {
 		if (this.dbRow === undefined)
 			return;
 
-        var prRunSet = new Database.DBObject (this.dbRow, 'prrs_');
+        var prRunSet = new Database.DBObject (this.dbRow, 'prrs_') as Database.DBRunSet;
         var pullRequest = new Database.DBObject (this.dbRow, 'pr_');
-        var baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_');
+        var baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_') as Database.DBRunSet;
 		var machine = new Database.DBObject (this.dbRow, 'm_');
 		var config = new Database.DBObject (this.dbRow, 'cfg_');
 
@@ -85,10 +87,10 @@ type PullRequestDescriptionProps = {
 };
 
 type PullRequestDescriptionState = {
-    gitHubInfo: Object | void;
+    gitHubInfo: Object;
 };
 
-class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionProps, PullRequestDescriptionState> {
+class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionState> {
     constructor (props) {
         super (props);
         this.state = { gitHubInfo: undefined };
@@ -98,7 +100,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 		);
     }
 
-	render () : Object {
+	render () : JSX.Element {
 		var pr = this.props.pullRequest;
 		var baselineRunSet = this.props.baselineRunSet;
         var info = this.state.gitHubInfo;
@@ -106,13 +108,13 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
         var baselineHash = baselineRunSet.get ('commit');
 
         var title = <span>Loading&hellip;</span>;
-        if (info !== undefined && info.title !== undefined)
-            title = info.title;
+        if (info !== undefined && info ['title'] !== undefined)
+            title = info ['title'];
 
 		var description = undefined;
 		var commit = <a href={xp_common.githubCommitLink ('mono', baselineHash)}>{baselineHash.substring (0, 10)}</a>;
-        if (info !== undefined && info.user !== undefined) {
-			var user = <a href={info.user ["html_url"]}>{info.user.login}</a>;
+        if (info !== undefined && info ['user'] !== undefined) {
+			var user = <a href={info ['user'] ["html_url"]}>{info ['user'] ['login']}</a>;
 			description = <p>Authored by {user}, based on {commit}.</p>;
 		} else {
 			description = <p>Based on {commit}.</p>;

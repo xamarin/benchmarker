@@ -1,16 +1,19 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as xp_utils from './utils.js';
-import * as xp_charts from './charts.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as xp_common from './common.tsx';
+import * as xp_utils from './utils.ts';
+import * as xp_charts from './charts.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
-	initialSelectionNames: { machineName: string | void, configName: string | void, metric: string | void };
+	initialSelectionNames: { machineName: string, configName: string, metric: string };
 	initialZoom: boolean;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
@@ -69,7 +72,6 @@ class Controller {
 			React.createElement (
 				Page,
 				{
-					controller: this,
 					initialSelection: selection,
 					initialZoom: this.initialZoom,
 					runSetCounts: this.runSetCounts,
@@ -93,7 +95,25 @@ class Controller {
 	}
 }
 
-class Page extends React.Component {
+type PageProps = {
+	initialSelection: Database.RunSetCount;
+	initialZoom: boolean;
+	onChange: (selection: Database.RunSetCount) => void;
+	runSetCounts: Array<Database.RunSetCount>;
+	featuredTimelines: Array<Database.DBObject>;
+};
+
+type PageState = {
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	metric: string;
+	zoom: boolean;
+	runSetIndexes: Array<number>,
+	sortedResults: Array<Database.Summary>,
+	benchmarkNames: Array<string>
+};
+
+class Page extends React.Component<PageProps, PageState> {
 	constructor (props) {
 		super (props);
 		this.state = {
@@ -114,11 +134,11 @@ class Page extends React.Component {
 	runSetSelected (runSet) {
 		var index = xp_utils.findIndex (this.state.sortedResults, r => r.runSet === runSet);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
-			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false});
+			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
 
 	allBenchmarksLoaded (names) {
-		this.setState ({benchmarkNames: names});
+		this.setState ({benchmarkNames: names} as any);
 	}
 
 	fetchSummaries (selection) {
@@ -139,7 +159,7 @@ class Page extends React.Component {
 					return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
 				});
 
-				this.setState ({sortedResults: objs});
+				this.setState ({sortedResults: objs} as any);
 			}, error => {
 				alert ("error loading summaries: " + error.toString ());
 			});
@@ -192,6 +212,7 @@ class Page extends React.Component {
 		var comparisonChart;
 		if (runSets.length > 1) {
 			comparisonChart = <xp_charts.ComparisonAMChart
+				runSetLabels={undefined}
 				graphName="comparisonChart"
 				runSets={runSets}
 				metric={this.state.metric} />;
@@ -202,7 +223,9 @@ class Page extends React.Component {
 			var divs = runSetIndexes.map (i => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
-				return <RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
+				var elem = <RunSetSummary runSet={rs} previousRunSet={prev} />;
+				elem.key = "runSet" + i.toString ();  
+				return elem;
 			});
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
@@ -242,11 +265,11 @@ class Page extends React.Component {
 
 type RunSetSummaryProps = {
 	runSet: Database.DBRunSet;
-	previousRunSet: Database.DBRunSet | void;
+	previousRunSet: Database.DBRunSet;
 }
 
-class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryProps, void> {
-	render () : Object {
+class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
+	render () : JSX.Element {
 		var runSet = this.props.runSet;
 		var commitHash = runSet.commit.get ('hash');
 		var commitLink = xp_common.githubCommitLink (runSet.commit.get ('product'), commitHash);
@@ -274,7 +297,7 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, RunSetSummaryPro
 	}
 }
 
-export function joinBenchmarkNames (benchmarks: (Array<string> | void), prefix: string) : string {
+export function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string {
 	if (benchmarks === undefined || benchmarks.length === 0)
 		return "";
 	return prefix + benchmarks.join (", ");
@@ -310,19 +333,18 @@ function runSetIsBroken (runSet: Database.DBObject, averages: Database.Benchmark
 	return false;
 }
 
-type TimelineChartProps = {
+interface TimelineChartProps {
 	graphName: string;
 	machine: Database.DBObject;
 	config: Database.DBObject;
 	metric: string,
-	benchmark: string;
-	sortedResults: Array<{ runSet: Database.DBRunSet, averages: Database.BenchmarkValues, variances: Database.BenchmarkValues }>;
-	zoomInterval: void | {start: number, end: number};
+	sortedResults: Array<Database.Summary>;
+	zoomInterval: {start: number, end: number};
 	runSetSelected: (runSet: Database.DBObject) => void;
 };
 
-class TimelineChart extends React.Component<TimelineChartProps, TimelineChartProps, void> {
-	table : void | Array<Object>;
+class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
+	table : Array<Object>;
 
 	valueAxisTitle () : string {
 		return "";
@@ -378,12 +400,16 @@ function axisNameForMetric (metric: string, relative: boolean) : string {
 	}
 }
 
-class AllBenchmarksChart extends TimelineChart {
+interface AllBenchmarksChartProps extends TimelineChartProps {
+	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>): void;
+};
+
+class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 	valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, true);
 	}
 
-	computeTable (nextProps) {
+	computeTable (nextProps: AllBenchmarksChartProps) {
 		var results = nextProps.sortedResults;
 		var i = 0, j = 0;
 
@@ -479,12 +505,16 @@ function formatDuration (t: number) : string {
 	return (t / 1000).toPrecision (4) + "s";
 }
 
-class BenchmarkChart extends TimelineChart {
+interface BenchmarkChartProps extends TimelineChartProps {
+	benchmark: string;
+};
+
+class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
 	valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, false);
 	}
 
-	computeTable (nextProps) {
+	computeTable (nextProps: BenchmarkChartProps) {
 		var results = nextProps.sortedResults;
 		var j = 0;
 
@@ -523,7 +553,20 @@ class BenchmarkChart extends TimelineChart {
 	}
 }
 
-class BenchmarkChartList extends React.Component {
+type BenchmarkChartListProps = {
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	metric: string;
+	benchmarkNames: Array<string>;
+	sortedResults: Array<Database.Summary>;
+	runSetSelected: (runSet: Database.DBObject) => void;
+};
+
+type BenchmarkChartListState = {
+	isExpanded: boolean;
+};
+
+class BenchmarkChartList extends React.Component<BenchmarkChartListProps, BenchmarkChartListState> {
 	constructor (props) {
 		super (props);
 		this.state = { isExpanded: false };
@@ -543,6 +586,7 @@ class BenchmarkChartList extends React.Component {
 			return <div key={key} className="BenchmarkChartList">
 				<h3>{name}</h3>
 				<BenchmarkChart
+					zoomInterval={undefined}
 					graphName={key}
 					sortedResults={this.props.sortedResults}
 					machine={this.props.machine}

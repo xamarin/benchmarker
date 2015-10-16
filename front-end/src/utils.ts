@@ -10,7 +10,7 @@ export function findIndex<T> (arr : Array<T>, f: (v: T) => boolean) : number {
     return -1;
 }
 
-export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T | void {
+export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T {
     return arr [findIndex (arr, f)];
 }
 
@@ -31,8 +31,8 @@ export function uniqArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
 }
 
 export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<[T, number]> {
-    var valueHash = {};
-    var countHash = {};
+    var valueHash: { [key: string]: T } = {};
+    var countHash: { [key: string]: number } = {};
     for (var i = 0; i < arr.length; ++i) {
         var value = arr [i];
         var key = keyFunc (value);
@@ -43,7 +43,10 @@ export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
             countHash [key] = 1;
         }
     }
-    return Object.keys (valueHash).map (k => [valueHash [k], countHash [k]]);
+    return Object.keys (valueHash).map (k => {
+        var result: [T, number] = [valueHash [k], countHash [k]];
+        return result;
+    });
 }
 
 export function histogramOfStrings (arr: Array<string>) : Array<[string, number]> {
@@ -71,7 +74,7 @@ export function updateArray<T> (arr: Array<T>, i: number, v: T) : Array<T> {
 }
 
 export function partitionArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : { [key: string]: Array<T> } {
-	var result = {};
+	var result: { [key: string]: Array<T> } = {};
 	for (var i = 0; i < arr.length; ++i) {
 		var val = arr [i];
 		var key = keyFunc (val);
@@ -137,7 +140,7 @@ export function formatDate (date: Date) : string {
 }
 
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
-export function deepEquals () : boolean {
+export function deepEquals (...args: any[]) : boolean {
     var leftChain = [], rightChain = [];
 
     function compare2Objects (x, y) {
@@ -311,13 +314,13 @@ export function deepClone<T> (toCopy: T) : T {
 }
 
 export function intersperse<T> (element: T, array: Array<T>): Array<T> {
-	var first = true;
-	var result = [];
-	for (var i = 0; i < array.length; ++i) {
-		if (!first)
-			result.push (element);
-		first = false;
-		result.push (array [i]);
-	}
-	return result;
+    var first = true;
+    var result = [];
+    for (var i = 0; i < array.length; ++i) {
+        if (!first)
+            result.push (element);
+        first = false;
+        result.push (array [i]);
+    }
+    return result;
 }
