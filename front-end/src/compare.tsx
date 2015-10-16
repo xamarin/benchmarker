@@ -14,7 +14,7 @@ import ReactDOM = require ('react-dom');
 
 class Controller {
 	startupRunSetIds: Array<number>;
-	runSetCounts: Array<Object>;
+	runSetCounts: Array<Database.RunSetCount>;
 	runSets: Array<Database.DBRunSet>;
 
 	constructor (startupRunSetIds) {
@@ -53,22 +53,17 @@ class Controller {
 		if (runSets === undefined)
 			runSets = [];
 
-		ReactDOM.render (
-			React.createElement (
-				Page,
-				{
-					initialRunSets: runSets,
-					runSetCounts: this.runSetCounts,
-					onChange: this.updateForSelection.bind (this)
-				}
-			),
+		ReactDOM.render (<Page
+					initialRunSets={runSets}
+					runSetCounts={this.runSetCounts}
+					onChange={rss => this.updateForSelection (rss)} />,
 			document.getElementById ('comparePage')
 		);
 
 		this.updateForSelection (runSets);
 	}
 
-	updateForSelection (runSets) {
+	updateForSelection (runSets: Array<Database.DBRunSet>) {
 		xp_common.setLocationForArray ("ids", runSets.map (rs => rs.get ('id')));
 	}
 }
@@ -123,7 +118,7 @@ class Page extends React.Component<PageProps, PageState> {
 				<RunSetSelectorList
 					runSetCounts={this.props.runSetCounts}
 					selections={this.state.selections}
-					onChange={this.setState.bind (this)} />
+					onChange={s => this.setState (s)} />
 				{chart}
 				<div style={{ clear: 'both' }}></div>
 			</article>
@@ -162,14 +157,14 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 				<xp_common.RunSetSelector
 					runSetCounts={this.props.runSetCounts}
 					selection={{runSet: runSet, machine: machine, config: config}}
-					onChange={this.changeSelector.bind (this, index)} />
-				<button onClick={this.removeSelector.bind (this, index)}>&minus;&ensp;Remove</button>
+					onChange={s => this.changeSelector (index, s)} />
+				<button onClick={e => this.removeSelector (index)}>&minus;&ensp;Remove</button>
 				<div style={{ clear: 'both' }}></div>
 			</section>;
 		};
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector)}
-			<footer><button onClick={this.addSelector.bind (this)}>+&ensp;Add Run Set</button></footer>
+			<footer><button onClick={e => this.addSelector ()}>+&ensp;Add Run Set</button></footer>
 			</div>;
 	}
 }

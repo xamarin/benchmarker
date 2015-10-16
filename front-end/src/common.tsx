@@ -169,7 +169,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		function renderRSC (entry: Database.RunSetCount, displayString: string) {
+		const renderRSC = (entry: Database.RunSetCount, displayString: string) => {
 			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
@@ -182,22 +182,22 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				key={string}>
 				{displayString}
 			</option>;
-		}
+		};
 
-		function renderFeaturedTimelines () {
+		const renderFeaturedTimelines = () => {
 			if (this.props.featuredTimelines === undefined)
 				return undefined;
 
 			return <optgroup label="Featured">
-				{featuredRSCs.map (frsc => renderRSC.call (this, frsc, frsc.displayString))}
+				{featuredRSCs.map (frsc => renderRSC (frsc, frsc.displayString))}
 			</optgroup>;
-		}
+		};
 
-		function renderGroup (machinesMap: MachinesMap, name: string) {
+		const renderGroup = (machinesMap: MachinesMap, name: string) => {
 			return <optgroup key={"group" + name} label={name}>
 				{xp_utils.sortArrayNumericallyBy (machinesMap [name], x => -x.count).map (mrsc => renderRSC.call (this, mrsc, undefined))}
 			</optgroup>;
-		}
+		};
 
 		var machine = this.props.machine;
 		var config = this.props.config;
@@ -208,14 +208,14 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
-			aboutConfig = <button onClick={this.openConfigDescription.bind (this)}>About Config</button>;
-			aboutMachine = <button onClick={this.openMachineDescription.bind (this)}>About Machine</button>;
+			aboutConfig = <button onClick={() => this.openConfigDescription ()}>About Config</button>;
+			aboutMachine = <button onClick={() => this.openMachineDescription ()}>About Machine</button>;
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
-			<select size={6} value={selectedValue} onChange={this.combinationSelected.bind (this)}>
-				{renderFeaturedTimelines.bind (this) ()}
-				{Object.keys (machines).map (renderGroup.bind (this, machines))}
+			<select size={6} value={selectedValue} onChange={e => this.combinationSelected (e)}>
+				{renderFeaturedTimelines ()}
+				{Object.keys (machines).map (m => renderGroup (machines, m))}
 			</select>
 			{aboutConfig}{aboutMachine}
 			<div style={{ clear: 'both' }}></div>
@@ -327,16 +327,16 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (selection.runSet !== undefined)
 			runSetId = selection.runSet.get ('id');
 
-		function openRunSetDescription (id: number) {
+		const openRunSetDescription = (id: number) => {
 			return window.open ('runset.html#id=' + id);
-		}
+		};
 
-		function renderRunSet (runSet: Database.DBRunSet) {
-			var id = runSet.get ('id');
-			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
+		const renderRunSet = (runSet: Database.DBRunSet) => {
+			const id = runSet.get ('id');
+			return <option value={id} key={id} onDoubleClick={() => openRunSetDescription (id)}>
 				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}
 			</option>;
-		}
+		};
 
 		var configSelector =
 			<CombinedConfigSelector
@@ -346,7 +346,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
 				config={selection.config}
-				onChange={this.configSelected.bind (this)}
+				onChange={s => this.configSelected (s)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
 		if (runSets === undefined && machine !== undefined && config !== undefined) {
@@ -359,7 +359,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <select
 				size={6}
 				value={runSetId}
-				onChange={this.runSetSelected.bind (this)}>
+				onChange={e => this.runSetSelected (e)}>
 				{runSets.map (renderRunSet)}
 			</select>;
 		}
@@ -597,7 +597,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
 			deploymentLink =
 				<a title="Go to the deployed page"
 					className="deselected deployment"
-					onClick={this.openDeployment.bind (this)}>Deployment</a>;
+					onClick={() => this.openDeployment ()}>Deployment</a>;
 		}
 
 		var classFor = (page) =>

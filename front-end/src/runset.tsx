@@ -51,7 +51,7 @@ class Controller {
 	}
 
 	allDataLoaded () {
-		var selection = {};
+		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSet: undefined };
 		if (this.runSet !== undefined) {
 			selection = {
 				machine: this.runSet.machine,
@@ -60,16 +60,10 @@ class Controller {
 			};
 		}
 
-		ReactDOM.render (
-			React.createElement (
-				Page,
-				{
-					controller: this,
-					initialSelection: selection,
-					runSetCounts: this.runSetCounts,
-					onChange: this.updateForRunSet.bind (this)
-				}
-			),
+		ReactDOM.render (<Page
+					initialSelection={selection}
+					runSetCounts={this.runSetCounts}
+					onChange={s => this.updateForRunSet (s)} />,
 			document.getElementById ('runSetPage')
 		);
 
@@ -126,7 +120,7 @@ class Page extends React.Component<PageProps, PageState> {
 					<xp_common.RunSetSelector
 						selection={this.state.selection}
 						runSetCounts={this.props.runSetCounts}
-						onChange={this.handleChange.bind (this)} />
+						onChange={s => this.handleChange (s)} />
 				</div>
 				{detail}
 			</article>

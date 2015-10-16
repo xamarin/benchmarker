@@ -68,17 +68,12 @@ class Controller {
 		if (selection === undefined)
 			selection = { machine: undefined, config: undefined, metric: undefined };
 
-		ReactDOM.render (
-			React.createElement (
-				Page,
-				{
-					initialSelection: selection,
-					initialZoom: this.initialZoom,
-					runSetCounts: this.runSetCounts,
-					featuredTimelines: this.featuredTimelines,
-					onChange: this.updateForSelection.bind (this)
-				}
-			),
+		ReactDOM.render (<Page
+					initialSelection={selection}
+					initialZoom={this.initialZoom}
+					runSetCounts={this.runSetCounts}
+					featuredTimelines={this.featuredTimelines}
+					onChange={s => this.updateForSelection (s)} />,
 			document.getElementById ('timelinePage')
 		);
 
@@ -191,8 +186,8 @@ class Page extends React.Component<PageProps, PageState> {
 				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
 				zoomInterval={zoomInterval}
-				runSetSelected={this.runSetSelected.bind (this)}
-				allBenchmarksLoaded={this.allBenchmarksLoaded.bind (this)}
+				runSetSelected={rs => this.runSetSelected (rs)}
+				allBenchmarksLoaded={names => this.allBenchmarksLoaded (names)}
 				/>;
 			benchmarkChartList = <BenchmarkChartList
 				benchmarkNames={this.state.benchmarkNames}
@@ -200,7 +195,7 @@ class Page extends React.Component<PageProps, PageState> {
 				config={this.state.config}
 				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
-				runSetSelected={this.runSetSelected.bind (this)}
+				runSetSelected={rs => this.runSetSelected (rs)}
 				/>;
 		} else {
 			chart = <div className="DiagnosticBlock">Please select a machine and config.</div>;
@@ -242,7 +237,7 @@ class Page extends React.Component<PageProps, PageState> {
 							machine={this.state.machine}
 							config={this.state.config}
 							metric={this.state.metric}
-							onChange={this.selectionChanged.bind (this)}
+							onChange={s => this.selectionChanged (s)}
 							showControls={false} />
 						<xp_common.MachineDescription
 							machine={this.state.machine}
@@ -374,7 +369,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 			data={this.table}
 			zoomInterval={this.props.zoomInterval}
 			title={this.valueAxisTitle ()}
-			selectListener={this.props.runSetSelected.bind (this)} />;
+			selectListener={rs => this.props.runSetSelected (rs)} />;
 	}
 
 	abstract computeTable (nextProps: Props) : void;
@@ -573,7 +568,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 	render () {
 		if (!this.state.isExpanded) {
 			return <div className="BenchmarkChartList">
-				<button onClick={this.expand.bind (this)}>Show Benchmarks</button>
+				<button onClick={e => this.expand ()}>Show Benchmarks</button>
 			</div>;
 		}
 

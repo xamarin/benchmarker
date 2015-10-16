@@ -76,7 +76,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 
 	render () : JSX.Element {
-		function renderRow (pullRequest) {
+		const renderRow = (pullRequest) => {
 			var info;
 			var infos = this.state.infos;
 			var id = pullRequest.pr_id;
@@ -107,7 +107,7 @@ class Page extends React.Component<PageProps, PageState> {
 					<a href={'pullrequest.html#id=' + pullRequest.pr_id}>compare</a>
 				</td>
 			</tr>;
-		}
+		};
 		return <div className="PullRequestsPage">
 			<header>
 				<xp_common.Navigation currentPage="pullRequests" />
@@ -127,7 +127,7 @@ class Page extends React.Component<PageProps, PageState> {
 					<tbody>
 						{ this.props.pullRequests
 							.sort ((a, b) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
-							.map (renderRow.bind (this)) }
+							.map (renderRow) }
 					</tbody>
 				</table>
 				<div style={{ clear: 'both' }}></div>
