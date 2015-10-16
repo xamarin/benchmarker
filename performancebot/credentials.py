@@ -59,6 +59,10 @@ def slave_slack():
     pass
 slave_slack.accredit_key = 'regressionSlack'
 
+def slave_xtcapikey():
+    pass
+slave_xtcapikey.accredit_key = 'xtcapikey'
+
 
 
 
