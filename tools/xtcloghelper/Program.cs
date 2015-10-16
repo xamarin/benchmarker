@@ -40,6 +40,7 @@ namespace xtclog
 				long runSetId = Int64.Parse (args [2]);
 				var connection = PostgresInterface.Connect ();
 				PushXTCJobId (connection, xtcJobGuid, runSetId);
+				Console.WriteLine ("created an entry for runSet {0}", runSetId);
 			} else if (args [0] == "--crawl-logs") {
 				var connection = PostgresInterface.Connect ();
 				var xtcapikey = Accredit.GetCredentials ("xtcapikey") ["xtcapikey"].ToString ();
@@ -72,6 +73,7 @@ namespace xtclog
 					}
 					DeleteXTCJobId (connection, xtcjobid);
 				}
+				Console.WriteLine ("done processing the queue");
 			} else {
 				UsageAndExit (false);
 			}
