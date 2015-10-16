@@ -2,7 +2,7 @@
 
 PAGES = compare config machine timeline runset pullrequest pullrequests
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
-DEPS = react github-api react-dom ts-loader typescript
+DEPS = react github-api react-dom ts-loader typescript webpack
 STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min
 
 # Sources and targets
