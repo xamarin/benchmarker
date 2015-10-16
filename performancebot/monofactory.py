@@ -71,6 +71,24 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def benchmarker_on_slave(self, proj=None):
+        if proj is None:
+            proj = ""
+        else:
+            proj = " /t:" + proj
+
+        step = ShellCommand(
+            name='build_tools',
+            command=[
+                'bash', '-x', '-c',
+                'cd tools && ' +
+                'bash ../performancebot/utils/nugethack.sh && ' +
+                'xbuild /p:Configuration=Debug' + proj
+                ],
+            workdir='benchmarker'
+            )
+        self.addStep(step)
+
     def cleanup_master_workdir(self):
         step = MasterShellCommand(
             name="cleanup_master_workdir",
