@@ -218,8 +218,7 @@ class Page extends React.Component<PageProps, PageState> {
 			var divs = runSetIndexes.map (i => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
-				var elem = <RunSetSummary runSet={rs} previousRunSet={prev} />;
-				elem.key = "runSet" + i.toString ();
+				var elem = <RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
 				return elem;
 			});
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
@@ -258,7 +257,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 }
 
-type RunSetSummaryProps = {
+interface RunSetSummaryProps extends React.Props<RunSetSummary> {
 	runSet: Database.DBRunSet;
 	previousRunSet: Database.DBRunSet;
 }
