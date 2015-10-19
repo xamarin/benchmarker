@@ -430,12 +430,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	render () : JSX.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
-		var buildLink;
+		var buildLink: JSX.Element;
 		var logURLs = runSet.get ('logURLs');
 		var logLinks = [];
-		var logLinkList;
-		var table;
-		var secondaryProductsList;
+		var logLinkList: JSX.Element;
+		var table: JSX.Element;
+		var secondaryProductsList: Array<JSX.Element>;
+		var crashedElem: JSX.Element;
+		var timedOutElem: JSX.Element;
 
 		if (buildURL !== undefined)
 			buildLink = <a href={buildURL}>build</a>;
@@ -490,8 +492,10 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 				metricsDict [metric] = {};
 			}
-			var crashedBenchmarks = runSet.get ('crashedBenchmarks');
-			var timedOutBenchmarks = runSet.get ('timedOutBenchmarks');
+			var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
+			var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
+			var reportedCrashed: {[name: string]: boolean} = {};
+			var reportedTimedOut: {[name: string]: boolean} = {};
 			var benchmarkNames = Object.keys (resultsByBenchmark);
 			benchmarkNames.sort ();
 			var metrics = Object.keys (metricsDict);
@@ -514,10 +518,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					var result = resultsByBenchmark [name];
 					var disabled = result.disabled;
 					var statusIcons = [];
-					if (Array.isArray (crashedBenchmarks) && crashedBenchmarks.indexOf (name) !== -1)
+					if (crashedBenchmarks.indexOf (name) !== -1) {
 						statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-					if (Array.isArray (timedOutBenchmarks) && timedOutBenchmarks.indexOf (name) !== -1)
+						reportedCrashed [name] = true;
+					}
+					if (timedOutBenchmarks.indexOf (name) !== -1) {
 						statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
+						reportedTimedOut [name] = true;
+					}
 					if (statusIcons.length === 0)
 						statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
 
@@ -542,17 +550,28 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					</tr>;
 				})}
 			</tbody></table>;
+
+			var notReportedCrashed = crashedBenchmarks.filter (n => !reportedCrashed [n]);
+			var notReportedTimedOut = timedOutBenchmarks.filter (n => !reportedTimedOut [n]);
+
+			if (notReportedCrashed.length > 0) {
+				crashedElem = <p>All crashed: {notReportedCrashed.join (", ")}</p>;
+			}
+			if (notReportedTimedOut.length > 0) {
+				timedOutElem = <p>All timed out: {notReportedTimedOut.join (", ")}</p>;
+			}
 		}
 
 		var commitHash = runSet.get ('commit');
 		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
 		var commitLink = githubCommitLink (product, commitHash);
 
-
 		return <div className="Description">
 			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
 			{secondaryProductsList}
+			{crashedElem}
+			{timedOutElem}
 			{table}
 		</div>;
 	}
