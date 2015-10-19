@@ -1,14 +1,19 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/github-api/github-api.d.ts"/>
+
 /* @flow */
 
 /* global process */
 
 "use strict";
 
-import * as xp_utils from './utils.js';
-import * as Database from './database.js';
-import * as Outliers from './outliers.js';
-import React from 'react';
-import GitHub from 'github-api';
+declare var process: any;
+
+import * as xp_utils from './utils.ts';
+import * as Database from './database.ts';
+import * as Outliers from './outliers.ts';
+import React = require ('react');
+import GitHub = require ('github-api');
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -24,12 +29,12 @@ export var xamarinColors = {
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
 type ConfigDescriptionProps = {
-	config: Database.DBObject | void;
+	config: Database.DBObject;
 	omitHeader: boolean;
 };
 
-export class ConfigDescription extends React.Component<ConfigDescriptionProps, ConfigDescriptionProps, void> {
-	render () : Object {
+export class ConfigDescription extends React.Component<ConfigDescriptionProps, void> {
+	render () : JSX.Element {
 		var config = this.props.config;
 
 		if (config === undefined)
@@ -69,12 +74,12 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, C
 }
 
 type MachineDescriptionProps = {
-	machine: Database.DBObject | void;
+	machine: Database.DBObject;
 	omitHeader: boolean;
 };
 
-export class MachineDescription extends React.Component<MachineDescriptionProps, MachineDescriptionProps, void> {
-	render () : Object {
+export class MachineDescription extends React.Component<MachineDescriptionProps, void> {
+	render () : JSX.Element {
 		var machine = this.props.machine;
 
 		if (machine === undefined)
@@ -105,20 +110,21 @@ type ConfigSelectorProps = {
 	includeMetric: boolean;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
-	machine: Database.DBObject | void;
-	config: Database.DBObject | void;
-	metric: string | void;
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	metric: string;
+	showControls: boolean;
 	onChange: (selection: MachineConfigSelection) => void;
 };
 
-export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, ConfigSelectorProps, void> {
+export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, void> {
 	runSetCounts () {
 		if (this.props.includeMetric)
 			return this.props.runSetCounts;
 		return Database.combineRunSetCountsAcrossMetric (this.props.runSetCounts);
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var userStringForRSC = r => {
 			var s = r.machine.get ('name') + " / " + r.config.get ('name');
 			if (this.props.includeMetric)
@@ -126,7 +132,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var valueStringForRSC = (machine, config, metric) => {
+		var valueStringForRSC = (machine: Database.DBObject, config: Database.DBObject, metric: string) => {
 			var s = machine.get ('name') + '+' + config.get ('name');
 			if (this.props.includeMetric)
 				s = s + '+' + metric;
@@ -135,7 +141,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 
 		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
 
-		var machines = {};
+		type MachinesMap = { [name: string]: Array<Database.RunSetCount> };
+		var machines: MachinesMap = {};
 		var featuredRSCs = [];
 		for (var i = 0; i < histogram.length; ++i) {
 			var rsc = histogram [i];
@@ -162,7 +169,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		function renderRSC (entry: Database.RunSetCount, displayString: string | void) {
+		const renderRSC = (entry: Database.RunSetCount, displayString: string) => {
 			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
@@ -175,22 +182,22 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				key={string}>
 				{displayString}
 			</option>;
-		}
+		};
 
-		function renderFeaturedTimelines () {
+		const renderFeaturedTimelines = () => {
 			if (this.props.featuredTimelines === undefined)
 				return undefined;
 
 			return <optgroup label="Featured">
-				{featuredRSCs.map (rsc => renderRSC.call (this, rsc, rsc.displayString))}
+				{featuredRSCs.map (frsc => renderRSC (frsc, frsc.displayString))}
 			</optgroup>;
-		}
+		};
 
-		function renderGroup (machines, machineName) {
-			return <optgroup key={"group" + machineName} label={machineName}>
-				{xp_utils.sortArrayNumericallyBy (machines [machineName], x => -x.count).map (rsc => renderRSC.call (this, rsc, undefined))}
+		const renderGroup = (machinesMap: MachinesMap, name: string) => {
+			return <optgroup key={"group" + name} label={name}>
+				{xp_utils.sortArrayNumericallyBy (machinesMap [name], x => -x.count).map (mrsc => renderRSC.call (this, mrsc, undefined))}
 			</optgroup>;
-		}
+		};
 
 		var machine = this.props.machine;
 		var config = this.props.config;
@@ -201,14 +208,14 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
-			aboutConfig = <button onClick={this.openConfigDescription.bind (this)}>About Config</button>;
-			aboutMachine = <button onClick={this.openMachineDescription.bind (this)}>About Machine</button>;
+			aboutConfig = <button onClick={() => this.openConfigDescription ()}>About Config</button>;
+			aboutMachine = <button onClick={() => this.openMachineDescription ()}>About Machine</button>;
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
-			<select size="6" value={selectedValue} onChange={this.combinationSelected.bind (this)}>
-				{renderFeaturedTimelines.bind (this) ()}
-				{Object.keys (machines).map (renderGroup.bind (this, machines))}
+			<select size={6} value={selectedValue} onChange={e => this.combinationSelected (e)}>
+				{renderFeaturedTimelines ()}
+				{Object.keys (machines).map (m => renderGroup (machines, m))}
 			</select>
 			{aboutConfig}{aboutMachine}
 			<div style={{ clear: 'both' }}></div>
@@ -227,20 +234,22 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		window.open ('machine.html#name=' + this.props.machine.get ('name'));
 	}
 
-	combinationSelected (event: Object) {
-		var names = event.target.value.split ('+');
+	combinationSelected (event: React.FormEvent) {
+		var target: any = event.target;
+		var names = target.value.split ('+');
 		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
-		if (rsc !== undefined)
+		if (rsc !== undefined) {
 			this.props.onChange (rsc);
-		else
+		} else {
 			console.log ("Couldn't find run set count.");
+		}
 	}
 }
 
-type RunSetSelection = {
-	machine: Database.DBObject | void;
-	config: Database.DBObject | void;
-	runSet: Database.DBObject | void;
+export type RunSetSelection = {
+	machine: Database.DBObject;
+	config: Database.DBObject;
+	runSet: Database.DBRunSet;
 }
 
 type RunSetSelectorProps = {
@@ -250,10 +259,10 @@ type RunSetSelectorProps = {
 };
 
 type RunSetSelectorState = {
-	runSets: Array<Database.DBRunSet> | void;
+	runSets: Array<Database.DBRunSet>;
 };
 
-export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorProps, RunSetSelectorState> {
+export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetSelectorState> {
 	constructor (props: RunSetSelectorProps) {
 		super (props);
 		this.state = { runSets: undefined };
@@ -293,10 +302,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		});
 	}
 
-	runSetSelected (event: Object) {
+	runSetSelected (event: React.FormEvent) {
 		if (this.state.runSets === undefined)
 			return;
-		var runSetId = event.target.value;
+		var target: any = event.target;
+		var runSetId: number = target.value;
 		var runSet = Database.findRunSet (this.state.runSets, runSetId);
 		if (runSet !== undefined)
 			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
@@ -306,7 +316,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: undefined});
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var selection = this.props.selection;
 		var machine = selection.machine;
 		var config = selection.config;
@@ -317,24 +327,26 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (selection.runSet !== undefined)
 			runSetId = selection.runSet.get ('id');
 
-		function openRunSetDescription (id) {
+		const openRunSetDescription = (id: number) => {
 			return window.open ('runset.html#id=' + id);
-		}
+		};
 
-		function renderRunSet (runSet) {
-			var id = runSet.get ('id');
-			return <option value={id} key={id} onDoubleClick={openRunSetDescription.bind (this, id)}>
+		const renderRunSet = (runSet: Database.DBRunSet) => {
+			const id = runSet.get ('id');
+			return <option value={id} key={id} onDoubleClick={() => openRunSetDescription (id)}>
 				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}
 			</option>;
-		}
+		};
 
 		var configSelector =
 			<CombinedConfigSelector
+				featuredTimelines={undefined}
+				metric={undefined}
 				includeMetric={false}
 				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
 				config={selection.config}
-				onChange={this.configSelected.bind (this)}
+				onChange={s => this.configSelected (s)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
 		if (runSets === undefined && machine !== undefined && config !== undefined) {
@@ -345,10 +357,9 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
-				size="6"
-				selectedIndex="-1"
+				size={6}
 				value={runSetId}
-				onChange={this.runSetSelected.bind (this)}>
+				onChange={e => this.runSetSelected (e)}>
 				{runSets.map (renderRunSet)}
 			</select>;
 		}
@@ -378,11 +389,11 @@ type RunSetDescriptionProps = {
 };
 
 type RunSetDescriptionState = {
-	results: Array<Object> | void;
-	secondaryCommits: Array<Object> | void;
+	results: Array<Object>;
+	secondaryCommits: Array<Object>;
 };
 
-export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionProps, RunSetDescriptionState> {
+export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
 		this.state = { results: undefined, secondaryCommits: undefined };
@@ -394,7 +405,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			objs => {
 				if (runSet !== this.props.runSet)
 					return;
-				this.setState ({ results: objs });
+				this.setState ({ results: objs } as any);
 			}, error => {
 				alert ("error loading results: " + error.toString ());
 			});
@@ -404,7 +415,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				objs => {
 					if (runSet !== this.props.runSet)
 						return;
-					this.setState ({ secondaryCommits: objs });
+					this.setState ({ secondaryCommits: objs } as any);
 				}, error => {
 					alert ("error loading commits: " + error.toString ());
 				});
@@ -416,7 +427,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		this.fetchResults (nextProps.runSet);
 	}
 
-	render () : React.Element  {
+	render () : JSX.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
 		var buildLink;
@@ -452,16 +463,16 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				elements = secondaryCommits.map (c => {
 					var short = c.substring (0, 10);
 					return <li key={"commit" + c}>{short}</li>;
-					});
+				});
 			} else {
 				elements = this.state.secondaryCommits.map (c => {
-					var short = c ['hash'].substring (0, 10);
+					var short = c ['hash'].substring(0, 10);
 					var link = githubCommitLink (c ['product'], c ['hash']);
 					return <li key={"commit" + c ['hash']}><a href={link}>{c ['product']} {short}</a></li>;
-					});
+				});
 			}
 			secondaryProductsList = [<h1 key="secondaryProductsHeader">Secondary products</h1>,
-				<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
+					<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
 		}
 
 		if (this.state.results === undefined) {
@@ -470,7 +481,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			var resultsByBenchmark = {};
 			var metricsDict = {};
 			for (var i = 0; i < this.state.results.length; ++i) {
-				var result = this.state.results [i];
+				let result = this.state.results [i];
 				var benchmark = result ['benchmark'];
 				var metric = result ['metric'];
 				var entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] };
@@ -537,6 +548,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
 		var commitLink = githubCommitLink (product, commitHash);
 
+
 		return <div className="Description">
 			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
 			{logLinkList}
@@ -556,7 +568,7 @@ export function githubCommitLink (product: string, commit: string) : string {
 			repo = "xamarin/monodroid";
 			break;
 		default:
-			alert ("Unknown product " + product);
+			alert("Unknown product " + product);
 			return "";
 	}
 	return "https://github.com/" + repo + "/commit/" + commit;
@@ -570,7 +582,7 @@ type NavigationProps = {
 	currentPage: string;
 }
 
-export class Navigation extends React.Component<NavigationProps, NavigationProps, void> {
+export class Navigation extends React.Component<NavigationProps, void> {
 	openDeployment () : boolean {
 		var lastSlashIndex = window.location.href.search ("/[^/]+$");
 		var path = window.location.href.substring (lastSlashIndex + 1);
@@ -579,13 +591,13 @@ export class Navigation extends React.Component<NavigationProps, NavigationProps
 		return false;
 	}
 
-	render () : Object {
+	render () : JSX.Element {
 		var deploymentLink;
 		if (process.env.NODE_ENV !== 'production') {
 			deploymentLink =
 				<a title="Go to the deployed page"
 					className="deselected deployment"
-					onClick={this.openDeployment.bind (this)}>Deployment</a>;
+					onClick={() => this.openDeployment ()}>Deployment</a>;
 		}
 
 		var classFor = (page) =>
@@ -621,9 +633,9 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 	var components = hash.split ('&');
 	var parsed = {};
 	var error = false;
-	for (var i = 0; i < components.length; ++i) {
+	for (let i = 0; i < components.length; ++i) {
 		var kv = components [i].split ('=');
-		if (kv.length != 2) {
+		if (kv.length !== 2) {
 			error = true;
 			break;
 		}
@@ -644,8 +656,8 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 		var keyMap = {};
 		keys.forEach ((k, i) => keyMap [items [i]] = k);
 		startFunc (keyMap);
-	}, error => {
-		alert ("Error: " + error.toString ());
+	}, err => {
+		alert ("Error: " + err.toString ());
 	});
 }
 
@@ -685,7 +697,7 @@ export function setLocationForArray (key: string, ids: Array<string>) {
 	window.location.hash = key + "=" + ids.join ("+");
 }
 
-export function pullRequestIdFromUrl (url: string): number | void {
+export function pullRequestIdFromUrl (url: string): number {
 	var match = url.match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
 	if (match === null)
 		return undefined;

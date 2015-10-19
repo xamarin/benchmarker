@@ -13,22 +13,22 @@ if (!process.env ['DEV_SERVER']) {
 
 module.exports = {
     entry: {
-        compare: "./src/compare.js",
-        config: "./src/config.js",
-        machine: "./src/machine.js",
-        timeline: "./src/timeline.js",
-        runset: "./src/runset.js",
-        pullrequest: "./src/pullrequest.js",
-        pullrequests: "./src/pullrequests.js"
+        compare: "./src/compare.tsx",
+        config: "./src/config.tsx",
+        machine: "./src/machine.tsx",
+        timeline: "./src/timeline.tsx",
+        runset: "./src/runset.tsx",
+        pullrequest: "./src/pullrequest.tsx",
+        pullrequests: "./src/pullrequests.tsx"
     },
     output: {
         filename: "./build/[name].js"
     },
     module: {
         loaders: [
-            { test: /\.js$/,
+            { test: /\.tsx?$/,
     		  exclude: /node_modules/,
-    		  loader: 'babel',
+    		  loader: 'ts-loader',
     		},
         ]
     },

@@ -1,17 +1,19 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_utils from './utils.js';
-import * as xp_common from './common.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as xp_common from './common.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
-	startupRunSetId: number | void;
-	runSetCounts: Array<Object>;
-	runSet: Object | void;
+	startupRunSetId: number;
+	runSetCounts: Array<Database.RunSetCount>;
+	runSet: Database.DBRunSet;
 
 	constructor (startupRunSetId) {
 		this.startupRunSetId = startupRunSetId;
@@ -29,10 +31,11 @@ class Controller {
 			return;
 		Database.fetchRunSet (this.startupRunSetId,
 			runSet => {
-				if (runSet === undefined)
+				if (runSet === undefined) {
 					this.startupRunSetId = undefined;
-				else
+				} else {
 					this.runSet = runSet;
+				}
 				this.checkAllDataLoaded ();
 			}, error => {
 				alert ("error loading run set: " + error.toString ());
@@ -48,7 +51,7 @@ class Controller {
 	}
 
 	allDataLoaded () {
-		var selection = {};
+		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSet: undefined };
 		if (this.runSet !== undefined) {
 			selection = {
 				machine: this.runSet.machine,
@@ -57,16 +60,10 @@ class Controller {
 			};
 		}
 
-		ReactDOM.render (
-			React.createElement (
-				Page,
-				{
-					controller: this,
-					initialSelection: selection,
-					runSetCounts: this.runSetCounts,
-					onChange: this.updateForRunSet.bind (this)
-				}
-			),
+		ReactDOM.render (<Page
+					initialSelection={selection}
+					runSetCounts={this.runSetCounts}
+					onChange={s => this.updateForRunSet (s)} />,
 			document.getElementById ('runSetPage')
 		);
 
@@ -81,7 +78,17 @@ class Controller {
 	}
 }
 
-class Page extends React.Component {
+type PageProps = {
+	initialSelection: xp_common.RunSetSelection;
+	runSetCounts: Array<Database.RunSetCount>;
+	onChange: (selection: xp_common.RunSetSelection) => void;
+};
+
+type PageState = {
+	selection: xp_common.RunSetSelection;
+};
+
+class Page extends React.Component<PageProps, PageState> {
 	constructor (props) {
 		super (props);
 		this.state = {selection: this.props.initialSelection};
@@ -98,10 +105,11 @@ class Page extends React.Component {
 
 	render () {
 		var detail;
-		if (this.state.selection.runSet === undefined)
+		if (this.state.selection.runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
-		else
+		} else {
 			detail = <xp_common.RunSetDescription runSet={this.state.selection.runSet} />;
+		}
 
 		return <div className="RunSetPage">
 			<header>
@@ -112,7 +120,7 @@ class Page extends React.Component {
 					<xp_common.RunSetSelector
 						selection={this.state.selection}
 						runSetCounts={this.props.runSetCounts}
-						onChange={this.handleChange.bind (this)} />
+						onChange={s => this.handleChange (s)} />
 				</div>
 				{detail}
 			</article>

@@ -1,15 +1,18 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as xp_common from './common.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
 	machineName: string;
-	machine: Database.DBObject | void;
+	machine: Database.DBObject;
 
 	constructor (machineName) {
 		this.machineName = machineName;
@@ -31,6 +34,7 @@ class Controller {
 				<xp_common.Navigation currentPage="" />
 				<article>
 					<xp_common.MachineDescription
+						omitHeader={false}
 						machine={this.machine} />
 				</article>
 			</div>,

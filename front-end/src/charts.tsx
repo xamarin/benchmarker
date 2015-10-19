@@ -1,19 +1,22 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/amcharts/AmCharts.d.ts"/>
+
 /* @flow */
 
 /* global AmCharts, AmChart */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as xp_utils from './utils.js';
-import * as Database from './database.js';
-import React from 'react';
+import * as xp_common from './common.tsx';
+import * as xp_utils from './utils.ts';
+import * as Database from './database.ts';
+import React = require ('react');
 
 type Range = [number, number, number, number];
 
 function calculateRunsRange (data: Array<number>): Range {
-	var min: number | void;
-	var max: number | void;
+	var min: number;
+	var max: number;
 	var sum = 0;
 	var v;
 	for (var i = 0; i < data.length; ++i) {
@@ -38,7 +41,7 @@ function calculateRunsRange (data: Array<number>): Range {
 }
 
 function normalizeRange (mean: number, range: Range) : Range {
-	return range.map (x => x / mean);
+	return [range [0] / mean, range [1] / mean, range [2] / mean, range [3] / mean];
 }
 
 function rangeMean (range: Range) : number {
@@ -48,7 +51,7 @@ function rangeMean (range: Range) : number {
 type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
-function dataArrayForResults (resultsByIndex : Array<{[benchmark: string]: Object}>): (DataArray | void) {
+function dataArrayForResults (resultsByIndex : Array<{[benchmark: string]: Object}>): DataArray {
 	for (var i = 0; i < resultsByIndex.length; ++i) {
 		if (resultsByIndex [i] === undefined)
 			return undefined;
@@ -107,19 +110,21 @@ function runSetMean (dataArray: DataArray, runSetIndex: number) : number {
 function sortDataArrayByDifference (dataArray: DataArray) : DataArray {
 	var differences = {};
 	for (var i = 0; i < dataArray.length; ++i) {
-		var row = dataArray [i];
+		let row = dataArray [i];
 		var min = Number.MAX_VALUE;
 		var max = Number.MIN_VALUE;
 		for (var j = 0; j < row [1].length; ++j) {
 			var avg = rangeMean (rangeInBenchmarkRow (row, j));
-			if (min === undefined)
+			if (min === undefined) {
 				min = avg;
-			else
+			} else {
 				min = Math.min (min, avg);
-			if (max === undefined)
+			}
+			if (max === undefined) {
 				max = avg;
-			else
+			} else {
 				max = Math.max (max, avg);
+			}
 		}
 		differences [row [0]] = max - min;
 	}
@@ -158,10 +163,11 @@ function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
 		}
 		if (includeConfigs) {
 			var config = runSet.config;
-			if (includeMachine)
+			if (includeMachine) {
 				str = str + " / ";
-			else if (str !== "")
+			} else if (str !== "") {
 				str = str + "\n";
+			}
 			str = str + config.get ('name');
 		}
 		if (includeStartedAt) {
@@ -178,13 +184,13 @@ function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
 type AMChartProps = {
 	graphName: string;
 	height: number;
-	options: Object;
+	options: any;
 	selectListener: (dataItem: any) => void;
-    initFunc: ((chart: AmChart) => void) | void;
+    initFunc: (chart: AmCharts.AmChart) => void;
 };
 
-export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
-	chart: Object;
+export class AMChart extends React.Component<AMChartProps, void> {
+	chart: AmCharts.AmSerialChart;
 
 	render () {
 		return React.DOM.div({
@@ -226,11 +232,11 @@ export class AMChart extends React.Component<AMChartProps, AMChartProps, void> {
 			 */
 			var options = xp_utils.shallowClone (props.options);
 			options.graphs = xp_utils.deepClone (options.graphs);
-			this.chart = AmCharts.makeChart (props.graphName, options);
+			this.chart = AmCharts.makeChart (props.graphName, options) as AmCharts.AmSerialChart;
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
-					e => this.props.selectListener (e.item.dataContext.dataItem));
+					e => this.props.selectListener ((e.item.dataContext as any).dataItem));
 			if (this.props.initFunc !== undefined)
 				this.props.initFunc (this.chart);
 		} else {
@@ -262,7 +268,7 @@ type ComparisonAMChartProps = {
 	graphName: string;
 };
 
-export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, ComparisonAMChartProps, void> {
+export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, void> {
     resultsByIndex : Array<{[benchmark: string]: Object}>;
     graphs: Array<Object>;
     dataProvider: Array<Object>;
@@ -373,15 +379,17 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
                 entry ["lowhighavg" + j] = lowhighavg;
                 entry ["lowhigherror" + j] = range [3] - range [0];
 
-                if (min === undefined)
+                if (min === undefined) {
                     min = range [0];
-                else
+				} else {
                     min = Math.min (min, range [0]);
+				}
 
-                if (max === undefined)
+                if (max === undefined) {
                     max = range [3];
-                else
+				} else {
                     max = Math.max (max, range [3]);
+				}
 
                 entry ["stdBalloon" + j] = formatPercentage (range [1]) + "–" + formatPercentage (range [2]);
                 entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);
@@ -397,7 +405,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
         this.forceUpdate ();
     }
 
-    render () {
+    render () : JSX.Element {
         if (this.dataProvider === undefined)
             return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -436,12 +444,13 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, C
 
         var zoomFunc;
         if (this.dataProvider.length > 15) {
-            zoomFunc = (chart: AmChart) => {
+            zoomFunc = (chart: AmCharts.AmSerialChart) => {
                 chart.zoomToIndexes (0, 9);
             };
         }
 
         return <AMChart
+			selectListener={undefined}
             graphName={this.props.graphName}
             height={700}
             options={options}
@@ -455,11 +464,11 @@ type TimelineAMChartProps = {
 	title: string;
 	data: Object;
 	selectListener: (runSet: Database.DBRunSet) => void;
-	zoomInterval: void | {start: number, end: number};
+	zoomInterval: {start: number, end: number};
 };
 
-export class TimelineAMChart extends React.Component<TimelineAMChartProps, TimelineAMChartProps, void> {
-	render () {
+export class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
+	render () : JSX.Element {
 		var timelineOptions = {
 						"type": "serial",
 						"theme": "default",

@@ -1,15 +1,18 @@
+///<reference path="../typings/react/react.d.ts"/>
+///<reference path="../typings/react-dom/react-dom.d.ts"/>
+
 /* @flow */
 
 "use strict";
 
-import * as xp_common from './common.js';
-import * as Database from './database.js';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as xp_common from './common.tsx';
+import * as Database from './database.ts';
+import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
 	configName: string;
-	config: Database.DBObject | void;
+	config: Database.DBObject;
 
 	constructor (configName) {
 		this.configName = configName;
@@ -31,6 +34,7 @@ class Controller {
 				<xp_common.Navigation currentPage="" />
 				<article>
 					<xp_common.ConfigDescription
+						omitHeader={false}
 						config={this.config} />
 				</article>
 			</div>,
