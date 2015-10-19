@@ -31,6 +31,7 @@ using Benchmarks.Perimeter;
 using Benchmarks.Raytracer2;
 using Benchmarks.Raytracer3;
 using Benchmarks.SciMark;
+using Benchmarks.SpecRaytracer;
 using Benchmarks.Strcat;
 
 using Java.Util.Logging;
@@ -146,6 +147,9 @@ namespace AndroidAgent
 				break;
 			case "scimark-lu":
 				ScimarkEntrypoint.Main (new string[] { "lu" }, Logging.GetLogging ());
+				break;
+			case "specraytracer":
+				MainCL.Main (new string[] { "200", "1250" }, Logging.GetLogging ());
 				break;
 			case "strcat": 
 				strcat.Main (new string[] { "40000000" });

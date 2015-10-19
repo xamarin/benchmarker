@@ -90,6 +90,30 @@
     <Compile Include="SciMark\kernel.cs" />
     <Compile Include="SciMark\ScimarkEntrypoint.cs" />
     <Compile Include="Euler\Euler.cs" />
+    <Compile Include="SpecRaytracer\CacheIntersectPt.cs" />
+    <Compile Include="SpecRaytracer\Camera.cs" />
+    <Compile Include="SpecRaytracer\Canvas.cs" />
+    <Compile Include="SpecRaytracer\Color.cs" />
+    <Compile Include="SpecRaytracer\Face.cs" />
+    <Compile Include="SpecRaytracer\IntersectPt.cs" />
+    <Compile Include="SpecRaytracer\Light.cs" />
+    <Compile Include="SpecRaytracer\LightNode.cs" />
+    <Compile Include="SpecRaytracer\LinkNode.cs" />
+    <Compile Include="SpecRaytracer\Main.cs" />
+    <Compile Include="SpecRaytracer\Material.cs" />
+    <Compile Include="SpecRaytracer\MaterialNode.cs" />
+    <Compile Include="SpecRaytracer\ObjectType.cs" />
+    <Compile Include="SpecRaytracer\ObjNode.cs" />
+    <Compile Include="SpecRaytracer\OctNode.cs" />
+    <Compile Include="SpecRaytracer\Point.cs" />
+    <Compile Include="SpecRaytracer\PolygonObj.cs" />
+    <Compile Include="SpecRaytracer\PolyTypeObj.cs" />
+    <Compile Include="SpecRaytracer\Ray.cs" />
+    <Compile Include="SpecRaytracer\RayTracer.cs" />
+    <Compile Include="SpecRaytracer\Scene.cs" />
+    <Compile Include="SpecRaytracer\SphereObj.cs" />
+    <Compile Include="SpecRaytracer\TriangleObj.cs" />
+    <Compile Include="SpecRaytracer\Vector.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
@@ -108,5 +132,6 @@
     <Folder Include="Perimeter\" />
     <Folder Include="SciMark\" />
     <Folder Include="Euler\" />
+    <Folder Include="SpecRaytracer\" />
   </ItemGroup>
 </Project>
