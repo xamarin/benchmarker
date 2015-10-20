@@ -14,13 +14,13 @@ export function outlierVariance (samples: Array<number>): string {
 }
 
 function computeMean (samples: Array<number>): number {
-	return samples.reduce ((x, y) => x + y, 0) / samples.length;
+	return samples.reduce ((x: number, y: number) => x + y, 0) / samples.length;
 }
 
 function computeStandardDeviation (samples: Array<number>): number {
 	var mean = computeMean (samples);
 	var n = samples.length;
-	return Math.sqrt (samples.reduce ((sum, x) => sum + (x - mean) * (x - mean), 0) / n);
+	return Math.sqrt (samples.reduce ((sum: number, x: number) => sum + (x - mean) * (x - mean), 0) / n);
 }
 
 function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => number)): number {
@@ -45,11 +45,11 @@ function computeOutlierVariance (
 	var mgMin = mn / 2;
 	var sampledStdDev = Math.min (mgMin / 4, stdDev / Math.sqrt (n));
 	var sampledVariance = sampledStdDev * sampledStdDev;
-	var outlierVariance = function (x) {
+	var outlierVariance = function (x: number) {
 		var delta = n - x;
 		return (delta / n) * (variance - delta * sampledVariance);
 	};
-	var cMax = function (x) {
+	var cMax = function (x: number) {
 		var k = mn - x;
 		var d = k * k;
 		var nd = n * d;

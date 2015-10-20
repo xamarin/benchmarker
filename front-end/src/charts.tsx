@@ -128,11 +128,11 @@ function sortDataArrayByDifference (dataArray: DataArray) : DataArray {
 		}
 		differences [row [0]] = max - min;
 	}
-	return xp_utils.sortArrayNumericallyBy (dataArray, row => -differences [row [0]]);
+	return xp_utils.sortArrayNumericallyBy (dataArray, (row: BenchmarkRow) => -differences [row [0]]);
 }
 
 function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
-	var commitHashes = runSets.map (rs => rs.commit.get ('hash'));
+	var commitHashes = runSets.map ((rs: Database.DBRunSet) => rs.commit.get ('hash'));
 	var commitHistogram = xp_utils.histogramOfStrings (commitHashes);
 
 	var includeCommit = commitHistogram.length > 1;
@@ -143,13 +143,13 @@ function runSetLabels (runSets: Array<Database.DBRunSet>) : Array<string> {
 			includeStartedAt = true;
 	}
 
-	var machines = runSets.map (rs => rs.machine.get ('name'));
+	var machines = runSets.map ((rs: Database.DBRunSet) => rs.machine.get ('name'));
 	var includeMachine = xp_utils.uniqStringArray (machines).length > 1;
 
-	var configs = runSets.map (rs => rs.config.get ('name'));
+	var configs = runSets.map ((rs: Database.DBRunSet) => rs.config.get ('name'));
 	var includeConfigs = xp_utils.uniqStringArray (configs).length > 1;
 
-	var formatRunSet = runSet => {
+	var formatRunSet = (runSet: Database.DBRunSet) => {
 		var str = "";
 		if (includeCommit) {
 			var commit = runSet.commit;
@@ -186,7 +186,7 @@ type AMChartProps = {
 	height: number;
 	options: any;
 	selectListener: (dataItem: any) => void;
-    initFunc: (chart: AmCharts.AmChart) => void;
+    initFunc: (chart: AmCharts.AmSerialChart) => void;
 };
 
 export class AMChart extends React.Component<AMChartProps, void> {
@@ -236,7 +236,7 @@ export class AMChart extends React.Component<AMChartProps, void> {
 			if (this.props.selectListener !== undefined)
 				this.chart.addListener (
 					'clickGraphItem',
-					e => this.props.selectListener ((e.item.dataContext as any).dataItem));
+					(e: AmCharts.AmCoordinateChartEvent) => this.props.selectListener ((e.item.dataContext as any).dataItem));
 			if (this.props.initFunc !== undefined)
 				this.props.initFunc (this.chart);
 		} else {
@@ -289,17 +289,17 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
     invalidateState (runSets: Array<Database.DBRunSet>) : void {
         this.resultsByIndex = [];
 
-		Database.fetch ('results?metric=eq.' + this.props.metric + '&disabled=isnot.true&runset=in.' + runSets.map (rs => rs.get ('id')).join (','),
-			objs => {
+		Database.fetch ('results?metric=eq.' + this.props.metric + '&disabled=isnot.true&runset=in.' + runSets.map ((rs: Database.DBRunSet) => rs.get ('id')).join (','),
+			(objs: Array<Object>) => {
 				if (runSets !== this.props.runSets)
 					return;
 
 				var runSetIndexById = {};
-				runSets.forEach ((rs, i) => {
+				runSets.forEach ((rs: Database.DBRunSet, i: number) => {
 					runSetIndexById [rs.get ('id')] = i;
 				});
 
-				objs.forEach (r => {
+				objs.forEach ((r: Object) => {
 					var i = runSetIndexById [r ['runset']];
 					if (this.resultsByIndex [i] === undefined)
 						this.resultsByIndex [i] = {};
@@ -307,7 +307,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
 				});
 
 				this.runsLoaded ();
-			}, error => {
+			}, (error: Object) => {
 				alert ("error loading results: " + error.toString ());
 			});
     }
@@ -538,7 +538,7 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, void>
 		if (zoomInterval !== undefined) {
 			var start = zoomInterval.start;
 			var end = zoomInterval.end;
-            zoomFunc = (chart => {
+            zoomFunc = ((chart: AmCharts.AmSerialChart) => {
                 chart.zoomToIndexes (start, end);
             });
         }

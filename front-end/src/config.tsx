@@ -14,16 +14,16 @@ class Controller {
 	configName: string;
 	config: Database.DBObject;
 
-	constructor (configName) {
+	constructor (configName: string) {
 		this.configName = configName;
 	}
 
 	loadAsync () {
 		Database.fetchAndWrap ('config?name=eq.' + this.configName,
-		objs => {
+		(objs: Array<Database.DBObject>) => {
 			this.config = objs [0];
 			this.allDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading config: " + error.toString ());
 		});
 	}
@@ -43,7 +43,7 @@ class Controller {
 	}
 }
 
-function start (params) {
+function start (params: Object) {
 	var name = params ['name'];
 	if (name === undefined) {
 		alert ("Error: Please provide a config name.");

@@ -15,16 +15,16 @@ class Controller {
 	pullRequestId: string;
 	dbRow: Object;
 
-	constructor (pullRequestId) {
+	constructor (pullRequestId: string) {
 		this.pullRequestId = pullRequestId;
 	}
 
 	loadAsync () {
 		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId,
-		objs => {
+		(objs: Array<Database.DBObject>) => {
 			this.dbRow = objs [0];
 			this.allDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading config: " + error.toString ());
 		});
 	}
@@ -80,22 +80,22 @@ class Controller {
 	}
 }
 
-type PullRequestDescriptionProps = {
+interface PullRequestDescriptionProps {
 	pullRequest: Database.DBObject;
 	baselineRunSet: Database.DBObject;
-};
+}
 
-type PullRequestDescriptionState = {
+interface PullRequestDescriptionState {
     gitHubInfo: Object;
-};
+}
 
 class PullRequestDescription extends React.Component<PullRequestDescriptionProps, PullRequestDescriptionState> {
-    constructor (props) {
+    constructor (props: PullRequestDescriptionProps) {
         super (props);
         this.state = { gitHubInfo: undefined };
 		xp_common.getPullRequestInfo (
 			this.props.pullRequest.get ('URL'),
-			info => this.setState ({ gitHubInfo: info })
+			(info: Object) => this.setState ({ gitHubInfo: info })
 		);
     }
 
@@ -126,7 +126,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 	}
 }
 
-function start (params) {
+function start (params: Object) {
 	var pullRequestId = params ['id'];
 	if (pullRequestId === undefined) {
 		alert ("Error: Please provide a pull request ID.");

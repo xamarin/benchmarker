@@ -18,7 +18,7 @@ class Controller {
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
 
-	constructor (machineName, configName, metric) {
+	constructor (machineName: string, configName: string, metric: string) {
 		if (machineName === undefined && configName === undefined && metric === undefined) {
 			machineName = 'benchmarker';
 			configName = 'auto-sgen-noturbo';
@@ -31,17 +31,17 @@ class Controller {
 	}
 
 	loadAsync () {
-		Database.fetchRunSetCounts (runSetCounts => {
+		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading run set counts: " + error.toString ());
 		});
 
-		Database.fetchFeaturedTimelines (featuredTimelines => {
+		Database.fetchFeaturedTimelines ((featuredTimelines: Array<Database.DBObject>) => {
 			this.featuredTimelines = featuredTimelines;
 			this.checkAllDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading featured run sets: " + error.toString ());
 		});
 	}
@@ -55,7 +55,7 @@ class Controller {
 	}
 
 	allDataLoaded () {
-		var selection;
+		var selection: xp_common.MachineConfigSelection;
 		if (this.initialSelectionNames.machineName !== undefined &&
 				this.initialSelectionNames.configName !== undefined &&
 				this.initialSelectionNames.metric !== undefined &&
@@ -73,14 +73,14 @@ class Controller {
 					initialZoom={this.initialZoom}
 					runSetCounts={this.runSetCounts}
 					featuredTimelines={this.featuredTimelines}
-					onChange={s => this.updateForSelection (s)} />,
+					onChange={(s: xp_common.MachineConfigSelection) => this.updateForSelection (s)} />,
 			document.getElementById ('timelinePage')
 		);
 
 		this.updateForSelection (selection);
 	}
 
-	updateForSelection (selection) {
+	updateForSelection (selection: xp_common.MachineConfigSelection) {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -91,9 +91,9 @@ class Controller {
 }
 
 type PageProps = {
-	initialSelection: Database.RunSetCount;
+	initialSelection: xp_common.MachineConfigSelection;
 	initialZoom: boolean;
-	onChange: (selection: Database.RunSetCount) => void;
+	onChange: (selection: xp_common.MachineConfigSelection) => void;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
 };
@@ -109,7 +109,7 @@ type PageState = {
 };
 
 class Page extends React.Component<PageProps, PageState> {
-	constructor (props) {
+	constructor (props: PageProps) {
 		super (props);
 		this.state = {
 			machine: this.props.initialSelection.machine,
@@ -126,17 +126,17 @@ class Page extends React.Component<PageProps, PageState> {
 		this.fetchSummaries (this.state);
 	}
 
-	runSetSelected (runSet) {
-		var index = xp_utils.findIndex (this.state.sortedResults, r => r.runSet === runSet);
+	runSetSelected (runSet: Database.DBObject) {
+		var index = xp_utils.findIndex (this.state.sortedResults, (r: Database.Summary) => r.runSet === runSet);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
 			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
 
-	allBenchmarksLoaded (names) {
+	allBenchmarksLoaded (names: Array<string>) {
 		this.setState ({benchmarkNames: names} as any);
 	}
 
-	fetchSummaries (selection) {
+	fetchSummaries (selection: xp_common.MachineConfigSelection) {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -145,8 +145,8 @@ class Page extends React.Component<PageProps, PageState> {
 			return;
 
 		Database.fetchSummaries (machine, config, metric,
-			objs => {
-				objs.sort ((a, b) => {
+			(objs: Array<Database.Summary>) => {
+				objs.sort ((a: Database.Summary, b: Database.Summary) => {
 					var aDate = a.runSet.commit.get ('commitDate');
 					var bDate = b.runSet.commit.get ('commitDate');
 					if (aDate.getTime () !== bDate.getTime ())
@@ -155,12 +155,12 @@ class Page extends React.Component<PageProps, PageState> {
 				});
 
 				this.setState ({sortedResults: objs} as any);
-			}, error => {
+			}, (error: Object) => {
 				alert ("error loading summaries: " + error.toString ());
 			});
 	}
 
-	selectionChanged (selection) {
+	selectionChanged (selection: xp_common.MachineConfigSelection) {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -186,8 +186,8 @@ class Page extends React.Component<PageProps, PageState> {
 				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
 				zoomInterval={zoomInterval}
-				runSetSelected={rs => this.runSetSelected (rs)}
-				allBenchmarksLoaded={names => this.allBenchmarksLoaded (names)}
+				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
+				allBenchmarksLoaded={(names: Array<string>) => this.allBenchmarksLoaded (names)}
 				/>;
 			benchmarkChartList = <BenchmarkChartList
 				benchmarkNames={this.state.benchmarkNames}
@@ -195,14 +195,14 @@ class Page extends React.Component<PageProps, PageState> {
 				config={this.state.config}
 				metric={this.state.metric}
 				sortedResults={this.state.sortedResults}
-				runSetSelected={rs => this.runSetSelected (rs)}
+				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
 				/>;
 		} else {
 			chart = <div className="DiagnosticBlock">Please select a machine and config.</div>;
 		}
 
 		var runSetIndexes = this.state.runSetIndexes;
-		var runSets = runSetIndexes.map (i => this.state.sortedResults [i].runSet);
+		var runSets = runSetIndexes.map ((i: number) => this.state.sortedResults [i].runSet);
 
 		var comparisonChart;
 		if (runSets.length > 1) {
@@ -215,7 +215,7 @@ class Page extends React.Component<PageProps, PageState> {
 
 		var runSetSummaries;
 		if (runSetIndexes.length > 0) {
-			var divs = runSetIndexes.map (i => {
+			var divs = runSetIndexes.map ((i: number) => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
 				var elem = <RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
@@ -236,7 +236,7 @@ class Page extends React.Component<PageProps, PageState> {
 							machine={this.state.machine}
 							config={this.state.config}
 							metric={this.state.metric}
-							onChange={s => this.selectionChanged (s)}
+							onChange={(s: xp_common.MachineConfigSelection) => this.selectionChanged (s)}
 							showControls={false} />
 						<xp_common.MachineDescription
 							machine={this.state.machine}
@@ -291,7 +291,7 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
 	}
 }
 
-export function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string {
+function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string {
 	if (benchmarks === undefined || benchmarks.length === 0)
 		return "";
 	return prefix + benchmarks.join (", ");
@@ -348,7 +348,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 		this.invalidateState (this.props);
 	}
 
-	componentWillReceiveProps (nextProps) {
+	componentWillReceiveProps (nextProps: Props) {
 		if (this.props.machine === nextProps.machine &&
 				this.props.config === nextProps.config &&
 				this.props.metric === nextProps.metric &&
@@ -358,7 +358,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 		this.invalidateState (nextProps);
 	}
 
-	render () {
+	render (): JSX.Element {
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -368,12 +368,12 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 			data={this.table}
 			zoomInterval={this.props.zoomInterval}
 			title={this.valueAxisTitle ()}
-			selectListener={rs => this.props.runSetSelected (rs)} />;
+			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
 	}
 
 	abstract computeTable (nextProps: Props) : void;
 
-	invalidateState (nextProps) {
+	invalidateState (nextProps: Props) {
 		this.table = undefined;
 		this.computeTable (nextProps);
 	}
@@ -438,9 +438,9 @@ class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 		 * proportion of the average time for that benchmark.
 		 */
 		for (i = 0; i < runMetricsTable.length; ++i) {
-			var filtered = runMetricsTable [i].filter (x => !isNaN (x));
-			var normal = filtered.reduce ((sumSoFar, time) => sumSoFar + time, 0) / filtered.length;
-			runMetricsTable [i] = runMetricsTable [i].map (time => time / normal);
+			var filtered = runMetricsTable [i].filter ((x: number) => !isNaN (x));
+			var normal = filtered.reduce ((sumSoFar: number, time: number) => sumSoFar + time, 0) / filtered.length;
+			runMetricsTable [i] = runMetricsTable [i].map ((time: number) => time / normal);
 		}
 
 		var table = [];
@@ -559,21 +559,21 @@ type BenchmarkChartListState = {
 };
 
 class BenchmarkChartList extends React.Component<BenchmarkChartListProps, BenchmarkChartListState> {
-	constructor (props) {
+	constructor (props: BenchmarkChartListProps) {
 		super (props);
 		this.state = { isExpanded: false };
 	}
 
-	render () {
+	render () : JSX.Element {
 		if (!this.state.isExpanded) {
 			return <div className="BenchmarkChartList">
-				<button onClick={e => this.expand ()}>Show Benchmarks</button>
+				<button onClick={(e: React.MouseEvent) => this.expand ()}>Show Benchmarks</button>
 			</div>;
 		}
 
 		var benchmarks = this.props.benchmarkNames.slice ();
 		benchmarks.sort ();
-		var charts = benchmarks.map (name => {
+		var charts = benchmarks.map ((name: string) => {
 			var key = 'benchmarkChart_' + name;
 			return <div key={key} className="BenchmarkChartList">
 				<h3>{name}</h3>
@@ -598,7 +598,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 	}
 }
 
-function start (params) {
+function start (params: Object) {
 	var machine = params ['machine'];
 	var config = params ['config'];
 	var metric = params ['metric'];

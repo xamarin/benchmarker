@@ -25,7 +25,7 @@ export function uniqArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
     for (var i = 0; i < arr.length; ++i) {
 		hash [keyFunc (arr [i])] = arr [i];
     }
-	return Object.keys (hash).map (k => hash [k]);
+	return Object.keys (hash).map ((k: string) => hash [k]);
 }
 
 export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<[T, number]> {
@@ -41,14 +41,14 @@ export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) 
             countHash [key] = 1;
         }
     }
-    return Object.keys (valueHash).map (k => {
+    return Object.keys (valueHash).map ((k: string) => {
         var result: [T, number] = [valueHash [k], countHash [k]];
         return result;
     });
 }
 
 export function histogramOfStrings (arr: Array<string>) : Array<[string, number]> {
-    return histogramByString (arr, x => x);
+    return histogramByString (arr, (x: string) => x);
 }
 
 export function intersectArray<T> (arr: Array<T>, brr: Array<T>) : Array<T> {
@@ -86,7 +86,7 @@ export function partitionArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => str
 
 export function sortArrayLexicographicallyBy<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<T> {
 	var copy = arr.slice (0);
-	copy.sort ((a, b) => {
+	copy.sort ((a: T, b: T) => {
 		var ka = keyFunc (a);
 		var kb = keyFunc (b);
 		if (ka < kb)
@@ -100,7 +100,7 @@ export function sortArrayLexicographicallyBy<T> (arr: Array<T>, keyFunc: (v: T) 
 
 export function sortArrayNumericallyBy<T> (arr: Array<T>, keyFunc: (v: T) => number) : Array<T> {
 	var copy = arr.slice (0);
-	copy.sort ((a, b) => {
+	copy.sort ((a: T, b: T) => {
 		var ka = keyFunc (a);
 		var kb = keyFunc (b);
 		if (ka < kb)
@@ -155,7 +155,7 @@ export function intersperse<T> (element: T, array: Array<T>): Array<T> {
 export function deepEquals (...args: any[]) : boolean {
     var leftChain = [], rightChain = [];
 
-    function compare2Objects (x, y) {
+    function compare2Objects (x: any, y: any) {
         var p;
 
         // remember that NaN === NaN returns false
@@ -283,7 +283,7 @@ export function deepClone<T> (toCopy: T) : T {
     var result: any;
 
     // normalizing primitives if someone did new String('aaa'), or new Number('444');
-    types.forEach(function(type) {
+    types.forEach(function(type: any) {
         if (item instanceof type) {
             result = type( item );
         }
@@ -291,11 +291,11 @@ export function deepClone<T> (toCopy: T) : T {
 
     if (typeof result == "undefined") {
         if (Object.prototype.toString.call( item ) === "[object Array]") {
-            var arr: any = [];
-            item.forEach(function(child, index, array) {
+            var arr = [];
+            (item as Array<any>).forEach(function(child: any, index: number, array: Array<any>) {
                 arr [index] = deepClone( child );
             });
-            return arr;
+            return arr as any;
         } else if (typeof item == "object") {
             // testing that this is DOM
             if (item.nodeType && typeof item.cloneNode == "function") {

@@ -6,9 +6,13 @@
         "no-var-keyword": false,
         "member-access": false,
         "typedef": [
+            true,
+            "parameter",
+            "member-variable-declaration"
+        ],
+        "XXXtypedef": [
             false,
             "call-signature",
-            "parameter",
             "property-declaration",
             "variable-declaration",
             "member-variable-declaration"

@@ -15,29 +15,29 @@ class Controller {
 	runSetCounts: Array<Database.RunSetCount>;
 	runSet: Database.DBRunSet;
 
-	constructor (startupRunSetId) {
+	constructor (startupRunSetId: number) {
 		this.startupRunSetId = startupRunSetId;
 	}
 
 	loadAsync () {
-		Database.fetchRunSetCounts (runSetCounts => {
+		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 				this.runSetCounts = runSetCounts;
 				this.checkAllDataLoaded ();
-			}, error => {
+			}, (error: Object) => {
 				alert ("error loading run set counts: " + error.toString ());
 			});
 
 		if (this.startupRunSetId === undefined)
 			return;
 		Database.fetchRunSet (this.startupRunSetId,
-			runSet => {
+			(runSet: Database.DBRunSet) => {
 				if (runSet === undefined) {
 					this.startupRunSetId = undefined;
 				} else {
 					this.runSet = runSet;
 				}
 				this.checkAllDataLoaded ();
-			}, error => {
+			}, (error: Object) => {
 				alert ("error loading run set: " + error.toString ());
 			});
 	}
@@ -63,14 +63,14 @@ class Controller {
 		ReactDOM.render (<Page
 					initialSelection={selection}
 					runSetCounts={this.runSetCounts}
-					onChange={s => this.updateForRunSet (s)} />,
+					onChange={(s: xp_common.RunSetSelection) => this.updateForRunSet (s)} />,
 			document.getElementById ('runSetPage')
 		);
 
 		this.updateForRunSet (selection);
 	}
 
-	updateForRunSet (selection) {
+	updateForRunSet (selection: xp_common.RunSetSelection) {
 		var runSet = selection.runSet;
 		if (runSet === undefined)
 			return;
@@ -89,18 +89,14 @@ type PageState = {
 };
 
 class Page extends React.Component<PageProps, PageState> {
-	constructor (props) {
+	constructor (props: PageProps) {
 		super (props);
 		this.state = {selection: this.props.initialSelection};
 	}
 
-	setState (newState) {
-		super.setState (newState);
-		this.props.onChange (newState.selection);
-	}
-
-	handleChange (newSelection) {
+	handleChange (newSelection: xp_common.RunSetSelection) {
 		this.setState ({selection: newSelection});
+		this.props.onChange (newSelection);
 	}
 
 	render () {
@@ -120,7 +116,7 @@ class Page extends React.Component<PageProps, PageState> {
 					<xp_common.RunSetSelector
 						selection={this.state.selection}
 						runSetCounts={this.props.runSetCounts}
-						onChange={s => this.handleChange (s)} />
+						onChange={(s: xp_common.RunSetSelection) => this.handleChange (s)} />
 				</div>
 				{detail}
 			</article>
@@ -128,7 +124,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 }
 
-function start (params) {
+function start (params: Object) {
 	var startupRunSetId = params ['id'];
 	if (startupRunSetId === undefined) {
 		alert ("Error: Please provide a run set ID.");

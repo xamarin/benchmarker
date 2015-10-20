@@ -14,16 +14,16 @@ class Controller {
 	machineName: string;
 	machine: Database.DBObject;
 
-	constructor (machineName) {
+	constructor (machineName: string) {
 		this.machineName = machineName;
 	}
 
 	loadAsync () {
 		Database.fetchAndWrap ('machine?name=eq.' + this.machineName,
-		objs => {
+		(objs: Array<Database.DBObject>) => {
 			this.machine = objs [0];
 			this.allDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading machine: " + error.toString ());
 		});
 	}
@@ -43,7 +43,7 @@ class Controller {
 	}
 }
 
-function start (params) {
+function start (params: Object) {
 	var name = params ['name'];
 	if (name === undefined) {
 		alert ("Error: Please provide a machine name.");

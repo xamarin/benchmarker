@@ -1072,6 +1072,15 @@ If you do not set properties such as dashLength, lineAlpha, lineColor, etc - val
 
     /** AmCoordinateChart is a base class of AmRectangularChart. It can not be instantiated explicitly. */
 
+    interface AmCoordinateChartEvent {
+        /** Either "clickGraphItem" or "doubleClickGraphItem" or "rightClickGraphItem" or "rollOutGraphItem" or "rollOverGraphItem". */
+        type: string;
+        graph: AmGraph;
+        item: GraphDataItem;
+        index: number;
+        chart: AmChart;
+    }
+
     class AmCoordinateChart extends AmChart {
         /** Read-only. Array, holding processed chart's data. */
         chartData: Object[];
@@ -1160,14 +1169,7 @@ If you do not set properties such as dashLength, lineAlpha, lineColor, etc - val
             @param type Either "clickGraphItem" or "doubleClickGraphItem" or "rightClickGraphItem" or "rollOutGraphItem" or "rollOverGraphItem".
             @param handler Dispatched when user clicks on the data item (column/bullet)
         */
-        addListener(type: string, handler: (e: {
-            /** Either "clickGraphItem" or "doubleClickGraphItem" or "rightClickGraphItem" or "rollOutGraphItem" or "rollOverGraphItem". */
-            type: string;
-            graph: AmGraph;
-            item: GraphDataItem;
-            index: number;
-            chart: AmChart;
-        }) => void );
+        addListener(type: string, handler: (e: AmCoordinateChartEvent) => void);
     }
 
     /** GraphDataItem holds all the information about the graph's data item. When working with a chart, you do not create GraphDataItem objects or change it's properties directly. GraphDataItem is passed to you by events when user interacts with data item on the chart. The list of properties below will help you to extract data item's value/coordinate/etc. */

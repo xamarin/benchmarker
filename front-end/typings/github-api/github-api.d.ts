@@ -1,5 +1,5 @@
 declare class Repo {
-	getPull (id: number, callback: (err: any, info: any) => void);
+	getPull (id: number, callback: (err: any, info: Object) => void);
 }
 
 declare class GitHub {

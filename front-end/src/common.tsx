@@ -52,7 +52,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, v
 		var envVarsList = envVars.length === 0
 			? <span className="diagnostic">No environment variables specified.</span>
 			: <ul>
-			{envVars.map ((name, i) => <li key={"var" + i.toString ()}><code>{name + "=" + envVarsMap [name]}</code></li>)}
+			{envVars.map ((name: string, i: number) => <li key={"var" + i.toString ()}><code>{name + "=" + envVarsMap [name]}</code></li>)}
 		</ul>;
 		var options = config.get ('monoOptions') || [];
 		var optionsList = options.length === 0
@@ -100,11 +100,11 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 	}
 }
 
-type MachineConfigSelection = {
+export interface MachineConfigSelection {
 	machine: Database.DBObject;
 	config: Database.DBObject;
 	metric: string;
-};
+}
 
 type ConfigSelectorProps = {
 	includeMetric: boolean;
@@ -117,6 +117,10 @@ type ConfigSelectorProps = {
 	onChange: (selection: MachineConfigSelection) => void;
 };
 
+interface RunSetCountWithDisplayString extends Database.RunSetCount {
+	displayString: string;
+}
+
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, void> {
 	runSetCounts () {
 		if (this.props.includeMetric)
@@ -125,7 +129,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	}
 
 	render () : JSX.Element {
-		var userStringForRSC = r => {
+		var userStringForRSC = (r: Database.RunSetCount) => {
 			var s = r.machine.get ('name') + " / " + r.config.get ('name');
 			if (this.props.includeMetric)
 				s = s + " / " + r.metric;
@@ -139,18 +143,18 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), r => userStringForRSC (r).toLowerCase ());
+		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), (r: Database.RunSetCount) => userStringForRSC (r).toLowerCase ());
 
 		type MachinesMap = { [name: string]: Array<Database.RunSetCount> };
 		var machines: MachinesMap = {};
-		var featuredRSCs = [];
+		var featuredRSCs: Array<RunSetCountWithDisplayString> = [];
 		for (var i = 0; i < histogram.length; ++i) {
 			var rsc = histogram [i];
 			var machineName = rsc.machine.get ('name');
 
 			if (this.props.featuredTimelines !== undefined) {
 				var configName = rsc.config.get ('name');
-				var index = xp_utils.findIndex (this.props.featuredTimelines, ftl => {
+				var index = xp_utils.findIndex (this.props.featuredTimelines, (ftl: Database.DBObject) => {
 					return ftl.get ('machine') === machineName && ftl.get ('config') === configName && ftl.get ('metric') === rsc.metric;
 				});
 				if (index >= 0) {
@@ -189,13 +193,13 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				return undefined;
 
 			return <optgroup label="Featured">
-				{featuredRSCs.map (frsc => renderRSC (frsc, frsc.displayString))}
+				{featuredRSCs.map ((frsc: RunSetCountWithDisplayString) => renderRSC (frsc, frsc.displayString))}
 			</optgroup>;
 		};
 
 		const renderGroup = (machinesMap: MachinesMap, name: string) => {
 			return <optgroup key={"group" + name} label={name}>
-				{xp_utils.sortArrayNumericallyBy (machinesMap [name], x => -x.count).map (mrsc => renderRSC.call (this, mrsc, undefined))}
+				{xp_utils.sortArrayNumericallyBy (machinesMap [name], (x: Database.RunSetCount) => -x.count).map ((mrsc: Database.RunSetCount) => renderRSC.call (this, mrsc, undefined))}
 			</optgroup>;
 		};
 
@@ -213,9 +217,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
-			<select size={6} value={selectedValue} onChange={e => this.combinationSelected (e)}>
+			<select size={6} value={selectedValue} onChange={(e: React.FormEvent) => this.combinationSelected (e)}>
 				{renderFeaturedTimelines ()}
-				{Object.keys (machines).map (m => renderGroup (machines, m))}
+				{Object.keys (machines).map ((m: string) => renderGroup (machines, m))}
 			</select>
 			{aboutConfig}{aboutMachine}
 			<div style={{ clear: 'both' }}></div>
@@ -273,7 +277,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 
 	componentWillReceiveProps (nextProps: RunSetSelectorProps) {
-		function getName (obj) {
+		function getName (obj: Database.DBObject) {
 			if (obj === undefined)
 				return undefined;
 			return obj.get ('name');
@@ -295,9 +299,9 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (machine === undefined || config === undefined)
 			return;
 
-		Database.fetchRunSetsForMachineAndConfig (machine, config, runSets => {
+		Database.fetchRunSetsForMachineAndConfig (machine, config, (runSets: Array<Database.DBRunSet>) => {
 			this.setState ({ runSets: runSets });
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading run sets: " + error.toString ());
 		});
 	}
@@ -346,7 +350,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				runSetCounts={this.props.runSetCounts}
 				machine={selection.machine}
 				config={selection.config}
-				onChange={s => this.configSelected (s)}
+				onChange={(s: MachineConfigSelection) => this.configSelected (s)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
 		if (runSets === undefined && machine !== undefined && config !== undefined) {
@@ -359,7 +363,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <select
 				size={6}
 				value={runSetId}
-				onChange={e => this.runSetSelected (e)}>
+				onChange={(e: React.FormEvent) => this.runSetSelected (e)}>
 				{runSets.map (renderRunSet)}
 			</select>;
 		}
@@ -402,21 +406,21 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 	fetchResults (runSet: Database.DBRunSet) {
 		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
-			objs => {
+			(objs: Array<Object>) => {
 				if (runSet !== this.props.runSet)
 					return;
 				this.setState ({ results: objs } as any);
-			}, error => {
+			}, (error: Object) => {
 				alert ("error loading results: " + error.toString ());
 			});
 		var secondaryCommits = runSet.get ('secondaryCommits');
 		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
 			Database.fetch ('commit?hash=in.' + secondaryCommits.join (','),
-				objs => {
+				(objs: Array<Object>) => {
 					if (runSet !== this.props.runSet)
 						return;
 					this.setState ({ secondaryCommits: objs } as any);
-				}, error => {
+				}, (error: Object) => {
 					alert ("error loading commits: " + error.toString ());
 				});
 		}
@@ -458,16 +462,16 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			}
 		}
 
-		var secondaryCommits = runSet.get ('secondaryCommits');
+		var secondaryCommits = runSet.get ('secondaryCommits') as Array<string>;
 		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
 			var elements;
 			if (this.state.secondaryCommits === undefined) {
-				elements = secondaryCommits.map (c => {
+				elements = secondaryCommits.map ((c: string) => {
 					var short = c.substring (0, 10);
 					return <li key={"commit" + c}>{short}</li>;
 				});
 			} else {
-				elements = this.state.secondaryCommits.map (c => {
+				elements = this.state.secondaryCommits.map ((c: string) => {
 					var short = c ['hash'].substring(0, 10);
 					var link = githubCommitLink (c ['product'], c ['hash']);
 					return <li key={"commit" + c ['hash']}><a href={link}>{c ['product']} {short}</a></li>;
@@ -501,7 +505,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			var metrics = Object.keys (metricsDict);
 			metrics.sort ();
 			var tableHeaders = [];
-			metrics.forEach (m => {
+			metrics.forEach ((m: string) => {
 				tableHeaders.push (<th key={"metricValues" + m}>{descriptiveMetricName (m)}</th>);
 				tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
 			});
@@ -514,7 +518,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				</tr>
 				</thead>
 				<tbody>
-				{benchmarkNames.map (name => {
+				{benchmarkNames.map ((name: string) => {
 					var result = resultsByBenchmark [name];
 					var disabled = result.disabled;
 					var statusIcons = [];
@@ -530,7 +534,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 						statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
 
 					var metricColumns = [];
-					metrics.forEach (m => {
+					metrics.forEach ((m: string) => {
 						var dataPoints = result.metrics [m];
 						dataPoints.sort ();
 						var dataPointsString = dataPoints.join (", ");
@@ -551,8 +555,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				})}
 			</tbody></table>;
 
-			var notReportedCrashed = crashedBenchmarks.filter (n => !reportedCrashed [n]);
-			var notReportedTimedOut = timedOutBenchmarks.filter (n => !reportedTimedOut [n]);
+			var notReportedCrashed = crashedBenchmarks.filter ((n: string) => !reportedCrashed [n]);
+			var notReportedTimedOut = timedOutBenchmarks.filter ((n: string) => !reportedTimedOut [n]);
 
 			if (notReportedCrashed.length > 0) {
 				crashedElem = <p>All crashed: {notReportedCrashed.join (", ")}</p>;
@@ -619,7 +623,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
 					onClick={() => this.openDeployment ()}>Deployment</a>;
 		}
 
-		var classFor = (page) =>
+		var classFor = (page: string) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
 		return <div className="Navigation">
 			<div className="NavigationSection" />
@@ -658,7 +662,7 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 			error = true;
 			break;
 		}
-		if (xp_utils.findIndex (items, n => n === kv [0]) < 0) {
+		if (xp_utils.findIndex (items, (n: string) => n === kv [0]) < 0) {
 			alert ("Warning: Parameter " + kv [0] + " not supported.");
 			continue;
 		}
@@ -671,11 +675,11 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 	}
 
 	var ids = hash.split ('+');
-	Database.fetchParseObjectIds (ids, keys => {
+	Database.fetchParseObjectIds (ids, (keys: Array<number | string>) => {
 		var keyMap = {};
-		keys.forEach ((k, i) => keyMap [items [i]] = k);
+		keys.forEach ((k: number | string, i: number) => keyMap [items [i]] = k);
 		startFunc (keyMap);
-	}, err => {
+	}, (err: Object) => {
 		alert ("Error: " + err.toString ());
 	});
 }
@@ -707,7 +711,7 @@ export function parseLocationHashForArray (key: string, startFunc: (keyArray: Ar
 
 	var ids = hash.split ('+');
 	Database.fetchParseObjectIds (ids, startFunc,
-		error => {
+		(error: Object) => {
 			alert ("Error: " + error.toString ());
 		});
 }
@@ -733,5 +737,9 @@ export function getPullRequestInfo (url: string, success: (info: Object) => void
 		auth: 'oauth'
 	});
 	var repo = github.getRepo ("mono", "mono");
-	repo.getPull (id, (err, info) => success (info));
+	repo.getPull (id, (err: Object, info: Object) => {
+		if (info) {
+			success (info);
+		}
+	});
 }

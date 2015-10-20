@@ -30,11 +30,11 @@ class Controller {
 				'Range': this.offset.toString () + '-' + (this.offset + this.limit).toString ()
 */
 			},
-			objs => {
+			(objs: Array<Database.DBObject>) => {
 				this.pullRequests = objs;
 				this.allDataLoaded ();
 			},
-			error => {
+			(error: Object) => {
 				alert ("error loading pull requests: " + error.toString ());
 			}
 		);
@@ -60,26 +60,26 @@ type PageProps = {
 };
 
 type PageState = {
-	infos: Array<[number, any]>;
+	infos: Array<[number, Object]>;
 };
 
 class Page extends React.Component<PageProps, PageState> {
 
-	constructor (props) {
+	constructor (props: PageProps) {
 		super (props);
 		this.state = { infos: [] };
 		this.props.pullRequests.forEach (
-			pullRequest =>
+			(pullRequest: Object) =>
 				xp_common.getPullRequestInfo (
 					pullRequest ['pr_url'],
-					info => this.setState ({ infos: this.state.infos.concat ([[pullRequest ['pr_id'], info]]) })));
+					(info: Object) => this.setState ({ infos: this.state.infos.concat ([[pullRequest ['pr_id'], info]]) })));
 	}
 
 	render () : JSX.Element {
-		const renderRow = (pullRequest) => {
+		const renderRow = (pullRequest: Object) => {
 			var info;
 			var infos = this.state.infos;
-			var id = pullRequest.pr_id;
+			var id = pullRequest ['pr_id'];
 			for (var i = 0; i < infos.length; ++i) {
 				if (infos [i] [0] === id) {
 					info = infos [i] [1];
@@ -90,21 +90,21 @@ class Page extends React.Component<PageProps, PageState> {
 			console.log (pullRequest);
 			var crashed = xp_utils.intersperse (
 				', ',
-				pullRequest.blrs_crashedbenchmarks
-					.map (name => <code key={'crashed-' + name}>{name}</code>));
+				pullRequest ['blrs_crashedbenchmarks']
+					.map ((name: string) => <code key={'crashed-' + name}>{name}</code>));
 			var timedOut = xp_utils.intersperse (
 				', ',
-				pullRequest.blrs_timedoutbenchmarks
-					.map (name => <code key={'timed-out-' + name}>{name}</code>));
-			return <tr key={pullRequest.pr_id}>
-				<td>#{xp_common.pullRequestIdFromUrl (pullRequest.pr_url)}</td>
-				<td><a href={pullRequest.pr_url}>{title}</a></td>
-				<td>{new Date (pullRequest.blc_commitdate).toString ()}</td>
+				pullRequest ['blrs_timedoutbenchmarks']
+					.map ((name: string) => <code key={'timed-out-' + name}>{name}</code>));
+			return <tr key={pullRequest ['pr_id']}>
+				<td>#{xp_common.pullRequestIdFromUrl (pullRequest ['pr_url'])}</td>
+				<td><a href={pullRequest ['pr_url']}>{title}</a></td>
+				<td>{new Date (pullRequest ['blc_commitdate']).toString ()}</td>
 				<td>{crashed}</td>
 				<td>{timedOut}</td>
 				<td>
-					<a href={pullRequest.blrs_buildurl}>build</a>,{' '}
-					<a href={'pullrequest.html#id=' + pullRequest.pr_id}>compare</a>
+					<a href={pullRequest ['blrs_buildurl']}>build</a>,{' '}
+					<a href={'pullrequest.html#id=' + pullRequest ['pr_id']}>compare</a>
 				</td>
 			</tr>;
 		};
@@ -126,7 +126,7 @@ class Page extends React.Component<PageProps, PageState> {
 					</thead>
 					<tbody>
 						{ this.props.pullRequests
-							.sort ((a, b) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
+							.sort ((a: Object, b: Object) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
 							.map (renderRow) }
 					</tbody>
 				</table>

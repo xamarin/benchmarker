@@ -17,24 +17,24 @@ class Controller {
 	runSetCounts: Array<Database.RunSetCount>;
 	runSets: Array<Database.DBRunSet>;
 
-	constructor (startupRunSetIds) {
+	constructor (startupRunSetIds: Array<number>) {
 		this.startupRunSetIds = startupRunSetIds;
 	}
 
 	loadAsync () {
-		Database.fetchRunSetCounts (runSetCounts => {
+		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
-		}, error => {
+		}, (error: Object) => {
 			alert ("error loading run set counts: " + error.toString ());
 		});
 
 		if (this.startupRunSetIds.length > 0) {
 			Database.fetchRunSets (this.startupRunSetIds,
-				runSets => {
+				(runSets: Array<Database.DBRunSet>) => {
 					this.runSets = runSets;
 					this.checkAllDataLoaded ();
-				}, error => {
+				}, (error: Object) => {
 					alert ("error loading run sets: " + error.toString ());
 				});
 		}
@@ -56,7 +56,7 @@ class Controller {
 		ReactDOM.render (<Page
 					initialRunSets={runSets}
 					runSetCounts={this.runSetCounts}
-					onChange={rss => this.updateForSelection (rss)} />,
+					onChange={(rss: Array<Database.DBRunSet>) => this.updateForSelection (rss)} />,
 			document.getElementById ('comparePage')
 		);
 
@@ -64,39 +64,35 @@ class Controller {
 	}
 
 	updateForSelection (runSets: Array<Database.DBRunSet>) {
-		xp_common.setLocationForArray ("ids", runSets.map (rs => rs.get ('id')));
+		xp_common.setLocationForArray ("ids", runSets.map ((rs: Database.DBRunSet) => rs.get ('id')));
 	}
 }
 
 function runSetsFromSelections (selections: Array<xp_common.RunSetSelection>): Array<Database.DBRunSet> {
-	return selections.map (s => s.runSet).filter (rs => rs !== undefined);
+	return selections.map ((s: xp_common.RunSetSelection) => s.runSet).filter ((rs: Database.DBRunSet) => rs !== undefined);
 }
 
-type PageProps = {
-	initialRunSets: Array<Database.DBRunSet>,
-	runSetCounts: Array<Database.RunSetCount>,
-	onChange: (runSets: Array<Database.DBRunSet>) => void
-};
+interface PageProps {
+	initialRunSets: Array<Database.DBRunSet>;
+	runSetCounts: Array<Database.RunSetCount>;
+	onChange: (runSets: Array<Database.DBRunSet>) => void;
+}
 
-type PageState = {
-	selections: Array<xp_common.RunSetSelection>
-};
+interface PageState {
+	selections: Array<xp_common.RunSetSelection>;
+}
 
 class Page extends React.Component<PageProps, PageState> {
-	constructor (props) {
+	constructor (props: PageProps) {
 		super (props);
-		var selections = props.initialRunSets.map (rs => { return { runSet: rs, machine: rs.machine, config: rs.config }; }).concat ([{}]);
+		const emptySelection = { runSet: undefined, machine: undefined, config: undefined };
+		var selections = props.initialRunSets.map ((rs: Database.DBRunSet) => { return { runSet: rs, machine: rs.machine, config: rs.config }; }).concat ([emptySelection]);
 		this.state = { selections: selections };
 	}
 
-	setState (newState) {
-		super.setState (newState);
-		this.props.onChange (runSetsFromSelections (newState.selections));
-	}
-
-	render () {
+	render (): JSX.Element {
 		var runSets = runSetsFromSelections (this.state.selections);
-		runSets = xp_utils.uniqArrayByString (runSets, rs => rs.get ('id').toString ());
+		runSets = xp_utils.uniqArrayByString (runSets, (rs: Database.DBRunSet) => rs.get ('id').toString ());
 
 		var chart;
 		if (runSets.length > 1) {
@@ -118,7 +114,11 @@ class Page extends React.Component<PageProps, PageState> {
 				<RunSetSelectorList
 					runSetCounts={this.props.runSetCounts}
 					selections={this.state.selections}
-					onChange={s => this.setState (s)} />
+					onChange={(s: {selections: Array<xp_common.RunSetSelection>}) => {
+							this.setState (s);
+							this.props.onChange (runSetsFromSelections (s.selections));
+						}
+					} />
 				{chart}
 				<div style={{ clear: 'both' }}></div>
 			</article>
@@ -129,11 +129,12 @@ class Page extends React.Component<PageProps, PageState> {
 type RunSetSelectorListProps = {
 	runSetCounts: Array<Database.RunSetCount>,
 	selections: Array<xp_common.RunSetSelection>,
+	// FIXME: Just pass an Array<xp_common.RunSetSelection>
 	onChange: (newState: {selections: Array<xp_common.RunSetSelection>}) => void
 };
 
 class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> {
-	changeSelector (index: number, newSelection: xp_common.RunSetSelection) {
+	changeSelector (index: number, newSelection: xp_common.RunSetSelection): void {
 		var selections = xp_utils.updateArray (this.props.selections, index, newSelection);
 		this.props.onChange ({ selections: selections });
 	}
@@ -157,20 +158,20 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 				<xp_common.RunSetSelector
 					runSetCounts={this.props.runSetCounts}
 					selection={{runSet: runSet, machine: machine, config: config}}
-					onChange={s => this.changeSelector (index, s)} />
-				<button onClick={e => this.removeSelector (index)}>&minus;&ensp;Remove</button>
+					onChange={(s: xp_common.RunSetSelection) => this.changeSelector (index, s)} />
+				<button onClick={(e: React.MouseEvent) => this.removeSelector (index)}>&minus;&ensp;Remove</button>
 				<div style={{ clear: 'both' }}></div>
 			</section>;
 		};
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector)}
-			<footer><button onClick={e => this.addSelector ()}>+&ensp;Add Run Set</button></footer>
+			<footer><button onClick={(e: React.MouseEvent) => this.addSelector ()}>+&ensp;Add Run Set</button></footer>
 			</div>;
 	}
 }
 
-function start (startupRunSetIds) {
-	var controller = new Controller (startupRunSetIds.map (id => { if (typeof id === "string") return parseInt (id); else return id; }));
+function start (startupRunSetIds: Array<number | string>) {
+	var controller = new Controller (startupRunSetIds.map ((id: number | string) => { if (typeof id === "string") return parseInt (id); else return id; }));
 	controller.loadAsync ();
 }
 
