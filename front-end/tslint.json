@@ -2,7 +2,7 @@
     "rules": {
         "curly": false,
         "indent": false,
-        "forin": false,
+        "forin": true,
         "no-var-keyword": false,
         "typedef": [
             true,

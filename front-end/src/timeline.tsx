@@ -438,7 +438,7 @@ class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 		for (i = 0; i < results.length; ++i) {
 			var row = results [i];
 			var averages = row.averages;
-			for (var name in averages) {
+			for (var name of Object.keys (averages)) {
 				var index = benchmarkIndicesByName [name];
 				if (index === undefined) {
 					index = Object.keys (benchmarkIndicesByName).length;

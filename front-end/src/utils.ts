@@ -149,7 +149,7 @@ export function intersperse<T> (element: T, array: Array<T>): Array<T> {
     return result;
 }
 
-/* tslint:disable: triple-equals */
+/* tslint:disable: triple-equals forin */
 
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 export function deepEquals (...args: any[]) : boolean {

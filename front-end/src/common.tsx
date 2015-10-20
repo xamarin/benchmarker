@@ -450,7 +450,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			buildLink = <a href={buildURL}>build</a>;
 
 		if (logURLs !== undefined && Object.keys (logURLs).length !== 0) {
-			for (var key in logURLs) {
+			for (var key of Object.keys (logURLs)) {
 				var url = logURLs [key];
 				var anchor = document.createElement ('a');
 				anchor.href = url;
