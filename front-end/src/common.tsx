@@ -601,8 +601,9 @@ export function githubCompareLink (base: string, compare: string) : string {
 	return "https://github.com/mono/mono/compare/" + base + "..." + compare;
 }
 
-type NavigationProps = {
+interface NavigationProps {
 	currentPage: string;
+	comparisonRunSetIds?: Array<number>;
 }
 
 export class Navigation extends React.Component<NavigationProps, void> {
@@ -625,6 +626,10 @@ export class Navigation extends React.Component<NavigationProps, void> {
 
 		var classFor = (page: string) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
+		var compareLink = "compare.html";
+		if (this.props.comparisonRunSetIds !== undefined) {
+			compareLink = compareLink + "#ids=" + this.props.comparisonRunSetIds.join ("+");
+		}
 		return <div className="Navigation">
 			<div className="NavigationSection" />
 			<div className="NavigationSection Center" >
@@ -633,7 +638,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
 					href="index.html">Timeline</a>
 				<a title="Compare the results of multiple run sets"
 					className={classFor ('compare')}
-					href="compare.html">Compare</a>
+					href={compareLink}>Compare</a>
 				<a title="View benchmark results for pull requests"
 					className={classFor ('pullRequests')}
 					href="pullrequests.html">Pull Requests</a>

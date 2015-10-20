@@ -170,7 +170,7 @@ class Page extends React.Component<PageProps, PageState> {
 		this.props.onChange (selection);
 	}
 
-	render () {
+	render () : JSX.Element {
 		var chart;
 		var benchmarkChartList;
 		var selected = this.state.machine !== undefined && this.state.config !== undefined && this.state.metric !== undefined;
@@ -225,7 +225,9 @@ class Page extends React.Component<PageProps, PageState> {
 		}
 
 		return <div className="TimelinePage">
-			<xp_common.Navigation currentPage="timeline" />
+			<xp_common.Navigation
+				currentPage="timeline"
+				comparisonRunSetIds={runSets.map ((rs: Database.DBRunSet) => rs.get ('id'))} />
 			<article>
 				<div className="outer">
 					<div className="inner">
