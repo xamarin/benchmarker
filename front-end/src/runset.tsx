@@ -19,7 +19,7 @@ class Controller {
 		this.startupRunSetId = startupRunSetId;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 				this.runSetCounts = runSetCounts;
 				this.checkAllDataLoaded ();
@@ -42,7 +42,7 @@ class Controller {
 			});
 	}
 
-	checkAllDataLoaded () {
+	checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.startupRunSetId !== undefined && this.runSet === undefined)
@@ -50,7 +50,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSet: undefined };
 		if (this.runSet !== undefined) {
 			selection = {
@@ -70,7 +70,7 @@ class Controller {
 		this.updateForRunSet (selection);
 	}
 
-	updateForRunSet (selection: xp_common.RunSetSelection) {
+	updateForRunSet (selection: xp_common.RunSetSelection) : void {
 		var runSet = selection.runSet;
 		if (runSet === undefined)
 			return;
@@ -94,12 +94,12 @@ class Page extends React.Component<PageProps, PageState> {
 		this.state = {selection: this.props.initialSelection};
 	}
 
-	handleChange (newSelection: xp_common.RunSetSelection) {
+	handleChange (newSelection: xp_common.RunSetSelection) : void {
 		this.setState ({selection: newSelection});
 		this.props.onChange (newSelection);
 	}
 
-	render () {
+	render () : JSX.Element {
 		var detail;
 		if (this.state.selection.runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
@@ -124,7 +124,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 }
 
-function start (params: Object) {
+function start (params: Object) : void {
 	var startupRunSetId = params ['id'];
 	if (startupRunSetId === undefined) {
 		alert ("Error: Please provide a run set ID.");

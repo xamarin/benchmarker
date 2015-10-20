@@ -30,7 +30,7 @@ class Controller {
 		this.initialSelectionNames = { machineName: machineName, configName: configName, metric: metric };
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
@@ -46,7 +46,7 @@ class Controller {
 		});
 	}
 
-	checkAllDataLoaded () {
+	checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.featuredTimelines === undefined)
@@ -54,7 +54,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		var selection: xp_common.MachineConfigSelection;
 		if (this.initialSelectionNames.machineName !== undefined &&
 				this.initialSelectionNames.configName !== undefined &&
@@ -80,7 +80,7 @@ class Controller {
 		this.updateForSelection (selection);
 	}
 
-	updateForSelection (selection: xp_common.MachineConfigSelection) {
+	updateForSelection (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -122,21 +122,21 @@ class Page extends React.Component<PageProps, PageState> {
 		};
 	}
 
-	componentWillMount () {
+	componentWillMount () : void {
 		this.fetchSummaries (this.state);
 	}
 
-	runSetSelected (runSet: Database.DBObject) {
+	runSetSelected (runSet: Database.DBObject) : void {
 		var index = xp_utils.findIndex (this.state.sortedResults, (r: Database.Summary) => r.runSet === runSet);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
 			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
 
-	allBenchmarksLoaded (names: Array<string>) {
+	allBenchmarksLoaded (names: Array<string>) : void {
 		this.setState ({benchmarkNames: names} as any);
 	}
 
-	fetchSummaries (selection: xp_common.MachineConfigSelection) {
+	fetchSummaries (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -160,7 +160,7 @@ class Page extends React.Component<PageProps, PageState> {
 			});
 	}
 
-	selectionChanged (selection: xp_common.MachineConfigSelection) {
+	selectionChanged (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -299,7 +299,7 @@ function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string
 	return prefix + benchmarks.join (", ");
 }
 
-function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) {
+function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) : string {
 	var commit = runSet.commit;
 	var commitDateString = commit.get ('commitDate').toDateString ();
 	var branch = "";
@@ -317,7 +317,7 @@ function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) {
 	return tooltip;
 }
 
-function runSetIsBroken (runSet: Database.DBObject, averages: Database.BenchmarkValues) {
+function runSetIsBroken (runSet: Database.DBObject, averages: Database.BenchmarkValues) : boolean {
 	var timedOutBenchmarks = runSet.get ('timedOutBenchmarks') || [];
 	var crashedBenchmarks = runSet.get ('crashedBenchmarks') || [];
 	var timedOutOrCrashedBenchmarks = timedOutBenchmarks.concat (crashedBenchmarks);
@@ -346,11 +346,11 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 		return "";
 	}
 
-	componentWillMount () {
+	componentWillMount () : void {
 		this.invalidateState (this.props);
 	}
 
-	componentWillReceiveProps (nextProps: Props) {
+	componentWillReceiveProps (nextProps: Props) : void {
 		if (this.props.machine === nextProps.machine &&
 				this.props.config === nextProps.config &&
 				this.props.metric === nextProps.metric &&
@@ -375,7 +375,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 
 	abstract computeTable (nextProps: Props) : void;
 
-	invalidateState (nextProps: Props) {
+	invalidateState (nextProps: Props) : void {
 		this.table = undefined;
 		this.computeTable (nextProps);
 	}
@@ -409,7 +409,7 @@ class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 		return axisNameForMetric (this.props.metric, true).name;
 	}
 
-	computeTable (nextProps: AllBenchmarksChartProps) {
+	computeTable (nextProps: AllBenchmarksChartProps) : void {
 		var results = nextProps.sortedResults;
 		var i = 0, j = 0;
 
@@ -515,7 +515,7 @@ class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
 		return axisNameForMetric (this.props.metric, false).name;
 	}
 
-	computeTable (nextProps: BenchmarkChartProps) {
+	computeTable (nextProps: BenchmarkChartProps) : void {
 		var results = nextProps.sortedResults;
 		var j = 0;
 
@@ -602,12 +602,12 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 		return <div>{charts}</div>;
 	}
 
-	expand () {
+	expand () : void {
 		this.setState ({ isExpanded: true });
 	}
 }
 
-function start (params: Object) {
+function start (params: Object) : void {
 	var machine = params ['machine'];
 	var config = params ['config'];
 	var metric = params ['metric'];

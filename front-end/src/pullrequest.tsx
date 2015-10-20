@@ -19,7 +19,7 @@ class Controller {
 		this.pullRequestId = pullRequestId;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId,
 		(objs: Array<Database.DBObject>) => {
 			this.dbRow = objs [0];
@@ -29,7 +29,7 @@ class Controller {
 		});
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
         if (this.pullRequestId === undefined)
             return;
 		if (this.dbRow === undefined)
@@ -126,7 +126,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 	}
 }
 
-function start (params: Object) {
+function start (params: Object) : void {
 	var pullRequestId = params ['id'];
 	if (pullRequestId === undefined) {
 		alert ("Error: Please provide a pull request ID.");

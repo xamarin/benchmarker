@@ -155,7 +155,7 @@ export function intersperse<T> (element: T, array: Array<T>): Array<T> {
 export function deepEquals (...args: any[]) : boolean {
     var leftChain = [], rightChain = [];
 
-    function compare2Objects (x: any, y: any) {
+    function compare2Objects (x: any, y: any) : boolean {
         var p;
 
         // remember that NaN === NaN returns false
@@ -283,7 +283,7 @@ export function deepClone<T> (toCopy: T) : T {
     var result: any;
 
     // normalizing primitives if someone did new String('aaa'), or new Number('444');
-    types.forEach(function(type: any) {
+    types.forEach(function(type: any) : void {
         if (item instanceof type) {
             result = type( item );
         }
@@ -292,7 +292,7 @@ export function deepClone<T> (toCopy: T) : T {
     if (typeof result == "undefined") {
         if (Object.prototype.toString.call( item ) === "[object Array]") {
             var arr = [];
-            (item as Array<any>).forEach(function(child: any, index: number, array: Array<any>) {
+            (item as Array<any>).forEach(function(child: any, index: number, array: Array<any>) : void {
                 arr [index] = deepClone( child );
             });
             return arr as any;

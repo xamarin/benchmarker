@@ -18,7 +18,7 @@ class Controller {
 		this.machineName = machineName;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchAndWrap ('machine?name=eq.' + this.machineName,
 		(objs: Array<Database.DBObject>) => {
 			this.machine = objs [0];
@@ -28,7 +28,7 @@ class Controller {
 		});
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		ReactDOM.render (
 			<div className="MachinePage">
 				<xp_common.Navigation currentPage="" />
@@ -43,7 +43,7 @@ class Controller {
 	}
 }
 
-function start (params: Object) {
+function start (params: Object) : void {
 	var name = params ['name'];
 	if (name === undefined) {
 		alert ("Error: Please provide a machine name.");

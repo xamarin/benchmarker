@@ -45,11 +45,11 @@ function computeOutlierVariance (
 	var mgMin = mn / 2;
 	var sampledStdDev = Math.min (mgMin / 4, stdDev / Math.sqrt (n));
 	var sampledVariance = sampledStdDev * sampledStdDev;
-	var outlierVariance = function (x: number) {
+	var outlierVariance = function (x: number) : number {
 		var delta = n - x;
 		return (delta / n) * (variance - delta * sampledVariance);
 	};
-	var cMax = function (x: number) {
+	var cMax = function (x: number) : number {
 		var k = mn - x;
 		var d = k * k;
 		var nd = n * d;

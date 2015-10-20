@@ -192,7 +192,7 @@ type AMChartProps = {
 export class AMChart extends React.Component<AMChartProps, void> {
 	chart: AmCharts.AmSerialChart;
 
-	render () {
+	render () : JSX.Element {
 		return React.DOM.div({
 			className: 'AMChart',
 			id: this.props.graphName,
@@ -200,11 +200,11 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		});
 	}
 
-	componentDidMount () {
+	componentDidMount () : void {
 		this.drawChart (this.props);
 	}
 
-	componentWillUnmount () {
+	componentWillUnmount () : void {
 		this.chart.clear ();
 	}
 
@@ -219,11 +219,11 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		return false;
 	}
 
-	componentDidUpdate () {
+	componentDidUpdate () : void {
 		this.drawChart (this.props);
 	}
 
-	drawChart (props : AMChartProps) {
+	drawChart (props : AMChartProps) : void {
 		if (this.chart === undefined) {
 			/*
 			 * AMCharts will modify `options.graphs`, so unless we clone it,
@@ -282,7 +282,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
 		this.invalidateState (props.runSets);
     }
 
-    componentWillReceiveProps (nextProps : ComparisonAMChartProps) {
+    componentWillReceiveProps (nextProps : ComparisonAMChartProps) : void {
 		this.invalidateState (nextProps.runSets);
 	}
 
@@ -312,7 +312,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
 			});
     }
 
-    runsLoaded () {
+    runsLoaded () : void {
         var i;
 
         var dataArray = dataArrayForResults (this.resultsByIndex);

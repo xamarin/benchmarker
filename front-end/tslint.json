@@ -8,14 +8,13 @@
         "typedef": [
             true,
             "parameter",
-            "member-variable-declaration"
+            "property-declaration",
+            "member-variable-declaration",
+            "call-signature"
         ],
         "XXXtypedef": [
             false,
-            "call-signature",
-            "property-declaration",
-            "variable-declaration",
-            "member-variable-declaration"
+            "variable-declaration"
         ],
         "typedef-whitespace": [
             false,

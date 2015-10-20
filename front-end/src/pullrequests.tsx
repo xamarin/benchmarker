@@ -21,7 +21,7 @@ class Controller {
 		this.offset = 0;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchWithHeaders (
 			'pullrequest',
 			{
@@ -40,7 +40,7 @@ class Controller {
 		);
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		console.log (this.pullRequests);
 		React.render (
 			React.createElement (
@@ -137,7 +137,7 @@ class Page extends React.Component<PageProps, PageState> {
 
 }
 
-function start () {
+function start () : void {
 	(new Controller ()).loadAsync ();
 }
 

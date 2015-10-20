@@ -21,7 +21,7 @@ class Controller {
 		this.startupRunSetIds = startupRunSetIds;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
@@ -40,7 +40,7 @@ class Controller {
 		}
 	}
 
-	checkAllDataLoaded () {
+	checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.startupRunSetIds.length > 0 && this.runSets === undefined)
@@ -48,7 +48,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		var runSets = this.runSets;
 		if (runSets === undefined)
 			runSets = [];
@@ -63,7 +63,7 @@ class Controller {
 		this.updateForSelection (runSets);
 	}
 
-	updateForSelection (runSets: Array<Database.DBRunSet>) {
+	updateForSelection (runSets: Array<Database.DBRunSet>) : void {
 		xp_common.setLocationForArray ("ids", runSets.map ((rs: Database.DBRunSet) => rs.get ('id')));
 	}
 }
@@ -138,17 +138,17 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 		this.props.onChange (selections );
 	}
 
-	addSelector () {
+	addSelector () : void {
 		var selections = this.props.selections.concat ([{ runSet: undefined, machine: undefined, config: undefined }]);
 		this.props.onChange (selections);
 	}
 
-	removeSelector (i: number) {
+	removeSelector (i: number) : void {
 		var selections = xp_utils.removeArrayElement (this.props.selections, i);
 		this.props.onChange (selections);
 	}
 
-	render () {
+	render () : JSX.Element {
 		var renderSelector = (selection: xp_common.RunSetSelection, index: number) => {
 			var runSet = selection.runSet;
 			var machine = selection.machine;
@@ -169,7 +169,7 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 	}
 }
 
-function start (startupRunSetIds: Array<number | string>) {
+function start (startupRunSetIds: Array<number | string>) : void {
 	var controller = new Controller (startupRunSetIds.map ((id: number | string) => { if (typeof id === "string") return parseInt (id); else return id; }));
 	controller.loadAsync ();
 }

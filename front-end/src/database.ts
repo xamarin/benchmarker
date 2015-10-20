@@ -44,7 +44,7 @@ export function fetchWithHeaders (query: string, headers: Object, success: (resu
 	var request = new XMLHttpRequest();
 	var url = 'http://performancebot.mono-project.com:81/' + query;
 
-	request.onreadystatechange = function () {
+	request.onreadystatechange = function () : void {
 		if (this.readyState !== 4)
 			return;
 
@@ -140,7 +140,7 @@ export function fetchSummaries (machine: DBObject, config: DBObject, metric: str
 		}, error);
 }
 
-function processRunSetEntries (objs: Array<Object>) {
+function processRunSetEntries (objs: Array<Object>) : Array<DBRunSet> {
 	var results = [];
 	objs.forEach ((r: Object) => {
 		r ['c_commitdate'] = new Date (r ['c_commitdate']);
@@ -159,7 +159,7 @@ export function findRunSet (runSets: Array<DBRunSet>, id: number): DBRunSet {
 	return xp_utils.find (runSets, (rs: DBRunSet) => rs.get ('id') === id);
 }
 
-export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) {
+export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) : void {
 	fetch ('runset?rs_id=eq.' + id,
 		(objs: Array<Object>) => {
 			if (objs.length === 0) {
@@ -175,7 +175,7 @@ export function fetchRunSets (ids: Array<number>, success: (results: Array<DBRun
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }
 
-export function fetchParseObjectIds (parseIds: Array<string>, success: (results: Array<number | string>) => void, error: ErrorFunc) {
+export function fetchParseObjectIds (parseIds: Array<string>, success: (results: Array<number | string>) => void, error: ErrorFunc) : void {
 	fetch ('parseobjectid?parseid=in.' + parseIds.join (','),
 		(objs: Array<Object>) => {
 			var ids = [];
@@ -195,6 +195,6 @@ export function fetchParseObjectIds (parseIds: Array<string>, success: (results:
 		}, error);
 }
 
-export function fetchFeaturedTimelines (success: (results: Array<DBObject>) => void, error: ErrorFunc) {
+export function fetchFeaturedTimelines (success: (results: Array<DBObject>) => void, error: ErrorFunc) : void {
 	fetchAndWrap ('featuredtimelines?order=name', success, error);
 }

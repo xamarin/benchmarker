@@ -18,7 +18,7 @@ class Controller {
 		this.configName = configName;
 	}
 
-	loadAsync () {
+	loadAsync () : void {
 		Database.fetchAndWrap ('config?name=eq.' + this.configName,
 		(objs: Array<Database.DBObject>) => {
 			this.config = objs [0];
@@ -28,7 +28,7 @@ class Controller {
 		});
 	}
 
-	allDataLoaded () {
+	allDataLoaded () : void {
 		ReactDOM.render (
 			<div className="ConfigPage">
 				<xp_common.Navigation currentPage="" />
@@ -43,7 +43,7 @@ class Controller {
 	}
 }
 
-function start (params: Object) {
+function start (params: Object) : void {
 	var name = params ['name'];
 	if (name === undefined) {
 		alert ("Error: Please provide a config name.");
