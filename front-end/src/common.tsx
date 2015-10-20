@@ -118,7 +118,7 @@ type ConfigSelectorProps = {
 };
 
 interface RunSetCountWithDisplayString extends Database.RunSetCount {
-	displayString: string;
+	displayString?: string;
 }
 
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, void> {
@@ -136,10 +136,10 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var valueStringForRSC = (machine: Database.DBObject, config: Database.DBObject, metric: string) => {
-			var s = machine.get ('name') + '+' + config.get ('name');
+		var valueStringForSelection = (selection: MachineConfigSelection) => {
+			var s = selection.machine.get ('name') + '+' + selection.config.get ('name');
 			if (this.props.includeMetric)
-				s = s + '+' + metric;
+				s = s + '+' + selection.metric;
 			return s;
 		};
 
@@ -175,10 +175,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		// FIXME: just pass a RunSetCountWithDisplayString, make the displayString there optional.
-		// Then when we map we don't have to make another anonymous function.
-		const renderRSC = (entry: Database.RunSetCount, displayString?: string) => {
-			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
+		const renderRSC = (entry: RunSetCountWithDisplayString) => {
+			var string = valueStringForSelection (entry);
+			let displayString = entry.displayString;
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
 				if (this.props.includeMetric)
@@ -192,41 +191,37 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			</option>;
 		};
 
-		const renderFeaturedTimelines = () => {
-			if (this.props.featuredTimelines === undefined)
-				return undefined;
-
-			return <optgroup label="Featured">
-				{featuredRSCs.map ((frsc: RunSetCountWithDisplayString) => renderRSC (frsc, frsc.displayString))}
-			</optgroup>;
-		};
-
 		const renderGroup = (machinesMap: MachinesMap, name: string) => {
 			const sorted = xp_utils.sortArrayNumericallyBy (
 				machinesMap [name],
 				(x: Database.RunSetCount) => -x.count);
-			const rendered = sorted.map ((mrsc: Database.RunSetCount) => renderRSC (mrsc));
 			return <optgroup key={"group" + name} label={name}>
-				{rendered}
+				{sorted.map (renderRSC)}
 			</optgroup>;
 		};
 
-		var machine = this.props.machine;
-		var config = this.props.config;
-		var metric = this.props.metric;
 		var selectedValue;
-		if (!(machine === undefined || config === undefined || (this.props.includeMetric && metric === undefined)))
-			selectedValue = valueStringForRSC (machine, config, metric);
+		if (!(this.props.machine === undefined ||
+				this.props.config === undefined ||
+				(this.props.includeMetric && this.props.metric === undefined))) {
+			selectedValue = valueStringForSelection (this.props);
+		}
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
 			aboutConfig = <button onClick={() => this.openConfigDescription ()}>About Config</button>;
 			aboutMachine = <button onClick={() => this.openMachineDescription ()}>About Machine</button>;
 		}
+		let featuredTimelinesElement: JSX.Element;
+		if (this.props.featuredTimelines !== undefined) {
+			featuredTimelinesElement = <optgroup label="Featured">
+				{featuredRSCs.map (renderRSC)}
+			</optgroup>;
+		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
 			<select size={6} value={selectedValue} onChange={(e: React.FormEvent) => this.combinationSelected (e)}>
-				{renderFeaturedTimelines ()}
+				{featuredTimelinesElement}
 				{Object.keys (machines).map ((m: string) => renderGroup (machines, m))}
 			</select>
 			{aboutConfig}{aboutMachine}
