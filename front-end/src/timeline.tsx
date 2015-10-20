@@ -391,11 +391,23 @@ interface AxisLabels {
 function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 	switch (metric) {
 		case 'time':
-			return { name: relative ? "Relative wall clock time" : "Wall clock time", lowest: "Fastest", highest: "Slowest" };
+			return {
+				name: relative ? "Relative wall clock time" : "Wall clock time",
+				lowest: "Fastest",
+				highest: "Slowest"
+			};
 		case 'memory-integral':
-			return { name: relative ? "Relative memory usage" : "MB * Giga Instructions", lowest: "Least memory", highest: "Most memory" };
+			return {
+				name: relative ? "Relative memory usage" : "MB * Giga Instructions",
+				lowest: "Least memory",
+				highest: "Most memory"
+			};
 		case 'instructions':
-			return { name: relative ? "Relative # of instructions" : "Number of instructions", lowest: "Fewest instructions", highest: "Most instructions" };
+			return {
+				name: relative ? "Relative # of instructions" : "Number of instructions",
+				lowest: "Fewest instructions",
+				highest: "Most instructions"
+			};
 		default:
 			return undefined;
 	}

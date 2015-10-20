@@ -85,8 +85,11 @@ interface PageState {
 class Page extends React.Component<PageProps, PageState> {
 	constructor (props: PageProps) {
 		super (props);
-		const emptySelection = { runSet: undefined, machine: undefined, config: undefined };
-		var selections = props.initialRunSets.map ((rs: Database.DBRunSet) => { return { runSet: rs, machine: rs.machine, config: rs.config }; }).concat ([emptySelection]);
+		const emptySelection: xp_common.RunSetSelection = { runSet: undefined, machine: undefined, config: undefined };
+		const runSetToSelection = (rs: Database.DBRunSet) => {
+			return { runSet: rs, machine: rs.machine, config: rs.config };
+		};
+		var selections = props.initialRunSets.map (runSetToSelection).concat ([emptySelection]);
 		this.state = { selections: selections };
 	}
 
@@ -170,7 +173,8 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 }
 
 function start (startupRunSetIds: Array<number | string>) : void {
-	var controller = new Controller (startupRunSetIds.map ((id: number | string) => { if (typeof id === "string") return parseInt (id); else return id; }));
+	const parseIfNecessary = (id: number | string) => { if (typeof id === "string") return parseInt (id); else return id; };
+	var controller = new Controller (startupRunSetIds.map (parseIfNecessary));
 	controller.loadAsync ();
 }
 

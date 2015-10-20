@@ -123,8 +123,15 @@ export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: 
 export type BenchmarkValues = { [benchmark: string]: number };
 export type Summary = { runSet: DBRunSet, averages: BenchmarkValues, variances: BenchmarkValues };
 
-export function fetchSummaries (machine: DBObject, config: DBObject, metric: string, success: (results: Array<Summary>) => void, error: ErrorFunc): void {
-	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
+export function fetchSummaries (
+		machine: DBObject,
+		config: DBObject,
+		metric: string,
+		success: (results: Array<Summary>) => void,
+		error: ErrorFunc) : void {
+	const machineName = machine.get ('name');
+	const configName = config.get ('name');
+	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machineName + '&rs_config=eq.' + configName,
 		(objs: Array<Object>) => {
 			var results = [];
 			objs.forEach ((r: Object) => {
@@ -150,7 +157,11 @@ function processRunSetEntries (objs: Array<Object>) : Array<DBRunSet> {
 	return results;
 }
 
-export function fetchRunSetsForMachineAndConfig (machine: DBObject, config: DBObject, success: (results: Array<DBRunSet>) => void, error: ErrorFunc): void {
+export function fetchRunSetsForMachineAndConfig (
+		machine: DBObject,
+		config: DBObject,
+		success: (results: Array<DBRunSet>) => void,
+		error: ErrorFunc): void {
 	fetch ('runset?order=c_commitdate.desc&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }

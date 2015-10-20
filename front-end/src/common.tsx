@@ -143,7 +143,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var histogram = xp_utils.sortArrayLexicographicallyBy (this.runSetCounts (), (r: Database.RunSetCount) => userStringForRSC (r).toLowerCase ());
+		var histogram = xp_utils.sortArrayLexicographicallyBy (
+			this.runSetCounts (),
+			(r: Database.RunSetCount) => userStringForRSC (r).toLowerCase ());
 
 		type MachinesMap = { [name: string]: Array<Database.RunSetCount> };
 		var machines: MachinesMap = {};
@@ -173,7 +175,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			machines [machineName].push (rsc);
 		}
 
-		const renderRSC = (entry: Database.RunSetCount, displayString: string) => {
+		// FIXME: just pass a RunSetCountWithDisplayString, make the displayString there optional.
+		// Then when we map we don't have to make another anonymous function.
+		const renderRSC = (entry: Database.RunSetCount, displayString?: string) => {
 			var string = valueStringForRSC (entry.machine, entry.config, entry.metric);
 			if (displayString === undefined) {
 				displayString = entry.config.get ('name');
@@ -198,8 +202,12 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		};
 
 		const renderGroup = (machinesMap: MachinesMap, name: string) => {
+			const sorted = xp_utils.sortArrayNumericallyBy (
+				machinesMap [name],
+				(x: Database.RunSetCount) => -x.count);
+			const rendered = sorted.map ((mrsc: Database.RunSetCount) => renderRSC (mrsc));
 			return <optgroup key={"group" + name} label={name}>
-				{xp_utils.sortArrayNumericallyBy (machinesMap [name], (x: Database.RunSetCount) => -x.count).map ((mrsc: Database.RunSetCount) => renderRSC.call (this, mrsc, undefined))}
+				{rendered}
 			</optgroup>;
 		};
 
@@ -570,8 +578,10 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
 		var commitLink = githubCommitLink (product, commitHash);
 
+		const commitElement = <a href={commitLink}>{commitHash.substring (0, 10)}</a>;
+		const compareElement = <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>;
 		return <div className="Description">
-			<h1 key="commit"><a href={commitLink}>{commitHash.substring (0, 10)}</a> ({buildLink}, <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>)</h1>
+			<h1 key="commit">{commitElement} ({buildLink}, {compareElement})</h1>
 			{logLinkList}
 			{secondaryProductsList}
 			{crashedElem}

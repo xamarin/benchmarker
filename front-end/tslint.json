@@ -4,7 +4,6 @@
         "indent": false,
         "forin": false,
         "no-var-keyword": false,
-        "member-access": true,
         "typedef": [
             true,
             "parameter",
@@ -27,13 +26,14 @@
             }
         ],
         "max-line-length": [
-            false,
+            true,
             140
         ],
         "no-string-literal": false,
         "interface-name": false,
         "no-unused-variable": false,
 
+        "member-access": true,
         "align": [
             true,
             "parameters"
