@@ -381,16 +381,22 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 	}
 }
 
-function axisNameForMetric (metric: string, relative: boolean) : string {
+interface AxisLabels {
+	name: string;
+	lowest: string;
+	highest: string;
+}
+
+function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 	switch (metric) {
 		case 'time':
-			return relative ? "Relative wall clock time" : "Wall clock time";
+			return { name: relative ? "Relative wall clock time" : "Wall clock time", lowest: "Fastest", highest: "Slowest" };
 		case 'memory-integral':
-			return relative ? "Relative memory usage" : "MB * Giga Instructions";
+			return { name: relative ? "Relative memory usage" : "MB * Giga Instructions", lowest: "Least memory", highest: "Most memory" };
 		case 'instructions':
-			return relative ? "Relative # of instructions" : "Number of instructions";
+			return { name: relative ? "Relative # of instructions" : "Number of instructions", lowest: "Fewest instructions", highest: "Most instructions" };
 		default:
-			return "Unknown metric";
+			return undefined;
 	}
 }
 
@@ -400,7 +406,7 @@ interface AllBenchmarksChartProps extends TimelineChartProps {
 
 class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 	valueAxisTitle () : string {
-		return axisNameForMetric (this.props.metric, true);
+		return axisNameForMetric (this.props.metric, true).name;
 	}
 
 	computeTable (nextProps: AllBenchmarksChartProps) {
@@ -476,12 +482,13 @@ class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 			}
 			var tooltip = tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
+			const { lowest: lowestLabel, highest: highestLabel } = axisNameForMetric (this.props.metric, true);
 			table.push ({
 				dataItem: runSet,
 				low: min,
-				lowName: minName ? ("Fastest: " + minName) : undefined,
+				lowName: minName ? (lowestLabel + ": " + minName) : undefined,
 				high: max,
-				highName: maxName ? ("Slowest: " + maxName) : undefined,
+				highName: maxName ? (highestLabel + ": " + maxName) : undefined,
 				geomean: Math.pow (prodForRunSet, 1.0 / count),
 				tooltip: tooltip,
 				lineColor: (broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2])
@@ -505,7 +512,7 @@ interface BenchmarkChartProps extends TimelineChartProps {
 
 class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
 	valueAxisTitle () : string {
-		return axisNameForMetric (this.props.metric, false);
+		return axisNameForMetric (this.props.metric, false).name;
 	}
 
 	computeTable (nextProps: BenchmarkChartProps) {
