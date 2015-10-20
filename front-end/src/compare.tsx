@@ -114,9 +114,9 @@ class Page extends React.Component<PageProps, PageState> {
 				<RunSetSelectorList
 					runSetCounts={this.props.runSetCounts}
 					selections={this.state.selections}
-					onChange={(s: {selections: Array<xp_common.RunSetSelection>}) => {
-							this.setState (s);
-							this.props.onChange (runSetsFromSelections (s.selections));
+					onChange={(s: Array<xp_common.RunSetSelection>) => {
+							this.setState ({ selections: s });
+							this.props.onChange (runSetsFromSelections (s));
 						}
 					} />
 				{chart}
@@ -129,24 +129,23 @@ class Page extends React.Component<PageProps, PageState> {
 type RunSetSelectorListProps = {
 	runSetCounts: Array<Database.RunSetCount>,
 	selections: Array<xp_common.RunSetSelection>,
-	// FIXME: Just pass an Array<xp_common.RunSetSelection>
-	onChange: (newState: {selections: Array<xp_common.RunSetSelection>}) => void
+	onChange: (newState: Array<xp_common.RunSetSelection>) => void
 };
 
 class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> {
 	changeSelector (index: number, newSelection: xp_common.RunSetSelection): void {
 		var selections = xp_utils.updateArray (this.props.selections, index, newSelection);
-		this.props.onChange ({ selections: selections });
+		this.props.onChange (selections );
 	}
 
 	addSelector () {
 		var selections = this.props.selections.concat ([{ runSet: undefined, machine: undefined, config: undefined }]);
-		this.props.onChange ({ selections: selections });
+		this.props.onChange (selections);
 	}
 
 	removeSelector (i: number) {
 		var selections = xp_utils.removeArrayElement (this.props.selections, i);
-		this.props.onChange ({ selections: selections });
+		this.props.onChange (selections);
 	}
 
 	render () {
