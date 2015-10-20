@@ -1,0 +1,30 @@
+{
+	"version": "0.1.0",
+	"command": "gulp",
+	"isShellCommand": true,
+	"args": [],
+	"tasks": [
+		{
+			"taskName": "tslint",
+			"args": [],
+			"isBuildCommand": true,
+			"problemMatcher": [
+				{
+					"owner": "gulp",
+					"fileLocation": [
+						"relative",
+						"${workspaceRoot}/src/"
+					],
+					"pattern": {
+						"regexp": "(error) \\([a-z-]+\\) ([a-zA-Z.]+\\.tsx?)\\[(\\d+), (\\d+)\\]: (.*)$",
+						"file": 2,
+						"line": 3,
+						"column": 4,
+						"severity": 1,
+						"message": 5
+					}
+				}
+			]
+		}
+	]
+}
