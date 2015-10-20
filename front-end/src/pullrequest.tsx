@@ -12,14 +12,14 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	pullRequestId: string;
-	dbRow: Object;
+	private pullRequestId: string;
+	private dbRow: Object;
 
 	constructor (pullRequestId: string) {
 		this.pullRequestId = pullRequestId;
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetch ('pullrequest?pr_id=eq.' + this.pullRequestId,
 		(objs: Array<Database.DBObject>) => {
 			this.dbRow = objs [0];
@@ -29,7 +29,7 @@ class Controller {
 		});
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
         if (this.pullRequestId === undefined)
             return;
 		if (this.dbRow === undefined)
@@ -99,7 +99,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 		);
     }
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var pr = this.props.pullRequest;
 		var baselineRunSet = this.props.baselineRunSet;
         var info = this.state.gitHubInfo;

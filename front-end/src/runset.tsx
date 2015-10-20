@@ -11,15 +11,15 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	startupRunSetId: number;
-	runSetCounts: Array<Database.RunSetCount>;
-	runSet: Database.DBRunSet;
+	private startupRunSetId: number;
+	private runSetCounts: Array<Database.RunSetCount>;
+	private runSet: Database.DBRunSet;
 
 	constructor (startupRunSetId: number) {
 		this.startupRunSetId = startupRunSetId;
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 				this.runSetCounts = runSetCounts;
 				this.checkAllDataLoaded ();
@@ -42,7 +42,7 @@ class Controller {
 			});
 	}
 
-	checkAllDataLoaded () : void {
+	private checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.startupRunSetId !== undefined && this.runSet === undefined)
@@ -50,7 +50,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
 		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSet: undefined };
 		if (this.runSet !== undefined) {
 			selection = {
@@ -70,7 +70,7 @@ class Controller {
 		this.updateForRunSet (selection);
 	}
 
-	updateForRunSet (selection: xp_common.RunSetSelection) : void {
+	private updateForRunSet (selection: xp_common.RunSetSelection) : void {
 		var runSet = selection.runSet;
 		if (runSet === undefined)
 			return;
@@ -94,12 +94,12 @@ class Page extends React.Component<PageProps, PageState> {
 		this.state = {selection: this.props.initialSelection};
 	}
 
-	handleChange (newSelection: xp_common.RunSetSelection) : void {
+	private handleChange (newSelection: xp_common.RunSetSelection) : void {
 		this.setState ({selection: newSelection});
 		this.props.onChange (newSelection);
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var detail;
 		if (this.state.selection.runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;

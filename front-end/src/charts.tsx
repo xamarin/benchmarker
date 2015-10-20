@@ -190,9 +190,9 @@ type AMChartProps = {
 };
 
 export class AMChart extends React.Component<AMChartProps, void> {
-	chart: AmCharts.AmSerialChart;
+	private chart: AmCharts.AmSerialChart;
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		return React.DOM.div({
 			className: 'AMChart',
 			id: this.props.graphName,
@@ -200,15 +200,15 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		});
 	}
 
-	componentDidMount () : void {
+	public componentDidMount () : void {
 		this.drawChart (this.props);
 	}
 
-	componentWillUnmount () : void {
+	public componentWillUnmount () : void {
 		this.chart.clear ();
 	}
 
-	shouldComponentUpdate (nextProps : AMChartProps, nextState : void) : boolean {
+	public shouldComponentUpdate (nextProps : AMChartProps, nextState : void) : boolean {
 		if (this.props.graphName !== nextProps.graphName)
 			return true;
 		if (this.props.height !== nextProps.height)
@@ -219,11 +219,11 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		return false;
 	}
 
-	componentDidUpdate () : void {
+	public componentDidUpdate () : void {
 		this.drawChart (this.props);
 	}
 
-	drawChart (props : AMChartProps) : void {
+	private drawChart (props : AMChartProps) : void {
 		if (this.chart === undefined) {
 			/*
 			 * AMCharts will modify `options.graphs`, so unless we clone it,
@@ -269,12 +269,12 @@ type ComparisonAMChartProps = {
 };
 
 export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, void> {
-    resultsByIndex : Array<{[benchmark: string]: Object}>;
-    graphs: Array<Object>;
-    dataProvider: Array<Object>;
-    min: number | void;
-    max: number | void;
-	guides: Array<Object>;
+    private resultsByIndex : Array<{[benchmark: string]: Object}>;
+    private graphs: Array<Object>;
+    private dataProvider: Array<Object>;
+    private min: number | void;
+    private max: number | void;
+	private guides: Array<Object>;
 
     constructor (props : ComparisonAMChartProps) {
 		super (props);
@@ -282,11 +282,11 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
 		this.invalidateState (props.runSets);
     }
 
-    componentWillReceiveProps (nextProps : ComparisonAMChartProps) : void {
+    public componentWillReceiveProps (nextProps : ComparisonAMChartProps) : void {
 		this.invalidateState (nextProps.runSets);
 	}
 
-    invalidateState (runSets: Array<Database.DBRunSet>) : void {
+    private invalidateState (runSets: Array<Database.DBRunSet>) : void {
         this.resultsByIndex = [];
 
 		Database.fetch ('results?metric=eq.' + this.props.metric + '&disabled=isnot.true&runset=in.' + runSets.map ((rs: Database.DBRunSet) => rs.get ('id')).join (','),
@@ -312,7 +312,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
 			});
     }
 
-    runsLoaded () : void {
+    private runsLoaded () : void {
         var i;
 
         var dataArray = dataArrayForResults (this.resultsByIndex);
@@ -405,7 +405,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
         this.forceUpdate ();
     }
 
-    render () : JSX.Element {
+    public render () : JSX.Element {
         if (this.dataProvider === undefined)
             return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -468,7 +468,7 @@ type TimelineAMChartProps = {
 };
 
 export class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var timelineOptions = {
 						"type": "serial",
 						"theme": "default",

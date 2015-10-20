@@ -5,15 +5,15 @@
 import * as xp_utils from './utils.ts';
 
 export class DBObject {
-	data: Object;
-	prefix: string;
+	private data: Object;
+	private prefix: string;
 
 	constructor (data: Object, prefix: string = '') {
 		this.data = data;
 		this.prefix = prefix;
 	}
 
-	get (key: string): any {
+	public get (key: string): any {
 		var result = this.data [this.prefix + key.toLowerCase ()];
 		if (result === null)
 			return undefined;
@@ -22,9 +22,9 @@ export class DBObject {
 }
 
 export class DBRunSet extends DBObject {
-	machine: DBObject;
-	config: DBObject;
-	commit: DBObject;
+	public machine: DBObject;
+	public config: DBObject;
+	public commit: DBObject;
 
 	constructor (data: Object, prefix: string, machine: DBObject, config: DBObject, commit: DBObject) {
 		super (data, prefix);

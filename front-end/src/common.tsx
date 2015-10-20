@@ -34,7 +34,7 @@ type ConfigDescriptionProps = {
 };
 
 export class ConfigDescription extends React.Component<ConfigDescriptionProps, void> {
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var config = this.props.config;
 
 		if (config === undefined)
@@ -79,7 +79,7 @@ type MachineDescriptionProps = {
 };
 
 export class MachineDescription extends React.Component<MachineDescriptionProps, void> {
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var machine = this.props.machine;
 
 		if (machine === undefined)
@@ -122,13 +122,13 @@ interface RunSetCountWithDisplayString extends Database.RunSetCount {
 }
 
 export class CombinedConfigSelector extends React.Component<ConfigSelectorProps, void> {
-	runSetCounts () : Array<Database.RunSetCount> {
+	private runSetCounts () : Array<Database.RunSetCount> {
 		if (this.props.includeMetric)
 			return this.props.runSetCounts;
 		return Database.combineRunSetCountsAcrossMetric (this.props.runSetCounts);
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var userStringForRSC = (r: Database.RunSetCount) => {
 			var s = r.machine.get ('name') + " / " + r.config.get ('name');
 			if (this.props.includeMetric)
@@ -226,19 +226,19 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		</div>;
 	}
 
-	openConfigDescription () : void {
+	private openConfigDescription () : void {
 		if (this.props.config === undefined)
 			return;
 		window.open ('config.html#name=' + this.props.config.get ('name'));
 	}
 
-	openMachineDescription () : void {
+	private openMachineDescription () : void {
 		if (this.props.machine === undefined)
 			return;
 		window.open ('machine.html#name=' + this.props.machine.get ('name'));
 	}
 
-	combinationSelected (event: React.FormEvent) : void {
+	private combinationSelected (event: React.FormEvent) : void {
 		var target: any = event.target;
 		var names = target.value.split ('+');
 		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
@@ -272,11 +272,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.state = { runSets: undefined };
 	}
 
-	componentWillMount () : void {
+	public componentWillMount () : void {
 		this.fetchData (this.props);
 	}
 
-	componentWillReceiveProps (nextProps: RunSetSelectorProps) : void {
+	public componentWillReceiveProps (nextProps: RunSetSelectorProps) : void {
 		function getName (obj: Database.DBObject) : string {
 			if (obj === undefined)
 				return undefined;
@@ -292,7 +292,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		this.fetchData (nextProps);
 	}
 
-	fetchData (props: RunSetSelectorProps) : void {
+	private fetchData (props: RunSetSelectorProps) : void {
 		var machine = props.selection.machine;
 		var config = props.selection.config;
 
@@ -306,7 +306,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		});
 	}
 
-	runSetSelected (event: React.FormEvent) : void {
+	private runSetSelected (event: React.FormEvent) : void {
 		if (this.state.runSets === undefined)
 			return;
 		var target: any = event.target;
@@ -316,11 +316,11 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
 	}
 
-	configSelected (selection: MachineConfigSelection) : void {
+	private configSelected (selection: MachineConfigSelection) : void {
 		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: undefined});
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var selection = this.props.selection;
 		var machine = selection.machine;
 		var config = selection.config;
@@ -404,7 +404,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		this.fetchResults (props.runSet);
 	}
 
-	fetchResults (runSet: Database.DBRunSet) : void {
+	private fetchResults (runSet: Database.DBRunSet) : void {
 		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
 			(objs: Array<Object>) => {
 				if (runSet !== this.props.runSet)
@@ -426,12 +426,12 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		}
 	}
 
-	componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
+	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
 		this.setState ({ results: undefined, secondaryCommits: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
-	render () : JSX.Element  {
+	public render () : JSX.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
 		var buildLink: JSX.Element;
@@ -607,7 +607,7 @@ interface NavigationProps {
 }
 
 export class Navigation extends React.Component<NavigationProps, void> {
-	openDeployment () : boolean {
+	private openDeployment () : boolean {
 		var lastSlashIndex = window.location.href.search ("/[^/]+$");
 		var path = window.location.href.substring (lastSlashIndex + 1);
 		var deploymentLink = "http://xamarin.github.io/benchmarker/front-end/" + path;
@@ -615,7 +615,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
 		return false;
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var deploymentLink;
 		if (process.env.NODE_ENV !== 'production') {
 			deploymentLink =

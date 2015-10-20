@@ -13,10 +13,10 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	initialSelectionNames: { machineName: string, configName: string, metric: string };
-	initialZoom: boolean;
-	runSetCounts: Array<Database.RunSetCount>;
-	featuredTimelines: Array<Database.DBObject>;
+	private initialSelectionNames: { machineName: string, configName: string, metric: string };
+	private initialZoom: boolean;
+	private runSetCounts: Array<Database.RunSetCount>;
+	private featuredTimelines: Array<Database.DBObject>;
 
 	constructor (machineName: string, configName: string, metric: string) {
 		if (machineName === undefined && configName === undefined && metric === undefined) {
@@ -30,7 +30,7 @@ class Controller {
 		this.initialSelectionNames = { machineName: machineName, configName: configName, metric: metric };
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
@@ -46,7 +46,7 @@ class Controller {
 		});
 	}
 
-	checkAllDataLoaded () : void {
+	private checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.featuredTimelines === undefined)
@@ -54,7 +54,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
 		var selection: xp_common.MachineConfigSelection;
 		if (this.initialSelectionNames.machineName !== undefined &&
 				this.initialSelectionNames.configName !== undefined &&
@@ -80,7 +80,7 @@ class Controller {
 		this.updateForSelection (selection);
 	}
 
-	updateForSelection (selection: xp_common.MachineConfigSelection) : void {
+	private updateForSelection (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -122,21 +122,21 @@ class Page extends React.Component<PageProps, PageState> {
 		};
 	}
 
-	componentWillMount () : void {
+	public componentWillMount () : void {
 		this.fetchSummaries (this.state);
 	}
 
-	runSetSelected (runSet: Database.DBObject) : void {
+	private runSetSelected (runSet: Database.DBObject) : void {
 		var index = xp_utils.findIndex (this.state.sortedResults, (r: Database.Summary) => r.runSet === runSet);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
 			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
 
-	allBenchmarksLoaded (names: Array<string>) : void {
+	private allBenchmarksLoaded (names: Array<string>) : void {
 		this.setState ({benchmarkNames: names} as any);
 	}
 
-	fetchSummaries (selection: xp_common.MachineConfigSelection) : void {
+	private fetchSummaries (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -160,7 +160,7 @@ class Page extends React.Component<PageProps, PageState> {
 			});
 	}
 
-	selectionChanged (selection: xp_common.MachineConfigSelection) : void {
+	private selectionChanged (selection: xp_common.MachineConfigSelection) : void {
 		var machine = selection.machine;
 		var config = selection.config;
 		var metric = selection.metric;
@@ -170,7 +170,7 @@ class Page extends React.Component<PageProps, PageState> {
 		this.props.onChange (selection);
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var chart;
 		var benchmarkChartList;
 		var selected = this.state.machine !== undefined && this.state.config !== undefined && this.state.metric !== undefined;
@@ -265,7 +265,7 @@ interface RunSetSummaryProps extends React.Props<RunSetSummary> {
 }
 
 class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var runSet = this.props.runSet;
 		var commitHash = runSet.commit.get ('hash');
 		var commitLink = xp_common.githubCommitLink (runSet.commit.get ('product'), commitHash);
@@ -340,17 +340,18 @@ interface TimelineChartProps {
 };
 
 abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
-	table : Array<Object>;
+	// FIXME: make private and have `computeTable` return the new table
+	public table : Array<Object>;
 
-	valueAxisTitle () : string {
+	public valueAxisTitle () : string {
 		return "";
 	}
 
-	componentWillMount () : void {
+	public componentWillMount () : void {
 		this.invalidateState (this.props);
 	}
 
-	componentWillReceiveProps (nextProps: Props) : void {
+	public componentWillReceiveProps (nextProps: Props) : void {
 		if (this.props.machine === nextProps.machine &&
 				this.props.config === nextProps.config &&
 				this.props.metric === nextProps.metric &&
@@ -360,7 +361,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 		this.invalidateState (nextProps);
 	}
 
-	render (): JSX.Element {
+	public render (): JSX.Element {
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -373,9 +374,9 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
 	}
 
-	abstract computeTable (nextProps: Props) : void;
+	public abstract computeTable (nextProps: Props) : void;
 
-	invalidateState (nextProps: Props) : void {
+	private invalidateState (nextProps: Props) : void {
 		this.table = undefined;
 		this.computeTable (nextProps);
 	}
@@ -405,11 +406,11 @@ interface AllBenchmarksChartProps extends TimelineChartProps {
 };
 
 class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
-	valueAxisTitle () : string {
+	public valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, true).name;
 	}
 
-	computeTable (nextProps: AllBenchmarksChartProps) : void {
+	public computeTable (nextProps: AllBenchmarksChartProps) : void {
 		var results = nextProps.sortedResults;
 		var i = 0, j = 0;
 
@@ -511,11 +512,11 @@ interface BenchmarkChartProps extends TimelineChartProps {
 };
 
 class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
-	valueAxisTitle () : string {
+	public valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, false).name;
 	}
 
-	computeTable (nextProps: BenchmarkChartProps) : void {
+	public computeTable (nextProps: BenchmarkChartProps) : void {
 		var results = nextProps.sortedResults;
 		var j = 0;
 
@@ -573,7 +574,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 		this.state = { isExpanded: false };
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		if (!this.state.isExpanded) {
 			return <div className="BenchmarkChartList">
 				<button onClick={(e: React.MouseEvent) => this.expand ()}>Show Benchmarks</button>
@@ -602,7 +603,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 		return <div>{charts}</div>;
 	}
 
-	expand () : void {
+	private expand () : void {
 		this.setState ({ isExpanded: true });
 	}
 }

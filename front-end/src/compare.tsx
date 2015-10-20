@@ -13,15 +13,15 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	startupRunSetIds: Array<number>;
-	runSetCounts: Array<Database.RunSetCount>;
-	runSets: Array<Database.DBRunSet>;
+	private startupRunSetIds: Array<number>;
+	private runSetCounts: Array<Database.RunSetCount>;
+	private runSets: Array<Database.DBRunSet>;
 
 	constructor (startupRunSetIds: Array<number>) {
 		this.startupRunSetIds = startupRunSetIds;
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetchRunSetCounts ((runSetCounts: Array<Database.RunSetCount>) => {
 			this.runSetCounts = runSetCounts;
 			this.checkAllDataLoaded ();
@@ -40,7 +40,7 @@ class Controller {
 		}
 	}
 
-	checkAllDataLoaded () : void {
+	private checkAllDataLoaded () : void {
 		if (this.runSetCounts === undefined)
 			return;
 		if (this.startupRunSetIds.length > 0 && this.runSets === undefined)
@@ -48,7 +48,7 @@ class Controller {
 		this.allDataLoaded ();
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
 		var runSets = this.runSets;
 		if (runSets === undefined)
 			runSets = [];
@@ -63,7 +63,7 @@ class Controller {
 		this.updateForSelection (runSets);
 	}
 
-	updateForSelection (runSets: Array<Database.DBRunSet>) : void {
+	private updateForSelection (runSets: Array<Database.DBRunSet>) : void {
 		xp_common.setLocationForArray ("ids", runSets.map ((rs: Database.DBRunSet) => rs.get ('id')));
 	}
 }
@@ -90,7 +90,7 @@ class Page extends React.Component<PageProps, PageState> {
 		this.state = { selections: selections };
 	}
 
-	render (): JSX.Element {
+	public render (): JSX.Element {
 		var runSets = runSetsFromSelections (this.state.selections);
 		runSets = xp_utils.uniqArrayByString (runSets, (rs: Database.DBRunSet) => rs.get ('id').toString ());
 
@@ -133,22 +133,22 @@ type RunSetSelectorListProps = {
 };
 
 class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> {
-	changeSelector (index: number, newSelection: xp_common.RunSetSelection): void {
+	private changeSelector (index: number, newSelection: xp_common.RunSetSelection): void {
 		var selections = xp_utils.updateArray (this.props.selections, index, newSelection);
 		this.props.onChange (selections );
 	}
 
-	addSelector () : void {
+	private addSelector () : void {
 		var selections = this.props.selections.concat ([{ runSet: undefined, machine: undefined, config: undefined }]);
 		this.props.onChange (selections);
 	}
 
-	removeSelector (i: number) : void {
+	private removeSelector (i: number) : void {
 		var selections = xp_utils.removeArrayElement (this.props.selections, i);
 		this.props.onChange (selections);
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		var renderSelector = (selection: xp_common.RunSetSelection, index: number) => {
 			var runSet = selection.runSet;
 			var machine = selection.machine;

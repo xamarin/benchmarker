@@ -4,7 +4,7 @@
         "indent": false,
         "forin": false,
         "no-var-keyword": false,
-        "member-access": false,
+        "member-access": true,
         "typedef": [
             true,
             "parameter",
@@ -50,7 +50,6 @@
         "label-undefined": true,
         "member-ordering": [
             true,
-            "public-before-private",
             "static-before-instance",
             "variables-before-functions"
         ],

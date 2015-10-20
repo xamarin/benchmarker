@@ -11,14 +11,14 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	machineName: string;
-	machine: Database.DBObject;
+	private machineName: string;
+	private machine: Database.DBObject;
 
 	constructor (machineName: string) {
 		this.machineName = machineName;
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetchAndWrap ('machine?name=eq.' + this.machineName,
 		(objs: Array<Database.DBObject>) => {
 			this.machine = objs [0];
@@ -28,7 +28,7 @@ class Controller {
 		});
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
 		ReactDOM.render (
 			<div className="MachinePage">
 				<xp_common.Navigation currentPage="" />

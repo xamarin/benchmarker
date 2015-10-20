@@ -11,17 +11,16 @@ import * as Database from './database.ts';
 import React = require ('react');
 
 class Controller {
-
-	pullRequests : Array<Object>;
-	limit: number;
-	offset: number;
+	private pullRequests : Array<Object>;
+	private limit: number;
+	private offset: number;
 
 	constructor () {
 		this.limit = 10;
 		this.offset = 0;
 	}
 
-	loadAsync () : void {
+	public loadAsync () : void {
 		Database.fetchWithHeaders (
 			'pullrequest',
 			{
@@ -40,7 +39,7 @@ class Controller {
 		);
 	}
 
-	allDataLoaded () : void {
+	private allDataLoaded () : void {
 		console.log (this.pullRequests);
 		React.render (
 			React.createElement (
@@ -75,7 +74,7 @@ class Page extends React.Component<PageProps, PageState> {
 					(info: Object) => this.setState ({ infos: this.state.infos.concat ([[pullRequest ['pr_id'], info]]) })));
 	}
 
-	render () : JSX.Element {
+	public render () : JSX.Element {
 		const renderRow = (pullRequest: Object) => {
 			var info;
 			var infos = this.state.infos;
