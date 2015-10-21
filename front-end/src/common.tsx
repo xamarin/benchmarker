@@ -730,14 +730,14 @@ export function setLocationForArray (key: string, ids: Array<string>) : void {
 	window.location.hash = key + "=" + ids.join ("+");
 }
 
-export function pullRequestIdFromUrl (url: string): number {
+export function pullRequestIdFromUrl (url: string) : number {
 	var match = url.match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
 	if (match === null)
 		return undefined;
 	return Number (match [1]);
 }
 
-export function getPullRequestInfo (url: string, success: (info: Object) => void): void {
+export function getPullRequestInfo (url: string, success: (info: Object) => void) : void {
 	var id = pullRequestIdFromUrl (url);
 	if (id === undefined)
 		return;

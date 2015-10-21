@@ -68,7 +68,7 @@ class Controller {
 	}
 }
 
-function runSetsFromSelections (selections: Array<xp_common.RunSetSelection>): Array<Database.DBRunSet> {
+function runSetsFromSelections (selections: Array<xp_common.RunSetSelection>) : Array<Database.DBRunSet> {
 	return selections.map ((s: xp_common.RunSetSelection) => s.runSet).filter ((rs: Database.DBRunSet) => rs !== undefined);
 }
 
@@ -93,7 +93,7 @@ class Page extends React.Component<PageProps, PageState> {
 		this.state = { selections: selections };
 	}
 
-	public render (): JSX.Element {
+	public render () : JSX.Element {
 		var runSets = runSetsFromSelections (this.state.selections);
 		runSets = xp_utils.uniqArrayByString (runSets, (rs: Database.DBRunSet) => rs.get ('id').toString ());
 
@@ -136,7 +136,7 @@ type RunSetSelectorListProps = {
 };
 
 class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> {
-	private changeSelector (index: number, newSelection: xp_common.RunSetSelection): void {
+	private changeSelector (index: number, newSelection: xp_common.RunSetSelection) : void {
 		var selections = xp_utils.updateArray (this.props.selections, index, newSelection);
 		this.props.onChange (selections );
 	}

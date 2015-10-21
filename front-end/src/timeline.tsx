@@ -341,7 +341,7 @@ interface TimelineChartProps {
 
 abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
 	// FIXME: make private and have `computeTable` return the new table
-	public table : Array<Object>;
+	public table: Array<Object>;
 
 	public valueAxisTitle () : string {
 		return "";
@@ -361,7 +361,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 		this.invalidateState (nextProps);
 	}
 
-	public render (): JSX.Element {
+	public render () : JSX.Element {
 		if (this.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
@@ -414,7 +414,7 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 }
 
 interface AllBenchmarksChartProps extends TimelineChartProps {
-	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>): void;
+	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
 };
 
 class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
@@ -429,7 +429,7 @@ class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
 		/* A table of run data. The rows are indexed by benchmark index, the
 		 * columns by sorted run set index.
 		 */
-		var runMetricsTable : Array<Array<number>> = [];
+		var runMetricsTable: Array<Array<number>> = [];
 
 		/* Get a row index from a benchmark ID. */
 		var benchmarkIndicesByName = {};

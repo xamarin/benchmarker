@@ -11,7 +11,7 @@ import * as Database from './database.ts';
 import React = require ('react');
 
 class Controller {
-	private pullRequests : Array<Object>;
+	private pullRequests: Array<Object>;
 	private limit: number;
 	private offset: number;
 

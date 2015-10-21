@@ -14,7 +14,7 @@ import React = require ('react');
 
 type Range = [number, number, number, number];
 
-function calculateRunsRange (data: Array<number>): Range {
+function calculateRunsRange (data: Array<number>) : Range {
 	var min: number;
 	var max: number;
 	var sum = 0;
@@ -51,7 +51,7 @@ function rangeMean (range: Range) : number {
 type BenchmarkRow = [string, Array<Range>];
 type DataArray = Array<BenchmarkRow>;
 
-function dataArrayForResults (resultsByIndex : Array<{[benchmark: string]: Object}>): DataArray {
+function dataArrayForResults (resultsByIndex: Array<{[benchmark: string]: Object}>) : DataArray {
 	for (var i = 0; i < resultsByIndex.length; ++i) {
 		if (resultsByIndex [i] === undefined)
 			return undefined;
@@ -208,7 +208,7 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		this.chart.clear ();
 	}
 
-	public shouldComponentUpdate (nextProps : AMChartProps, nextState : void) : boolean {
+	public shouldComponentUpdate (nextProps: AMChartProps, nextState: void) : boolean {
 		if (this.props.graphName !== nextProps.graphName)
 			return true;
 		if (this.props.height !== nextProps.height)
@@ -223,7 +223,7 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		this.drawChart (this.props);
 	}
 
-	private drawChart (props : AMChartProps) : void {
+	private drawChart (props: AMChartProps) : void {
 		if (this.chart === undefined) {
 			/*
 			 * AMCharts will modify `options.graphs`, so unless we clone it,
@@ -269,20 +269,20 @@ type ComparisonAMChartProps = {
 };
 
 export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, void> {
-    private resultsByIndex : Array<{[benchmark: string]: Object}>;
+    private resultsByIndex: Array<{[benchmark: string]: Object}>;
     private graphs: Array<Object>;
     private dataProvider: Array<Object>;
     private min: number | void;
     private max: number | void;
 	private guides: Array<Object>;
 
-    constructor (props : ComparisonAMChartProps) {
+    constructor (props: ComparisonAMChartProps) {
 		super (props);
 
 		this.invalidateState (props.runSets);
     }
 
-    public componentWillReceiveProps (nextProps : ComparisonAMChartProps) : void {
+    public componentWillReceiveProps (nextProps: ComparisonAMChartProps) : void {
 		this.invalidateState (nextProps.runSets);
 	}
 
@@ -331,7 +331,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
         for (i = 0; i < this.props.runSets.length; ++i) {
 			var label = labels [i];
 			var avg = runSetMean (dataArray, i);
-            var stdDevBar : Object = {
+            var stdDevBar: Object = {
                 "fillAlphas": 1,
 				"lineAlpha": 0,
                 "title": label,
@@ -340,7 +340,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 "closeField": "stdhigh" + i,
                 "switchable": false
             };
-            var errorBar : Object = {
+            var errorBar: Object = {
                 "balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n[[errorBalloon" + i + "]]",
                 "bullet": "yError",
                 "bulletAxis": "time",
@@ -352,7 +352,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 "visibleInLegend": false,
                 "newStack": true
             };
-			var guide : Object = {
+			var guide: Object = {
 				"value": avg,
 				"balloonText": label,
 				"lineThickness": 3

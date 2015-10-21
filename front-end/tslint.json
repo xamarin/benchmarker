@@ -1,7 +1,7 @@
 {
     "rules": {
         "curly": false,
-        "indent": false,
+        "indent": true,
         "forin": true,
         "no-var-keyword": false,
         "typedef": [
@@ -16,9 +16,9 @@
             "variable-declaration"
         ],
         "typedef-whitespace": [
-            false,
+            true,
             {
-                "call-signature": "nospace",
+                "call-signature": "space",
                 "index-signature": "nospace",
                 "parameter": "nospace",
                 "property-declaration": "nospace",

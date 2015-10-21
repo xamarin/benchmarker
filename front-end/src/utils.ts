@@ -137,7 +137,7 @@ export function formatDate (date: Date) : string {
     return dayFormatted + " " + timeFormatted;
 }
 
-export function intersperse<T> (element: T, array: Array<T>): Array<T> {
+export function intersperse<T> (element: T, array: Array<T>) : Array<T> {
     var first = true;
     var result = [];
     for (var i = 0; i < array.length; ++i) {

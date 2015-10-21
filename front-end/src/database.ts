@@ -13,7 +13,7 @@ export class DBObject {
 		this.prefix = prefix;
 	}
 
-	public get (key: string): any {
+	public get (key: string) : any {
 		var result = this.data [this.prefix + key.toLowerCase ()];
 		if (result === null)
 			return undefined;
@@ -36,11 +36,11 @@ export class DBRunSet extends DBObject {
 
 type ErrorFunc = (err: any) => void;
 
-export function fetch (query: string, success: (results: Array<Object>) => void, error: ErrorFunc): void {
+export function fetch (query: string, success: (results: Array<Object>) => void, error: ErrorFunc) : void {
 	return fetchWithHeaders (query, {}, success, error);
 }
 
-export function fetchWithHeaders (query: string, headers: Object, success: (results: Array<Object>) => void, error: ErrorFunc): void {
+export function fetchWithHeaders (query: string, headers: Object, success: (results: Array<Object>) => void, error: ErrorFunc) : void {
 	var request = new XMLHttpRequest();
 	var url = 'http://performancebot.mono-project.com:81/' + query;
 
@@ -61,7 +61,7 @@ export function fetchWithHeaders (query: string, headers: Object, success: (resu
 	request.send();
 }
 
-export function fetchAndWrap (query: string, success: (results: Array<DBObject>) => void, error: ErrorFunc): void {
+export function fetchAndWrap (query: string, success: (results: Array<DBObject>) => void, error: ErrorFunc) : void {
 	fetch (query, (results: Array<Object>) => {
 		var objs = results.map ((data: Object) => new DBObject (data));
 		success (objs);
@@ -76,7 +76,7 @@ export interface RunSetCount {
 	count: number;
 }
 
-export function fetchRunSetCounts (success: (results: Array<RunSetCount>) => void , error: ErrorFunc): void {
+export function fetchRunSetCounts (success: (results: Array<RunSetCount>) => void , error: ErrorFunc) : void {
 	fetch ('runsetcount',
 		(objs: Array<Object>) => {
 			var results = objs.map ((r: Object) => {
@@ -112,7 +112,7 @@ export function combineRunSetCountsAcrossMetric (runSetCounts: Array<RunSetCount
 	return newList;
 }
 
-export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: string, configName: string, metric: string): RunSetCount {
+export function findRunSetCount (runSetCounts: Array<RunSetCount>, machineName: string, configName: string, metric: string) : RunSetCount {
 	return xp_utils.find (runSetCounts, (rsc: RunSetCount) => {
 		return rsc.machine.get ('name') === machineName &&
 			rsc.config.get ('name') === configName &&
@@ -161,12 +161,12 @@ export function fetchRunSetsForMachineAndConfig (
 		machine: DBObject,
 		config: DBObject,
 		success: (results: Array<DBRunSet>) => void,
-		error: ErrorFunc): void {
+		error: ErrorFunc) : void {
 	fetch ('runset?order=c_commitdate.desc&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }
 
-export function findRunSet (runSets: Array<DBRunSet>, id: number): DBRunSet {
+export function findRunSet (runSets: Array<DBRunSet>, id: number) : DBRunSet {
 	return xp_utils.find (runSets, (rs: DBRunSet) => rs.get ('id') === id);
 }
 
@@ -181,7 +181,7 @@ export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error:
 		}, error);
 }
 
-export function fetchRunSets (ids: Array<number>, success: (results: Array<DBRunSet>) => void, error: ErrorFunc): void {
+export function fetchRunSets (ids: Array<number>, success: (results: Array<DBRunSet>) => void, error: ErrorFunc) : void {
 	fetch ('runset?rs_id=in.' + ids.join (','),
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }

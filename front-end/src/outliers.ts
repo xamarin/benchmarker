@@ -2,28 +2,28 @@
 
 "use strict";
 
-function minBy (f: (x: number) => number, x: number, y: number): number {
+function minBy (f: (x: number) => number, x: number, y: number) : number {
 	return Math.min (f (x), f (y));
 }
 
-export function outlierVariance (samples: Array<number>): string {
+export function outlierVariance (samples: Array<number>) : string {
 	return computeOutlierVariance (
 		jackknife (samples, computeMean),
 		jackknife (samples, computeStandardDeviation),
 		samples.length);
 }
 
-function computeMean (samples: Array<number>): number {
+function computeMean (samples: Array<number>) : number {
 	return samples.reduce ((x: number, y: number) => x + y, 0) / samples.length;
 }
 
-function computeStandardDeviation (samples: Array<number>): number {
+function computeStandardDeviation (samples: Array<number>) : number {
 	var mean = computeMean (samples);
 	var n = samples.length;
 	return Math.sqrt (samples.reduce ((sum: number, x: number) => sum + (x - mean) * (x - mean), 0) / n);
 }
 
-function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => number)): number {
+function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => number)) : number {
 	var n = samples.length;
 	var resampled = [];
 	for (var i = 0; i < n; ++i)
@@ -38,8 +38,8 @@ function jackknife (samples: Array<number>, estimate: ((xs: Array<number>) => nu
 function computeOutlierVariance (
 	mean: number /* jackknife estimate of mean */,
 	stdDev: number /* jackknife estimate of standard deviation */,
-	n: number /* number of samples */
-): string /* report */ {
+	n: number  /* number of samples */
+) : string /* report */ {
 	var variance = stdDev * stdDev;
 	var mn = mean / n;
 	var mgMin = mn / 2;
