@@ -50,13 +50,18 @@ namespace xtclog
 					long xtcjobid = xtcjobtuple.Item1;
 					string xtcjobguid = xtcjobtuple.Item2;
 					long runsetid = xtcjobtuple.Item3;
+					DateTime startedAt = xtcjobtuple.Item4;
+					TimeSpan timeDiff = DateTime.Now - startedAt;
+
 					Console.WriteLine ("XTC Job ID Pending: " + xtcjobtuple);
 					var guid = Guid.Parse (xtcjobguid);
 					Console.WriteLine ("guid: \"{0}\"", guid);
 					ResultCollection results = AsyncContext.Run (() => xtcapi.TestRuns.Results (guid));
 
-					if (!results.Finished) {
+
+					if (!results.Finished /* && timeDiff.Days < 3 */) {
 						Console.WriteLine ("Job \"{0}\" not finished yet, skip processing", xtcjobguid);
+
 						continue;
 					}
 
@@ -84,6 +89,7 @@ namespace xtclog
 			PostgresRow row = new PostgresRow ();
 			row.Set ("job", NpgsqlTypes.NpgsqlDbType.Varchar, xtcJobGuid);
 			row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, runSetId);
+			row.Set ("startedAt", NpgsqlTypes.NpgsqlDbType.TimestampTZ, DateTime.Now);
 			PostgresInterface.Insert<long> (conn, "XamarinTestcloudJobIDs", row, "id");
 		}
 
@@ -94,14 +100,16 @@ namespace xtclog
 			PostgresInterface.Delete (conn, "XamarinTestcloudJobIDs", "id = :id", row);
 		}
 
-		private static List<Tuple<long, string, long>> PullXTCJobIds (NpgsqlConnection conn)
+		private static List<Tuple<long, string, long, DateTime>> PullXTCJobIds (NpgsqlConnection conn)
 		{
-			var l = new List<Tuple<long, string, long>> ();
-			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"id", "job", "runset"}, null, null)) {
+			var l = new List<Tuple<long, string, long, DateTime>> ();
+			foreach (var s in PostgresInterface.Select (conn, "XamarinTestcloudJobIDs", new string[] {"id", "job", "runset", "startedAt"}, null, null)) {
 				long? dbid = s.GetValue<long> ("id");
 				long? runset = s.GetValue<long> ("runset");
-				if (dbid.HasValue && runset.HasValue) {
-					l.Add (new Tuple<long, string, long> (dbid.Value, s.GetReference<string> ("job"), runset.Value));
+				string job = s.GetReference<string> ("job");
+				DateTime? startedAt = s.GetValue<DateTime> ("startedAt");
+				if (dbid.HasValue && runset.HasValue && startedAt.HasValue) {
+					l.Add (new Tuple<long, string, long, DateTime> (dbid.Value, job, runset.Value, startedAt.Value));
 				} else {
 					Console.WriteLine ("error: invalid id in database");
 					Environment.Exit (3);

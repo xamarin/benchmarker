@@ -12,6 +12,7 @@ create table FeaturedTimelines (
 create table XamarinTestcloudJobIDs (
        id serial primary key,
        runSet integer references RunSet(id),
+       startedAt timestamp with time zone,
        job varchar(36)
 );
 
