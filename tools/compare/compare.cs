@@ -13,7 +13,7 @@ using Npgsql;
 
 class Compare
 {
-	static void UsageAndExit (string message = null, int exitcode = 0)
+	static int UsageAndExit (string message = null, int exitcode = 0)
 	{
 		if (!String.IsNullOrEmpty (message))
 			Console.Error.WriteLine ("{0}\n", message);
@@ -44,6 +44,7 @@ class Compare
 		Console.Error.WriteLine ("                                  FILE is the output filename");
 
 		Environment.Exit (exitcode);
+		return exitcode;
 	}
 
 	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, Product product, string pullRequestURL, compare.Repository repository, Config config)
@@ -185,7 +186,7 @@ class Compare
 		return Tuple.Create (SumArray (values, 0, values.Count), entries.Last ().Item1);
 	}
 
-	public static void Main (string[] args)
+	public static int Main (string[] args)
 	{
 		string[] benchmarkNames = null;
 		//var pausetime = false;
@@ -297,10 +298,8 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		if (args.Length - optindex != 0) {
-			UsageAndExit (null, 1);
-			return;
-		}
+		if (args.Length - optindex != 0)
+			return UsageAndExit (null, 1);
 
 		if (configFile == null)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
@@ -405,6 +404,8 @@ class Compare
 			Console.Error.WriteLine ("Set start time to {0}", runSet.StartDateTime);
 		}
 
+		var reportFailure = false;
+
 		if (!justCreateRunSet) {
 			var someSuccess = false;
 
@@ -482,6 +483,9 @@ class Compare
 				//	throw new NotImplementedException ();
 
 				runSet.Results.Add (result);
+
+				if (haveTimedOut || result.Runs.Count == 0)
+					reportFailure = true;
 			}
 
 			if (!someSuccess)
@@ -508,5 +512,12 @@ class Compare
 		}
 
 		dbConnection.Close ();
+
+		if (reportFailure) {
+			Console.Error.WriteLine ("Error: Some benchmarks timed out or failed completely.");
+			return 1;
+		}
+
+		return 0;
 	}
 }
