@@ -198,7 +198,7 @@ namespace xtclog
 			return bench_results;
 		}
 
-		private static string XTC_UI_PREFIX = 'https://testcloud.xamarin.com/test/androidagent_';
+		private static string XTC_UI_PREFIX = "https://testcloud.xamarin.com/test/androidagent_";
 
 		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId, string jobguid)
 		{
