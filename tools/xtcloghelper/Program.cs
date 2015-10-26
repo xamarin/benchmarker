@@ -20,6 +20,7 @@ namespace xtclog
 		{
 			Console.WriteLine ("Usage:");
 			Console.WriteLine ("    xtcloghelper.exe --push XTCJOBID RUNSETID");
+			Console.WriteLine ("                     --process-log PATH");
 			Console.WriteLine ("                     --crawl-logs");
 			Environment.Exit (success ? 0 : 1);
 		}
@@ -41,6 +42,17 @@ namespace xtclog
 				var connection = PostgresInterface.Connect ();
 				PushXTCJobId (connection, xtcJobGuid, runSetId);
 				Console.WriteLine ("created an entry for runSet {0}", runSetId);
+			} else if (args [0] == "--process-log") {
+				if (args.Length <= 1) {
+					UsageAndExit (false);
+				}
+				string logFile = args [1];
+				List<string> logs = new List<string> ();
+				string contents = File.ReadAllText(logFile);
+				logs.Add (contents);
+				var connection = PostgresInterface.Connect ();
+				var tuple = ProcessLog (connection, logs, null, null);
+				tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 			} else if (args [0] == "--crawl-logs") {
 				var connection = PostgresInterface.Connect ();
 				var xtcapikey = Accredit.GetCredentials ("xtcapikey") ["xtcapikey"].ToString ();
@@ -73,7 +85,8 @@ namespace xtclog
 						Console.WriteLine ("device id: " + device.DeviceConfigurationId);
 						Console.WriteLine ("devicelog url: " + device.DeviceLog);
 
-						var tuple = ProcessLog (connection, device.DeviceLog, runsetid, xtcjobguid);
+						List<string> logs = DownloadLogs (device.DeviceLog);
+						var tuple = ProcessLog (connection, logs, runsetid, xtcjobguid);
 						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 					}
 					DeleteXTCJobId (connection, xtcjobid);
@@ -153,6 +166,7 @@ namespace xtclog
 			var commit = new bm.Commit ();
 			commit.Hash = match_commit.Groups ["hash"].Value;
 			commit.Branch = match_commit.Groups ["branch"].Value;
+			commit.Product = new bm.Product () { Name = "mono", GitHubUser = "mono", GitHubRepo = "mono" };
 			return commit;
 		}
 
@@ -200,15 +214,24 @@ namespace xtclog
 
 		private static string XTC_UI_PREFIX = "https://testcloud.xamarin.com/test/androidagent_";
 
-		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId, string jobguid)
+		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, List<string> logs, long? runSetId, string jobguid)
 		{
-			List<string> logs = DownloadLogs (logUrl);
-
 			var commit = ParseCommit (logs [0]);
 			var machine = ParseMachine (logs [0]);
 			var config = ParseConfig (logs [0]);
 
-			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, null, XTC_UI_PREFIX + jobguid);
+			bm.RunSet runSet;
+			if (runSetId == null) {
+				runSet = new bm.RunSet {
+					StartDateTime = DateTime.Now,
+					Config = config,
+					Commit = commit,
+					SecondaryCommits = new List<bm.Commit> ()
+				};
+			} else {
+				Debug.Assert (jobguid != null);
+				runSet = bm.RunSet.FromId (connection, machine, runSetId.Value, config, commit, null, null, XTC_UI_PREFIX + jobguid);
+			}
 
 			Dictionary<string, List<TimeSpan>> bench_results = new Dictionary<string, List<TimeSpan>> ();
 			foreach (string log in logs) {
