@@ -73,7 +73,7 @@ namespace xtclog
 						Console.WriteLine ("device id: " + device.DeviceConfigurationId);
 						Console.WriteLine ("devicelog url: " + device.DeviceLog);
 
-						var tuple = ProcessLog (connection, device.DeviceLog, runsetid);
+						var tuple = ProcessLog (connection, device.DeviceLog, runsetid, xtcjobguid);
 						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 					}
 					DeleteXTCJobId (connection, xtcjobid);
@@ -198,7 +198,9 @@ namespace xtclog
 			return bench_results;
 		}
 
-		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId)
+		private static string XTC_UI_PREFIX = 'https://testcloud.xamarin.com/test/androidagent_';
+
+		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, string logUrl, long runSetId, string jobguid)
 		{
 			List<string> logs = DownloadLogs (logUrl);
 
@@ -206,7 +208,7 @@ namespace xtclog
 			var machine = ParseMachine (logs [0]);
 			var config = ParseConfig (logs [0]);
 
-			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, null, logUrl);
+			var runSet = bm.RunSet.FromId (connection, machine, runSetId, config, commit, null, null, XTC_UI_PREFIX + jobguid);
 
 			Dictionary<string, List<TimeSpan>> bench_results = new Dictionary<string, List<TimeSpan>> ();
 			foreach (string log in logs) {
