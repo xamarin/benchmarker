@@ -30,7 +30,8 @@ namespace compare
 			runTool = _runTool;
 			runToolArguments = _runToolArguments;
 
-			info = compare.Utils.NewProcessStartInfo (_config);
+			var binaryProtocolFile = _config.ProducesBinaryProtocol ? "/tmp/binprot.dummy" : null;
+			info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
 
 			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
 
@@ -38,7 +39,7 @@ namespace compare
 
 			if (benchmark.ClientCommandLine != null) {
 				clientServer = true;
-				clientInfo = compare.Utils.NewProcessStartInfo (_config);
+				clientInfo = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
 				clientInfo.WorkingDirectory = info.WorkingDirectory;
 				clientInfo.Arguments = String.Join (" ", config.MonoOptions.Concat (benchmark.ClientCommandLine));
 			} else {
@@ -58,21 +59,10 @@ namespace compare
 				arguments = "--stats " + arguments;
 		}
 
-		public string GetEnvironmentVariable (string key)
+		public long? Run (string profilesDirectory, string profileFilename, string binaryProtocolFilename, out bool timedOut)
 		{
-			var value = info.EnvironmentVariables [key];
-			if (value == null)
-				return String.Empty;
-			return value;
-		}
+			Utils.SetProcessStartEnvironmentVariables (info, config, binaryProtocolFilename);
 
-		public void SetEnvironmentVariable (string key, string value)
-		{
-			info.EnvironmentVariables.Add (key, value);
-		}
-
-		public long? Run (string profilesDirectory, string profileFilename, out bool timedOut)
-		{
 			timedOut = false;
 
 			try {
@@ -160,9 +150,9 @@ namespace compare
 			}
 		}
 
-		public long? Run (out bool timedOut)
+		public long? Run (string binaryProtocolFilename, out bool timedOut)
 		{
-			return Run (null, null, out timedOut);
+			return Run (null, null, binaryProtocolFilename, out timedOut);
 		}
 	}
 }

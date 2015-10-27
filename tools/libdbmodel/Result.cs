@@ -71,6 +71,8 @@ namespace Benchmarker.Models
 		public class Run {
 			List<RunMetric> runMetrics;
 			public List<RunMetric> RunMetrics { get { return runMetrics; } }
+			public string BinaryProtocolFilename { get; set; }
+			public long? PostgresId { get; set; }
 
 			public Run () {
 				runMetrics = new List<RunMetric> ();
@@ -84,6 +86,7 @@ namespace Benchmarker.Models
 				row.Set ("benchmark", NpgsqlTypes.NpgsqlDbType.Varchar, b);
 				row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Integer, runSetId);
 				var runId = PostgresInterface.Insert<long> (conn, "Run", row, "id");
+				run.PostgresId = runId;
 
 				foreach (var runMetric in run.RunMetrics) {
 					var metricRow = new PostgresRow ();

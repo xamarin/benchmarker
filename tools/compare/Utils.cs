@@ -101,8 +101,15 @@ namespace compare
 			return Tuple.Create (hostname, arch);
 		}
 
+		public static void SetProcessStartEnvironmentVariables (ProcessStartInfo info, Config cfg, string binaryProtocolFilename)
+		{
+			info.EnvironmentVariables.Clear ();
 
-		public static ProcessStartInfo NewProcessStartInfo (Config cfg)
+			foreach (var env in cfg.ProcessMonoEnvironmentVariables (binaryProtocolFilename))
+				info.EnvironmentVariables.Add (env.Key, env.Value);
+		}
+
+		public static ProcessStartInfo NewProcessStartInfo (Config cfg, string binaryProtocolFilename)
 		{
 			var info = new ProcessStartInfo {
 				UseShellExecute = false,
@@ -121,8 +128,7 @@ namespace compare
 				info.FileName = monoPath;
 			}
 
-			foreach (var env in cfg.processedMonoEnvironmentVariables)
-				info.EnvironmentVariables.Add (env.Key, env.Value);
+			SetProcessStartEnvironmentVariables (info, cfg, binaryProtocolFilename);
 
 			return info;
 		}
@@ -143,7 +149,8 @@ namespace compare
 		public async static Task<bool> CompleteCommit (Config cfg, Commit commit)
 		{
 			if (commit.Product.Name == "mono" && !cfg.NoMono) {
-				var info = NewProcessStartInfo (cfg);
+				var binaryProtocolFile = cfg.ProducesBinaryProtocol ? "/tmp/binprot.dummy" : null;
+				var info = NewProcessStartInfo (cfg, binaryProtocolFile);
 				if (!String.IsNullOrWhiteSpace (info.FileName)) {
 					/* Run without timing with --version */
 					info.Arguments = "--version";

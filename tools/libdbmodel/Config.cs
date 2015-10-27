@@ -16,6 +16,7 @@ namespace Benchmarker.Models
     public class Config
 	{
 		const string rootVarString = "$ROOT";
+		const string binaryProtocolString = "$BINPROT";
 
 		public string Name { get; set; }
 		public int Count { get; set; }
@@ -25,37 +26,63 @@ namespace Benchmarker.Models
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
 		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
 
+		private string monoRoot;
+
 		public string MonoExecutable {
 			get {
 				return Path.GetFileName (Mono);
 			}
 		}
 
-		public Dictionary<string, string> processedMonoEnvironmentVariables { get; set; }
-
-		public Config ()
-		{
+		public bool ProducesBinaryProtocol {
+			get {
+				var values = MonoEnvironmentVariables.Values.Concat (UnsavedMonoEnvironmentVariables.Values);
+				return values.Any (v => v.Contains (binaryProtocolString));
+			}
 		}
 
-		static void ExpandRootInEnvironmentVariables (Dictionary<string, string> processedEnvVars, Dictionary<string, string> unexpandedEnvVars, string root)
+		static void ExpandInEnvironmentVariables (Dictionary<string, string> processedEnvVars, Dictionary<string, string> unexpandedEnvVars,
+			string variableString, string variableValue)
 		{
-			foreach (var kvp in unexpandedEnvVars) {
-				var key = kvp.Key;
-				var unexpandedValue = kvp.Value;
-				if (unexpandedValue.Contains (rootVarString)) {
-					if (root != null)
-						processedEnvVars [key] = unexpandedValue.Replace (rootVarString, root);
+			var keys = unexpandedEnvVars.Keys.ToArray ();
+			foreach (var key in keys) {
+				var unexpandedValue = unexpandedEnvVars [key];
+				if (unexpandedValue.Contains (variableString)) {
+					if (variableValue != null)
+						processedEnvVars [key] = unexpandedValue.Replace (variableString, variableValue);
 					else
-						throw new InvalidDataException ("Configuration requires a root directory.");
+						throw new InvalidDataException ("Configuration requires a value for the variable " + variableString);
 				} else {
 					processedEnvVars [key] = unexpandedValue;
 				}
 			}
 		}
 
+		public Dictionary<string, string> ProcessMonoEnvironmentVariables (string binaryProtocolFile) {
+			var hasBinProt = ProducesBinaryProtocol;
+			if (hasBinProt && binaryProtocolFile == null)
+				throw new Exception ("Configuration requires binary protocol file, but none is given");
+			if (!hasBinProt && binaryProtocolFile != null)
+				throw new Exception ("Binary protocol file is given, but none is required by config");
+
+			var vars = new Dictionary<string, string> ();
+			ExpandInEnvironmentVariables (vars, MonoEnvironmentVariables, rootVarString, monoRoot);
+			ExpandInEnvironmentVariables (vars, UnsavedMonoEnvironmentVariables, rootVarString, monoRoot);
+
+			if (hasBinProt)
+				ExpandInEnvironmentVariables (vars, vars, binaryProtocolString, binaryProtocolFile);
+
+			return vars;
+		}
+
+		public Config ()
+		{
+		}
+
 		public static Config LoadFromString (string content, string root)
 		{
 			var config = JsonConvert.DeserializeObject<Config> (content);
+			config.monoRoot = root;
 
 			if (String.IsNullOrWhiteSpace (config.Name))
 				throw new InvalidDataException ("Configuration does not have a `Name`.");
@@ -84,10 +111,6 @@ namespace Benchmarker.Models
 				config.MonoEnvironmentVariables = new Dictionary<string, string> ();
 			if (config.UnsavedMonoEnvironmentVariables == null)
 				config.UnsavedMonoEnvironmentVariables = new Dictionary<string, string> ();
-
-			config.processedMonoEnvironmentVariables = new Dictionary<string, string> ();
-			ExpandRootInEnvironmentVariables (config.processedMonoEnvironmentVariables, config.MonoEnvironmentVariables, root);
-			ExpandRootInEnvironmentVariables (config.processedMonoEnvironmentVariables, config.UnsavedMonoEnvironmentVariables, root);
 
 			return config;
 		}

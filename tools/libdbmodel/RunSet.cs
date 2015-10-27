@@ -32,6 +32,12 @@ namespace Benchmarker.Models
 			CrashedBenchmarks = new List<string> ();
 		}
 
+		public IEnumerable<Result.Run> AllRuns {
+			get {
+				return Results.SelectMany (res => res.Runs);
+			}
+		}
+
 		public static bool MachineExistsInPostgres (NpgsqlConnection conn, Machine machine)
 		{
 			using (var cmd = conn.CreateCommand ()) {

@@ -412,6 +412,8 @@ class Compare
 			var runTool = valgrindMassif;
 			var runToolArguments = valgrindMassif != null ? string.Format ("--tool=massif --massif-out-file={0} --max-snapshots=1000 --detailed-freq=100 --pages-as-heap=yes", valgrindOutputFilename) : null;
 
+			int binaryProtocolIndex = 0;
+
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
 				// Run the benchmarks
 				if (config.Count <= 0)
@@ -438,14 +440,22 @@ class Compare
 					if (valgrindMassif == null)
 						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
-					var elapsedMilliseconds = runner.Run (out timedOut);
+					string binaryProtocolFile = null;
+					if (config.ProducesBinaryProtocol) {
+						do {
+							++binaryProtocolIndex;
+							binaryProtocolFile = string.Format ("/tmp/binprot.{0}", binaryProtocolIndex);
+						} while (File.Exists (binaryProtocolFile));
+					}
+	
+					var elapsedMilliseconds = runner.Run (binaryProtocolFile, out timedOut);
 
 					// if running for time, the first one is the dry run
 					if (valgrindMassif == null && i == 0)
 						continue;
 
 					if (elapsedMilliseconds != null) {
-						var run = new Result.Run ();
+						var run = new Result.Run { BinaryProtocolFilename = binaryProtocolFile };
 
 						if (valgrindMassif == null) {
 							run.RunMetrics.Add (new Result.RunMetric {
@@ -505,6 +515,18 @@ class Compare
 			Console.Write ("{{ \"runSetId\": \"{0}\"", newIds.Item1);
             if (pullRequestURL != null)
 				Console.Write (", \"pullRequestId\": \"{0}\"", newIds.Item2.Value);
+			Console.Write (", \"runs\": [ ");
+
+			var runStrings = new List<string> ();
+			foreach (var run in runSet.AllRuns) {
+				var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
+				if (run.BinaryProtocolFilename != null)
+					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
+				runStrings.Add ("{ " + str + " }");
+			}
+			Console.Write (string.Join (", ", runStrings));
+
+			Console.Write (" ]");
             Console.WriteLine (" }");
 		} catch (Exception exc) {
 			Console.Error.WriteLine ("Error: Failure uploading data: " + exc);
