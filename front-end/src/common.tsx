@@ -313,7 +313,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		if (this.state.runSets === undefined)
 			return;
 		var target: any = event.target;
-		var runSetId: number = target.value;
+		var runSetId = parseInt (target.value);
 		var runSet = Database.findRunSet (this.state.runSets, runSetId);
 		if (runSet !== undefined)
 			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
