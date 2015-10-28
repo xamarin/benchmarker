@@ -1,3 +1,5 @@
+BENCHMARKER_BRANCH = 'master'
+
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
 PROPERTYNAME_PULLREQUESTID = 'parse_pullrequestid'

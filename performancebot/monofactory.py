@@ -7,7 +7,7 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, BENCHMARKER_BRANCH
 from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment
 
 import re
@@ -61,7 +61,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     'pwd && ' +
                     'mkdir -p %s && ' % MASTERWORKDIR +
                     'cd %s && ' % MASTERWORKDIR +
-                    'git clone --depth 1 -b master https://github.com/xamarin/benchmarker && ' +
+                    'git clone --depth 1 -b ' + BENCHMARKER_BRANCH + ' https://github.com/xamarin/benchmarker && ' +
                     'cd benchmarker/tools && (/usr/bin/cli --version || true) && ' +
                     'bash ../performancebot/utils/nugethack.sh && ' +
                     'xbuild /t:compare && ' +
@@ -138,7 +138,7 @@ class DebianMonoBuildFactory(BuildFactory):
         step = git.Git(
             repourl='https://github.com/xamarin/benchmarker/',
             workdir='benchmarker',
-            branch='master',
+            branch=BENCHMARKER_BRANCH,
             mode='incremental',
             # shallow=True,
             codebase='benchmarker',
