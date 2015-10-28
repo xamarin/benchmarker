@@ -38,41 +38,49 @@ xbuild /p:Configuration=Release /target:compare
 # build xtcloghelper
 xbuild /t:xtcloghelper /p:Configuration=Debug
 
-# generate run-set id for nexus5
-RUNSETID=$(mono --debug ./compare.exe \
-    --main-product mono $MONOCOMMITSHA \
-    --secondary-product monodroid $MONODROIDCOMMITSHA \
-    --build-url $BUILDURL \
-    --create-run-set \
-    --machine "Nexus-5_4.4.4" \
-    --config-file ../configs/default.conf \
-    | grep runSetId | grep -o -E '\d+')
+OLDIFS=$IFS
+IFS=','
+for i in "Nexus-5_4.4.4",aba2bb7e "Nexus-5_4.4.4-98d5184c6616",98d5184c6616; do
+	set $i
+	DEVICENAME=$1
+	DEVICEID=$2
 
-echo "runSetId: $RUNSETID"
+	RUNSETID=$(mono --debug ./compare.exe \
+		--main-product mono $MONOCOMMITSHA \
+		--secondary-product monodroid $MONODROIDCOMMITSHA \
+		--build-url $BUILDURL \
+		--create-run-set \
+		--machine $DEVICENAME \
+		--config-file ../configs/default.conf \
+		| grep runSetId | grep -o -E '\d+')
 
-# build app + uitests
-(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
-(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
+	echo "runSetId: $RUNSETID"
 
-XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
-UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
-UITEST="${UITESTS[${#UITESTS[@]} - 1]}" # select most recent version
-# submit to xtc
-mono \
-    $UITEST \
-    submit \
-    ./AndroidAgent/bin/Release/com.xamarin.benchmarkagent.apk \
-    `cat $XTCAPIKEY` \
-    --devices aba2bb7e \
-    --async \
-    --test-chunk \
-    --app-name AndroidAgent \
-    --assembly-dir ./AndroidAgent.UITests/bin/Release \
-    --user 'bernhard.urban@xamarin.com' | tee $XTCUPLOADLOG
+	# build app + uitests
+	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
+	(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
 
-XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
-rm -f "$XTCUPLOADLOG"
-echo "submitted job has id $XTCJOBID"
-env
-mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+	XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
+	UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
+	UITEST="${UITESTS[${#UITESTS[@]} - 1]}" # select most recent version
+	# submit to xtc
+	mono \
+		$UITEST \
+		submit \
+		./AndroidAgent/bin/Release/com.xamarin.benchmarkagent.apk \
+		`cat $XTCAPIKEY` \
+		--devices $DEVICEID \
+		--async \
+		--test-chunk \
+		--app-name AndroidAgent \
+		--assembly-dir ./AndroidAgent.UITests/bin/Release \
+		--user 'bernhard.urban@xamarin.com' | tee $XTCUPLOADLOG
 
+	XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
+	rm -f "$XTCUPLOADLOG"
+	echo "submitted job has id $XTCJOBID"
+	env
+	echo mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+done
+
+IFS=$OLDIFS
