@@ -80,7 +80,7 @@ for i in "Nexus-5_4.4.4",aba2bb7e "Nexus-5_4.4.4-98d5184c6616",98d5184c6616; do
 	rm -f "$XTCUPLOADLOG"
 	echo "submitted job has id $XTCJOBID"
 	env
-	echo mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+	mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
 done
 
 IFS=$OLDIFS
