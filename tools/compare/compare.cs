@@ -444,7 +444,7 @@ class Compare
 					if (config.ProducesBinaryProtocol) {
 						do {
 							++binaryProtocolIndex;
-							binaryProtocolFile = string.Format ("/tmp/binprot.{0}", binaryProtocolIndex);
+							binaryProtocolFile = string.Format ("binprot.{0}", binaryProtocolIndex);
 						} while (File.Exists (binaryProtocolFile));
 					}
 	

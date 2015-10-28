@@ -30,7 +30,7 @@ namespace compare
 			runTool = _runTool;
 			runToolArguments = _runToolArguments;
 
-			var binaryProtocolFile = _config.ProducesBinaryProtocol ? "/tmp/binprot.dummy" : null;
+			var binaryProtocolFile = _config.ProducesBinaryProtocol ? "binprot.dummy" : null;
 			info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
 
 			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
