@@ -17,7 +17,6 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #coding style by upstream doesn't match with pylint
-#pylint: disable=C0103
 
 from buildbot.status.web.authz import Authz
 from buildbot.status.web.session import SessionManager

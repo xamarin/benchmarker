@@ -7,7 +7,7 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV
 from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, ParsingShellCommand, GrabBinaryLogFilesStep
 
 import re
@@ -19,10 +19,8 @@ class ExpandingStep(object):
     def __init__(self, closure):
         self.closure = closure
 
-    #pylint: disable=C0103
     def buildStep(self):
         return self
-    #pylint: enable=C0103
 
 
 class DebianMonoBuildFactory(BuildFactory):
@@ -52,6 +50,23 @@ class DebianMonoBuildFactory(BuildFactory):
         build_class.setStepFactories(generated_steps)
         return build_class
 
+
+    def build_sgen_grep_binprot_on_master(self):
+        self.addStep(
+            MasterShellCommand(
+                name="build_sgen_grep_binprot",
+                command=[
+                    'bash',
+                    Interpolate('%s/performancebot/utils/build-sgen-grep-binprot.sh' % MASTERWORKDIR),
+                    MONO_SGEN_GREP_BINPROT_GITREV,
+                    Interpolate(MASTERWORKDIR)
+                ]
+            )
+        )
+
+    def upload_sgen_grep_binprot(self):
+        self.addStep(FileDownload(Interpolate('%s/sgen-grep-binprot-%s' % (MASTERWORKDIR, MONO_SGEN_GREP_BINPROT_GITREV)), 'sgen-grep-binprot', workdir='benchmarker'))
+
     def benchmarker_on_master(self):
         step = MasterShellCommand(
             name="build_benchmarker",
@@ -67,7 +82,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     'xbuild /t:compare && ' +
                     'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
                 )
-                ]
+            ]
         )
         self.addStep(step)
 
@@ -364,9 +379,9 @@ from zope.interface import implements
 
 class DetermineMonoRevision(object):
     implements(IRenderable)
-    #pylint: disable=C0103,R0201
+    #pylint: disable=R0201
     def getRenderingFor(self, props):
         if props.hasProperty('got_revision'):
             return props['got_revision']['mono']
         return "failed revision lookup"
-    #pylint: enable=C0103,R0201
+    #pylint: enable=R0201
