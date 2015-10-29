@@ -117,7 +117,7 @@ namespace Benchmarker.Models
 				throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", mainCommit.Hash, row.GetReference<string> ("rs.commit")));
 			if (buildURL != null && buildURL != runSet.BuildURL)
 				throw new Exception ("Build URL does not match the one in the database.");
-			if (machine.Name != row.GetReference<string> ("m.name") || machine.Architecture != row.GetReference<string> ("m.architecture"))
+			if ((machine.Name != row.GetReference<string> ("m.name") && !row.GetReference<string> ("m.name").StartsWith (machine.Name)) || machine.Architecture != row.GetReference<string> ("m.architecture"))
 				throw new Exception ("Machine does not match the one in the database.");
 			if (!config.EqualsPostgresObject (row, "c."))
 				throw new Exception ("Config does not match the one in the database.");
