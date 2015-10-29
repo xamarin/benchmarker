@@ -4,10 +4,11 @@ from buildbot.status.builder import SUCCESS
 
 from twisted.python import log
 
-from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, BUILDBOT_URL, PROPERTYNAME_PULLREQUESTID
+from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, BUILDBOT_URL, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_COMPARE_JSON
 
 import json
 import requests
+import os
 
 
 class ParsingShellCommand(ShellCommand):
@@ -81,6 +82,23 @@ class CreateRunSetIdStep(ParsingShellCommand):
         cmd.append(self.install_root(mono_version))
         self.setCommand(cmd)
         ShellCommand.start(self)
+
+
+class GrabBinaryLogFilesStep(ShellCommand):
+    def __init__(self, *args, **kwargs):
+        ShellCommand.__init__(self, *args, **kwargs)
+
+    def start(self):
+        cmd_touch = ['touch']
+        j = json.loads(self.getProperty(PROPERTYNAME_COMPARE_JSON))
+        bin_files = [i['binaryProtocolFile'].encode('ascii', 'ignore') for i in j['runs']]
+        for bin_file in bin_files:
+            self.addLogFile(os.path.basename(bin_file), bin_file)
+            cmd_touch.append(bin_file)
+        self.setProperty(PROPERTYNAME_COMPARE_JSON, None)
+        self.setCommand(['bash', '-c', "sleep 1; " + " ".join(cmd_touch) + "; sleep 1"])
+        ShellCommand.start(self)
+
 
 class GithubWritePullrequestComment(LoggingBuildStep):
     def __init__(self, githubuser, githubrepo, githubtoken, *args, **kwargs):

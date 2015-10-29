@@ -7,8 +7,8 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, BENCHMARKER_BRANCH
-from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH
+from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, ParsingShellCommand, GrabBinaryLogFilesStep
 
 import re
 
@@ -325,7 +325,7 @@ def gen_guard_benchmark_run(benchmark):
     return lambda s: _benchmark_retry(benchmark, s) and _benchmark_filter(benchmark, s)
 
 
-def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, attach_files=None):
+def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, attach_files=None, grab_binary_files=False):
     steps = []
     cmd = ['mono',
            'tools/compare.exe',
@@ -336,17 +336,26 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
            '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
           ]
+    parsers = {
+        # assumption: compare.exe prints json in a single line
+        PROPERTYNAME_COMPARE_JSON: re.compile(r'(?P<' + PROPERTYNAME_COMPARE_JSON + '>{.*runSetId.*})')
+    }
     steps.append(
-        ShellCommand(
+        ParsingShellCommand(
             name=benchmark_name,
             description="benchmark " + benchmark_name,
             command=cmd + compare_args,
             timeout=45*60,
             doStepIf=gen_guard_benchmark_run(benchmark_name),
             logfiles=attach_files,
+            parse_rules=parsers,
             workdir='benchmarker'
         )
     )
+
+    if grab_binary_files:
+        steps.append(GrabBinaryLogFilesStep(name="binlogs " + benchmark_name, description="binlogs " + benchmark_name))
+
     return steps
 
 

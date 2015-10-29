@@ -521,7 +521,7 @@ class Compare
 			foreach (var run in runSet.AllRuns) {
 				var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
 				if (run.BinaryProtocolFilename != null)
-					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
+					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, Path.GetFullPath (run.BinaryProtocolFilename));
 				runStrings.Add ("{ " + str + " }");
 			}
 			Console.Write (string.Join (", ", runStrings));

@@ -3,6 +3,7 @@ BENCHMARKER_BRANCH = 'feature-binary-protocol'
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
 PROPERTYNAME_PULLREQUESTID = 'parse_pullrequestid'
+PROPERTYNAME_COMPARE_JSON = 'compare_json_result'
 
 PROPERTYNAME_SKIP_BENCHS = 'skip_benchs'
 PROPERTYNAME_FILTER_BENCHS = 'filter_benchs'
