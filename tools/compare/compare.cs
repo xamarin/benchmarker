@@ -441,10 +441,11 @@ class Compare
 						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
 					string binaryProtocolFile = null;
+					string workingDirectory = Path.Combine (testsDir, benchmark.TestDirectory);
 					if (config.ProducesBinaryProtocol) {
 						do {
 							++binaryProtocolIndex;
-							binaryProtocolFile = string.Format ("binprot.{0}", binaryProtocolIndex);
+							binaryProtocolFile = Path.Combine(workingDirectory, string.Format ("binprot.{0}", binaryProtocolIndex));
 						} while (File.Exists (binaryProtocolFile));
 					}
 	
@@ -455,7 +456,7 @@ class Compare
 						continue;
 
 					if (elapsedMilliseconds != null) {
-						var run = new Result.Run { BinaryProtocolFilename = binaryProtocolFile };
+						var run = new Result.Run { BinaryProtocolFilename = Path.Combine(workingDirectory, binaryProtocolFile) };
 
 						if (valgrindMassif == null) {
 							run.RunMetrics.Add (new Result.RunMetric {
@@ -521,7 +522,7 @@ class Compare
 			foreach (var run in runSet.AllRuns) {
 				var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
 				if (run.BinaryProtocolFilename != null)
-					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, Path.GetFullPath (run.BinaryProtocolFilename));
+					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
 				runStrings.Add ("{ " + str + " }");
 			}
 			Console.Write (string.Join (", ", runStrings));

@@ -10,7 +10,8 @@ namespace compare
 {
 	public class UnixRunner
 	{
-		ProcessStartInfo info, clientInfo;
+		public ProcessStartInfo info { get; }
+		ProcessStartInfo clientInfo;
 		Config config;
 		Benchmark benchmark;
 		Machine machine;
