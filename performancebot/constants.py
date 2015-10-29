@@ -1,4 +1,4 @@
-BENCHMARKER_BRANCH = 'feature-binary-protocol'
+BENCHMARKER_BRANCH = 'master'
 
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
