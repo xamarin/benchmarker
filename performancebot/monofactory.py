@@ -52,12 +52,13 @@ class DebianMonoBuildFactory(BuildFactory):
 
 
     def build_sgen_grep_binprot_on_master(self):
+        # self.addStep(MasterShellCommand(name='tree', command=['tree', Interpolate(MASTERWORKDIR)]))
         self.addStep(
             MasterShellCommand(
                 name="build_sgen_grep_binprot",
                 command=[
                     'bash',
-                    Interpolate('%s/performancebot/utils/build-sgen-grep-binprot.sh' % MASTERWORKDIR),
+                    Interpolate('%s/benchmarker/performancebot/utils/build-sgen-grep-binprot.sh' % MASTERWORKDIR),
                     MONO_SGEN_GREP_BINPROT_GITREV,
                     Interpolate(MASTERWORKDIR)
                 ]

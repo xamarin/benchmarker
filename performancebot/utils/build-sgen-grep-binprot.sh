@@ -18,7 +18,8 @@ if [ -f $TARGETFILENAME ]; then
     exit 0
 fi
 
-cd $(mktemp -d /tmp/mono-build.XXXXXX)
+WORKDIR=$(mktemp -d /tmp/mono-build.XXXXXX)
+cd $WORKDIR
 
 git clone https://github.com/mono/mono
 cd mono
@@ -31,3 +32,5 @@ make -C eglib/
 make -C tools/sgen/
 
 cp tools/sgen/sgen-grep-binprot $TARGETFILENAME
+
+cd && rm -rf $WORKDIR

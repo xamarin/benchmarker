@@ -21,7 +21,8 @@ RUN apt-get install -y \
         nuget \
         python-dev \
         python-openssl \
-        python-pip
+        python-pip \
+        gettext
 RUN pip install buildbot
 
 # web status of buildbot
