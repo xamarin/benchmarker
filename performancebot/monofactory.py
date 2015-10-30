@@ -7,7 +7,7 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME
 from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, ParsingShellCommand, GrabBinaryLogFilesStep
 
 import re
@@ -61,7 +61,7 @@ class DebianMonoBuildFactory(BuildFactory):
         )
 
     def upload_sgen_grep_binprot(self):
-        self.addStep(FileDownload('sgen-grep-binprot-%s' % MONO_SGEN_GREP_BINPROT_GITREV, 'sgen-grep-binprot', workdir='benchmarker'))
+        self.addStep(FileDownload(MONO_SGEN_GREP_BINPROT_FILENAME, 'sgen-grep-binprot', workdir='benchmarker'))
         self.addStep(ShellCommand(name='chmod', command=['chmod', 'a+x', 'sgen-grep-binprot'], workdir='benchmarker'))
 
     def benchmarker_on_master(self):

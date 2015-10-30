@@ -19,6 +19,7 @@ FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 JENKINS_URL = 'https://jenkins.mono-project.com'
 
 MONO_SGEN_GREP_BINPROT_GITREV = '8c1d0d4efe388e49da213261f8a990cde0b62c5d'
+MONO_SGEN_GREP_BINPROT_FILENAME = 'sgen-grep-binprot-%s' % MONO_SGEN_GREP_BINPROT_GITREV
 
 MONO_BASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono'
 MONO_COMMON_SNAPSHOTS_URL = JENKINS_URL + '/repo/debian/pool/main/m/mono-snapshot-common/'
