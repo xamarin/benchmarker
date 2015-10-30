@@ -56,17 +56,13 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(
             MasterShellCommand(
                 name="build_sgen_grep_binprot",
-                command=[
-                    'bash',
-                    Interpolate('%s/benchmarker/performancebot/utils/build-sgen-grep-binprot.sh' % MASTERWORKDIR),
-                    MONO_SGEN_GREP_BINPROT_GITREV,
-                    Interpolate(MASTERWORKDIR)
-                ]
+                command=['bash', '-c', Interpolate('bash %s/benchmarker/performancebot/utils/build-sgen-grep-binprot.sh %s `pwd`' % (MASTERWORKDIR, MONO_SGEN_GREP_BINPROT_GITREV)) ]
             )
         )
 
     def upload_sgen_grep_binprot(self):
-        self.addStep(FileDownload(Interpolate('%s/sgen-grep-binprot-%s' % (MASTERWORKDIR, MONO_SGEN_GREP_BINPROT_GITREV)), 'sgen-grep-binprot', workdir='benchmarker'))
+        self.addStep(FileDownload('sgen-grep-binprot-%s' % MONO_SGEN_GREP_BINPROT_GITREV, 'sgen-grep-binprot', workdir='benchmarker'))
+        self.addStep(ShellCommand(name='chmod', command=['chmod', 'a+x', 'sgen-grep-binprot'], workdir='benchmarker'))
 
     def benchmarker_on_master(self):
         step = MasterShellCommand(
