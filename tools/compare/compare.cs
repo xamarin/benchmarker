@@ -456,7 +456,7 @@ class Compare
 						continue;
 
 					if (elapsedMilliseconds != null) {
-						var run = new Result.Run { BinaryProtocolFilename = Path.Combine(workingDirectory, binaryProtocolFile) };
+						var run = new Result.Run { BinaryProtocolFilename = binaryProtocolFile == null ? null : Path.Combine(workingDirectory, binaryProtocolFile) };
 
 						if (valgrindMassif == null) {
 							run.RunMetrics.Add (new Result.RunMetric {
