@@ -56,7 +56,7 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(
             MasterShellCommand(
                 name="build_sgen_grep_binprot",
-                command=['bash', '-c', Interpolate('bash %s/benchmarker/performancebot/utils/build-sgen-grep-binprot.sh %s `pwd`' % (MASTERWORKDIR, MONO_SGEN_GREP_BINPROT_GITREV)) ]
+                command=['bash', '-c', Interpolate('bash %s/benchmarker/performancebot/utils/build-sgen-grep-binprot.sh %s `pwd`' % (MASTERWORKDIR, MONO_SGEN_GREP_BINPROT_GITREV))]
             )
         )
 
