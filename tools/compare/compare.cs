@@ -10,6 +10,7 @@ using Nito.AsyncEx;
 using Common.Logging;
 using Common.Logging.Simple;
 using Npgsql;
+using compare;
 
 class Compare
 {
@@ -34,7 +35,7 @@ class Compare
 		Console.Error.WriteLine ("        --create-run-set        just create a run set, don't run any benchmarks");
 		Console.Error.WriteLine ("        --pull-request-url URL  GitHub URL of a pull request to create the run set with");
 		Console.Error.WriteLine ("        --mono-repository DIR   Path of your local Mono repository (for pull requests)");
-		Console.Error.WriteLine ("        --run-set-id ID         the Parse ID of the run set to amend");
+		Console.Error.WriteLine ("        --run-set-id ID         the database ID of the run set to amend");
 		Console.Error.WriteLine ("        --build-url URL         the URL of the binary build");
 		Console.Error.WriteLine ("        --log-url URL           the URL where the log files will be accessible");
 		Console.Error.WriteLine ("        --root DIR              will be substituted for $ROOT in the config");
@@ -42,6 +43,11 @@ class Compare
 		Console.Error.WriteLine ("                                run the benchmark with Valgrind's Massif tool");
 		Console.Error.WriteLine ("                                  VALGRIND is the path to the valgrind binary");
 		Console.Error.WriteLine ("                                  FILE is the output filename");
+		Console.Error.WriteLine ("        --upload-pause-times BINPROT");
+		Console.Error.WriteLine ("                                Upload the pause times from the specified binary protocol file");
+		Console.Error.WriteLine ("        --sgen-grep-binprot PATH");
+		Console.Error.WriteLine ("                                Specify the path to the sgen-grep-binprot tool");
+		Console.Error.WriteLine ("        --run-id ID             the database ID of the run to upload to");
 
 		Environment.Exit (exitcode);
 		return exitcode;
@@ -186,6 +192,40 @@ class Compare
 		return Tuple.Create (SumArray (values, 0, values.Count), entries.Last ().Item1);
 	}
 
+	static bool UploadPauseTimes (NpgsqlConnection conn, string binprotFilePath, string grepBinprotPath, long runId) {
+		var grepString = Utils.RunForStdout (grepBinprotPath, null, "--pause-times", "--input", binprotFilePath);
+		if (grepString == null) {
+			Console.Error.WriteLine ("Error: sgen-grep-binprot failed.");
+			return false;
+		}
+		var times = new List<double> ();
+		foreach (var line in grepString.Split ('\n')) {
+			var fields = line.Split (' ', '\t');
+			if (fields.Count () < 6)
+				continue;
+			if (fields [0] != "pause-time")
+				continue;
+			var ticks = Int64.Parse (fields [4]);
+			var ms = (double)ticks / 10000.0;
+			times.Add (ms);
+		}
+
+		if (times.Count == 0) {
+			Console.Error.WriteLine ("Error: no pause times.");
+			return false;
+		}
+
+		Console.WriteLine ("Uploading pause times: {0}", string.Join (" ", times));
+
+		var metricRow = new PostgresRow ();
+		metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
+		metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "pause-times");
+		metricRow.Set ("resultArray", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Double, times.ToArray ());
+		PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
+
+		return true;
+	}
+
 	public static int Main (string[] args)
 	{
 		string[] benchmarkNames = null;
@@ -197,12 +237,15 @@ class Compare
 		string pullRequestURL = null;
 		string monoRepositoryPath = null;
 		long? runSetId = null;
+		long? runId = null;
 		string configFile = null;
 		string machineName = null;
 		bool justCreateRunSet = false;
 		bool justListBenchmarks = false;
 		string valgrindMassif = null;
 		string valgrindOutputFilename = null;
+		string grepBinprotPath = null;
+		string binprotFilePath = null;
 		Commit mainCommit = null;
 		List<Commit> secondaryCommits = new List<Commit> ();
 
@@ -251,6 +294,8 @@ class Compare
 				justCreateRunSet = true;
 			} else if (args [optindex] == "--run-set-id") {
 				runSetId = Int64.Parse (args [++optindex]);
+			} else if (args [optindex] == "--run-id") {
+				runId = Int64.Parse (args [++optindex]);
 			} else if (args [optindex] == "--root") {
 				rootFromCmdline = args [++optindex];
 			} else if (args [optindex] == "--main-product") {
@@ -273,8 +318,10 @@ class Compare
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
 				timeout = timeout <= 0 ? -1 : timeout;
-			// } else if (args [optindex] == "-p" || args [optindex] == "--pause-time") {
-			// 	pausetime = Boolean.Parse (args [++optindex]);
+			} else if (args [optindex] == "--sgen-grep-binprot") {
+				grepBinprotPath = args [++optindex];
+			} else if (args [optindex] == "--upload-pause-times") {
+				binprotFilePath = args [++optindex];
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -301,6 +348,11 @@ class Compare
 		if (args.Length - optindex != 0)
 			return UsageAndExit (null, 1);
 
+		if (binprotFilePath != null && (runId == null || grepBinprotPath == null)) {
+			Console.Error.WriteLine ("Error: --upload-pause-times also requires --run-id and --sgen-grep-binprot.");
+			Environment.Exit (1);
+		}
+
 		if (configFile == null)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
 
@@ -326,14 +378,19 @@ class Compare
 			Environment.Exit (0);
 		}
 
+		InitCommons ();
+
+		var dbConnection = PostgresInterface.Connect ();
+
+		if (binprotFilePath != null) {
+			var success = UploadPauseTimes (dbConnection, binprotFilePath, grepBinprotPath, runId.Value);
+			Environment.Exit (success ? 0 : 1);
+		}
+
 		if (mainCommit == null)
 			mainCommit = new Commit { Product = compare.Utils.LoadProductFromFile ("mono", productsDir) };
 
-		InitCommons ();
-
 		var gitHubClient = GitHubInterface.GitHubClient;
-
-		var dbConnection = PostgresInterface.Connect ();
 
 		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 

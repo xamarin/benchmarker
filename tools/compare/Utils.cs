@@ -15,8 +15,24 @@ namespace compare
 {
 	public class Utils
 	{
-		private Utils ()
+		public static string RunForStdout (string command, string workingDirectory, params string[] args)
 		{
+			var startInfo = new ProcessStartInfo (command);
+			startInfo.UseShellExecute = false;
+			startInfo.RedirectStandardOutput = true;
+			startInfo.WorkingDirectory = workingDirectory;
+			startInfo.Arguments = String.Join (" ", args);
+
+			using (var process = Process.Start (startInfo)) {
+				var stdout = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
+
+				process.WaitForExit ();
+
+				if (process.ExitCode != 0)
+					return null;
+
+				return stdout;
+			}
 		}
 
 		public static List<Benchmark> LoadAllBenchmarksFrom (string directory)

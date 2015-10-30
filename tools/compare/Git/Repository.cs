@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
+using System.Linq;
 
 namespace compare
 {
@@ -11,22 +12,8 @@ namespace compare
 
 		static string RunGit (string path, string command, params string[] args)
 		{
-			var startInfo = new ProcessStartInfo ("git");
-			startInfo.UseShellExecute = false;
-			startInfo.RedirectStandardOutput = true;
-			startInfo.WorkingDirectory = path;
-			startInfo.Arguments = command + " " + String.Join (" ", args);
-
-			using (var process = Process.Start (startInfo)) {
-				var stdout = Task.Run (() => new StreamReader (process.StandardOutput.BaseStream).ReadToEnd ()).Result;
-
-				process.WaitForExit ();
-
-				if (process.ExitCode != 0)
-					return null;
-
-				return stdout;
-			}
+			var allArgs = new string[] { command }.Concat (args).ToArray ();
+			return Utils.RunForStdout ("git", path, allArgs);
 		}
 
 		public Repository (string _path)
