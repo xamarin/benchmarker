@@ -12,22 +12,29 @@ import * as Database from './database.ts';
 import React = require ('react');
 import ReactDOM = require ('react-dom');
 
+interface SelectionNames {
+	machineName: string;
+	configName: string;
+	metric: string;
+}
+
 class Controller {
-	private initialSelectionNames: { machineName: string, configName: string, metric: string };
+	private initialSelectionNames: Array<SelectionNames>;
 	private initialZoom: boolean;
 	private runSetCounts: Array<Database.RunSetCount>;
 	private featuredTimelines: Array<Database.DBObject>;
 
 	constructor (machineName: string, configName: string, metric: string) {
 		if (machineName === undefined && configName === undefined && metric === undefined) {
-			machineName = 'benchmarker';
-			configName = 'auto-sgen-noturbo';
-			metric = 'time';
+			this.initialSelectionNames = [
+				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo', metric: 'time' },
+				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo-binary', metric: 'time' }
+			];
 			this.initialZoom = true;
 		} else {
+			this.initialSelectionNames = [ { machineName: machineName, configName: configName, metric: metric } ];
 			this.initialZoom = false;
 		}
-		this.initialSelectionNames = { machineName: machineName, configName: configName, metric: metric };
 	}
 
 	public loadAsync () : void {
@@ -55,66 +62,57 @@ class Controller {
 	}
 
 	private allDataLoaded () : void {
-		var selection: xp_common.MachineConfigSelection;
-		if (this.initialSelectionNames.machineName !== undefined &&
-				this.initialSelectionNames.configName !== undefined &&
-				this.initialSelectionNames.metric !== undefined &&
-				this.runSetCounts !== undefined) {
-			selection = Database.findRunSetCount (this.runSetCounts,
-				this.initialSelectionNames.machineName,
-				this.initialSelectionNames.configName,
-				this.initialSelectionNames.metric);
-		}
-		if (selection === undefined)
-			selection = { machine: undefined, config: undefined, metric: undefined };
+		let selection: Array<xp_common.MachineConfigSelection> = [];
+		this.initialSelectionNames.forEach ((isn: SelectionNames) => {
+			let s = Database.findRunSetCount (this.runSetCounts, isn.machineName, isn.configName, isn.metric);
+			selection.push (s);
+		});
 
 		ReactDOM.render (<Page
 					initialSelection={selection}
 					initialZoom={this.initialZoom}
 					runSetCounts={this.runSetCounts}
 					featuredTimelines={this.featuredTimelines}
-					onChange={(s: xp_common.MachineConfigSelection) => this.updateForSelection (s)} />,
+					onChange={(s: Array<xp_common.MachineConfigSelection>) => this.updateForSelection (s)} />,
 			document.getElementById ('timelinePage')
 		);
 
 		this.updateForSelection (selection);
 	}
 
-	private updateForSelection (selection: xp_common.MachineConfigSelection) : void {
-		var machine = selection.machine;
-		var config = selection.config;
-		var metric = selection.metric;
-		if (machine === undefined || config === undefined || metric === undefined)
+	private updateForSelection (selection: Array<xp_common.MachineConfigSelection>) : void {
+		if (selection.length < 1) {
 			return;
+		}
+		// FIXME: put all of them in the location
+		var machine = selection [0].machine;
+		var config = selection [0].config;
+		var metric = selection [0].metric;
 		xp_common.setLocationForDict ({ machine: machine.get ('name'), config: config.get ('name'), metric: metric });
 	}
 }
 
-type PageProps = {
-	initialSelection: xp_common.MachineConfigSelection;
+interface PageProps {
+	initialSelection: Array<xp_common.MachineConfigSelection>;
 	initialZoom: boolean;
-	onChange: (selection: xp_common.MachineConfigSelection) => void;
+	onChange: (selection: Array<xp_common.MachineConfigSelection>) => void;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
-};
+}
 
-type PageState = {
-	machine: Database.DBObject;
-	config: Database.DBObject;
-	metric: string;
+interface PageState {
+	selection: Array<xp_common.MachineConfigSelection>;
 	zoom: boolean;
-	runSetIndexes: Array<number>,
-	sortedResults: Array<Database.Summary>,
-	benchmarkNames: Array<string>
-};
+	runSetIndexes: Array<number>;
+	sortedResults: Array<Database.Summary>;
+	benchmarkNames: Array<string>;
+}
 
 class Page extends React.Component<PageProps, PageState> {
 	constructor (props: PageProps) {
 		super (props);
 		this.state = {
-			machine: this.props.initialSelection.machine,
-			config: this.props.initialSelection.config,
-			metric: this.props.initialSelection.metric,
+			selection: this.props.initialSelection,
 			zoom: this.props.initialZoom,
 			runSetIndexes: [],
 			sortedResults: [],
@@ -123,7 +121,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 
 	public componentWillMount () : void {
-		this.fetchSummaries (this.state);
+		this.fetchSummaries (this.state.selection);
 	}
 
 	private runSetSelected (runSet: Database.DBObject) : void {
@@ -136,36 +134,39 @@ class Page extends React.Component<PageProps, PageState> {
 		this.setState ({benchmarkNames: names} as any);
 	}
 
-	private fetchSummaries (selection: xp_common.MachineConfigSelection) : void {
-		var machine = selection.machine;
-		var config = selection.config;
-		var metric = selection.metric;
+	private fetchSummaries (selection: Array<xp_common.MachineConfigSelection>) : void {
+		let results: Array<Database.Summary> = [];
+		let numResults = 0;
+		selection.forEach ((s: xp_common.MachineConfigSelection, i: number) => {
+			Database.fetchSummaries (s.machine, s.config, s.metric,
+				(objs: Array<Database.Summary>) => {
+					if (this.state.selection !== selection) {
+						return;
+					}
 
-		if (machine === undefined || config === undefined || metric === undefined)
-			return;
+					results = results.concat (objs);
+					++numResults;
+					if (numResults < selection.length) {
+						return;
+					}
 
-		Database.fetchSummaries (machine, config, metric,
-			(objs: Array<Database.Summary>) => {
-				objs.sort ((a: Database.Summary, b: Database.Summary) => {
-					var aDate = a.runSet.commit.get ('commitDate');
-					var bDate = b.runSet.commit.get ('commitDate');
-					if (aDate.getTime () !== bDate.getTime ())
-						return aDate - bDate;
-					return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
+					results.sort ((a: Database.Summary, b: Database.Summary) => {
+						var aDate = a.runSet.commit.get ('commitDate');
+						var bDate = b.runSet.commit.get ('commitDate');
+						if (aDate.getTime () !== bDate.getTime ())
+							return aDate - bDate;
+						return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
+					});
+
+					this.setState ({sortedResults: results} as any);
+				}, (error: Object) => {
+					alert ("error loading summaries: " + error.toString ());
 				});
-
-				this.setState ({sortedResults: objs} as any);
-			}, (error: Object) => {
-				alert ("error loading summaries: " + error.toString ());
-			});
+		});
 	}
 
-	private selectionChanged (selection: xp_common.MachineConfigSelection) : void {
-		var machine = selection.machine;
-		var config = selection.config;
-		var metric = selection.metric;
-
-		this.setState ({machine: machine, config: config, metric: metric, runSetIndexes: [], sortedResults: [], benchmarkNames: [], zoom: false});
+	private selectionChanged (selection: Array<xp_common.MachineConfigSelection>) : void {
+		this.setState ({selection: selection, runSetIndexes: [], sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
 		this.props.onChange (selection);
 	}
@@ -173,17 +174,17 @@ class Page extends React.Component<PageProps, PageState> {
 	public render () : JSX.Element {
 		var chart;
 		var benchmarkChartList;
-		var selected = this.state.machine !== undefined && this.state.config !== undefined && this.state.metric !== undefined;
+		let firstSelection: xp_common.MachineConfigSelection = { machine: undefined, config: undefined, metric: undefined };
 
-		if (selected) {
+		if (this.state.selection.length !== 0) {
+			firstSelection = this.state.selection [0];
+
 			var zoomInterval;
 			if (this.state.zoom)
 				zoomInterval = { start: 6, end: this.state.sortedResults.length };
 			chart = <AllBenchmarksChart
 				graphName={'allBenchmarksChart'}
-				machine={this.state.machine}
-				config={this.state.config}
-				metric={this.state.metric}
+				metric={firstSelection.metric}
 				sortedResults={this.state.sortedResults}
 				zoomInterval={zoomInterval}
 				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
@@ -191,9 +192,7 @@ class Page extends React.Component<PageProps, PageState> {
 				/>;
 			benchmarkChartList = <BenchmarkChartList
 				benchmarkNames={this.state.benchmarkNames}
-				machine={this.state.machine}
-				config={this.state.config}
-				metric={this.state.metric}
+				metric={firstSelection.metric}
 				sortedResults={this.state.sortedResults}
 				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
 				/>;
@@ -210,7 +209,7 @@ class Page extends React.Component<PageProps, PageState> {
 				runSetLabels={undefined}
 				graphName="comparisonChart"
 				runSets={runSets}
-				metric={this.state.metric} />;
+				metric={firstSelection.metric} />;
 		}
 
 		var runSetSummaries;
@@ -224,6 +223,8 @@ class Page extends React.Component<PageProps, PageState> {
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
 
+		// FIXME: we need the descriptions for all machines and configs!
+
 		return <div className="TimelinePage">
 			<xp_common.Navigation
 				currentPage="timeline"
@@ -235,16 +236,14 @@ class Page extends React.Component<PageProps, PageState> {
 							includeMetric={true}
 							runSetCounts={this.props.runSetCounts}
 							featuredTimelines={this.props.featuredTimelines}
-							machine={this.state.machine}
-							config={this.state.config}
-							metric={this.state.metric}
-							onChange={(s: xp_common.MachineConfigSelection) => this.selectionChanged (s)}
+							selection={this.state.selection}
+							onChange={(s: Array<xp_common.MachineConfigSelection>) => this.selectionChanged (s)}
 							showControls={false} />
 						<xp_common.MachineDescription
-							machine={this.state.machine}
+							machine={firstSelection.machine}
 							omitHeader={true} />
 						<xp_common.ConfigDescription
-							config={this.state.config}
+							config={firstSelection.config}
 							omitHeader={true} />
 					</div>
 				</div>
@@ -331,8 +330,6 @@ function runSetIsBroken (runSet: Database.DBObject, averages: Database.Benchmark
 
 interface TimelineChartProps {
 	graphName: string;
-	machine: Database.DBObject;
-	config: Database.DBObject;
 	metric: string;
 	sortedResults: Array<Database.Summary>;
 	zoomInterval: {start: number, end: number};
@@ -352,10 +349,7 @@ abstract class TimelineChart<Props extends TimelineChartProps> extends React.Com
 	}
 
 	public componentWillReceiveProps (nextProps: Props) : void {
-		if (this.props.machine === nextProps.machine &&
-				this.props.config === nextProps.config &&
-				this.props.metric === nextProps.metric &&
-				this.props.sortedResults === nextProps.sortedResults) {
+		if (this.props.sortedResults === nextProps.sortedResults) {
 			return;
 		}
 		this.invalidateState (nextProps);
@@ -568,8 +562,6 @@ class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
 }
 
 type BenchmarkChartListProps = {
-	machine: Database.DBObject;
-	config: Database.DBObject;
 	metric: string;
 	benchmarkNames: Array<string>;
 	sortedResults: Array<Database.Summary>;
@@ -603,8 +595,6 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 					zoomInterval={undefined}
 					graphName={key}
 					sortedResults={this.props.sortedResults}
-					machine={this.props.machine}
-					config={this.props.config}
 					metric={this.props.metric}
 					benchmark={name}
 					runSetSelected={this.props.runSetSelected}

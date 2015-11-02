@@ -149,6 +149,23 @@ export function intersperse<T> (element: T, array: Array<T>) : Array<T> {
     return result;
 }
 
+export function sum (arr: Array<number>) : number {
+    let s = 0;
+    arr.forEach ((x: number) => s += x);
+    return s;
+}
+
+// http://stackoverflow.com/questions/11345296/partitioning-in-javascript
+export function partition<T> (input: Array<T>, spacing: number) : Array<Array<T>> {
+    var output: Array<Array<T>> = [];
+
+    for (var i = 0; i < input.length; i += spacing) {
+        output [output.length] = input.slice (i, i + spacing);
+    }
+
+    return output;
+}
+
 /* tslint:disable: triple-equals forin */
 
 // http://stackoverflow.com/questions/1068834/object-comparison-in-javascript

@@ -110,14 +110,13 @@ type ConfigSelectorProps = {
 	includeMetric: boolean;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
-	machine: Database.DBObject;
-	config: Database.DBObject;
-	metric: string;
+	selection: Array<MachineConfigSelection>;
 	showControls: boolean;
-	onChange: (selection: MachineConfigSelection) => void;
+	onChange: (selection: Array<MachineConfigSelection>) => void;
 };
 
-interface RunSetCountWithDisplayString extends Database.RunSetCount {
+interface CombinedConfigEntry {
+	runSetCounts: Array<Database.RunSetCount>;
 	displayString?: string;
 }
 
@@ -136,54 +135,64 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 			return s;
 		};
 
-		var valueStringForSelection = (selection: MachineConfigSelection) => {
+		const valueStringForSingleSelection = (selection: MachineConfigSelection) => {
+			if (selection.machine === undefined || selection.config === undefined) {
+				console.log ("what is this?", selection);
+				throw "BLA";
+			}
 			var s = selection.machine.get ('name') + '+' + selection.config.get ('name');
 			if (this.props.includeMetric)
 				s = s + '+' + selection.metric;
 			return s;
 		};
 
-		var histogram = xp_utils.sortArrayLexicographicallyBy (
+		const valueStringForSelection = (selection: Array<MachineConfigSelection>) => {
+			if (selection.length === 0) {
+				return undefined;
+			}
+			return selection.map (valueStringForSingleSelection).join ('+');
+		};
+
+		var sortedRunSetCounts = xp_utils.sortArrayLexicographicallyBy (
 			this.runSetCounts (),
 			(r: Database.RunSetCount) => userStringForRSC (r).toLowerCase ());
 
 		type MachinesMap = { [name: string]: Array<Database.RunSetCount> };
 		var machines: MachinesMap = {};
-		var featuredRSCs: Array<RunSetCountWithDisplayString> = [];
-		for (var i = 0; i < histogram.length; ++i) {
-			var rsc = histogram [i];
-			var machineName = rsc.machine.get ('name');
-
-			if (this.props.featuredTimelines !== undefined) {
-				var configName = rsc.config.get ('name');
-				var index = xp_utils.findIndex (this.props.featuredTimelines, (ftl: Database.DBObject) => {
-					return ftl.get ('machine') === machineName && ftl.get ('config') === configName && ftl.get ('metric') === rsc.metric;
-				});
-				if (index >= 0) {
-					featuredRSCs [index] = {
-						machine: rsc.machine,
-						config: rsc.config,
-						metric: rsc.metric,
-						ids: [], // just for typechecking purposes
-						displayString: this.props.featuredTimelines [index].get ('name'),
-						count: rsc.count
-					};
-				}
-			}
-
+		for (var i = 0; i < sortedRunSetCounts.length; ++i) {
+			const rsc = sortedRunSetCounts [i];
+			const machineName = rsc.machine.get ('name');
 			machines [machineName] = machines [machineName] || [];
 			machines [machineName].push (rsc);
 		}
 
-		const renderRSC = (entry: RunSetCountWithDisplayString) => {
-			var string = valueStringForSelection (entry);
+		const featuredRSCs: Array<CombinedConfigEntry> = [];
+
+		if (this.props.featuredTimelines !== undefined) {
+			const ftlNames = xp_utils.uniqStringArray (this.props.featuredTimelines.map ((ftl: Database.DBObject) => ftl.get ('name')));
+			ftlNames.sort ();
+			ftlNames.forEach ((name: string) => {
+				const ftls = this.props.featuredTimelines.filter ((ftl: Database.DBObject) => ftl.get ('name') === name);
+				const rscs = ftls.map ((ftl: Database.DBObject) => {
+					const machine = ftl.get ('machine');
+					const config = ftl.get ('config');
+					const metric = ftl.get ('metric');
+					return Database.findRunSetCount (sortedRunSetCounts, machine, config, metric);
+				});
+				featuredRSCs.push ({ runSetCounts: rscs, displayString: name });
+			});
+		}
+
+		const renderEntry = (entry: CombinedConfigEntry) => {
+			const string = valueStringForSelection (entry.runSetCounts);
 			let displayString = entry.displayString;
 			if (displayString === undefined) {
-				displayString = entry.config.get ('name');
+				displayString = entry.runSetCounts [0].config.get ('name');
 				if (this.props.includeMetric)
-					displayString = displayString + " / " + entry.metric;
+					displayString = displayString + " / " + entry.runSetCounts [0].metric;
 			}
-			displayString = displayString + " (" + entry.count + ")";
+			const count = xp_utils.sum (entry.runSetCounts.map ((rsc: Database.RunSetCount) => rsc.count));
+			displayString = displayString + " (" + count + ")";
 			return <option
 				value={string}
 				key={string}>
@@ -196,16 +205,11 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				machinesMap [name],
 				(x: Database.RunSetCount) => -x.count);
 			return <optgroup key={"group" + name} label={name}>
-				{sorted.map (renderRSC)}
+				{sorted.map ((rsc: Database.RunSetCount) => renderEntry ({ runSetCounts: [rsc] }))}
 			</optgroup>;
 		};
 
-		var selectedValue;
-		if (!(this.props.machine === undefined ||
-				this.props.config === undefined ||
-				(this.props.includeMetric && this.props.metric === undefined))) {
-			selectedValue = valueStringForSelection (this.props);
-		}
+		const selectedValue = valueStringForSelection (this.props.selection);
 		var aboutConfig = undefined;
 		var aboutMachine = undefined;
 		if (this.props.showControls) {
@@ -215,7 +219,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		let featuredTimelinesElement: JSX.Element;
 		if (this.props.featuredTimelines !== undefined) {
 			featuredTimelinesElement = <optgroup label="Featured">
-				{featuredRSCs.map (renderRSC)}
+				{featuredRSCs.map (renderEntry)}
 			</optgroup>;
 		}
 		return <div className="CombinedConfigSelector">
@@ -230,26 +234,23 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 	}
 
 	private openConfigDescription () : void {
-		if (this.props.config === undefined)
+		if (this.props.selection.length < 1)
 			return;
-		window.open ('config.html#name=' + this.props.config.get ('name'));
+		window.open ('config.html#name=' + this.props.selection [0].config.get ('name'));
 	}
 
 	private openMachineDescription () : void {
-		if (this.props.machine === undefined)
+		if (this.props.selection.length < 1)
 			return;
-		window.open ('machine.html#name=' + this.props.machine.get ('name'));
+		window.open ('machine.html#name=' + this.props.selection [0].machine.get ('name'));
 	}
 
 	private combinationSelected (event: React.FormEvent) : void {
-		var target: any = event.target;
-		var names = target.value.split ('+');
-		var rsc = Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]);
-		if (rsc !== undefined) {
-			this.props.onChange (rsc);
-		} else {
-			console.log ("Couldn't find run set count.");
-		}
+		const target: any = event.target;
+		const partitions = xp_utils.partition (target.value.split ('+'), 3);
+		const rscs = partitions.map ((names: Array<string>) =>
+			Database.findRunSetCount (this.runSetCounts (), names [0], names [1], names [2]));
+		this.props.onChange (rscs);
 	}
 }
 
@@ -319,8 +320,12 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
 	}
 
-	private configSelected (selection: MachineConfigSelection) : void {
-		this.props.onChange ({machine: selection.machine, config: selection.config, runSet: undefined});
+	private configsSelected (selection: Array<MachineConfigSelection>) : void {
+		if (selection.length !== 1) {
+			console.log ("Error: more than one config selected in RunSetSelector");
+			return;
+		}
+		this.props.onChange ({machine: selection [0].machine, config: selection [0].config, runSet: undefined});
 	}
 
 	public render () : JSX.Element {
@@ -345,15 +350,16 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			</option>;
 		};
 
+		const machineConfigSelections = (machine !== undefined && config !== undefined)
+			? [{ machine: selection.machine, config: selection.config, metric: undefined}]
+			: [];
 		var configSelector =
 			<CombinedConfigSelector
 				featuredTimelines={undefined}
-				metric={undefined}
+				selection={ machineConfigSelections }
 				includeMetric={false}
 				runSetCounts={this.props.runSetCounts}
-				machine={selection.machine}
-				config={selection.config}
-				onChange={(s: MachineConfigSelection) => this.configSelected (s)}
+				onChange={(s: Array<MachineConfigSelection>) => this.configsSelected (s)}
 				showControls={true} />;
 		var runSetsSelect = undefined;
 		if (runSets === undefined && machine !== undefined && config !== undefined) {
