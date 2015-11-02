@@ -1,6 +1,6 @@
 {
-  "Name": "eventstore",
-  "TestDirectory": "Eventstore",
+  "Name": "eventstore2",
+  "TestDirectory": "Eventstore2",
   "CommandLine": ["EventStore.ClusterNode.exe --force --mem-db"],
   "ClientCommandLine": ["EventStore.TestClient.exe --force --command 'wrfl 10 500000'"]
 }
