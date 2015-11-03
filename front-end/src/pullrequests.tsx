@@ -9,6 +9,7 @@ import * as xp_common from './common.tsx';
 import * as xp_utils from './utils.ts';
 import * as Database from './database.ts';
 import React = require ('react');
+import ReactDOM = require ('react-dom');
 
 class Controller {
 	private pullRequests: Array<Object>;
@@ -40,14 +41,8 @@ class Controller {
 	}
 
 	private allDataLoaded () : void {
-		console.log (this.pullRequests);
-		React.render (
-			React.createElement (
-				Page,
-				{
-					pullRequests: this.pullRequests
-				}
-			),
+		ReactDOM.render (
+			<Page pullRequests={this.pullRequests} />,
 			document.getElementById ('pullRequestsPage')
 		);
 	}
@@ -86,7 +81,6 @@ class Page extends React.Component<PageProps, PageState> {
 				}
 			}
 			var title = info === undefined ? <span>Loading&hellip;</span> : info.title;
-			console.log (pullRequest);
 			var crashed = xp_utils.intersperse (
 				', ',
 				pullRequest ['blrs_crashedbenchmarks']
