@@ -102,12 +102,20 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(step)
 
     def cleanup_master_workdir(self):
-        step = MasterShellCommand(
-            name="cleanup_master_workdir",
-            command=['bash', '-x', '-c', Interpolate('rm -rf %s' % MASTERWORKDIR)],
-            alwaysRun=True
+        self.addStep(
+            MasterShellCommand(
+                name="cleanup_master_workdir",
+                command=['bash', '-x', '-c', Interpolate('rm -rf %s' % MASTERWORKDIR)],
+                alwaysRun=True
+            )
         )
-        self.addStep(step)
+        self.addStep(
+            MasterShellCommand(
+                name="cleanup_nuget_tmp",
+                command=['rm', '-rf', '/tmp/nuget'],
+                alwaysRun=True
+            )
+        )
 
     def export_benchmark_list(self, machine):
         step = MasterShellCommand(
