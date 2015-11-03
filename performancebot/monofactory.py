@@ -7,13 +7,10 @@ from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME
-from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, ParsingShellCommand, GrabBinaryLogFilesStep
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME, MASTERWORKDIR
+from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, ParsingShellCommand, GrabBinaryLogFilesStep, ProcessBinaryProtocolFiles
 
 import re
-
-MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
-
 
 class ExpandingStep(object):
     def __init__(self, closure):
@@ -148,8 +145,6 @@ class DebianMonoBuildFactory(BuildFactory):
 
         self.addStep(ShellCommand(name='md5', command=['md5sum', 'benchmarker.tar.gz'], workdir='.'))
         self.addStep(ShellCommand(name='unpack_benchmarker', command=['tar', 'xf', 'benchmarker.tar.gz'], workdir='.'))
-        self.addStep(ShellCommand(name='debug2', command=['ls', '-lha', 'benchmarker'], workdir='.'))
-        self.addStep(MasterShellCommand(name="cleanup", command=['rm', '-rf', Interpolate(MASTERWORKDIR)]))
 
     def upload_credentials(self):
         self.addStep(FileDownload('benchmarkerCredentials', 'benchmarkerCredentials', workdir='benchmarker'))
@@ -375,6 +370,7 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
 
     if grab_binary_files:
         steps.append(GrabBinaryLogFilesStep(name="binlogs " + benchmark_name, description="binlogs " + benchmark_name))
+        steps.append(ProcessBinaryProtocolFiles(name="parse " + benchmark_name, description="parse " + benchmark_name, command=['echo', 'dummy'], flunkOnFailure=True))
 
     return steps
 

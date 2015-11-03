@@ -1,14 +1,16 @@
+from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.shell import ShellCommand
 from buildbot.process.buildstep import LoggingBuildStep
 from buildbot.status.builder import SUCCESS
 
 from twisted.python import log
 
-from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, BUILDBOT_URL, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_COMPARE_JSON
+from constants import PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_MONOVERSION, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_JENKINSGITCOMMIT, BUILDBOT_URL, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_COMPARE_JSON, PROPERTYNAME_BINARY_PROTOCOL_FILES, PROPERTYNAME_RUNIDS, MONO_SGEN_GREP_BINPROT_FILENAME
 
 import json
 import requests
 import os
+import tempfile
 
 
 class ParsingShellCommand(ShellCommand):
@@ -95,13 +97,45 @@ class GrabBinaryLogFilesStep(ShellCommand):
             self.setCommand(['echo', 'nothing todo'])
         else:
             j = json.loads(match)
+
+            run_ids = [i['id'] for i in j['runs']]
+            self.setProperty(PROPERTYNAME_RUNIDS, run_ids)
+
             bin_files = [i['binaryProtocolFile'].encode('ascii', 'ignore') for i in j['runs']]
             for bin_file in bin_files:
                 self.addLogFile(os.path.basename(bin_file), bin_file)
                 cmd_touch.append(bin_file)
-            self.setProperty(PROPERTYNAME_COMPARE_JSON, None)
+
             self.setCommand(['bash', '-c', "sleep 1; " + " ".join(cmd_touch) + "; sleep 1"])
+
+        self.setProperty(PROPERTYNAME_COMPARE_JSON, None)
         ShellCommand.start(self)
+        self.setProperty(PROPERTYNAME_BINARY_PROTOCOL_FILES, self._step_status.getLogs())
+
+
+class ProcessBinaryProtocolFiles(MasterShellCommand):
+    def __init__(self, *args, **kwargs):
+        MasterShellCommand.__init__(self, *args, **kwargs)
+
+    def start(self):
+        log_temp_paths = self.getProperty(PROPERTYNAME_BINARY_PROTOCOL_FILES, [])
+        runids = self.getProperty(PROPERTYNAME_RUNIDS, [])
+
+        logs_full_path = []
+        # don't use direct file handle, but let buildbot unchunk it for us.
+        for log_file in log_temp_paths:
+            if 'binprot' not in log_file.getFilename():
+                continue
+            with tempfile.NamedTemporaryFile('wb', delete=False) as f:
+                f.write(log_file.getText())
+                logs_full_path.append(f.name)
+
+        logs_full_path.sort()
+
+        masterworkdir = 'tmp/' + str(self.getProperty('buildername')) + '/' + str(self.getProperty('buildnumber'))
+        compare_cmd = lambda logfile, runid: 'mono ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + '; rm -rf ' + logfile + '; '
+        self.command = ['bash', '-x', '-c', "".join([compare_cmd(log_full_path, runid) for (log_full_path, runid) in zip(logs_full_path, runids)])]
+        MasterShellCommand.start(self)
 
 
 class GithubWritePullrequestComment(LoggingBuildStep):

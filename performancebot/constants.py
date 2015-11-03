@@ -2,6 +2,7 @@ BENCHMARKER_BRANCH = 'master'
 
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
+PROPERTYNAME_RUNIDS = 'parse_runids'
 PROPERTYNAME_PULLREQUESTID = 'parse_pullrequestid'
 PROPERTYNAME_COMPARE_JSON = 'compare_json_result'
 
@@ -13,6 +14,8 @@ PROPERTYNAME_JENKINSGITCOMMIT = 'jenkins-gitCommit'
 PROPERTYNAME_JENKINSGITHUBPULLREQUEST = 'jenkins-pullrequestid'
 
 PROPERTYNAME_BOSTONNAS_PKGURL = 'bostonnas-package-url'
+
+PROPERTYNAME_BINARY_PROTOCOL_FILES = 'binary-protocol-files'
 
 FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 
@@ -27,6 +30,8 @@ MONO_SOURCETARBALL_URL = JENKINS_URL + '/job/build-source-tarball-mono/'
 
 MONO_PULLREQUEST_BASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono-pullrequest'
 MONO_SOURCETARBALL_PULLREQUEST_URL = JENKINS_URL + '/job/build-source-tarball-mono-pullrequest/'
+
+MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
 
 BUILDBOT_URL = 'https://performancebot.mono-project.com'
 
