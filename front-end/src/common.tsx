@@ -404,12 +404,13 @@ type RunSetDescriptionProps = {
 type RunSetDescriptionState = {
 	results: Array<Object>;
 	secondaryCommits: Array<Object>;
+	commitInfo: Object;
 };
 
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = { results: undefined, secondaryCommits: undefined };
+		this.state = { results: undefined, secondaryCommits: undefined, commitInfo: undefined };
 		this.fetchResults (props.runSet);
 	}
 
@@ -433,10 +434,15 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					alert ("error loading commits: " + error.toString ());
 				});
 		}
+
+		getCommitInfo (runSet.get ('commit'), (info: Object) => {
+			this.setState ({ commitInfo: info } as any);
+			console.log (info);
+		});
 	}
 
 	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
-		this.setState ({ results: undefined, secondaryCommits: undefined });
+		this.setState ({ results: undefined, secondaryCommits: undefined, commitInfo: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
@@ -575,14 +581,24 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			}
 		}
 
-		var commitHash = runSet.get ('commit');
-		var product = runSet.commit ? runSet.commit.get ('product') : 'mono';
-		var commitLink = githubCommitLink (product, commitHash);
+		const product = runSet.commit ? runSet.commit.get ('product') : 'mono';
+		const commitHash = runSet.get ('commit');
+		const commitLink = githubCommitLink (product, commitHash);
+		let commitName = undefined;
+		let commitInfo: JSX.Element = undefined;
 
-		const commitElement = <a href={commitLink}>{commitHash.substring (0, 10)}</a>;
+		if (this.state.commitInfo !== undefined) {
+			commitName = this.state.commitInfo ['message'];
+			commitInfo = <p>Authored by {this.state.commitInfo ['author']['name']}.</p>;
+		} else {
+			commitName = commitHash.substring (0, 10);
+		}
+
+		const commitElement = <a href={commitLink}>{commitName}</a>;
 		const compareElement = <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>;
 		return <div className="Description">
 			<h1 key="commit">{commitElement} ({buildLink}, {compareElement})</h1>
+			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
 			{crashedElem}
@@ -743,17 +759,30 @@ export function pullRequestIdFromUrl (url: string) : number {
 	return Number (match [1]);
 }
 
-export function getPullRequestInfo (url: string, success: (info: Object) => void) : void {
-	var id = pullRequestIdFromUrl (url);
-	if (id === undefined)
-		return;
-	var github = new GitHub ({
+function getMonoRepo () : Repo {
+	const github = new GitHub ({
 		// HACK: A read-only access token to allow higher rate limits.
 		token: '319339f37f8f19b7b5ba92ebfcbdb965871440e0',
 		auth: 'oauth'
 	});
-	var repo = github.getRepo ("mono", "mono");
+	return github.getRepo ("mono", "mono");
+}
+
+export function getPullRequestInfo (url: string, success: (info: Object) => void) : void {
+	const id = pullRequestIdFromUrl (url);
+	if (id === undefined)
+		return;
+	const repo = getMonoRepo ();
 	repo.getPull (id, (err: Object, info: Object) => {
+		if (info) {
+			success (info);
+		}
+	});
+}
+
+function getCommitInfo (hash: string, success: (info: Object) => void) : void {
+	const repo = getMonoRepo ();
+	repo.getCommit (undefined, hash, (err: Object, info: Object) => {
 		if (info) {
 			success (info);
 		}
