@@ -93,7 +93,7 @@ class GrabBinaryLogFilesStep(ShellCommand):
     def start(self):
         cmd_touch = ['touch']
         match = self.getProperty(PROPERTYNAME_COMPARE_JSON, "")
-        if match == "":
+        if match == "" or match is None:
             self.setCommand(['echo', 'nothing todo'])
         else:
             j = json.loads(match)
