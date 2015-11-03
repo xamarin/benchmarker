@@ -100,16 +100,22 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 
 	public render () : JSX.Element {
-		var detail;
-		if (this.state.selection.runSet === undefined) {
+		let detail: JSX.Element;
+		const runSet = this.state.selection.runSet;
+		let runSetIds: Array<number> = undefined;
+		if (runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
 		} else {
-			detail = <xp_common.RunSetDescription runSet={this.state.selection.runSet} />;
+			detail = <xp_common.RunSetDescription
+				runSet={runSet} />;
+			runSetIds = [runSet.get ('id')];
 		}
 
 		return <div className="RunSetPage">
 			<header>
-				<xp_common.Navigation currentPage="" />
+				<xp_common.Navigation
+					comparisonRunSetIds={runSetIds}
+					currentPage="" />
 			</header>
 			<article>
 				<div className="panel">

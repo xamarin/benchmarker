@@ -595,9 +595,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		}
 
 		const commitElement = <a href={commitLink}>{commitName}</a>;
-		const compareElement = <a href={'compare.html#ids=' + runSet.get ('id')}>compare</a>;
 		return <div className="Description">
-			<h1 key="commit">{commitElement} ({buildLink}, {compareElement})</h1>
+			<h1 key="commit">{commitElement} ({buildLink})</h1>
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
