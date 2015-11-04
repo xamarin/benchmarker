@@ -121,6 +121,9 @@ class ProcessBinaryProtocolFiles(MasterShellCommand):
         log_temp_paths = self.getProperty(PROPERTYNAME_BINARY_PROTOCOL_FILES, [])
         runids = self.getProperty(PROPERTYNAME_RUNIDS, [])
 
+        self.setProperty(PROPERTYNAME_BINARY_PROTOCOL_FILES, None)
+        self.setProperty(PROPERTYNAME_RUNIDS, None)
+
         logs_full_path = []
         # don't use direct file handle, but let buildbot unchunk it for us.
         for log_file in log_temp_paths:
