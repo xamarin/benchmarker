@@ -338,7 +338,7 @@ class Compare
 		var configFileFromCommandLine = configFile != null;
 		if (!configFileFromCommandLine)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
-		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline, !justListBenchmarks);
+		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline, !(justListBenchmarks || binprotFilePath != null));
 
 		if (justCreateRunSet && runSetId != null) {
 			Console.Error.WriteLine ("Error: --create-run-set and --run-set-id are incompatible.");
