@@ -31,7 +31,10 @@ namespace Benchmarker.Models
 			public enum MetricType {
 				Time,
 				MemoryIntegral,
-				Instructions
+				Instructions,
+				CacheMissRate,
+				BranchMispredictionRate,
+				CachegrindResults
 			};
 
 			public MetricType Metric { get; set; }
@@ -46,6 +49,12 @@ namespace Benchmarker.Models
 						return "memory-integral";
 					case MetricType.Instructions:
 						return "instructions";
+					case MetricType.CacheMissRate:
+						return "cache-miss";
+					case MetricType.BranchMispredictionRate:
+						return "branch-mispred";
+					case MetricType.CachegrindResults:
+						return "cachegrind";
 					default:
 						throw new Exception ("unknown metric type");
 					}
@@ -58,6 +67,8 @@ namespace Benchmarker.Models
 					case MetricType.Time:
 						return ((TimeSpan)Value).TotalMilliseconds;
 					case MetricType.MemoryIntegral:
+					case MetricType.CacheMissRate:
+					case MetricType.BranchMispredictionRate:
 						return (double)Value;
 					case MetricType.Instructions:
 						return (double)(long)Value;
@@ -92,7 +103,10 @@ namespace Benchmarker.Models
 					var metricRow = new PostgresRow ();
 					metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
 					metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, runMetric.MetricName);
-					metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, runMetric.PostgresValue);
+					if (runMetric.Metric == RunMetric.MetricType.CachegrindResults)
+						metricRow.Set ("resultArray", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Double, (double[])runMetric.Value);
+					else
+						metricRow.Set ("result", NpgsqlTypes.NpgsqlDbType.Double, runMetric.PostgresValue);
 					PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
 				}
 			}

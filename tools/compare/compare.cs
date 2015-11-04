@@ -43,6 +43,10 @@ class Compare
 		Console.Error.WriteLine ("                                run the benchmark with Valgrind's Massif tool");
 		Console.Error.WriteLine ("                                  VALGRIND is the path to the valgrind binary");
 		Console.Error.WriteLine ("                                  FILE is the output filename");
+		Console.Error.WriteLine ("        --valgrind-cachegrind VALGRIND FILE");
+		Console.Error.WriteLine ("                                run the benchmark with Valgrind's Cachegrind tool");
+		Console.Error.WriteLine ("                                  VALGRIND is the path to the valgrind binary");
+		Console.Error.WriteLine ("                                  FILE is the output filename");
 		Console.Error.WriteLine ("        --upload-pause-times BINPROT");
 		Console.Error.WriteLine ("                                Upload the pause times from the specified binary protocol file");
 		Console.Error.WriteLine ("        --sgen-grep-binprot PATH");
@@ -192,6 +196,56 @@ class Compare
 		return Tuple.Create (SumArray (values, 0, values.Count), entries.Last ().Item1);
 	}
 
+	const double L1Hit = 1;
+	const double LlHit = 10;
+	const double LlMiss = 100;
+
+	// returns all items from summary, weighted cache miss rate, branch misprediction rate
+	static Tuple<double[], double, double> CacheAndBranches (string cachegrindFilename) {
+		var summaryRegexp = new Regex ("^summary:((\\s+\\d+)+)");
+		var lines = File.ReadLines (cachegrindFilename);
+		foreach (var line in lines) {
+			var match = summaryRegexp.Match (line);
+			if (!match.Success)
+				continue;
+			var values = match.Groups [1].Value.Split (' ', '\t').Skip (1).Select (s => (double)Int64.Parse (s)).ToArray ();
+			// values are:
+			// i refs, i1 misses, lli misses, d refs rd, d1 misses rd, lld misses rs, d refs wr, d1 misses wr, lld misses wr, branches cond, mispred cond, branches ind, mispred ind
+			if (values.Length != 13)
+				throw new Exception ("Cachegrind summary must contain 13 entries");
+			
+			var iRefs = values [0];
+			var i1Misses = values [1];
+			var iLlMisses = values [2];
+
+			var i1Hits = iRefs - i1Misses;
+			var iLlHits = i1Misses - iLlMisses;
+
+			var iMissTime = iLlHits * LlHit + iLlMisses * LlMiss;
+			var iTotalTime = i1Hits * L1Hit + iMissTime;
+
+			var dRefs = values [3] + values [6];
+			var d1Misses = values [4] + values [7];
+			var dLlMisses = values [5] + values [8];
+
+			var d1Hits = dRefs - d1Misses;
+			var dLlHits = d1Misses - dLlMisses;
+
+			var dMissTime = dLlHits * LlHit + dLlMisses * LlMiss;
+			var dTotalTime = d1Hits * L1Hit + dMissTime;
+
+			var cacheMissRate = (iMissTime + dMissTime) / (iTotalTime + dTotalTime);
+
+			var totalBranches = values [9] + values [11];
+			var missedBranches = values [10] + values [12];
+
+			var branchMissRate = missedBranches / totalBranches;
+
+			return Tuple.Create (values, cacheMissRate, branchMissRate);
+		}
+		throw new Exception ("No summary line found in Cachegrind output file.");
+	}
+
 	static bool UploadPauseTimes (NpgsqlConnection conn, string binprotFilePath, string grepBinprotPath, long runId) {
 		var grepString = Utils.RunForStdout (grepBinprotPath, null, "--pause-times", "--input", binprotFilePath);
 		if (grepString == null) {
@@ -226,6 +280,11 @@ class Compare
 		return true;
 	}
 
+	enum ValgrindTool {
+		Massif,
+		Cachegrind
+	};
+
 	public static int Main (string[] args)
 	{
 		IEnumerable<string> benchmarkNames = null;
@@ -242,7 +301,8 @@ class Compare
 		string machineName = null;
 		bool justCreateRunSet = false;
 		bool justListBenchmarks = false;
-		string valgrindMassif = null;
+		string valgrindBinary = null;
+		ValgrindTool? valgrindTool = null;
 		string valgrindOutputFilename = null;
 		string grepBinprotPath = null;
 		string binprotFilePath = null;
@@ -313,8 +373,21 @@ class Compare
 				var product = compare.Utils.LoadProductFromFile (name, productsDir);
 				secondaryCommits.Add (new Commit { Product = product, Hash = hash });
 			} else if (args [optindex] == "--valgrind-massif") {
-				valgrindMassif = args [++optindex];
+				if (valgrindBinary != null) {
+					Console.Error.WriteLine ("Error: More than one Valgrind option given.");
+					UsageAndExit ();
+				}
+				valgrindBinary = args [++optindex];
 				valgrindOutputFilename = args [++optindex];
+				valgrindTool = ValgrindTool.Massif;
+			} else if (args [optindex] == "--valgrind-cachegrind") {
+				if (valgrindBinary != null) {
+					Console.Error.WriteLine ("Error: More than one Valgrind option given.");
+					UsageAndExit ();
+				}
+				valgrindBinary = args [++optindex];
+				valgrindOutputFilename = args [++optindex];
+				valgrindTool = ValgrindTool.Cachegrind;
 			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
 				timeout = Int32.Parse (args [++optindex]);
 				timeout = timeout <= 0 ? -1 : timeout;
@@ -473,8 +546,22 @@ class Compare
 		if (!justCreateRunSet) {
 			var someSuccess = false;
 
-			var runTool = valgrindMassif;
-			var runToolArguments = valgrindMassif != null ? string.Format ("--tool=massif --massif-out-file={0} --max-snapshots=1000 --detailed-freq=100 --pages-as-heap=yes", valgrindOutputFilename) : null;
+			var runTool = valgrindBinary;
+			string runToolArguments = null;
+			if (runTool != null) {
+				switch (valgrindTool) {
+				case ValgrindTool.Massif:
+					runToolArguments = string.Format ("--tool=massif --massif-out-file={0} --max-snapshots=1000 --detailed-freq=100 --pages-as-heap=yes", valgrindOutputFilename);
+					break;
+				case ValgrindTool.Cachegrind:
+					runToolArguments = string.Format ("--tool=cachegrind --cachegrind-out-file={0} --cache-sim=yes --branch-sim=yes", valgrindOutputFilename);
+					break;
+				default:
+					Console.Error.WriteLine ("Error: Unsupported Valgrind tool.");
+					Environment.Exit (1);
+					break;
+				}
+			}
 
 			int binaryProtocolIndex = 0;
 
@@ -496,12 +583,12 @@ class Compare
 				var haveTimedOut = false;
 				var haveCrashed = false;
 
-				var count = valgrindMassif == null ? config.Count + 1 : 1;
+				var count = valgrindBinary == null ? config.Count + 1 : 1;
 
 				for (var i = 0; i < count; ++i) {
 					bool timedOut;
 
-					if (valgrindMassif == null)
+					if (valgrindBinary == null)
 						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
 
 					string binaryProtocolFile = null;
@@ -516,27 +603,50 @@ class Compare
 					var elapsedMilliseconds = runner.Run (binaryProtocolFile, out timedOut);
 
 					// if running for time, the first one is the dry run
-					if (valgrindMassif == null && i == 0)
+					if (valgrindBinary == null && i == 0)
 						continue;
 
 					if (elapsedMilliseconds != null) {
 						var run = new Result.Run { BinaryProtocolFilename = binaryProtocolFile == null ? null : Path.Combine(workingDirectory, binaryProtocolFile) };
 
-						if (valgrindMassif == null) {
+						if (valgrindBinary == null) {
 							run.RunMetrics.Add (new Result.RunMetric {
 								Metric = Result.RunMetric.MetricType.Time,
 								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
 							});
 						} else {
-							var results = MemoryIntegral (valgrindOutputFilename);
-							run.RunMetrics.Add (new Result.RunMetric {
-								Metric = Result.RunMetric.MetricType.MemoryIntegral,
-								Value = results.Item1
-							});
-							run.RunMetrics.Add (new Result.RunMetric {
-								Metric = Result.RunMetric.MetricType.Instructions,
-								Value = results.Item2
-							});
+							switch (valgrindTool) {
+							case ValgrindTool.Massif:
+								{
+									var results = MemoryIntegral (valgrindOutputFilename);
+									run.RunMetrics.Add (new Result.RunMetric {
+										Metric = Result.RunMetric.MetricType.MemoryIntegral,
+										Value = results.Item1
+									});
+									run.RunMetrics.Add (new Result.RunMetric {
+										Metric = Result.RunMetric.MetricType.Instructions,
+										Value = results.Item2
+									});
+								}
+								break;
+							case ValgrindTool.Cachegrind:
+								{
+									var results = CacheAndBranches (valgrindOutputFilename);
+									run.RunMetrics.Add (new Result.RunMetric {
+										Metric = Result.RunMetric.MetricType.CachegrindResults,
+										Value = results.Item1
+									});
+									run.RunMetrics.Add (new Result.RunMetric {
+										Metric = Result.RunMetric.MetricType.CacheMissRate,
+										Value = results.Item2
+									});
+									run.RunMetrics.Add (new Result.RunMetric {
+										Metric = Result.RunMetric.MetricType.BranchMispredictionRate,
+										Value = results.Item3
+									});
+								}
+								break;
+							}
 						}
 						result.Runs.Add (run);
 						someSuccess = true;
@@ -552,10 +662,6 @@ class Compare
 					runSet.TimedOutBenchmarks.Add (benchmark.Name);
 				if (haveCrashed)
 					runSet.CrashedBenchmarks.Add (benchmark.Name);
-
-				// FIXME: implement pausetime
-				//if (pausetime)
-				//	throw new NotImplementedException ();
 
 				runSet.Results.Add (result);
 
