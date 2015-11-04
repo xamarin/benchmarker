@@ -154,8 +154,8 @@ class DebianMonoBuildFactory(BuildFactory):
             repourl='https://github.com/xamarin/benchmarker/',
             workdir='benchmarker',
             branch=BENCHMARKER_BRANCH,
-            mode='incremental',
-            # shallow=True,
+            mode='full',
+            method='fresh',
             codebase='benchmarker',
             haltOnFailure=True
         )
