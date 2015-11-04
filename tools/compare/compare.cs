@@ -335,6 +335,11 @@ class Compare
 			}
 		}
 
+		var configFileFromCommandLine = configFile != null;
+		if (!configFileFromCommandLine)
+			configFile = Path.Combine (root, "configs", "default-sgen.conf");
+		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline, !justListBenchmarks);
+
 		if (justCreateRunSet && runSetId != null) {
 			Console.Error.WriteLine ("Error: --create-run-set and --run-set-id are incompatible.");
 			Environment.Exit (1);
@@ -342,6 +347,10 @@ class Compare
 
 		if (justListBenchmarks && benchmarkNames != null) {
 			Console.Error.WriteLine ("Error: -b/--benchmarks and -l/--list-benchmarks are incompatible.");
+			Environment.Exit (1);
+		}
+		if (justListBenchmarks && !configFileFromCommandLine) {
+			Console.Error.WriteLine ("Error: -l/--list-benchmarks requires --config-file.");
 			Environment.Exit (1);
 		}
 
@@ -352,10 +361,6 @@ class Compare
 			Console.Error.WriteLine ("Error: --upload-pause-times also requires --run-id and --sgen-grep-binprot.");
 			Environment.Exit (1);
 		}
-
-		if (configFile == null)
-			configFile = Path.Combine (root, "configs", "default-sgen.conf");
-		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline, !justListBenchmarks);
 
 		if (config.Benchmarks != null) {
 			if (benchmarkNames == null)
