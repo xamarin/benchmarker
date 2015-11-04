@@ -40,7 +40,7 @@ namespace compare
 			return LoadAllBenchmarksFrom (directory, new string[0]);
 		}
 
-		public static List<Benchmark> LoadAllBenchmarksFrom (string directory, string[] names)
+		public static List<Benchmark> LoadAllBenchmarksFrom (string directory, IEnumerable<string> names)
 		{
 			var allPaths = Directory.EnumerateFiles (directory)
 				.Where (f => f.EndsWith (".benchmark"));
@@ -64,10 +64,10 @@ namespace compare
 			}
 		}
 
-		public static Config LoadConfigFromFile(string filename, string root)
+		public static Config LoadConfigFromFile(string filename, string root, bool expandRoot)
 		{
 			using (var reader = new StreamReader (new FileStream (filename, FileMode.Open))) {
-				return Config.LoadFromString (reader.ReadToEnd (), root);
+				return Config.LoadFromString (reader.ReadToEnd (), root, expandRoot);
 			}
 		}
 

@@ -25,6 +25,7 @@ namespace Benchmarker.Models
 		public string[] MonoOptions { get; set; }
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
 		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
+		public List<string> Benchmarks { get; set; }
 
 		private string monoRoot;
 
@@ -79,7 +80,7 @@ namespace Benchmarker.Models
 		{
 		}
 
-		public static Config LoadFromString (string content, string root)
+		public static Config LoadFromString (string content, string root, bool expandRoot)
 		{
 			var config = JsonConvert.DeserializeObject<Config> (content);
 			config.monoRoot = root;
@@ -95,9 +96,9 @@ namespace Benchmarker.Models
 
 			if (String.IsNullOrWhiteSpace (config.Mono)) {
 				config.Mono = String.Empty;
-			} else if (root != null) {
+			} else if (expandRoot && root != null) {
 				config.Mono = config.Mono.Replace (rootVarString, root);
-			} else if (config.Mono.Contains (rootVarString)) {
+			} else if (expandRoot && config.Mono.Contains (rootVarString)) {
 				throw new InvalidDataException ("Configuration requires a root directory.");
 			}
 

@@ -228,7 +228,7 @@ class Compare
 
 	public static int Main (string[] args)
 	{
-		string[] benchmarkNames = null;
+		IEnumerable<string> benchmarkNames = null;
 		//var pausetime = false;
 		var timeout = -1;
 		string rootFromCmdline = null;
@@ -355,6 +355,14 @@ class Compare
 
 		if (configFile == null)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
+		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline, !justListBenchmarks);
+
+		if (config.Benchmarks != null) {
+			if (benchmarkNames == null)
+				benchmarkNames = config.Benchmarks;
+			else
+				benchmarkNames = benchmarkNames.Union (config.Benchmarks);
+		}
 
 		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
@@ -391,8 +399,6 @@ class Compare
 			mainCommit = new Commit { Product = compare.Utils.LoadProductFromFile ("mono", productsDir) };
 
 		var gitHubClient = GitHubInterface.GitHubClient;
-
-		var config = compare.Utils.LoadConfigFromFile (configFile, rootFromCmdline);
 
 		Machine machine = null;
 		if (machineName == null) {
