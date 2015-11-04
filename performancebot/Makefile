@@ -8,7 +8,7 @@ endif
 
 PBOTMASTERROOT:=/ebs/pbot-master/performancebot
 REMOTEHOST=ubuntu@$(EC2PBOTMASTERIP)
-PYTHONFILES:=master.cfg jenkinspoller.py monofactory.py monosteps.py slack.py googleoauth2.py constants.py checkretry.py wrenchpoller.py credentials.py
+PYTHONFILES:=master.cfg jenkinspoller.py monofactory.py monosteps.py slack.py googleoauth2.py constants.py checkretry.py wrenchpoller.py credentials.py monkeypatches.py
 
 # check that there is only a given number of docker containers are running, that ensures we're interacting with the correct one.
 CONTAINERCHECK=check() { test `ssh $(REMOTEHOST) "docker ps | grep pbot-master | awk '{print $$1}' | wc -l"` -eq $$1 || (echo "more than $$1 container is running on the ec2 instance"; exit 1) }; check
