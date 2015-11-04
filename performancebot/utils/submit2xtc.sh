@@ -40,10 +40,11 @@ xbuild /t:xtcloghelper /p:Configuration=Debug
 
 OLDIFS=$IFS
 IFS=','
-for i in "Nexus-5_4.4.4",aba2bb7e "Nexus-5_4.4.4-98d5184c6616",98d5184c6616; do
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-98d5184c6616",98d5184c6616,"--priority"; do
 	set $i
 	DEVICENAME=$1
 	DEVICEID=$2
+	XTCOPTS=$3
 
 	RUNSETID=$(mono --debug ./compare.exe \
 		--main-product mono $MONOCOMMITSHA \
@@ -71,7 +72,7 @@ for i in "Nexus-5_4.4.4",aba2bb7e "Nexus-5_4.4.4-98d5184c6616",98d5184c6616; do
 		`cat $XTCAPIKEY` \
 		--devices $DEVICEID \
 		--async \
-		--test-chunk \
+		$XTCOPTS \
 		--app-name AndroidAgent \
 		--assembly-dir ./AndroidAgent.UITests/bin/Release \
 		--user 'bernhard.urban@xamarin.com' | tee $XTCUPLOADLOG
