@@ -8,7 +8,7 @@ def logfile_to_string(self):
 # special handle LogFile in json encoder
 import json
 
-def json_encoder_default(self, o):
+def json_encoder_default(_, o):
     if isinstance(o, LogFile):
         return str(o)
     else:
