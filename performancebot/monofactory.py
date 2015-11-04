@@ -114,16 +114,18 @@ class DebianMonoBuildFactory(BuildFactory):
             )
         )
 
-    def export_benchmark_list(self, machine):
-        step = MasterShellCommand(
-            name="list_benchmarks",
-            command=[
-                'bash', '-c', Interpolate(
-                    'mono %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s | ' % (MASTERWORKDIR, machine) +
-                    'tee benchmarks-%s.list' % machine)
-            ]
-        )
-        self.addStep(step)
+    def export_benchmark_list(self, slave_config_hooks):
+        for machine, config_name in slave_config_hooks:
+            self.addStep(
+                MasterShellCommand(
+                    name="list_benchmarks_%s-%s" % (machine, config_name),
+                    command=[
+                        'bash', '-c', Interpolate(
+                            'mono %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s --config-file %s/benchmarker/configs/%s.conf | ' % (MASTERWORKDIR, machine, MASTERWORKDIR, config_name) +
+                            'tee benchmarks-%s-%s.list' % (machine, config_name))
+                    ]
+                )
+            )
 
     def update_config_file(self):
         step = MasterShellCommand(
