@@ -63,7 +63,8 @@ create table RunMetric (
        id serial primary key,
        run integer references Run(id),
        metric varchar(32),
-       result double precision
+       result double precision,
+       resultArray double precision[]
 );
 
 insert into RunMetric (run, result, metric)
