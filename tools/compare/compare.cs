@@ -362,12 +362,8 @@ class Compare
 			Environment.Exit (1);
 		}
 
-		if (config.Benchmarks != null) {
-			if (benchmarkNames == null)
-				benchmarkNames = config.Benchmarks;
-			else
-				benchmarkNames = benchmarkNames.Union (config.Benchmarks);
-		}
+		if (benchmarkNames == null)
+			benchmarkNames = config.Benchmarks;
 
 		var benchmarks = compare.Utils.LoadAllBenchmarksFrom (benchmarksDir, benchmarkNames);
 		if (benchmarks == null) {
