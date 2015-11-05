@@ -14,6 +14,7 @@ import ReactDOM = require ('react-dom');
 class Controller {
 	private pullRequestId: string;
 	private dbRow: Object;
+	private prRunSet: Database.DBRunSet;
 
 	constructor (pullRequestId: string) {
 		this.pullRequestId = pullRequestId;
@@ -35,18 +36,20 @@ class Controller {
 		if (this.dbRow === undefined)
 			return;
 
-        var prRunSet = new Database.DBObject (this.dbRow, 'prrs_') as Database.DBRunSet;
-        var pullRequest = new Database.DBObject (this.dbRow, 'pr_');
-        var baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_') as Database.DBRunSet;
-		var machine = new Database.DBObject (this.dbRow, 'm_');
-		var config = new Database.DBObject (this.dbRow, 'cfg_');
+        this.prRunSet = new Database.DBObject (this.dbRow, 'prrs_') as Database.DBRunSet;
+        const pullRequest = new Database.DBObject (this.dbRow, 'pr_');
+        const baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_') as Database.DBRunSet;
+		const machine = new Database.DBObject (this.dbRow, 'm_');
+		const config = new Database.DBObject (this.dbRow, 'cfg_');
 
-        var runSets = [baselineRunSet, prRunSet];
+        var runSets = [baselineRunSet, this.prRunSet];
 
 		// FIXME: metric
 		ReactDOM.render (
 			<div className="PullRequestPage">
-				<xp_common.Navigation currentPage="" />
+				<xp_common.Navigation
+					comparisonRunSetIds={ [baselineRunSet.get ('id'), this.prRunSet.get ('id')] }
+					currentPage="" />
                 <article>
 					<div className="outer">
 						<div className="inner">
@@ -69,7 +72,7 @@ class Controller {
 					<div style={{ clear: 'both' }}></div>
 					<h2>Pull Request Run Set</h2>
 					<xp_common.RunSetDescription
-						runSet={prRunSet} />
+						runSet={this.prRunSet} />
 					<h2>Baseline Run Set</h2>
 					<xp_common.RunSetDescription
 						runSet={baselineRunSet} />
