@@ -147,11 +147,15 @@ export function fetchSummaries (
 		}, error);
 }
 
+function fixDates (r: Object) : void {
+	r ['c_commitdate'] = new Date (r ['c_commitdate']);
+	r ['rs_startedat'] = new Date (r ['rs_startedat']);
+}
+
 function processRunSetEntries (objs: Array<Object>) : Array<DBRunSet> {
 	var results = [];
 	objs.forEach ((r: Object) => {
-		r ['c_commitdate'] = new Date (r ['c_commitdate']);
-		r ['rs_startedat'] = new Date (r ['rs_startedat']);
+		fixDates (r);
 		results.push (new DBRunSet (r, 'rs_', new DBObject (r, 'm_'), new DBObject (r, 'cfg_'), new DBObject (r, 'c_')));
 	});
 	return results;
@@ -208,4 +212,52 @@ export function fetchParseObjectIds (parseIds: Array<string>, success: (results:
 
 export function fetchFeaturedTimelines (success: (results: Array<DBObject>) => void, error: ErrorFunc) : void {
 	fetchAndWrap ('featuredtimelines?order=name', success, error);
+}
+
+export interface ArrayResults {
+	runSet: DBRunSet;
+	resultArrays: Array<Array<number>>;
+}
+
+export function fetchResultArrays (
+		machineName: string,
+		configName: string,
+		benchmarkName: string,
+		metric: string,
+		success: (result: Array<ArrayResults>) => void,
+		error: ErrorFunc
+	) : void {
+	const query = 'resultarrays?rs_machine=eq.' + machineName +
+		'&rs_config=eq.' + configName +
+		'&benchmark=eq.' + benchmarkName +
+		'&metric=eq.' + metric;
+	fetch (query,
+		(objs: Array<Object>) => {
+			const partitions = xp_utils.partitionArrayByString (objs, (o: Object) => o ['rs_id'].toString ());
+			const results: Array<ArrayResults> = [];
+			for (let id of Object.keys (partitions)) {
+				const os = partitions [id];
+				fixDates (os [0]);
+				const runSet = new DBRunSet (os [0], 'rs_', undefined, undefined, new DBObject (os [0], 'c_'));
+				const arrays = os.map ((o: Object) => o ['resultarray']);
+				results.push ({ runSet: runSet, resultArrays: arrays });
+			}
+			success (results);
+		}, error);
+}
+
+export function fetchResultArrayBenchmarks (
+		machineName: string,
+		configName: string,
+		metric: string,
+		success: (result: Array<string>) => void,
+		error: ErrorFunc
+	) : void {
+	const query = 'resultarraybenchmarks?metric=eq.' + metric + '&machine=eq.' + machineName + '&config=eq.' + configName;
+	fetch (query,
+		(objs: Array<Object>) => {
+			const benchmarks: Array<string> = objs.map ((o: Object) => o ['benchmark']);
+			benchmarks.sort ();
+			success (benchmarks);
+		}, error);
 }

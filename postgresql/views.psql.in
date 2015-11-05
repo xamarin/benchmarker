@@ -27,7 +27,7 @@ select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json
 from (
 select r.runset, rm.metric, r.benchmark, avg(rm.result), var_pop(rm.result)
 from run r, runmetric rm, benchmark b
-where r.id = rm.run and r.benchmark = b.name and b.disabled is not true
+where r.id = rm.run and r.benchmark = b.name and b.disabled is not true and rm.result is not null
 group by r.runset, r.benchmark, rm.metric
 ) as x
 group by runset, metric
@@ -58,8 +58,15 @@ group by rs.metric, m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexe
 create view "1".results as
 select r.runset, r.benchmark, b.disabled, rm.metric, array_agg(rm.result) as results
 from run r, runmetric rm, benchmark b
-where rm.run = r.id and r.benchmark = b.name
+where rm.run = r.id and r.benchmark = b.name and rm.result is not null
 group by r.runset, r.benchmark, rm.metric, b.disabled;
+
+create view "1".resultarrays as
+select rs.id as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
+		r.benchmark, b.disabled, rm.metric, rm.resultarray,
+       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product
+from run r, runmetric rm, benchmark b, runset rs, commit c
+where rs.commit = c.hash and r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
 
 create view "1".pullrequest as
 select pr.id as pr_id, pr.url as pr_url,
