@@ -328,54 +328,6 @@ function runSetIsBroken (runSet: Database.DBObject, averages: Database.Benchmark
 	return false;
 }
 
-interface TimelineChartProps {
-	graphName: string;
-	metric: string;
-	sortedResults: Array<Database.Summary>;
-	zoomInterval: {start: number, end: number};
-	runSetSelected: (runSet: Database.DBObject) => void;
-};
-
-abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
-	// FIXME: make private and have `computeTable` return the new table
-	public table: Array<Object>;
-
-	public valueAxisTitle () : string {
-		return "";
-	}
-
-	public componentWillMount () : void {
-		this.invalidateState (this.props);
-	}
-
-	public componentWillReceiveProps (nextProps: Props) : void {
-		if (this.props.sortedResults === nextProps.sortedResults) {
-			return;
-		}
-		this.invalidateState (nextProps);
-	}
-
-	public render () : JSX.Element {
-		if (this.table === undefined)
-			return <div className="diagnostic">Loading&hellip;</div>;
-
-		return <xp_charts.TimelineAMChart
-			graphName={this.props.graphName}
-			height={300}
-			data={this.table}
-			zoomInterval={this.props.zoomInterval}
-			title={this.valueAxisTitle ()}
-			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
-	}
-
-	public abstract computeTable (nextProps: Props) : void;
-
-	private invalidateState (nextProps: Props) : void {
-		this.table = undefined;
-		this.computeTable (nextProps);
-	}
-}
-
 interface AxisLabels {
 	name: string;
 	lowest: string;
@@ -407,11 +359,12 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 	}
 }
 
-interface AllBenchmarksChartProps extends TimelineChartProps {
+interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
+	sortedResults: Array<Database.Summary>;
 	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
 };
 
-class AllBenchmarksChart extends TimelineChart<AllBenchmarksChartProps> {
+class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps> {
 	public valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, true).name;
 	}
@@ -513,11 +466,12 @@ function formatDuration (t: number) : string {
 	return (t / 1000).toPrecision (4) + "s";
 }
 
-interface BenchmarkChartProps extends TimelineChartProps {
+interface BenchmarkChartProps extends xp_charts.TimelineChartProps {
+	sortedResults: Array<Database.Summary>;
 	benchmark: string;
 };
 
-class BenchmarkChart extends TimelineChart<BenchmarkChartProps> {
+class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 	public valueAxisTitle () : string {
 		return axisNameForMetric (this.props.metric, false).name;
 	}
