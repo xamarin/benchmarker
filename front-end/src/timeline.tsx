@@ -360,6 +360,7 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 }
 
 interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
+	metric: string;
 	sortedResults: Array<Database.Summary>;
 	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
 };
@@ -369,7 +370,7 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 		return axisNameForMetric (this.props.metric, true).name;
 	}
 
-	public computeTable (nextProps: AllBenchmarksChartProps) : void {
+	public computeTable (nextProps: AllBenchmarksChartProps) : Array<Object> {
 		var results = nextProps.sortedResults;
 		var i = 0, j = 0;
 
@@ -455,10 +456,10 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 			});
 		}
 
-		this.table = table;
-
 		if (nextProps.allBenchmarksLoaded !== undefined)
 			nextProps.allBenchmarksLoaded (benchmarkNamesByIndices);
+
+		return table;
 	}
 }
 
@@ -467,6 +468,7 @@ function formatDuration (t: number) : string {
 }
 
 interface BenchmarkChartProps extends xp_charts.TimelineChartProps {
+	metric: string;
 	sortedResults: Array<Database.Summary>;
 	benchmark: string;
 };
@@ -476,7 +478,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 		return axisNameForMetric (this.props.metric, false).name;
 	}
 
-	public computeTable (nextProps: BenchmarkChartProps) : void {
+	public computeTable (nextProps: BenchmarkChartProps) : Array<Object> {
 		var results = nextProps.sortedResults;
 		var j = 0;
 
@@ -511,7 +513,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 			});
 		}
 
-		this.table = table;
+		return table;
 	}
 }
 

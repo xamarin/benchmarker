@@ -1,6 +1,6 @@
 # Stuff you should feel safe changing
 
-PAGES = compare config machine timeline runset pullrequest pullrequests
+PAGES = compare config machine timeline runset pullrequest pullrequests pausetimes
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
 DEPS = react github-api react-dom ts-loader typescript webpack
 STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min

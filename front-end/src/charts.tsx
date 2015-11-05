@@ -459,17 +459,84 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
     }
 }
 
+export interface TimelineParameters {
+	lowName: string;
+	midName: string;
+	highName: string;
+	maxName?: string;
+	lowBalloonName: string;
+	midBalloonName: string;
+	highBalloonName: string;
+	maxBalloonName?: string;
+	color: string;
+}
+
 type TimelineAMChartProps = {
 	graphName: string;
 	height: number;
 	title: string;
+	parameters: Array<TimelineParameters>;
+	logarithmic: boolean;
 	data: Object;
 	selectListener: (runSet: Database.DBRunSet) => void;
 	zoomInterval: {start: number, end: number};
 };
 
+function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
+	const graphs: Array<Object> = [
+		{
+			"balloonText": "[[" + parameters.lowBalloonName + "]]",
+			"bullet": "round",
+			"bulletAlpha": 0,
+			"lineColor": parameters.color,
+			"lineThickness": 0,
+			"id": parameters.lowName,
+			"title": parameters.lowName,
+			"valueField": parameters.lowName
+		},
+		{
+			"balloonText": "[[" + parameters.highBalloonName + "]]",
+			"bullet": "round",
+			"bulletAlpha": 0,
+			"lineColor": parameters.color,
+			"fillAlphas": 0.13,
+			"fillToGraph": parameters.lowName,
+			"fillColors": parameters.color,
+			"lineThickness": 0,
+			"id": parameters.highName,
+			"title": parameters.highName,
+			"valueField": parameters.highName
+		},
+		{
+			"balloonText": "[[" + parameters.midBalloonName + "]]",
+			"bullet": "round",
+			"bulletSize": 4,
+			"lineColor": parameters.color,
+			"lineColorField": "lineColor",
+			"id": parameters.midName,
+			"title": parameters.midName,
+			"valueField": parameters.midName
+		}
+	];
+
+	if (parameters.maxBalloonName !== undefined) {
+		graphs.push ({
+			"balloonText": "[[" + parameters.maxBalloonName + "]]",
+			"bullet": "round",
+			"bulletSize": 4,
+			"lineColor": parameters.color,
+			"id": parameters.maxName,
+			"title": parameters.maxName,
+			"valueField": parameters.maxName
+		});
+	}
+
+	return graphs;
+}
+
 class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 	public render () : JSX.Element {
+		const graphs = Array.prototype.concat.apply ([], this.props.parameters.map (graphsForParameters));
 		var timelineOptions = {
 						"type": "serial",
 						"theme": "default",
@@ -480,52 +547,18 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 							"tickLength": 0
 						},
 						"chartScrollbar": {
-							"graph": "average"
+							"graph": this.props.parameters [0].midName
 						},
 						"trendLines": [],
-						"graphs": [
-							{
-								"balloonText": "[[lowName]]",
-								"bullet": "round",
-								"bulletAlpha": 0,
-								"lineColor": xp_common.xamarinColors.blue [2],
-								"lineThickness": 0,
-								"id": "low",
-								"title": "low",
-								"valueField": "low"
-							},
-							{
-								"balloonText": "[[highName]]",
-								"bullet": "round",
-								"bulletAlpha": 0,
-								"lineColor": xp_common.xamarinColors.blue [2],
-								"fillAlphas": 0.13,
-								"fillToGraph": "low",
-								"fillColors": xp_common.xamarinColors.blue [2],
-								"id": "high",
-								"lineThickness": 0,
-								"title": "high",
-								"valueField": "high"
-							},
-							{
-								"balloonText": "[[tooltip]]",
-								"bullet": "round",
-								"bulletSize": 4,
-								"lineColor": xp_common.xamarinColors.blue [2],
-								"lineColorField": "lineColor",
-								"id": "geomean",
-								"title": "geomean",
-								"valueField": "geomean"
-							}
-
-						],
+						"graphs": graphs,
 						"valueAxes": [
 							{
 								"id": "time",
 								"axisThickness": 0,
 								"fontSize": 12,
 								"gridAlpha": 0.07,
-								"title": this.props.title
+								"title": this.props.title,
+								"logarithmic": this.props.logarithmic
 							}
 						],
 						"allLabels": [],
@@ -555,18 +588,28 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 
 export interface TimelineChartProps {
 	graphName: string;
-	metric: string;
 	sortedResults: any;
 	zoomInterval: {start: number, end: number};
 	runSetSelected: (runSet: Database.DBObject) => void;
-};
+}
 
-export abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
-	// FIXME: make private and have `computeTable` return the new table
-	public table: Array<Object>;
+export interface TimelineChartState {
+	table: Array<Object>;
+}
+
+export abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, TimelineChartState> {
+	constructor (props: Props) {
+		super (props);
+
+		this.state = { table: undefined };
+	}
 
 	public valueAxisTitle () : string {
 		return "";
+	}
+
+	public logarithmic () : boolean {
+		return false;
 	}
 
 	public componentWillMount () : void {
@@ -580,23 +623,38 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 		this.invalidateState (nextProps);
 	}
 
+	public timelineParameters () : Array<TimelineParameters> {
+		return [
+			{
+				lowName: "low",
+				midName: "geomean",
+				highName: "high",
+				lowBalloonName: "lowName",
+				midBalloonName: "tooltip",
+				highBalloonName: "highName",
+				color: xp_common.xamarinColors.blue [2]
+			}
+		];
+	}
+
 	public render () : JSX.Element {
-		if (this.table === undefined)
+		if (this.state.table === undefined)
 			return <div className="diagnostic">Loading&hellip;</div>;
 
 		return <TimelineAMChart
 			graphName={this.props.graphName}
 			height={300}
-			data={this.table}
+			data={this.state.table}
+			parameters={this.timelineParameters ()}
+			logarithmic={this.logarithmic ()}
 			zoomInterval={this.props.zoomInterval}
 			title={this.valueAxisTitle ()}
 			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
 	}
 
-	public abstract computeTable (nextProps: Props) : void;
+	public abstract computeTable (nextProps: Props) : Array<Object>;
 
 	private invalidateState (nextProps: Props) : void {
-		this.table = undefined;
-		this.computeTable (nextProps);
+		this.setState ({ table: this.computeTable (nextProps) });
 	}
 }

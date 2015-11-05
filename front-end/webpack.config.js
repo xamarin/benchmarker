@@ -19,7 +19,8 @@ module.exports = {
         timeline: "./src/timeline.tsx",
         runset: "./src/runset.tsx",
         pullrequest: "./src/pullrequest.tsx",
-        pullrequests: "./src/pullrequests.tsx"
+        pullrequests: "./src/pullrequests.tsx",
+        pausetimes: "./src/pausetimes.tsx"
     },
     output: {
         filename: "./build/[name].js"
