@@ -468,7 +468,7 @@ type TimelineAMChartProps = {
 	zoomInterval: {start: number, end: number};
 };
 
-export class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
+class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 	public render () : JSX.Element {
 		var timelineOptions = {
 						"type": "serial",
@@ -550,5 +550,53 @@ export class TimelineAMChart extends React.Component<TimelineAMChartProps, void>
 			options={timelineOptions}
 			selectListener={this.props.selectListener}
 			initFunc={zoomFunc} />;
+	}
+}
+
+export interface TimelineChartProps {
+	graphName: string;
+	metric: string;
+	sortedResults: any;
+	zoomInterval: {start: number, end: number};
+	runSetSelected: (runSet: Database.DBObject) => void;
+};
+
+export abstract class TimelineChart<Props extends TimelineChartProps> extends React.Component<Props, void> {
+	// FIXME: make private and have `computeTable` return the new table
+	public table: Array<Object>;
+
+	public valueAxisTitle () : string {
+		return "";
+	}
+
+	public componentWillMount () : void {
+		this.invalidateState (this.props);
+	}
+
+	public componentWillReceiveProps (nextProps: Props) : void {
+		if (this.props.sortedResults === nextProps.sortedResults) {
+			return;
+		}
+		this.invalidateState (nextProps);
+	}
+
+	public render () : JSX.Element {
+		if (this.table === undefined)
+			return <div className="diagnostic">Loading&hellip;</div>;
+
+		return <TimelineAMChart
+			graphName={this.props.graphName}
+			height={300}
+			data={this.table}
+			zoomInterval={this.props.zoomInterval}
+			title={this.valueAxisTitle ()}
+			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
+	}
+
+	public abstract computeTable (nextProps: Props) : void;
+
+	private invalidateState (nextProps: Props) : void {
+		this.table = undefined;
+		this.computeTable (nextProps);
 	}
 }
