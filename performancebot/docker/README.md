@@ -53,3 +53,12 @@ need to configure the master configuration accordingly with
 
 after machine setup you are supposed to see output by the `buildslave`, press
 `CTRL+P  CTRL+Q` in order to detach from the container.
+
+# Cleanup docker images
+
+playing garbage collector.
+
+    $ docker info # check device mapper status
+    $ docker rm $(docker ps -a -q)  # delete stopped containers
+    $ docker rmi $(docker images --filter "dangling=true" -q) # remove dangling layers
+    $ docker info # verify
