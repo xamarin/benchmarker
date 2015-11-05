@@ -30,5 +30,6 @@
 # R0902: Too many instance attributes
 # R0913: Too many arguments
 # W0603: global statement
+# R0911: too many return statements
 # Disable the message(s) with the given id(s).
-disable=C0301,C0111,W0110,W0141,R0914,E0202,W0511,R0902,R0913,R0903,W0703,R0801,C0103,W0603
+disable=C0301,C0111,W0110,W0141,R0914,E0202,W0511,R0902,R0913,R0903,W0703,R0801,C0103,W0603,R0911
