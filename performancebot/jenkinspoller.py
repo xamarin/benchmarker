@@ -13,22 +13,23 @@ import json
 from constants import MONO_BASEURL, MONO_PULLREQUEST_BASEURL, MONO_COMMON_SNAPSHOTS_URL, MONO_SOURCETARBALL_URL, MONO_SOURCETARBALL_PULLREQUEST_URL, PROPERTYNAME_JENKINSBUILDURL, PROPERTYNAME_JENKINSGITCOMMIT, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, FORCE_PROPERTYNAME_JENKINS_BUILD, Lane
 import re
 
-def gen_jenkinspoller_codebase(lane, platform, hostname, config_name):
-    return 'mono-jenkins-%s%s-%s-%s' % ("-pullrequest" if lane == Lane.PullRequest else "", platform, hostname, config_name)
+def gen_jenkinspoller_codebase(lane, platform, hostname, config_name, valgrind):
+    return 'mono-jenkins-%s%s%s-%s-%s' % (valgrind, "-pullrequest" if lane == Lane.PullRequest else "", platform, hostname, config_name)
 
 class MonoJenkinsPoller(base.PollingChangeSource):
-    compare_attrs = ['lane', 'url', 'platform', 'hostname', 'config_name', 'fake_repo_url']
+    compare_attrs = ['lane', 'url', 'platform', 'hostname', 'config_name', 'valgrind', 'fake_repo_url']
     parent = None
     working = False
 
-    def __init__(self, url, fake_repo_url, lane, platform, hostname, config_name, *args, **kwargs):
+    def __init__(self, url, fake_repo_url, lane, platform, hostname, config_name, valgrind, *args, **kwargs):
         self.url = url
         self.fake_repo_url = fake_repo_url
         self.lane = lane
         self.platform = platform
         self.hostname = hostname
         self.config_name = config_name
-        self.db_class_name = "MonoJenkinsPoller-%s-%s-%s-%s" % (str(lane), platform, hostname, config_name)
+        self.valgrind = valgrind
+        self.db_class_name = "MonoJenkinsPoller-%s-%s-%s-%s%s" % (str(lane), platform, hostname, config_name, valgrind)
 
         base.PollingChangeSource.__init__(self, pollAtLaunch=False, *args, **kwargs)
 
@@ -119,7 +120,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
                 when_timestamp=epoch2datetime(int(build_details_json['timestamp']) / 1000),
                 branch=None,
                 category=None,
-                codebase=gen_jenkinspoller_codebase(self.lane, self.platform, self.hostname, self.config_name),
+                codebase=gen_jenkinspoller_codebase(self.lane, self.platform, self.hostname, self.config_name, self.valgrind),
                 project='',
                 repository=self.fake_repo_url,
                 src=u'jenkins'
