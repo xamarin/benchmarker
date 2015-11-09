@@ -46,3 +46,14 @@ class Valgrind(object):
     Massif = "valgrind_" # should be '-massif', but we would loose logs if we rename the builder... *sigh*
     Cachegrind = "valgrind-cachegrind_"
 
+
+def _lifo_queue(_, requests):
+    return requests[-1]
+
+def _fifo_queue(_, requests):
+    return requests[0]
+
+class QueueType(object):
+    Lifo = _lifo_queue
+    Fifo = _fifo_queue
+
