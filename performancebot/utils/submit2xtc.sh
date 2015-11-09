@@ -40,7 +40,7 @@ xbuild /t:xtcloghelper /p:Configuration=Debug
 
 OLDIFS=$IFS
 IFS=','
-for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk"; do
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"--priority"; do
 	set $i
 	DEVICENAME=$1
 	DEVICEID=$2
