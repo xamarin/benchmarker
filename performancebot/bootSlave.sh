@@ -2,13 +2,19 @@
 
 set -e
 
-if [ $# -ne 2 ]; then
-    echo "./bootSlave.sh <masterhost> <slavepwd>"
+if [ $# -ne 2 -a $# -ne 3 ]; then
+    echo "./bootSlave.sh <masterhost> <slavepwd> [buildbotslavename]"
     exit 1
 fi
 
 EC2PBOTMASTERIP="$1"
 BUILDBOTSLAVEPWD="$2"
+
+if [ $# -eq 3 ]; then
+    SLAVEHOSTNAME="$3"
+else
+    SLAVEHOSTNAME=`hostname`
+fi
 
 for i in "/usr/bin/dpkg" "/bin/cp" "/bin/rm"; do
     sudo -k -n "$i" --help &> /dev/null || (echo "/etc/sudoers must have the following line:" && echo "`whoami` `hostname` = (root) NOPASSWD: $i" && exit 1)
@@ -32,5 +38,5 @@ source $HOME/slave/env/bin/activate
 cd $HOME/slave
 pip install buildbot-slave
 
-buildslave create-slave --keepalive 45 slavedir $EC2PBOTMASTERIP `hostname` $BUILDBOTSLAVEPWD
+buildslave create-slave --keepalive 45 slavedir $EC2PBOTMASTERIP $SLAVEHOSTNAME $BUILDBOTSLAVEPWD
 buildslave start --nodaemon slavedir

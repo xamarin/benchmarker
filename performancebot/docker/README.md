@@ -49,7 +49,7 @@ need to configure the master configuration accordingly with
 `$WANTED_SLAVE_NAME` and `$SECRET_SLAVE_PASSWORD`:
 
     $ docker build -f Dockerfile.ec2slave -t pbot-slave .
-    $ docker run -h $WANTED_SLAVE_NAME -it pbot-slave ip.of.the.master.com $SECRET_SLAVE_PASSWORD
+    $ docker run -h $WANTED_SLAVE_NAME -it pbot-slave ip.of.the.master.com $SECRET_SLAVE_PASSWORD $BUILDBOT_SLAVE_HOSTNAME
 
 after machine setup you are supposed to see output by the `buildslave`, press
 `CTRL+P  CTRL+Q` in order to detach from the container.
