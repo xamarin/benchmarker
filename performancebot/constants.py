@@ -54,6 +54,13 @@ def _fifo_queue(_, requests):
     return requests[0]
 
 class QueueType(object):
-    Lifo = _lifo_queue
-    Fifo = _fifo_queue
+    Lifo = "lifo"
+    Fifo = "fifo"
+
+def select_queue_type(queue_type):
+    if queue_type == QueueType.Lifo:
+        return _lifo_queue
+    if queue_type == QueueType.Fifo:
+        return _fifo_queue
+    assert False, "shouldn't reach"
 
