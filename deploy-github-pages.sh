@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ "$TRAVIS_PULL_REQUEST" != "false" -o "$TRAVIS_BRANCH" != "master" ]; then
+if [ "$TRAVIS_PULL_REQUEST" != "false" -o "$TRAVIS_BRANCH" != "master" -o "$TRAVIS_REPO_SLUG" != "xamarin/benchmarker" ]; then
     exit 0;
 fi
 
