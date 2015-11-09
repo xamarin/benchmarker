@@ -19,8 +19,9 @@ before_script:
     - bash ./deploy-github-pages.sh
 
 solution: tools/tools.sln
+install:
+    - (cd tools && bash ../performancebot/utils/nugethack.sh)
 script:
-    - nuget restore tools/tools.sln
     - xbuild /p:Configuration=Release /target:compare tools/tools.sln
     - xbuild /p:Configuration=Release /target:DbTool tools/tools.sln
     - xbuild /p:Configuration=Release /target:Accreditize tools/tools.sln
