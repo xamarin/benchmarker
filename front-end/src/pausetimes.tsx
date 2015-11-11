@@ -167,6 +167,7 @@ class Page extends React.Component<PageProps, PageState> {
 				currentPage="pauseTimes" />
 			<article>
 				{benchmarkSelect}
+				Percentile
 				<input
 					type="range"
 					onInput={(e: React.FormEvent) => this.onPercentileChange (e)}
@@ -236,7 +237,8 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				lowBalloonName: 'lowName',
 				midBalloonName: 'tooltip',
 				highBalloonName: 'highName',
-				color: xp_common.xamarinColors.blue [2]
+				color: xp_common.xamarinColors.blue [2],
+				title: "Concurrent"
 			}
 			,
 			{
@@ -246,7 +248,8 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				lowBalloonName: 'lowSeqName',
 				midBalloonName: 'tooltipSeq',
 				highBalloonName: 'highSeqName',
-				color: xp_common.xamarinColors.green [2]
+				color: xp_common.xamarinColors.green [2],
+				title: "Non-Concurrent"
 			}
 		];
 	}
