@@ -469,6 +469,7 @@ export interface TimelineParameters {
 	highBalloonName: string;
 	maxBalloonName?: string;
 	color: string;
+	title?: string;
 }
 
 type TimelineAMChartProps = {
@@ -491,7 +492,6 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineColor": parameters.color,
 			"lineThickness": 0,
 			"id": parameters.lowName,
-			"title": parameters.lowName,
 			"valueField": parameters.lowName
 		},
 		{
@@ -504,7 +504,6 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"fillColors": parameters.color,
 			"lineThickness": 0,
 			"id": parameters.highName,
-			"title": parameters.highName,
 			"valueField": parameters.highName
 		},
 		{
@@ -514,8 +513,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineColor": parameters.color,
 			"lineColorField": "lineColor",
 			"id": parameters.midName,
-			"title": parameters.midName,
-			"valueField": parameters.midName
+			"valueField": parameters.midName,
+			"title": parameters.title
 		}
 	];
 
@@ -526,7 +525,6 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"bulletSize": 4,
 			"lineColor": parameters.color,
 			"id": parameters.maxName,
-			"title": parameters.maxName,
 			"valueField": parameters.maxName
 		});
 	}
@@ -537,7 +535,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 	public render () : JSX.Element {
 		const graphs = Array.prototype.concat.apply ([], this.props.parameters.map (graphsForParameters));
-		var timelineOptions = {
+		const haveTitles = this.props.parameters.some ((p: TimelineParameters) => p.title !== undefined);
+		const timelineOptions = {
 						"type": "serial",
 						"theme": "default",
 						"categoryAxis": {
@@ -564,8 +563,11 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 						"allLabels": [],
 						"balloon": {},
 						"titles": [],
-                        "dataProvider": this.props.data
+                        "dataProvider": this.props.data,
 					};
+		if (haveTitles) {
+			timelineOptions ['legend'] = { "useGraphSettings": true };
+		}
 
 		var zoomFunc;
 		var zoomInterval = this.props.zoomInterval;
