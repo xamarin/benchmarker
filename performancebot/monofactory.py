@@ -141,6 +141,19 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(step)
 
+    def update_machine_file(self):
+        step = MasterShellCommand(
+            name='cp_machine',
+            command=[
+                'bash',
+                '-c',
+                Interpolate(
+                    'cp -v %s/benchmarker/machines/' % MASTERWORKDIR +
+                    '*.conf ../machines/'
+                )
+            ]
+        )
+        self.addStep(step)
 
     def upload_benchmarker(self):
         self.addStep(FileDownload(Interpolate('%s/benchmarker.tar.gz' % MASTERWORKDIR), 'benchmarker.tar.gz', workdir='.'))
