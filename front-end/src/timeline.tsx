@@ -355,7 +355,11 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 				highest: "Most instructions"
 			};
 		default:
-			return undefined;
+			return {
+				name: "Unknown metric",
+				lowest: "Lowest value",
+				highest: "Highest value"
+			};
 	}
 }
 
@@ -500,6 +504,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 				var stdDev = Math.sqrt (variance);
 				low = average - stdDev;
 				high = average + stdDev;
+				// FIXME: it's not always duration, depending on the metric
 				averageTooltip = "Average +/- standard deviation: " + formatDuration (low) + "–" + formatDuration (high);
 			} else {
 				averageTooltip = "Average: " + formatDuration (average);
