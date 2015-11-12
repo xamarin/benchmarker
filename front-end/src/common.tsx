@@ -668,6 +668,9 @@ export class Navigation extends React.Component<NavigationProps, void> {
 				<a title="View benchmark results for pull requests"
 					className={classFor ('pullRequests')}
 					href="pullrequests.html">Pull Requests</a>
+				<a title="View GC pause times"
+					className={classFor ('pauseTimes')}
+					href="pausetimes.html">Pause Times</a>
 			</div>
 			<div className="NavigationSection Right" >
 				{deploymentLink}

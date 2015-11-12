@@ -239,8 +239,7 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				highBalloonName: 'highName',
 				color: xp_common.xamarinColors.blue [2],
 				title: "Concurrent"
-			}
-			,
+			},
 			{
 				lowName: 'lowSeq',
 				midName: 'midSeq',
