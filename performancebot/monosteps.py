@@ -135,9 +135,12 @@ class ProcessBinaryProtocolFiles(MasterShellCommand):
 
         logs_full_path.sort()
 
-        masterworkdir = 'tmp/' + str(self.getProperty('buildername')) + '/' + str(self.getProperty('buildnumber'))
-        compare_cmd = lambda logfile, runid: 'mono ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + '; rm -rf ' + logfile + '; '
-        self.command = ['bash', '-x', '-c', "".join([compare_cmd(log_full_path, runid) for (log_full_path, runid) in zip(logs_full_path, runids)])]
+        if runids is None or runids == []:
+            self.setCommand(['echo', 'nothing todo'])
+        else:
+            masterworkdir = 'tmp/' + str(self.getProperty('buildername')) + '/' + str(self.getProperty('buildnumber'))
+            compare_cmd = lambda logfile, runid: 'mono ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + '; rm -rf ' + logfile + '; '
+            self.command = ['bash', '-x', '-c', "".join([compare_cmd(log_full_path, runid) for (log_full_path, runid) in zip(logs_full_path, runids)])]
         MasterShellCommand.start(self)
 
 
