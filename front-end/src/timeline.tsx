@@ -354,6 +354,18 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 				lowest: "Fewest instructions",
 				highest: "Most instructions"
 			};
+		case 'cache-miss':
+			return {
+				name: relative ? "Relative cache miss rate" : "Cache miss rate",
+				lowest: "Fewest cache misses",
+				highest: "Most cache misses"
+			};
+		case 'branch-mispred':
+			return {
+				name: relative ? "Relative branch misprediction rate" : "Branch misprediction rate",
+				lowest: "Fewest branch mispredictions",
+				highest: "Most branch mispredictions"
+			};
 		default:
 			return {
 				name: "Unknown metric",
