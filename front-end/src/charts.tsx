@@ -492,7 +492,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineColor": parameters.color,
 			"lineThickness": 0,
 			"id": parameters.lowName,
-			"valueField": parameters.lowName
+			"valueField": parameters.lowName,
+			"visibleInLegend": false
 		},
 		{
 			"balloonText": "[[" + parameters.highBalloonName + "]]",
@@ -504,7 +505,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"fillColors": parameters.color,
 			"lineThickness": 0,
 			"id": parameters.highName,
-			"valueField": parameters.highName
+			"valueField": parameters.highName,
+			"visibleInLegend": false
 		},
 		{
 			"balloonText": "[[" + parameters.midBalloonName + "]]",
@@ -525,7 +527,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"bulletSize": 4,
 			"lineColor": parameters.color,
 			"id": parameters.maxName,
-			"valueField": parameters.maxName
+			"valueField": parameters.maxName,
+			"visibleInLegend": false
 		});
 	}
 
