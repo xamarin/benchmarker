@@ -168,18 +168,18 @@ class Page extends React.Component<PageProps, PageState> {
 			<article>
 				<div className="outer">
 					<div className="inner">
-						<div>
-							{benchmarkSelect}
-						</div>
-						<div>
-							Percentile
-							<input
-								type="range"
-								onInput={(e: React.FormEvent) => this.onPercentileChange (e)}
-								min={0}
-								max={1}
-								step={0.01}
-								defaultValue={this.state.percentile.toString ()} />
+						<div className="PauseTimeSelector">
+						<label>Benchmark</label>
+						{benchmarkSelect}
+						<label>Percentile</label>
+						<input
+							type="range"
+							onInput={(e: React.FormEvent) => this.onPercentileChange (e)}
+							min={0}
+							max={1}
+							step={0.01}
+							defaultValue={this.state.percentile.toString ()} />
+						{Math.round (this.state.percentile * 100).toString () + "%"}
 						</div>
 					</div>
 				</div>

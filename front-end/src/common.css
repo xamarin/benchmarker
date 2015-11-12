@@ -166,6 +166,26 @@ th {
 	width: 100%;
 }
 
+/* PauseTimeSelector */
+
+.PauseTimeSelector {
+	width: 100%;
+}
+
+.PauseTimeSelector > select {
+	box-sizing: border-box;
+	display: block;
+	margin: 8px 0;
+	width: 100%;
+}
+
+.PauseTimeSelector > input {
+	box-sizing: border-box;
+	display: block;
+	margin: 8px 0;
+	width: 100%;
+}
+
 /* Navigation */
 
 .Navigation {
