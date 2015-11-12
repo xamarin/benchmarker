@@ -166,15 +166,23 @@ class Page extends React.Component<PageProps, PageState> {
 			<xp_common.Navigation
 				currentPage="pauseTimes" />
 			<article>
-				{benchmarkSelect}
-				Percentile
-				<input
-					type="range"
-					onInput={(e: React.FormEvent) => this.onPercentileChange (e)}
-					min={0}
-					max={1}
-					step={0.01}
-					defaultValue={this.state.percentile.toString ()} />
+				<div className="outer">
+					<div className="inner">
+						<div>
+							{benchmarkSelect}
+						</div>
+						<div>
+							Percentile
+							<input
+								type="range"
+								onInput={(e: React.FormEvent) => this.onPercentileChange (e)}
+								min={0}
+								max={1}
+								step={0.01}
+								defaultValue={this.state.percentile.toString ()} />
+						</div>
+					</div>
+				</div>
 				<PauseTimesChart
 					graphName="pauseTimesChart"
 					percentile={this.state.percentile}
