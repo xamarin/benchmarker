@@ -136,7 +136,7 @@ class ProcessBinaryProtocolFiles(MasterShellCommand):
         logs_full_path.sort()
 
         if runids is None or runids == []:
-            self.setCommand(['echo', 'nothing todo'])
+            self.command = ['echo', 'nothing todo']
         else:
             masterworkdir = 'tmp/' + str(self.getProperty('buildername')) + '/' + str(self.getProperty('buildnumber'))
             compare_cmd = lambda logfile, runid: 'mono ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + '; rm -rf ' + logfile + '; '
