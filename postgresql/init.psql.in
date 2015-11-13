@@ -13,7 +13,8 @@ create table Machine (
        objectId varchar(10),
        name varchar(128) primary key,
        architecture varchar(128),
-       isDedicated boolean
+       isDedicated boolean,
+       check (name <> '')
 );
 
 create table Commit (
@@ -22,7 +23,8 @@ create table Commit (
        product varchar(128),
        commitDate timestamp with time zone,
        branch varchar(128),
-       mergeBaseHash varchar(40)
+       mergeBaseHash varchar(40),
+       check (hash <> '')
 );
 
 create table Config (
@@ -30,7 +32,8 @@ create table Config (
        name varchar(128) primary key,
        monoExecutable varchar(128),
        monoEnvironmentVariables jsonb,
-       monoOptions text[]
+       monoOptions text[],
+       check (name <> '')
 );
 
 create table RunSet (
