@@ -243,7 +243,7 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				midName: 'midConc',
 				highName: 'highConc',
 				lowBalloonName: 'lowName',
-				midBalloonName: 'tooltip',
+				midBalloonName: 'tooltipConc',
 				highBalloonName: 'highName',
 				color: xp_common.xamarinColors.blue [2],
 				title: "Concurrent"
@@ -280,15 +280,18 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 			const seqResults = nextProps.sortedResults.seq [seqCommitIndexes [commitHash]];
 			const concPercentiles = calcPercentiles (results [j].resultArrays, nextProps.percentile, nextProps.percentileRange);
 			const seqPercentiles = calcPercentiles (seqResults.resultArrays, nextProps.percentile, nextProps.percentileRange);
+			const tooltip = xp_charts.tooltipForRunSet (runSet, false);
 
 			table.push ({
 				dataItem: runSet,
 				lowConc: concPercentiles [1],
 				midConc: concPercentiles [2],
 				highConc: concPercentiles [3],
+				tooltipConc: tooltip + "\n" + concPercentiles [2].toString () + "ms",
 				lowSeq: seqPercentiles [1],
 				midSeq: seqPercentiles [2],
 				highSeq: seqPercentiles [3],
+				tooltipSeq: tooltip + "\n" + seqPercentiles [2].toString () + "ms",
 			});
 		}
 

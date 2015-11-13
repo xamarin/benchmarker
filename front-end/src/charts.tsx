@@ -663,3 +663,27 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 		this.setState ({ table: this.computeTable (nextProps) });
 	}
 }
+
+function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string {
+	if (benchmarks === undefined || benchmarks.length === 0)
+		return "";
+	return prefix + benchmarks.join (", ");
+}
+
+export function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) : string {
+	var commit = runSet.commit;
+	var commitDateString = commit.get ('commitDate').toDateString ();
+	var branch = "";
+	if (commit.get ('branch') !== undefined)
+		branch = " (" + commit.get ('branch') + ")";
+	var startedAtString = runSet.get ('startedAt').toDateString ();
+	var hashString = commit.get ('hash').substring (0, 10);
+
+	var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
+	if (includeBroken) {
+		var timedOutBenchmarks = joinBenchmarkNames (runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
+		var crashedBenchmarks = joinBenchmarkNames (runSet.get ('crashedBenchmarks'), "\nCrashed: ");
+		tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
+	}
+	return tooltip;
+}

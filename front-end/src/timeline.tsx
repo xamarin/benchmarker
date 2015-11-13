@@ -292,30 +292,6 @@ class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
 	}
 }
 
-function joinBenchmarkNames (benchmarks: Array<string>, prefix: string) : string {
-	if (benchmarks === undefined || benchmarks.length === 0)
-		return "";
-	return prefix + benchmarks.join (", ");
-}
-
-function tooltipForRunSet (runSet: Database.DBRunSet, includeBroken: boolean) : string {
-	var commit = runSet.commit;
-	var commitDateString = commit.get ('commitDate').toDateString ();
-	var branch = "";
-	if (commit.get ('branch') !== undefined)
-		branch = " (" + commit.get ('branch') + ")";
-	var startedAtString = runSet.get ('startedAt').toDateString ();
-	var hashString = commit.get ('hash').substring (0, 10);
-
-	var tooltip = hashString + branch + "\nCommitted on " + commitDateString + "\nRan on " + startedAtString;
-	if (includeBroken) {
-		var timedOutBenchmarks = joinBenchmarkNames (runSet.get ('timedOutBenchmarks'), "\nTimed out: ");
-		var crashedBenchmarks = joinBenchmarkNames (runSet.get ('crashedBenchmarks'), "\nCrashed: ");
-		tooltip = tooltip + timedOutBenchmarks + crashedBenchmarks;
-	}
-	return tooltip;
-}
-
 function runSetIsBroken (runSet: Database.DBObject, averages: Database.BenchmarkValues) : boolean {
 	var timedOutBenchmarks = runSet.get ('timedOutBenchmarks') || [];
 	var crashedBenchmarks = runSet.get ('crashedBenchmarks') || [];
@@ -457,7 +433,7 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 				console.log ("No data for run set " + runSet.get ('id'));
 				continue;
 			}
-			var tooltip = tooltipForRunSet (runSet, true);
+			var tooltip = xp_charts.tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
 			const { lowest: lowestLabel, highest: highestLabel } = axisNameForMetric (this.props.metric, true);
 			table.push ({
@@ -507,7 +483,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 			if (average === undefined)
 				continue;
 
-			var tooltip = tooltipForRunSet (runSet, false);
+			var tooltip = xp_charts.tooltipForRunSet (runSet, false);
 
 			var low = undefined;
 			var high = undefined;
