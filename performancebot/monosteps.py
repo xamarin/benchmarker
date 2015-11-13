@@ -38,7 +38,7 @@ class ParsingShellCommand(ShellCommand):
             if existing_value is not None:
                 new_value = "None"
                 if len(results) >= 1:
-                    new_value = str(results [0])
+                    new_value = str(results[0])
                 log.msg("overriding " + str(prop_name) + ", old value is: " + str(existing_value) + ", new value: " + new_value)
                 self.setProperty(prop_name, None, 'ParsingShellCommand')
             assert len(results) <= 1, 'more than one match for %s: %s' % (prop_name, str(results))
