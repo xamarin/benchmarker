@@ -21,23 +21,19 @@ interface SelectionNames {
 
 class Controller {
 	private initialSelectionNames: SelectionNames;
+	private initialPercentile: number;
 
-	constructor (machineName: string, configNameConc: string, configNameSeq: string, benchmark: string) {
-		if (machineName === undefined && configNameConc === undefined && configNameSeq === undefined && benchmark === undefined) {
-			this.initialSelectionNames = {
-				machineName: 'benchmarker',
-				configNameConc: 'auto-sgen-conc-noturbo-binary',
-				configNameSeq: 'auto-sgen-noturbo-binary',
-				benchmark: 'graph4'
-			};
-		} else {
-			this.initialSelectionNames = {
-				machineName: machineName,
-				configNameConc: configNameConc,
-				configNameSeq: configNameSeq,
-				benchmark: benchmark
-			};
-		}
+	constructor (benchmark: string, percentile: number) {
+		const machineName = 'benchmarker';
+		const configNameConc = 'auto-sgen-conc-noturbo-binary';
+		const configNameSeq = 'auto-sgen-noturbo-binary';
+		this.initialSelectionNames = {
+			machineName: machineName,
+			configNameConc: configNameConc,
+			configNameSeq: configNameSeq,
+			benchmark: benchmark === undefined ? 'graph4' : benchmark
+		};
+		this.initialPercentile = percentile === undefined ? 0.5 : percentile;
 	}
 
 	public loadAsync () : void {
@@ -50,14 +46,24 @@ class Controller {
 
 	private allDataLoaded () : void {
 		ReactDOM.render (<Page
-					initialSelectionNames={this.initialSelectionNames} />,
+					initialSelectionNames={this.initialSelectionNames}
+					initialPercentile={this.initialPercentile}
+					onChange={(selectionNames: SelectionNames, percentile: number) => this.onChange (selectionNames, percentile)} />,
 			document.getElementById ('pauseTimesPage')
 		);
+
+		this.onChange (this.initialSelectionNames, this.initialPercentile);
+	}
+
+	private onChange (selectionNames: SelectionNames, percentile: number) : void {
+		xp_common.setLocationForDict ({ benchmark: selectionNames.benchmark, percentile: percentile });
 	}
 }
 
 interface PageProps {
 	initialSelectionNames: SelectionNames;
+	initialPercentile: number;
+	onChange: (selectionNames: SelectionNames, percentile: number) => void;
 }
 
 interface PageState {
@@ -76,7 +82,7 @@ class Page extends React.Component<PageProps, PageState> {
 			benchmarks: undefined,
 			sortedResultsConc: [],
 			sortedResultsSeq: [],
-			percentile: 0.5
+			percentile: this.props.initialPercentile
 		};
 	}
 
@@ -120,6 +126,7 @@ class Page extends React.Component<PageProps, PageState> {
 	private onPercentileChange (e: React.FormEvent) : void {
 		const percentile = parseFloat (e.target ['value']);
 		this.setState ({ percentile: percentile } as any);
+		this.props.onChange (this.state.selectionNames, percentile);
 	}
 
 	private benchmarkValueName (benchmark: string) : string {
@@ -135,6 +142,7 @@ class Page extends React.Component<PageProps, PageState> {
 			sortedResultsConc: [],
 			sortedResultsSeq: []
 		} as any);
+		this.props.onChange (newSelectionNames, this.state.percentile);
 		this.fetchResults (newSelectionNames, true);
 		this.fetchResults (newSelectionNames, false);
 	}
@@ -300,12 +308,10 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 }
 
 function start (params: Object) : void {
-	var machine = params ['machine'];
-	var configConc = params ['configConc'];
-	var configSeq = params ['configSeq'];
 	var benchmark = params ['benchmark'];
-	var controller = new Controller (machine, configConc, configSeq, benchmark);
+	const percentile = params ['percentile'];
+	var controller = new Controller (benchmark, percentile);
 	controller.loadAsync ();
 }
 
-xp_common.parseLocationHashForDict (['machine', 'configConc', 'configSeq', 'benchmark'], start);
+xp_common.parseLocationHashForDict (['benchmark', 'percentile'], start);
