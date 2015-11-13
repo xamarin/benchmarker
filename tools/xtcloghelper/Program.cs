@@ -52,6 +52,8 @@ namespace xtclog
 				logs.Add (contents);
 				var connection = PostgresInterface.Connect ();
 				var tuple = ProcessLog (connection, logs, null, null);
+				if (tuple == null)
+					Environment.Exit (1);
 				tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 			} else if (args [0] == "--crawl-logs") {
 				var connection = PostgresInterface.Connect ();
@@ -63,7 +65,7 @@ namespace xtclog
 					string xtcjobguid = xtcjobtuple.Item2;
 					long runsetid = xtcjobtuple.Item3;
 					DateTime startedAt = xtcjobtuple.Item4;
-					TimeSpan timeDiff = DateTime.Now - startedAt;
+					//TimeSpan timeDiff = DateTime.Now - startedAt;
 
 					Console.WriteLine ("XTC Job ID Pending: " + xtcjobtuple);
 					var guid = Guid.Parse (xtcjobguid);
@@ -81,15 +83,21 @@ namespace xtclog
 						Console.WriteLine ("found more than one device in logs, not supported: " + results.Logs.Devices);
 						Environment.Exit (2);
 					}
+					var hadErrors = false;
 					foreach (var device in results.Logs.Devices) {
 						Console.WriteLine ("device id: " + device.DeviceConfigurationId);
 						Console.WriteLine ("devicelog url: " + device.DeviceLog);
 
 						List<string> logs = DownloadLogs (device.DeviceLog);
 						var tuple = ProcessLog (connection, logs, runsetid, xtcjobguid);
+						if (tuple == null) {
+							hadErrors = true;
+							continue;
+						}
 						tuple.Item1.UploadToPostgres (connection, tuple.Item2);
 					}
-					DeleteXTCJobId (connection, xtcjobid);
+					if (!hadErrors)
+						DeleteXTCJobId (connection, xtcjobid);
 				}
 				Console.WriteLine ("done processing the queue");
 			} else {
@@ -163,6 +171,8 @@ namespace xtclog
 		{
 			string regex_commit = @"I\/benchmarker\(\s*\d+\): Benchmarker \| commit ""(?<hash>[0-9A-Za-z]{40})"" on branch ""(?<branch>[\w\-_\.]+)""";
 			Match match_commit = Regex.Match (log, regex_commit);
+			if (!match_commit.Success)
+				return null;
 			var commit = new bm.Commit ();
 			commit.Hash = match_commit.Groups ["hash"].Value;
 			commit.Branch = match_commit.Groups ["branch"].Value;
@@ -174,6 +184,8 @@ namespace xtclog
 		{
 			string regex_machine = @"I\/benchmarker\(\s*\d+\): Benchmarker \| hostname ""(?<hostname>[\w\s\.]+)"" architecture ""(?<architecture>[\w\-]+)""";
 			Match match_machine = Regex.Match (log, regex_machine);
+			if (!match_machine.Success)
+				return null;
 			var machine = new bm.Machine {
 				Name = match_machine.Groups ["hostname"].Value,
 				Architecture = match_machine.Groups ["architecture"].Value
@@ -186,6 +198,8 @@ namespace xtclog
 		{
 			string regex_config = @"I\/benchmarker\(\s*\d+\): Benchmarker \| configname ""(?<name>[\w\-\.]+)""";
 			Match match_config = Regex.Match (log, regex_config);
+			if (!match_config.Success)
+				return null;
 			return new bm.Config {
 				Name = match_config.Groups ["name"].Value,
 				Mono = String.Empty,
@@ -216,9 +230,23 @@ namespace xtclog
 
 		private static Tuple<bm.RunSet, bm.Machine> ProcessLog (NpgsqlConnection connection, List<string> logs, long? runSetId, string jobguid)
 		{
-			var commit = ParseCommit (logs [0]);
-			var machine = ParseMachine (logs [0]);
-			var config = ParseConfig (logs [0]);
+			bm.Config config = null;
+			bm.Machine machine = null;
+			bm.Commit commit = null;
+
+			foreach (var log in logs) {
+				if (config == null)
+					config = ParseConfig (log);
+				if (machine == null)
+					machine = ParseMachine (log);
+				if (commit == null)
+					commit = ParseCommit (log);	
+			}
+
+			if (config == null || machine == null || commit == null) {
+				Console.Error.WriteLine ("Error: Couldn't parse config, machine, or commit out of logs.");
+				return null;
+			}
 
 			bm.RunSet runSet;
 			if (runSetId == null) {
