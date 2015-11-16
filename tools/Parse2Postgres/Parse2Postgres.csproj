@@ -36,12 +36,6 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Parse.NetFx45">
-      <HintPath>..\packages\parse.1.5.5\lib\net45\Parse.NetFx45.dll</HintPath>
-    </Reference>
-    <Reference Include="Parse">
-      <HintPath>..\packages\parse.1.5.5\lib\net45\Parse.dll</HintPath>
-    </Reference>
     <Reference Include="Nito.AsyncEx.Concurrent">
       <HintPath>..\packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
     </Reference>
@@ -52,17 +46,23 @@
       <HintPath>..\packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http" />
-    <Reference Include="Common.Logging.Core">
-      <HintPath>..\packages\Common.Logging.Core.3.3.0\lib\net40\Common.Logging.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Common.Logging">
-      <HintPath>..\packages\Common.Logging.3.3.0\lib\net40\Common.Logging.dll</HintPath>
-    </Reference>
     <Reference Include="Octokit">
       <HintPath>..\packages\Octokit.0.16.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="Npgsql">
       <HintPath>..\packages\Npgsql.3.0.3\lib\net45\Npgsql.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging.Core">
+      <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging">
+      <HintPath>..\packages\Common.Logging.3.3.1\lib\net40\Common.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Parse.NetFx45">
+      <HintPath>..\packages\parse.1.6.1\lib\net45\Parse.NetFx45.dll</HintPath>
+    </Reference>
+    <Reference Include="Parse">
+      <HintPath>..\packages\parse.1.6.1\lib\net45\Parse.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

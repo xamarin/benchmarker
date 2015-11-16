@@ -117,14 +117,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <ItemGroup>
-    <Reference Include="Common.Logging.Core">
-      <HintPath>..\packages\Common.Logging.Core.3.3.0\lib\portable-win+net40+sl40+wp7\Common.Logging.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="BH\" />
     <Folder Include="BiSort\" />
     <Folder Include="GrandeTracer\" />
@@ -133,5 +125,13 @@
     <Folder Include="SciMark\" />
     <Folder Include="Euler\" />
     <Folder Include="SpecRaytracer\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Common.Logging.Core">
+      <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\portable-win+net40+sl40+wp7\Common.Logging.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
