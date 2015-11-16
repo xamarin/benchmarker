@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -143,7 +142,9 @@ namespace xtclog
 
 		private static bool hasZipFileHeader (byte[] data)
 		{
-			Debug.Assert (data != null && data.Length >= 4);
+			if (!(data != null && data.Length >= 4)) {
+				throw new Exception ("not enough data to check ZIP header");
+			}
 			return (BitConverter.ToInt32 (data, 0) == ZIP_LEAD_BYTES);
 		}
 
@@ -257,7 +258,8 @@ namespace xtclog
 					SecondaryCommits = new List<bm.Commit> ()
 				};
 			} else {
-				Debug.Assert (jobguid != null);
+				if (jobguid == null)
+					throw new Exception ("need to provide jobguid");
 				runSet = bm.RunSet.FromId (connection, machine, runSetId.Value, config, commit, null, null, XTC_UI_PREFIX + jobguid);
 			}
 

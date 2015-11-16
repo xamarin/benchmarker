@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Common.Logging;
 
 namespace Benchmarker
@@ -14,7 +13,8 @@ namespace Benchmarker
 
 		public static ILog GetLogging()
 		{
-			Debug.Assert (log != null, "must initialize Logging");
+			if (log == null)
+				throw new Exception ("must initialize Logging");
 			return log;
 		}
 	}

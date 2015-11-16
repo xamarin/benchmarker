@@ -1,6 +1,5 @@
 ﻿using System;
 using Octokit;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Benchmarker
@@ -12,7 +11,8 @@ namespace Benchmarker
 
 		public static GitHubClient GitHubClient {
 			get {
-				Debug.Assert (githubCredentials != null, "client must set github credentials");
+				if (githubCredentials == null)
+					throw new Exception ("client must set github credentials");
 
 				if (gitHubClient != null)
 					return gitHubClient;

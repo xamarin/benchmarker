@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Benchmarker;
 using Java.IO;
 
@@ -14,7 +13,9 @@ namespace AndroidAgent
 
 		public AndroidCPUManagment ()
 		{
-			Debug.Assert (IsRooted ());
+			if (!IsRooted ()) {
+				throw new Exception ("app must have root permissions");
+			}
 			cpus = AvailableCPUs ();
 			savedFrequency = new string[cpus.Length];
 			savedGovenor = new string[cpus.Length];
@@ -51,7 +52,9 @@ namespace AndroidAgent
 			for (int i = 0; i < cpus.Length; i++) {
 				string cpu = cpus [i];
 				string[] availFreqs = AvailableCPUFreuquencies (cpu);
-				Debug.Assert (Array.IndexOf (AvailableCPUGovenors (cpu), "userspace") > -1);
+				if (Array.IndexOf (AvailableCPUGovenors (cpu), "userspace") <= -1) {
+					throw new Exception ("govenor \"userspace\" is not available");
+				}
 				SetCPUGovenor (cpu, "userspace");
 				SetCPUFrequency (cpu, availFreqs [availFreqs.Length - 1]);
 			}

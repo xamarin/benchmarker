@@ -67,11 +67,15 @@ namespace compare
 			timedOut = false;
 
 			try {
-				if (profilesDirectory != null)
-					Debug.Assert (profileFilename != null);
-				else
-					Debug.Assert (profileFilename == null);
-				
+				if (profilesDirectory != null) {
+					if (profileFilename == null) {
+						throw new Exception ("must have profile filename");
+					}
+				} else {
+					if (profileFilename != null) {
+						throw new Exception ("must have no profile filename");
+					}
+				}
 				if (profilesDirectory == null) {
 					info.Arguments = arguments;
 				} else {

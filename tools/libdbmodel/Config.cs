@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -89,9 +88,15 @@ namespace Benchmarker.Models
 				throw new InvalidDataException ("Configuration does not have a `Name`.");
 
 			if (config.NoMono) {
-				Debug.Assert (config.MonoOptions == null || config.MonoOptions.Length == 0);
-				Debug.Assert (config.MonoEnvironmentVariables == null || config.MonoEnvironmentVariables.Count == 0);
-				Debug.Assert (config.UnsavedMonoEnvironmentVariables == null || config.UnsavedMonoEnvironmentVariables.Count == 0);
+				if (!(config.MonoOptions == null || config.MonoOptions.Length == 0)) {
+					throw new Exception ("config error");
+				}
+				if (!(config.MonoEnvironmentVariables == null || config.MonoEnvironmentVariables.Count == 0)) {
+					throw new Exception ("config error");
+				}
+				if (!(config.UnsavedMonoEnvironmentVariables == null || config.UnsavedMonoEnvironmentVariables.Count == 0)) {
+					throw new Exception ("config error");
+				}
 			}
 
 			if (String.IsNullOrWhiteSpace (config.Mono)) {
