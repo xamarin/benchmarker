@@ -2,7 +2,7 @@
 
 PAGES = compare config machine timeline runset pullrequest pullrequests pausetimes
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
-DEPS = react github-api react-dom ts-loader typescript webpack
+DEPS = react@0.14.2 github-api@0.10.6 react-dom@0.14.2 ts-loader@0.6.0 typescript@1.6.2 webpack@1.12.2
 STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min
 
 # Sources and targets
@@ -11,7 +11,8 @@ COMMON_SOURCES = $(addprefix src/,$(COMMON))
 PAGE_SOURCES = $(addprefix src/,$(addsuffix .tsx,$(PAGES)))
 PAGE_TARGETS = $(addprefix build/,$(addsuffix .js,$(PAGES)))
 STYLE_TARGETS = $(addprefix build/,$(addsuffix .css,$(STYLES)))
-DEP_TARGETS = $(addprefix node_modules/,$(DEPS))
+
+DEP_TARGETS = $(addprefix node_modules/,$(shell echo $(DEPS) | sed -E 's/@[^ ]+//g'))
 
 # Entry points
 
@@ -49,7 +50,7 @@ build/witness : $(PAGE_SOURCES) $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpac
 # Dependencies
 
 define DEP_RULE
-node_modules/$1 :
+node_modules/$(shell echo $1 | sed -E 's/@[^ ]+//g') :
 	@echo 'Installing $1...'
 	@npm install "$1"
 
