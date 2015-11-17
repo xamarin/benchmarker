@@ -30,7 +30,7 @@ clean :
 	@rm -rf build
 
 .PHONY :
-server :
+server : $(DEP_TARGETS)
 	@echo 'Connect to http://localhost:8080/webpack-dev-server/index.html'
 	@DEV_SERVER=true webpack-dev-server --devtool=inline-source-map
 
