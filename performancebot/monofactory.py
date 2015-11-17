@@ -363,6 +363,7 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
            '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
            '--root', root_renderer(),
            '--main-product', 'mono', commit_renderer(),
+           '--secondary-product', 'benchmarker', DetermineProductRevision('benchmarker'),
            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
            '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
           ]
@@ -407,11 +408,16 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
 from buildbot.interfaces import IRenderable
 from zope.interface import implements
 
-class DetermineMonoRevision(object):
+class DetermineProductRevision(object):
     implements(IRenderable)
+
+    def __init__(self, product):
+        self.product = product
+
     #pylint: disable=R0201
     def getRenderingFor(self, props):
-        if props.hasProperty('got_revision'):
-            return props['got_revision']['mono']
-        return "failed revision lookup"
+        assert props.hasProperty('got_revision')
+        products = props['got_revision']
+        assert self.product in products
+        return products[self.product]
     #pylint: enable=R0201

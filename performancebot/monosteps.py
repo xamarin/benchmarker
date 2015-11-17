@@ -69,6 +69,8 @@ class CreateRunSetIdStep(ParsingShellCommand):
         mono_version = self.getProperty(PROPERTYNAME_MONOVERSION)
         git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
         config_name = self.getProperty('config_name')
+        benchmarker_commit = self.getProperty('got_revision').get('benchmarker')
+        assert benchmarker_commit is not None
         cmd = ['mono', 'tools/compare.exe', '--create-run-set']
         if pullrequestid is not None:
             cmd.append('--pull-request-url')
@@ -86,6 +88,9 @@ class CreateRunSetIdStep(ParsingShellCommand):
         cmd.append('configs/%s.conf' % (config_name))
         cmd.append('--root')
         cmd.append(self.install_root(mono_version))
+        cmd.append('--secondary-product')
+        cmd.append('benchmarker')
+        cmd.append(benchmarker_commit)
         self.setCommand(cmd)
         ShellCommand.start(self)
 
