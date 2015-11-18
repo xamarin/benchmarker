@@ -15,26 +15,28 @@ class CheckRetryStep(LoggingBuildStep):
     @defer.inlineCallbacks
     def do_request(self):
         forced = self.getProperty('reason')
-        if forced is not None:
-            log.msg("forced job, no retry check.")
-            self.finished(SKIPPED)
-        else:
-            buildername = self.getProperty('buildername')
-            buildernumber = self.getProperty('buildnumber')
-            buildurl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
-            gitcommit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
-            #pylint: disable=E1101
-            logger = self.addLog("stdio").addStdout
-            #pylint: enable=E1101
-            log.msg("check-retry: before yielding")
-            run_set_id, executed_benchs = yield check_retry(BUILDBOT_URL, buildername, buildernumber, buildurl, gitcommit, lambda msg: logger(msg + "\n"))
-            if run_set_id is not None and executed_benchs is not []:
-                self.setProperty(PROPERTYNAME_RUNSETID, run_set_id)
-                self.setProperty(PROPERTYNAME_SKIP_BENCHS, executed_benchs)
-            self.finished(SUCCESS)
+        buildername = self.getProperty('buildername')
+        buildernumber = self.getProperty('buildnumber')
+        buildurl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
+        gitcommit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
+        #pylint: disable=E1101
+        logger = self.addLog("stdio").addStdout
+        #pylint: enable=E1101
+        log.msg("check-retry: before yielding")
+        run_set_id, executed_benchs = yield check_retry(BUILDBOT_URL, buildername, buildernumber, buildurl, gitcommit, lambda msg: logger(msg + "\n"))
+        if run_set_id is not None and executed_benchs is not []:
+            self.setProperty(PROPERTYNAME_RUNSETID, run_set_id)
+            self.setProperty(PROPERTYNAME_SKIP_BENCHS, executed_benchs)
+        self.finished(SUCCESS)
 
     def start(self):
         self.do_request()
+
+# Ideally, the information which benchmarks to run would come out of
+# the database, not the buildbot runs.  We could do this either by
+# having a compare option that outputs the outstanding benchmarks for
+# a given runset, or via an option that will run benchmarks only if
+# they're not already in the runset.
 
 @defer.inlineCallbacks
 def check_retry(base_url, buildername, buildernumber, build_url, gitcommit, logging):
