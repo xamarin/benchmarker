@@ -123,9 +123,17 @@ namespace Benchmarker.Models
 				throw new Exception ("Config does not match the one in the database.");
 
 			if (secondaryCommits != null) {
-				var secondaryHashes = row.GetReference<string[]> ("rs.secondaryCommits") ?? new string[] { };
-				if (secondaryHashes.Length != secondaryCommits.Count || secondaryCommits.Any (c => !secondaryHashes.Contains (c.Hash)))
-					throw new Exception ("Secondary commits do not match the ones in the database.");
+				var secondaryHashes = (row.GetReference<string[]> ("rs.secondaryCommits") ?? new string[] { }).ToList ();
+				// FIXME: This is a hack.  We're adding the hashes in `secondaryCommits`
+				// to the Postgres row, but not the other way around.  We're relying on the fact
+				// that nobody's actually using the `SecondaryCommits` property if a row
+				// is available.  If we were to do it properly, we'd have to fetch the full
+				// commits in the row, which include the product names. 
+				foreach (var c in secondaryCommits) {
+					if (!secondaryHashes.Contains (c.Hash))
+						secondaryHashes.Add (c.Hash);
+				}
+				row.Set ("rs.secondaryCommits", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, secondaryHashes);
 			}
 
 			return runSet;
