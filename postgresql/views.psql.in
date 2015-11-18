@@ -68,6 +68,11 @@ select rs.id as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pull
 from run r, runmetric rm, benchmark b, runset rs, commit c
 where rs.commit = c.hash and r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
 
+create view "1".resultarraybenchmarks as
+select distinct r.benchmark, b.disabled, rm.metric, rs.machine, rs.config
+from run r, runmetric rm, benchmark b, runset rs
+where r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
+
 create view "1".pullrequest as
 select pr.id as pr_id, pr.url as pr_url,
        blrs.id as blrs_id, blrs.startedAt as blrs_startedAt, blrs.finishedAt as blrs_finishedAt, blrs.buildURL as blrs_buildURL, blrs.logURLs as blrs_logURLs, blrs.commit as blrs_commit, blrs.machine as blrs_machine, blrs.config as blrs_config, blrs.timedOutBenchmarks as blrs_timedOutBenchmarks, blrs.crashedBenchmarks as blrs_crashedBenchmarks,
