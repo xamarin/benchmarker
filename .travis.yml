@@ -12,6 +12,7 @@ before_script:
     - EC2PBOTMASTERIP=dummy make -C performancebot pylint
     - npm i -g webpack@1.12.2
     - npm i -g tslint@2.5.1
+    - npm i -g eslint@1.1.0 # force this version until newer version than 1.3.1 is available (https://github.com/eslint/eslint/issues/3591)
     - make -C front-end
     - make -C front-end lint
     - make -C accredit/cloud-code lint
