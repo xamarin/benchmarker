@@ -6,7 +6,7 @@ from twisted.web.client import getPage
 from twisted.internet import defer, reactor
 
 from buildbot.process.buildstep import LoggingBuildStep
-from buildbot.status.builder import SUCCESS, SKIPPED
+from buildbot.status.builder import SUCCESS
 
 class CheckRetryStep(LoggingBuildStep):
     def __init__(self, *args, **kwargs):
