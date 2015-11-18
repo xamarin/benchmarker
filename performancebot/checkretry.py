@@ -14,7 +14,6 @@ class CheckRetryStep(LoggingBuildStep):
 
     @defer.inlineCallbacks
     def do_request(self):
-        forced = self.getProperty('reason')
         buildername = self.getProperty('buildername')
         buildernumber = self.getProperty('buildnumber')
         buildurl = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
