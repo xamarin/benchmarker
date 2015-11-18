@@ -611,10 +611,13 @@ export function githubCommitLink (product: string, commit: string) : string {
 	var repo = "";
 	switch (product) {
 		case 'mono':
-			repo = "mono/mono";
+			repo = 'mono/mono';
 			break;
 		case 'monodroid':
-			repo = "xamarin/monodroid";
+			repo = 'xamarin/monodroid';
+			break;
+		case 'benchmarker':
+			repo = 'xamarin/benchmarker';
 			break;
 		default:
 			alert("Unknown product " + product);
