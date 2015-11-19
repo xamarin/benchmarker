@@ -170,7 +170,7 @@ class Page extends React.Component<PageProps, PageState> {
 					</option>;
 				});
 			benchmarkSelect = <select
-					size={6}
+					size={10}
 					value={selectedBenchmarkValue}
 					onChange={(e: React.FormEvent) => this.onBenchmarkChange (e)}>
 					{benchmarkOptions}

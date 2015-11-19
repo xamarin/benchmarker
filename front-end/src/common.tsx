@@ -224,7 +224,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		}
 		return <div className="CombinedConfigSelector">
 			<label>Machine &amp; Config</label>
-			<select size={6} value={selectedValue} onChange={(e: React.FormEvent) => this.combinationSelected (e)}>
+			<select size={10} value={selectedValue} onChange={(e: React.FormEvent) => this.combinationSelected (e)}>
 				{featuredTimelinesElement}
 				{Object.keys (machines).map ((m: string) => renderGroup (machines, m))}
 			</select>
@@ -370,7 +370,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
-				size={6}
+				size={10}
 				value={runSetId}
 				onChange={(e: React.FormEvent) => this.runSetSelected (e)}>
 				{runSets.map (renderRunSet)}
