@@ -607,6 +607,40 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	}
 }
 
+export interface RunSetSummaryProps extends React.Props<RunSetSummary> {
+	runSet: Database.DBRunSet;
+	previousRunSet: Database.DBRunSet;
+}
+
+export class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
+	public render () : JSX.Element {
+		var runSet = this.props.runSet;
+		var commitHash = runSet.commit.get ('hash');
+		var commitLink = githubCommitLink (runSet.commit.get ('product'), commitHash);
+
+		var prev = this.props.previousRunSet;
+		var prevItems;
+		if (prev !== undefined) {
+			var prevHash = prev.commit.get ('hash');
+			var prevLink = githubCommitLink (prev.commit.get ('product'), prevHash);
+			var compareLink = githubCompareLink (prevHash, commitHash);
+			prevItems = [<dt key="previousName">Previous</dt>,
+				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
+		}
+
+		var runSetLink = "runset.html#id=" + runSet.get ('id');
+		return <div className="RunSetSummary">
+			<div className="Description">
+			<dl>
+			<dt>Commit</dt>
+			<dd><a href={commitLink}>{commitHash.substring (0, 10)}</a><br /><a href={runSetLink}>Details</a></dd>
+			{prevItems}
+			</dl>
+			</div>
+			</div>;
+	}
+}
+
 export function githubCommitLink (product: string, commit: string) : string {
 	var repo = "";
 	switch (product) {

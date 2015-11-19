@@ -212,12 +212,12 @@ class Page extends React.Component<PageProps, PageState> {
 				metric={firstSelection.metric} />;
 		}
 
-		var runSetSummaries;
+		let runSetSummaries: JSX.Element;
 		if (runSetIndexes.length > 0) {
 			var divs = runSetIndexes.map ((i: number) => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
-				var elem = <RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
+				var elem = <xp_common.RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
 				return elem;
 			});
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
@@ -255,40 +255,6 @@ class Page extends React.Component<PageProps, PageState> {
 				{benchmarkChartList}
 			</article>
 		</div>;
-	}
-}
-
-interface RunSetSummaryProps extends React.Props<RunSetSummary> {
-	runSet: Database.DBRunSet;
-	previousRunSet: Database.DBRunSet;
-}
-
-class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
-	public render () : JSX.Element {
-		var runSet = this.props.runSet;
-		var commitHash = runSet.commit.get ('hash');
-		var commitLink = xp_common.githubCommitLink (runSet.commit.get ('product'), commitHash);
-
-		var prev = this.props.previousRunSet;
-		var prevItems;
-		if (prev !== undefined) {
-			var prevHash = prev.commit.get ('hash');
-			var prevLink = xp_common.githubCommitLink (prev.commit.get ('product'), prevHash);
-			var compareLink = xp_common.githubCompareLink (prevHash, commitHash);
-			prevItems = [<dt key="previousName">Previous</dt>,
-				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
-		}
-
-		var runSetLink = "runset.html#id=" + runSet.get ('id');
-		return <div className="RunSetSummary">
-			<div className="Description">
-			<dl>
-			<dt>Commit</dt>
-			<dd><a href={commitLink}>{commitHash.substring (0, 10)}</a><br /><a href={runSetLink}>Details</a></dd>
-			{prevItems}
-			</dl>
-			</div>
-			</div>;
 	}
 }
 

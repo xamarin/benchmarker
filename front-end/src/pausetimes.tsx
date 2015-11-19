@@ -71,6 +71,7 @@ interface PageState {
 	selectionNames: SelectionNames;
 	sortedResultsConc: Array<Database.ArrayResults>;
 	sortedResultsSeq: Array<Database.ArrayResults>;
+	runSetIndexes: Array<number>;
 	percentile: number;
 }
 
@@ -82,6 +83,7 @@ class Page extends React.Component<PageProps, PageState> {
 			benchmarks: undefined,
 			sortedResultsConc: [],
 			sortedResultsSeq: [],
+			runSetIndexes: [],
 			percentile: this.props.initialPercentile
 		};
 	}
@@ -140,11 +142,18 @@ class Page extends React.Component<PageProps, PageState> {
 		this.setState ({
 			selectionNames: newSelectionNames,
 			sortedResultsConc: [],
-			sortedResultsSeq: []
+			sortedResultsSeq: [],
+			runSetIndexes: []
 		} as any);
 		this.props.onChange (newSelectionNames, this.state.percentile);
 		this.fetchResults (newSelectionNames, true);
 		this.fetchResults (newSelectionNames, false);
+	}
+
+	private runSetSelected (runSet: Database.DBObject) : void {
+		var index = xp_utils.findIndex (this.state.sortedResultsConc, (r: Database.ArrayResults) => r.runSet === runSet);
+		if (this.state.runSetIndexes.indexOf (index) < 0)
+			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
 
 	public render () : JSX.Element {
@@ -168,6 +177,17 @@ class Page extends React.Component<PageProps, PageState> {
 				</select>;
 		} else {
 			benchmarkSelect = <div className="diagnostic">Loading&hellip;</div>;
+		}
+
+		let runSetSummaries: JSX.Element;
+		if (this.state.runSetIndexes.length > 0) {
+			var divs = this.state.runSetIndexes.map ((i: number) => {
+				var rs = this.state.sortedResultsConc [i].runSet;
+				var prev = i > 0 ? this.state.sortedResultsConc [i - 1].runSet : undefined;
+				var elem = <xp_common.RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
+				return elem;
+			});
+			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
 
 		return <div className="TimelinePage">
@@ -196,8 +216,10 @@ class Page extends React.Component<PageProps, PageState> {
 					percentile={this.state.percentile}
 					percentileRange={0.1}
 					zoomInterval={undefined}
-					runSetSelected={undefined}
+					runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
 					sortedResults={ { conc: this.state.sortedResultsConc, seq: this.state.sortedResultsSeq } } />
+				<div style={{ clear: 'both' }}></div>
+				{runSetSummaries}
 			</article>
 		</div>;
 	}
