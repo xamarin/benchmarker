@@ -677,32 +677,34 @@ class Compare
 		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime, runSet.FinishDateTime);
 
 		Console.WriteLine ("uploading");
-		try {
-			var newIds = runSet.UploadToPostgres (dbConnection, machine);
-			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#id={0}", newIds.Item1);
-			if (pullRequestURL != null) {
-				Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", newIds.Item2.Value);
-			}
-			Console.Write ("{{ \"runSetId\": \"{0}\"", newIds.Item1);
-            if (pullRequestURL != null)
-				Console.Write (", \"pullRequestId\": \"{0}\"", newIds.Item2.Value);
-			Console.Write (", \"runs\": [ ");
 
-			var runStrings = new List<string> ();
-			foreach (var run in runSet.AllRuns) {
-				var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
-				if (run.BinaryProtocolFilename != null)
-					str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
-				runStrings.Add ("{ " + str + " }");
-			}
-			Console.Write (string.Join (", ", runStrings));
-
-			Console.Write (" ]");
-            Console.WriteLine (" }");
-		} catch (Exception exc) {
-			Console.Error.WriteLine ("Error: Failure uploading data: " + exc);
+		bool uploadSuccess;
+		var newIds = PostgresInterface.RunInTransactionWithRetry (dbConnection, (conn) => runSet.UploadToPostgres (conn, machine), out uploadSuccess);
+		if (!uploadSuccess) {
+			Console.Error.WriteLine ("Error: Failure uploading data.");
 			Environment.Exit (1);
 		}
+
+		Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#id={0}", newIds.Item1);
+		if (pullRequestURL != null) {
+			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", newIds.Item2.Value);
+		}
+		Console.Write ("{{ \"runSetId\": \"{0}\"", newIds.Item1);
+        if (pullRequestURL != null)
+			Console.Write (", \"pullRequestId\": \"{0}\"", newIds.Item2.Value);
+		Console.Write (", \"runs\": [ ");
+
+		var runStrings = new List<string> ();
+		foreach (var run in runSet.AllRuns) {
+			var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
+			if (run.BinaryProtocolFilename != null)
+				str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
+			runStrings.Add ("{ " + str + " }");
+		}
+		Console.Write (string.Join (", ", runStrings));
+
+		Console.Write (" ]");
+        Console.WriteLine (" }");
 
 		dbConnection.Close ();
 

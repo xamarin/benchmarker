@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Npgsql;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -123,6 +124,37 @@ namespace Benchmarker
 				AddParameters (cmd, row);
 				return cmd.ExecuteNonQuery ();
 			}
+		}
+
+		const int numRetries = 3;
+
+		public static T RunInTransactionWithRetry<T> (NpgsqlConnection conn, Func<NpgsqlConnection, T> action, out bool success) {
+			success = true;
+			var retryTime = 10; // in seconds
+			for (var i = 0; i < numRetries; ++i) {
+				try {
+					if (conn.State != System.Data.ConnectionState.Open) {
+						Console.Error.WriteLine ("Database connection isn't open - reopening.");
+						conn.Open ();
+					}
+						
+					var transaction = conn.BeginTransaction ();
+					var result = action (conn);
+					transaction.Commit ();
+					return result;
+				} catch (Exception e) {
+					if (i + 1 < numRetries) {
+						Console.Error.WriteLine ("Error: Transaction failed.  Retrying after {0} seconds.  Exception: {1}", retryTime, e);
+						Thread.Sleep (retryTime * 1000);
+						retryTime *= 3;
+
+					} else {
+						Console.Error.WriteLine ("Error: Transaction failed.  Giving up.  Exception: {0}", e);
+					}
+				}
+			}
+			success = false;
+			return default(T);
 		}
 	}
 
