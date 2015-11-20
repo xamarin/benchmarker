@@ -12,7 +12,8 @@ import * as xp_utils from './utils.ts';
 import * as Database from './database.ts';
 import React = require ('react');
 
-type Range = [number, number, number, number];
+// [min, mean-stddev, mean+stddev, max, count]
+type Range = [number, number, number, number, number];
 
 function calculateRunsRange (data: Array<number>) : Range {
 	var min: number;
@@ -37,11 +38,11 @@ function calculateRunsRange (data: Array<number>) : Range {
 	var stddev = Math.sqrt (sum) / data.length;
 	if (min === undefined || max === undefined)
 		min = max = 0;
-	return [min, mean - stddev, mean + stddev, max];
+	return [min, mean - stddev, mean + stddev, max, data.length];
 }
 
 function normalizeRange (mean: number, range: Range) : Range {
-	return [range [0] / mean, range [1] / mean, range [2] / mean, range [3] / mean];
+	return [range [0] / mean, range [1] / mean, range [2] / mean, range [3] / mean, range [4]];
 }
 
 function rangeMean (range: Range) : number {
@@ -81,7 +82,7 @@ function dataArrayForResults (resultsByIndex: Array<{[benchmark: string]: Object
 		var row = [benchmarkName, []];
 		var mean = undefined;
 		for (var j = 0; j < resultsByIndex.length; ++j) {
-			var data = resultsByIndex [j][benchmarkName]['results'];
+			var data: Array<number> = resultsByIndex [j][benchmarkName]['results'];
 			var range = calculateRunsRange (data);
 			if (mean === undefined)
 				mean = rangeMean (range);
@@ -321,6 +322,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
             return;
 
 		dataArray = sortDataArrayByDifference (dataArray);
+		const needStddev = dataArray.some ((br: BenchmarkRow) => br [1].some ((r: Range) => r [4] > 1));
 
         var graphs = [];
 		var guides = [];
@@ -340,8 +342,10 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 "closeField": "stdhigh" + i,
                 "switchable": false
             };
+			const valueText = needStddev ? "Average +/- standard deviation" : "Value";
+			const minMaxText = needStddev ? "\n[[errorBalloon" + i + "]]" : "";
             var errorBar: Object = {
-                "balloonText": "Average +/- standard deviation: [[stdBalloon" + i + "]]\n[[errorBalloon" + i + "]]",
+                "balloonText": valueText + ": [[stdBalloon" + i + "]]" + minMaxText,
                 "bullet": "yError",
                 "bulletAxis": "time",
                 "bulletSize": 5,
@@ -392,8 +396,12 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                     max = Math.max (max, range [3]);
 				}
 
-                entry ["stdBalloon" + j] = formatPercentage (range [1]) + "–" + formatPercentage (range [2]);
-                entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);
+				if (needStddev) {
+					entry ["stdBalloon" + j] = formatPercentage (range [1]) + "–" + formatPercentage (range [2]);
+					entry ["errorBalloon" + j] = "Min: " + formatPercentage (range [0]) + " Max: " + formatPercentage (range [3]);
+				} else {
+					entry ["stdBalloon" + j] = formatPercentage (range [1]);
+				}
             }
             dataProvider.push (entry);
         }
