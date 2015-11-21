@@ -603,7 +603,7 @@ export interface TimelineChartProps {
 	graphName: string;
 	sortedResults: any;
 	zoomInterval: {start: number, end: number};
-	runSetSelected: (runSet: Database.DBObject) => void;
+	runSetSelected: (runSet: Database.DBRunSet) => void;
 }
 
 export interface TimelineChartState {

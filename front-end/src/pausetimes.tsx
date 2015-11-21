@@ -188,8 +188,9 @@ class Page extends React.Component<PageProps, PageState> {
 		this.fetchResults (newSelectionNames, false);
 	}
 
-	private runSetSelected (runSet: Database.DBObject) : void {
-		var index = xp_utils.findIndex (this.state.sortedResultsConc, (r: Database.ArrayResults) => r.runSet === runSet);
+	private runSetSelected (runSet: Database.DBRunSet) : void {
+		const commitHash = runSet.commit.get ('hash');
+		var index = xp_utils.findIndex (this.state.sortedPauseTimeCommitResults, (r: PauseTimeCommitResults) => r.conc.runSet.commit.get ('hash') === commitHash);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
 			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
@@ -220,8 +221,8 @@ class Page extends React.Component<PageProps, PageState> {
 		let runSetSummaries: JSX.Element;
 		if (this.state.runSetIndexes.length > 0) {
 			var divs = this.state.runSetIndexes.map ((i: number) => {
-				var rs = this.state.sortedResultsConc [i].runSet;
-				var prev = i > 0 ? this.state.sortedResultsConc [i - 1].runSet : undefined;
+				var rs = this.state.sortedPauseTimeCommitResults [i].conc.runSet;
+				var prev = i > 0 ? this.state.sortedPauseTimeCommitResults [i - 1].conc.runSet : undefined;
 				var elem = <xp_common.RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
 				return elem;
 			});
@@ -254,7 +255,7 @@ class Page extends React.Component<PageProps, PageState> {
 					percentile={this.state.percentile}
 					percentileRange={0.1}
 					zoomInterval={undefined}
-					runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
+					runSetSelected={(rs: Database.DBRunSet) => this.runSetSelected (rs)}
 					sortedResults={this.state.sortedPauseTimeCommitResults} />
 				<div style={{ clear: 'both' }}></div>
 				{runSetSummaries}
