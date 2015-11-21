@@ -629,11 +629,14 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 		this.invalidateState (this.props);
 	}
 
+	public shouldUpdateForNextProps (nextProps: Props) : boolean {
+		return this.props.sortedResults !== nextProps.sortedResults;
+	}
+
 	public componentWillReceiveProps (nextProps: Props) : void {
-		if (this.props.sortedResults === nextProps.sortedResults) {
-			return;
+		if (this.shouldUpdateForNextProps (nextProps)) {
+			this.invalidateState (nextProps);
 		}
-		this.invalidateState (nextProps);
 	}
 
 	public timelineParameters () : Array<TimelineParameters> {

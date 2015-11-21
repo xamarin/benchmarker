@@ -60,6 +60,11 @@ class Controller {
 	}
 }
 
+interface PauseTimeCommitResults {
+	conc: Database.ArrayResults;
+	seq: Database.ArrayResults;
+}
+
 interface PageProps {
 	initialSelectionNames: SelectionNames;
 	initialPercentile: number;
@@ -71,8 +76,33 @@ interface PageState {
 	selectionNames: SelectionNames;
 	sortedResultsConc: Array<Database.ArrayResults>;
 	sortedResultsSeq: Array<Database.ArrayResults>;
+	sortedPauseTimeCommitResults: Array<PauseTimeCommitResults>;
 	runSetIndexes: Array<number>;
 	percentile: number;
+}
+
+function calcSortedPauseTimeCommitResults (
+		sortedResultsConc: Array<Database.ArrayResults>,
+		sortedResultsSeq: Array<Database.ArrayResults>) : Array<PauseTimeCommitResults> {
+	const seqCommitIndexes: { [id: string]: number } = {};
+	for (let i = 0; i < sortedResultsSeq.length; ++i) {
+		seqCommitIndexes [sortedResultsSeq [i].runSet.commit.get ('hash')] = i;
+	}
+	const resultsConc = sortedResultsConc;
+
+	const pauseTimeCommitResults: Array<PauseTimeCommitResults> = [];
+	for (let j = 0; j < resultsConc.length; ++j) {
+		const concResults = resultsConc [j];
+		const runSet = concResults.runSet;
+		const commitHash = runSet.commit.get ('hash');
+		if (!(commitHash in seqCommitIndexes)) {
+			continue;
+		}
+		const seqResults = sortedResultsSeq [seqCommitIndexes [commitHash]];
+		pauseTimeCommitResults.push ({ conc: concResults, seq: seqResults });
+	}
+
+	return pauseTimeCommitResults;
 }
 
 class Page extends React.Component<PageProps, PageState> {
@@ -83,6 +113,7 @@ class Page extends React.Component<PageProps, PageState> {
 			benchmarks: undefined,
 			sortedResultsConc: [],
 			sortedResultsSeq: [],
+			sortedPauseTimeCommitResults: [],
 			runSetIndexes: [],
 			percentile: this.props.initialPercentile
 		};
@@ -118,8 +149,14 @@ class Page extends React.Component<PageProps, PageState> {
 					return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
 				});
 
-				const stateChange = conc ? { sortedResultsConc: objs } : { sortedResultsSeq: objs };
-				this.setState (stateChange as any);
+				const state = this.state;
+				if (conc) {
+					state.sortedResultsConc = objs;
+				} else {
+					state.sortedResultsSeq = objs;
+				}
+				state.sortedPauseTimeCommitResults = calcSortedPauseTimeCommitResults (state.sortedResultsConc, state.sortedResultsSeq);
+				this.setState (state);
 			}, (error: Object) => {
 				alert ("error loading summaries: " + error.toString ());
 			});
@@ -143,6 +180,7 @@ class Page extends React.Component<PageProps, PageState> {
 			selectionNames: newSelectionNames,
 			sortedResultsConc: [],
 			sortedResultsSeq: [],
+			sortedPauseTimeCommitResults: [],
 			runSetIndexes: []
 		} as any);
 		this.props.onChange (newSelectionNames, this.state.percentile);
@@ -217,7 +255,7 @@ class Page extends React.Component<PageProps, PageState> {
 					percentileRange={0.1}
 					zoomInterval={undefined}
 					runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
-					sortedResults={ { conc: this.state.sortedResultsConc, seq: this.state.sortedResultsSeq } } />
+					sortedResults={this.state.sortedPauseTimeCommitResults} />
 				<div style={{ clear: 'both' }}></div>
 				{runSetSummaries}
 			</article>
@@ -244,13 +282,8 @@ function calcPercentiles (results: Array<Array<number>>, percentile: number, ran
 	return [shortest, lowValue, middleValue, highValue, longest];
 }
 
-interface BothSortedResults {
-	conc: Array<Database.ArrayResults>;
-	seq: Array<Database.ArrayResults>;
-}
-
 interface PauseTimesChartProps extends xp_charts.TimelineChartProps {
-	sortedResults: BothSortedResults;
+	sortedResults: Array<PauseTimeCommitResults>;
 	percentile: number;
 	percentileRange: number;
 };
@@ -265,6 +298,13 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 		return true;
 	}
 	*/
+
+	public shouldUpdateForNextProps (nextProps: PauseTimesChartProps) : boolean {
+		if (this.props.percentile !== nextProps.percentile) {
+			return true;
+		}
+		return super.shouldUpdateForNextProps (nextProps);
+	}
 
 	public timelineParameters () : Array<xp_charts.TimelineParameters> {
 		return [
@@ -292,23 +332,13 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 	}
 
 	public computeTable (nextProps: PauseTimesChartProps) : Array<Object> {
-		const seqCommitIndexes: { [id: string]: number } = {};
-		for (let i = 0; i < nextProps.sortedResults.seq.length; ++i) {
-			seqCommitIndexes [nextProps.sortedResults.seq [i].runSet.commit.get ('hash')] = i;
-		}
-
-		const results = nextProps.sortedResults.conc;
 		const table = [];
 
-		for (let j = 0; j < results.length; ++j) {
-			const runSet = results [j].runSet;
-			const commitHash = runSet.commit.get ('hash');
-			if (!(commitHash in seqCommitIndexes)) {
-				continue;
-			}
-
-			const seqResults = nextProps.sortedResults.seq [seqCommitIndexes [commitHash]];
-			const concPercentiles = calcPercentiles (results [j].resultArrays, nextProps.percentile, nextProps.percentileRange);
+		for (let j = 0; j < nextProps.sortedResults.length; ++j) {
+			const concResults = nextProps.sortedResults [j].conc;
+			const seqResults = nextProps.sortedResults [j].seq;
+			const runSet = concResults.runSet;
+			const concPercentiles = calcPercentiles (concResults.resultArrays, nextProps.percentile, nextProps.percentileRange);
 			const seqPercentiles = calcPercentiles (seqResults.resultArrays, nextProps.percentile, nextProps.percentileRange);
 			const tooltip = xp_charts.tooltipForRunSet (runSet, false);
 
