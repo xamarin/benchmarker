@@ -58,8 +58,8 @@ for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f3
 	echo "runSetId: $RUNSETID"
 
 	# build app + uitests
-	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
-	(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
+	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /verbosity:diagnostic /target:SignAndroidPackage )
+	(cd AndroidAgent.UITests/ && $XBUILDANDROID /verbosity:diagnostic /p:Configuration=Release )
 
 	XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
 	UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
