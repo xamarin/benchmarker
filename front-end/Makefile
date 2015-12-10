@@ -2,7 +2,7 @@
 
 PAGES = compare config machine timeline runset pullrequest pullrequests pausetimes
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
-DEPS = react@0.14.2 github-api@0.10.6 react-dom@0.14.2 ts-loader@0.6.0 typescript@1.6.2 webpack@1.12.2
+DEPS = react@0.14.2 github-api@0.10.6 less@2.5.3 react-dom@0.14.2 ts-loader@0.6.0 typescript@1.6.2 webpack@1.12.2
 STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min
 
 # Sources and targets
@@ -60,9 +60,9 @@ build :
 # Styles
 
 define STYLE_RULE
-build/$1.css : src/$1.css Makefile build
+build/$1.css : src/$1.less Makefile build
 	@echo "Building style '$1'..."
-	@cp -f src/$1.css build/$1.css
+	@lessc src/$1.less build/$1.css
 
 endef
 
