@@ -35,7 +35,7 @@ class Controller {
 					this.runSets = runSets;
 					this.checkAllDataLoaded ();
 				}, (error: Object) => {
-					alert ("error loading run sets: " + error.toString ());
+					alert ("error loading run sets (" + this.startupRunSetIds.join (', ') + "):\n" + error.toString ());
 				});
 		}
 	}

@@ -716,6 +716,16 @@ export class Navigation extends React.Component<NavigationProps, void> {
 	}
 }
 
+/*
+ * "" => []
+ * "a" => ["a"]
+ * "a+" => ["a"]
+ * "a+b" => ["a", "b"]
+ */
+function splitLocationHashValues (values: string) : Array<string> {
+	return values.split ('+').filter (item => item !== '');
+}
+
 export function parseLocationHashForDict (items: Array<string>, startFunc: (keyMap: Object) => void) : void {
 	var hash = window.location.hash.substring (1);
 
@@ -745,7 +755,7 @@ export function parseLocationHashForDict (items: Array<string>, startFunc: (keyM
 		return;
 	}
 
-	var ids = hash.split ('+');
+	var ids = splitLocationHashValues (hash);
 	Database.fetchParseObjectIds (ids, (keys: Array<number | string>) => {
 		var keyMap = {};
 		keys.forEach ((k: number | string, i: number) => keyMap [items [i]] = k);
@@ -775,12 +785,16 @@ export function parseLocationHashForArray (key: string, startFunc: (keyArray: Ar
 
 	var kv = hash.split ('=');
 	if (kv.length === 2 && kv [0] === key) {
-		var items = kv [1].split ('+');
-		startFunc (items);
+		startFunc (splitLocationHashValues (kv [1]));
 		return;
 	}
 
-	var ids = hash.split ('+');
+	var ids = splitLocationHashValues (hash);
+	if (ids.length === 0) {
+		startFunc ([]);
+		return;
+	}
+
 	Database.fetchParseObjectIds (ids, startFunc,
 		(error: Object) => {
 			alert ("Error: " + error.toString ());
