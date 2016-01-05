@@ -690,7 +690,8 @@ export class Navigation extends React.Component<NavigationProps, void> {
 		var classFor = (page: string) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
 		var compareLink = "compare.html";
-		if (this.props.comparisonRunSetIds !== undefined) {
+		if (this.props.comparisonRunSetIds !== undefined
+			&& this.props.comparisonRunSetIds.length !== 0) {
 			compareLink = compareLink + "#ids=" + this.props.comparisonRunSetIds.join ("+");
 		}
 		return <div className="Navigation">
