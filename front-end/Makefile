@@ -1,4 +1,6 @@
+#
 # Stuff you should feel safe changing
+#
 
 PAGES = compare config machine timeline runset pullrequest pullrequests pausetimes
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
@@ -14,7 +16,9 @@ STYLES = \
 	runset \
 	timeline
 
+#
 # Sources and targets
+#
 
 COMMON_SOURCES = $(addprefix src/,$(COMMON))
 PAGE_SOURCES = $(addprefix src/,$(addsuffix .tsx,$(PAGES)))
@@ -24,7 +28,12 @@ STYLE_DEPS = $(addprefix build/,$(addsuffix .css.dep,$(STYLES)))
 
 DEP_TARGETS = $(addprefix node_modules/,$(shell echo $(DEPS) | sed -E 's/@[^ ]+//g'))
 
+#
 # Entry points
+#
+# "all" is the default target and should remain first. "clean" assumes that all
+# build artifacts are placed in the "build" directory.
+#
 
 .PHONY : all
 all : $(PAGE_TARGETS) $(STYLE_TARGETS)
@@ -44,7 +53,13 @@ server : $(DEP_TARGETS)
 	@echo 'Connect to http://localhost:8080/webpack-dev-server/index.html'
 	@DEV_SERVER=true webpack-dev-server --devtool=inline-source-map
 
+#
 # Pages
+#
+# We use a dummy file as a witness of the webpack build, partly to avoid
+# redundantly specifying the information in webpack.config.js, and partly to
+# ensure that concurrent builds don't lead to redundant/racy rebuilds.
+#
 
 $(PAGE_TARGETS) : build/witness
 
@@ -53,7 +68,9 @@ build/witness : $(PAGE_SOURCES) $(COMMON_SOURCES) $(DEP_TARGETS) Makefile webpac
 	@webpack --optimize-minimize --bail
 	@touch build/witness
 
+#
 # Dependencies
+#
 
 define DEP_RULE
 node_modules/$(shell echo $1 | sed -E 's/@[^ ]+//g') :
@@ -67,7 +84,12 @@ $(foreach DEP,$(DEPS),$(eval $(call DEP_RULE,$(DEP))))
 build :
 	@mkdir -p build
 
+#
 # Styles
+#
+# We use macros (STYLE_RULE) instead of wildcards (%.css : ...) so that only
+# those styles explicitly named in STYLES are included.
+#
 
 define STYLE_DEP_RULE
 build/$1.css.dep : src/$1.less Makefile build
