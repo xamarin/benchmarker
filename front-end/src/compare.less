@@ -1,3 +1,5 @@
+@import "common";
+
 .RunSetSelectorList > section > .RunSetSelector {
 	border-bottom-left-radius: 0;
 	border-bottom-right-radius: 0;
@@ -6,8 +8,8 @@
 /* RunSetSelectorList */
 
 .RunSetSelectorList {
-	background: #FFFFFF;
-	border: 1px solid #ADB7BE;
+	background: white;
+	border: 1px solid @gray2;
 	border-radius: 4px;
 	float: left;
 	margin-right: 16px;
@@ -16,8 +18,8 @@
 }
 
 .RunSetSelectorList > section {
-	background: #D1D9DD;
-	border: 1px solid #ADB7BE;
+	background: @gray1;
+	border: 1px solid @gray2;
 	border-radius: 4px;
 	margin-bottom: 8px;
 	clear: both;

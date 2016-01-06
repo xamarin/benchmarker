@@ -3,7 +3,16 @@
 PAGES = compare config machine timeline runset pullrequest pullrequests pausetimes
 COMMON = common.tsx utils.ts charts.tsx database.ts outliers.ts
 DEPS = react@0.14.2 github-api@0.10.6 less@2.5.3 react-dom@0.14.2 ts-loader@0.6.0 typescript@1.6.2 webpack@1.12.2
-STYLES = common compare style timeline pullrequest pullrequests runset font-awesome.min
+STYLES = \
+	colors \
+	common \
+	compare \
+	font-awesome.min \
+	navigation \
+	pullrequest \
+	pullrequests \
+	runset \
+	timeline
 
 # Sources and targets
 
@@ -11,6 +20,7 @@ COMMON_SOURCES = $(addprefix src/,$(COMMON))
 PAGE_SOURCES = $(addprefix src/,$(addsuffix .tsx,$(PAGES)))
 PAGE_TARGETS = $(addprefix build/,$(addsuffix .js,$(PAGES)))
 STYLE_TARGETS = $(addprefix build/,$(addsuffix .css,$(STYLES)))
+STYLE_DEPS = $(addprefix build/,$(addsuffix .css.dep,$(STYLES)))
 
 DEP_TARGETS = $(addprefix node_modules/,$(shell echo $(DEPS) | sed -E 's/@[^ ]+//g'))
 
@@ -59,8 +69,18 @@ build :
 
 # Styles
 
+define STYLE_DEP_RULE
+build/$1.css.dep : src/$1.less Makefile build
+	@lessc --depends src/$1.less build/$1.css > build/$1.css.dep
+
+endef
+
+$(foreach STYLE,$(STYLES),$(eval $(call STYLE_DEP_RULE,$(STYLE))))
+
+-include $(STYLE_DEPS)
+
 define STYLE_RULE
-build/$1.css : src/$1.less Makefile build
+build/$1.css : src/$1.less build/$1.css.dep Makefile build
 	@echo "Building style '$1'..."
 	@lessc src/$1.less build/$1.css
 

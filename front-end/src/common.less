@@ -1,3 +1,7 @@
+/* Styles common to all pages. */
+
+@import "colors";
+
 body {
 	font-family: sans-serif;
 	margin: 0;
@@ -23,16 +27,16 @@ label {
 }
 
 button {
-	background: #3498DB;
+	background: @blue2;
 	border-radius: 16px;
 	border: none;
-	color: #FFFFFF;
+	color: white;
 	padding: 8px 16px;
 	height: 32px;
 }
 
 select {
-	border: 1px solid #ADB7BE;
+	border: 1px solid @gray2;
 	padding: 4px;
 }
 
@@ -56,15 +60,15 @@ a {
 }
 
 a:link {
-	color: #3192B3;
+	color: @blue3;
 }
 
 a:visited {
-	color: #2C7797;
+	color: @blue4;
 }
 
 a:active, a:hover, a:focus {
-	color: #1FAECE;
+	color: @blue2;
 }
 
 table {
@@ -73,12 +77,12 @@ table {
 }
 
 table tr th, table tr td {
-	border-right: 1px solid #ADB7BE;
-	border-bottom: 1px solid #ADB7BE;
+	border-right: 1px solid @gray2;
+	border-bottom: 1px solid @gray2;
 }
 
 table tr th:first-child, table tr td:first-child {
-	border-left: 1px solid #ADB7BE;
+	border-left: 1px solid @gray2;
 }
 
 table tr:first-child th:first-child, table tr:first-child td:first-child {
@@ -98,7 +102,7 @@ table tr:last-child td:last-child {
 }
 
 table tr.disabled {
-	background: #ECF0F1;
+	background: @gray0;
 }
 
 td {
@@ -106,7 +110,7 @@ td {
 }
 
 th {
-	border-top: 1px solid #ADB7BE;
+	border-top: 1px solid @gray2;
 	padding: 16px;
 }
 
@@ -137,7 +141,7 @@ th {
 /* RunSetSelector */
 
 .RunSetSelector {
-	background: #ECF0F1;
+	background: @gray0;
 	border-radius: 4px;
 	padding: 8px;
 }
@@ -186,50 +190,11 @@ th {
 	width: 100%;
 }
 
-/* Navigation */
-
-.Navigation {
-	background: #2C3E50;
-	margin: 0 0 16px 0;
-	display: flex;
-	flex-direction: row;
-}
-
-.Navigation > .NavigationSection {
-	display: flex;
-	flex: 1 1 auto;
-	flex-basis: 0;
-}
-
-.Navigation > .Center {
-	justify-content: center;
-}
-
-.Navigation > .Right {
-	justify-content: flex-end;
-}
-
-.Navigation > * > a {
-	padding: 0;
-	display: flex;
-	color: #BDC3C7;
-	padding: 16px;
-	text-decoration: none;
-}
-
-.Navigation > * > a.selected {
-	background: #FFFFFF;
-	color: #2C3E50;
-}
-
-.Navigation > * > a.deselected:focus, .Navigation > * > a.deselected:hover {
-	color: #FFFFFF;
-	background: #3A526A;
-}
-
 /* AMChart */
 
 .AMChart {
 	overflow: hidden; /* BFC */
 	/* margin: 16px; */
 }
+
+@import "navigation";

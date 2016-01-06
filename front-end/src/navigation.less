@@ -1,0 +1,40 @@
+@import "colors";
+
+.Navigation {
+	background: @asphalt3;
+	margin: 0 0 16px 0;
+	display: flex;
+	flex-direction: row;
+}
+
+.Navigation > .NavigationSection {
+	display: flex;
+	flex: 1 1 auto;
+	flex-basis: 0;
+}
+
+.Navigation > .Center {
+	justify-content: center;
+}
+
+.Navigation > .Right {
+	justify-content: flex-end;
+}
+
+.Navigation > * > a {
+	padding: 0;
+	display: flex;
+	color: @gray2;
+	padding: 16px;
+	text-decoration: none;
+}
+
+.Navigation > * > a.selected {
+	background: white;
+	color: @gray4;
+}
+
+.Navigation > * > a.deselected:focus, .Navigation > * > a.deselected:hover {
+	color: white;
+	background: @blue3;
+}

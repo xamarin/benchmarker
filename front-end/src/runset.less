@@ -1,41 +1,43 @@
+@import "common";
+
 .degree {
-	background: #ffffff;
-	border: 1px solid #ADB7BE;
+	background: white;
+	border: 1px solid @gray2;
 	border-radius: 4px;
 	height: 16px;
 	width: 100%;
 }
 
 .degree > .none, .degree > .slight, .degree > .moderate, .degree > .severe {
-	border: 1px solid #ADB7BE;
+	border: 1px solid @gray2;
 	border-radius: 4px;
 	height: 16px;
 	margin: -1px;
 }
 
 .degree > .none {
-	background: #1FAECE;
+	background: @blue2;
 	width: 1%;
 }
 
 .degree > .slight {
-	background: #91CA47;
+	background: @green2;
 	width: 10%;
 }
 
 .degree > .moderate {
-	background-color: #F1C40F;
+	background-color: @amber2;
 	width: 50%;
 }
 
 .degree > .severe {
-	background-color: #F56D4F;
+	background-color: @red2;
 	width: 100%;
 }
 
 .RunSetPage > article > .panel {
-	background: #FFFFFF;
-	border: 1px solid #ADB7BE;
+	background: white;
+	border: 1px solid @gray2;
 	border-radius: 4px;
 	float: left;
 	margin-right: 16px;
@@ -57,13 +59,13 @@
 }
 
 .RunSetPage > article > .Description .statusIcon.crashed {
-	color: #F56D4F;
+	color: @red2;
 }
 
 .RunSetPage > article > .Description .statusIcon.timedOut {
-	color: #F1C40F;
+	color: @amber2;
 }
 
 .RunSetPage > article > .Description .statusIcon.good {
-	color: #91CA47;
+	color: @green2;
 }
