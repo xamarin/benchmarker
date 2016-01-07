@@ -505,6 +505,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 		var charts = benchmarks.map ((name: string) => {
 			var key = 'benchmarkChart_' + name;
 			return <div key={key} className="BenchmarkChartList">
+                <hr/>
 				<h3>{name}</h3>
 				<BenchmarkChart
 					zoomInterval={undefined}
