@@ -190,7 +190,8 @@ class Page extends React.Component<PageProps, PageState> {
 
 	private runSetSelected (runSet: Database.DBRunSet) : void {
 		const commitHash = runSet.commit.get ('hash');
-		var index = xp_utils.findIndex (this.state.sortedPauseTimeCommitResults, (r: PauseTimeCommitResults) => r.conc.runSet.commit.get ('hash') === commitHash);
+		var index = xp_utils.findIndex (this.state.sortedPauseTimeCommitResults,
+                (r: PauseTimeCommitResults) => r.conc.runSet.commit.get ('hash') === commitHash);
 		if (this.state.runSetIndexes.indexOf (index) < 0)
 			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
 	}
