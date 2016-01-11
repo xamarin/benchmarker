@@ -11,6 +11,7 @@ STYLES = \
 	compare \
 	font-awesome.min \
 	navigation \
+	pausetimes \
 	pullrequest \
 	pullrequests \
 	runset \
