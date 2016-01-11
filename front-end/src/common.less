@@ -8,6 +8,21 @@ body {
 	padding: 0;
 }
 
+@border-style: 1px solid @gray2;
+
+.bordered() {
+	border: @border-style;
+}
+
+.rounded() {
+	border-radius: 4px;
+}
+
+.round-bordered() {
+	.bordered();
+	.rounded();
+}
+
 .diagnostic {
 	font-style: italic;
 }
@@ -36,7 +51,7 @@ button {
 }
 
 select {
-	border: 1px solid @gray2;
+	.bordered();
 	padding: 4px;
 }
 
@@ -77,12 +92,12 @@ table {
 }
 
 table tr th, table tr td {
-	border-right: 1px solid @gray2;
-	border-bottom: 1px solid @gray2;
+	border-right: @border-style;
+	border-bottom: @border-style;
 }
 
 table tr th:first-child, table tr td:first-child {
-	border-left: 1px solid @gray2;
+	border-left: @border-style;
 }
 
 table tr:first-child th:first-child, table tr:first-child td:first-child {
@@ -110,7 +125,7 @@ td {
 }
 
 th {
-	border-top: 1px solid @gray2;
+	border-top: @border-style;
 	padding: 16px;
 }
 
@@ -142,7 +157,7 @@ th {
 
 .RunSetSelector {
 	background: @gray0;
-	border-radius: 4px;
+	.rounded();
 	padding: 8px;
 }
 
