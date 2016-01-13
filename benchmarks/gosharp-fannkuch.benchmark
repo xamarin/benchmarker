@@ -1,0 +1,5 @@
+{
+  "Name": "gosharp-fannkuch",
+  "TestDirectory": "gosharp",
+  "CommandLine": ["Fannkuch11.exe"]
+}

@@ -1,0 +1,3 @@
+Gosharp: a set of several tests written in Go, from the official Go1 benchmark, compiled from Go into CIL with Tardis/Haxe.
+
+This directory contains 4 selected benchmarks from the Go1 benchmarking suite, as well as the gosharp.sh script that converts Go benchmarks into CIL for a chosen package (see the comments inside for details, some modifications will likely be needed before running it).

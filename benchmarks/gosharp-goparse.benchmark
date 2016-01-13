@@ -1,0 +1,5 @@
+{
+  "Name": "gosharp-goparse",
+  "TestDirectory": "gosharp",
+  "CommandLine": ["GoParse.exe"]
+}
