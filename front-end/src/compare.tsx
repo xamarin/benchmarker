@@ -104,7 +104,8 @@ class Page extends React.Component<PageProps, PageState> {
 				runSetLabels={undefined}
 				graphName="comparisonChart"
 				runSets={runSets}
-				metric="time" />;
+				metric="time"
+				selectedIndices={[]}/>;
 		} else {
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 		}

@@ -103,7 +103,7 @@ interface PageProps {
 interface PageState {
 	selection: Array<xp_common.MachineConfigSelection>;
 	zoom: boolean;
-	runSetIndexes: Array<number>;
+	runSetIndices: Array<number>;
 	sortedResults: Array<Database.Summary>;
 	benchmarkNames: Array<string>;
 }
@@ -114,7 +114,7 @@ class Page extends React.Component<PageProps, PageState> {
 		this.state = {
 			selection: this.props.initialSelection,
 			zoom: this.props.initialZoom,
-			runSetIndexes: [],
+			runSetIndices: [],
 			sortedResults: [],
 			benchmarkNames: []
 		};
@@ -126,8 +126,8 @@ class Page extends React.Component<PageProps, PageState> {
 
 	private runSetSelected (runSet: Database.DBObject) : void {
 		var index = xp_utils.findIndex (this.state.sortedResults, (r: Database.Summary) => r.runSet === runSet);
-		if (this.state.runSetIndexes.indexOf (index) < 0)
-			this.setState ({runSetIndexes: this.state.runSetIndexes.concat ([index]), zoom: false} as any);
+		if (this.state.runSetIndices.indexOf (index) < 0)
+			this.setState ({ runSetIndices: this.state.runSetIndices.concat ([index]), zoom: false } as any);
 	}
 
 	private allBenchmarksLoaded (names: Array<string>) : void {
@@ -166,7 +166,7 @@ class Page extends React.Component<PageProps, PageState> {
 	}
 
 	private selectionChanged (selection: Array<xp_common.MachineConfigSelection>) : void {
-		this.setState ({selection: selection, runSetIndexes: [], sortedResults: [], benchmarkNames: [], zoom: false});
+		this.setState ({selection: selection, runSetIndices: [], sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
 		this.props.onChange (selection);
 	}
@@ -189,19 +189,21 @@ class Page extends React.Component<PageProps, PageState> {
 				zoomInterval={zoomInterval}
 				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
 				allBenchmarksLoaded={(names: Array<string>) => this.allBenchmarksLoaded (names)}
+				selectedIndices={this.state.runSetIndices}
 				/>;
 			benchmarkChartList = <BenchmarkChartList
 				benchmarkNames={this.state.benchmarkNames}
 				metric={firstSelection.metric}
 				sortedResults={this.state.sortedResults}
 				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
+				selectedIndices={this.state.runSetIndices}
 				/>;
 		} else {
 			chart = <div className="DiagnosticBlock">Please select a machine and config.</div>;
 		}
 
-		var runSetIndexes = this.state.runSetIndexes;
-		var runSets = runSetIndexes.map ((i: number) => this.state.sortedResults [i].runSet);
+		var runSetIndices = this.state.runSetIndices;
+		var runSets = runSetIndices.map ((i: number) => this.state.sortedResults [i].runSet);
 
 		var comparisonChart;
 		if (runSets.length > 1) {
@@ -209,12 +211,13 @@ class Page extends React.Component<PageProps, PageState> {
 				runSetLabels={undefined}
 				graphName="comparisonChart"
 				runSets={runSets}
-				metric={firstSelection.metric} />;
+				metric={firstSelection.metric}
+				selectedIndices={runSetIndices}/>;
 		}
 
 		let runSetSummaries: JSX.Element;
-		if (runSetIndexes.length > 0) {
-			var divs = runSetIndexes.map ((i: number) => {
+		if (runSetIndices.length > 0) {
+			var divs = runSetIndices.map ((i: number) => {
 				var rs = this.state.sortedResults [i].runSet;
 				var prev = i > 0 ? this.state.sortedResults [i - 1].runSet : undefined;
 				var elem = <xp_common.RunSetSummary key={"runSet" + i.toString ()} runSet={rs} previousRunSet={prev} />;
@@ -223,6 +226,24 @@ class Page extends React.Component<PageProps, PageState> {
 			runSetSummaries = <div className="RunSetSummaries">{divs}</div>;
 		}
 
+		var pageExplanation = <div className="TextBlock">
+			<p>Select a machine and config to view a timeline of all run sets
+			from that machine&ndash;config pair. The data point indicates the
+			normalized average metric&mdash;for example, wall clock
+			time&mdash;for all benchmarks in that run set. The shaded area
+			indicates the range (minimum &amp; maximum) of the metric in that
+			run set. Red data points indicate run sets with one or more crashed
+			benchmarks.</p>
+			<p>Clicking a data point will add it to a comparison chart showing
+			relative results for all benchmarks.</p>
+		</div>;
+
+		var selectionExplanation = <div className="TextBlock">
+			<p>Here is a comparison of the metrics for the selected run sets,
+			if any. Switch to the &ldquo;Compare&rdquo; tab to view this
+			comparison in more detail.</p>
+		</div>;
+
 		// FIXME: we need the descriptions for all machines and configs!
 
 		return <div className="TimelinePage">
@@ -230,6 +251,9 @@ class Page extends React.Component<PageProps, PageState> {
 				currentPage="timeline"
 				comparisonRunSetIds={runSets.map ((rs: Database.DBRunSet) => rs.get ('id'))} />
 			<article>
+				<h1>Timeline</h1>
+				{pageExplanation}
+				<h2>Overview</h2>
 				<div className="outer">
 					<div className="inner">
 						<xp_common.CombinedConfigSelector
@@ -249,9 +273,12 @@ class Page extends React.Component<PageProps, PageState> {
 				</div>
 				{chart}
 				<div style={{ clear: 'both' }}></div>
+				<h2>Selected Run Sets</h2>
+				{selectionExplanation}
 				{runSetSummaries}
 				<div style={{ clear: 'both' }}></div>
 				{comparisonChart}
+				<h2>Per-benchmark Timelines</h2>
 				{benchmarkChartList}
 			</article>
 		</div>;
@@ -321,6 +348,7 @@ interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
 	metric: string;
 	sortedResults: Array<Database.Summary>;
 	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
+	selectedIndices: Array<number>;
 };
 
 class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps> {
@@ -401,6 +429,8 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 			}
 			var tooltip = xp_charts.tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
+			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet)
+			var selected = nextProps.selectedIndices.indexOf (runSetIndex) >= 0;
 			const { lowest: lowestLabel, highest: highestLabel } = axisNameForMetric (this.props.metric, true);
 			table.push ({
 				dataItem: runSet,
@@ -410,7 +440,10 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 				highName: maxName ? (highestLabel + ": " + maxName) : undefined,
 				geomean: Math.pow (prodForRunSet, 1.0 / count),
 				tooltip: tooltip,
-				lineColor: (broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2])
+				lineColor: selected
+					? broken ? xp_common.xamarinColors.red [4] : xp_common.xamarinColors.blue [4]
+					: broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2],
+				bulletSize: selected ? 12 : 4
 			});
 		}
 
@@ -429,6 +462,7 @@ interface BenchmarkChartProps extends xp_charts.TimelineChartProps {
 	metric: string;
 	sortedResults: Array<Database.Summary>;
 	benchmark: string;
+	selectedIndices: Array<number>;
 };
 
 class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
@@ -463,12 +497,19 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 			} else {
 				averageTooltip = "Average: " + formatDuration (average);
 			}
+			var broken = runSetIsBroken (runSet, results [j].averages);
+			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet)
+			var selected = nextProps.selectedIndices.indexOf (runSetIndex) >= 0;
 			table.push ({
 				dataItem: runSet,
 				geomean: average,
 				low: low,
 				high: high,
-				tooltip: tooltip + "\n" + averageTooltip
+				tooltip: tooltip + "\n" + averageTooltip,
+				lineColor: selected
+					? broken ? xp_common.xamarinColors.red [4] : xp_common.xamarinColors.blue [4]
+					: broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2],
+				bulletSize: selected ? 12 : 4
 			});
 		}
 
@@ -481,48 +522,61 @@ type BenchmarkChartListProps = {
 	benchmarkNames: Array<string>;
 	sortedResults: Array<Database.Summary>;
 	runSetSelected: (runSet: Database.DBObject) => void;
+	selectedIndices: Array<number>;
 };
 
 type BenchmarkChartListState = {
-	isExpanded: boolean;
+	expanded: { [name: string]: boolean };
 };
 
 class BenchmarkChartList extends React.Component<BenchmarkChartListProps, BenchmarkChartListState> {
 	constructor (props: BenchmarkChartListProps) {
 		super (props);
-		this.state = { isExpanded: false };
+		this.state = { expanded: {} };
 	}
 
 	public render () : JSX.Element {
-		if (!this.state.isExpanded) {
-			return <div className="BenchmarkChartList">
-				<button onClick={(e: React.MouseEvent) => this.expand ()}>Show Benchmarks</button>
-			</div>;
-		}
-
 		var benchmarks = this.props.benchmarkNames.slice ();
 		benchmarks.sort ();
-		var charts = benchmarks.map ((name: string) => {
-			var key = 'benchmarkChart_' + name;
-			return <div key={key} className="BenchmarkChartList">
-                <hr/>
-				<h3>{name}</h3>
-				<BenchmarkChart
+		function chartKey (name: string): string {
+			return 'benchmarkChart_' + name;
+		}
+		function chartOrExpander (name: string): JSX.Element {
+			if (this.state.expanded [name]) {
+				return <BenchmarkChart
 					zoomInterval={undefined}
-					graphName={key}
+					graphName={chartKey (name)}
 					sortedResults={this.props.sortedResults}
 					metric={this.props.metric}
 					benchmark={name}
 					runSetSelected={this.props.runSetSelected}
-					/>
+					selectedIndices={this.props.selectedIndices}
+					/>;
+			} else {
+				return <div className="BenchmarkChartList">
+					<button onClick={(e: React.MouseEvent) => this.expand (name)}>View Timeline</button>
 				</div>;
+			}
+		}
+		var chartRows = benchmarks.map ((name: string) => {
+			return <tr key={chartKey (name)} className="BenchmarkChartList">
+				<td><code>{name}</code></td>
+				<td>{chartOrExpander.call (this, name)}</td>
+			</tr>;
 		});
 
-		return <div>{charts}</div>;
+		return <div>
+			<table>
+				<tr><th>Benchmark</th><th className="grow">Timeline</th></tr>
+				{chartRows}
+			</table>
+		</div>;
 	}
 
-	private expand () : void {
-		this.setState ({ isExpanded: true });
+	private expand (name: string) : void {
+		var expanded: { [name: string]: boolean } = this.state.expanded;
+		expanded [name] = true;
+		this.setState ({ expanded: expanded });
 	}
 }
 

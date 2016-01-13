@@ -100,8 +100,6 @@ endef
 
 $(foreach STYLE,$(STYLES),$(eval $(call STYLE_DEP_RULE,$(STYLE))))
 
--include $(STYLE_DEPS)
-
 define STYLE_RULE
 build/$1.css : src/$1.less build/$1.css.dep Makefile build
 	@echo "Building style '$1'..."
@@ -110,3 +108,5 @@ build/$1.css : src/$1.less build/$1.css.dep Makefile build
 endef
 
 $(foreach STYLE,$(STYLES),$(eval $(call STYLE_RULE,$(STYLE))))
+
+-include $(STYLE_DEPS)

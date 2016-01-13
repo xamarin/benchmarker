@@ -33,8 +33,14 @@ body {
 	text-align: center;
 }
 
+.TextBlock {
+    line-height: 150%;
+	margin-bottom: 16px;
+}
+
 article {
-	margin: 16px;
+	margin: 16px auto;
+    width: 1024px;
 }
 
 label {
@@ -60,9 +66,22 @@ optgroup {
 }
 
 h1 {
-	font-size: larger;
+	font-size: 200%;
 	font-weight: bold;
 	margin: 0 0 8px 0;
+}
+
+h2 {
+    font-size: 150%;
+}
+
+h3 {
+    font-size: 100%;
+}
+
+h1, h2, h3 {
+    text-align: left;
+    margin: 16px 0;
 }
 
 p {
@@ -89,6 +108,7 @@ a:active, a:hover, a:focus {
 table {
 	border-collapse: separate;
 	border-spacing: 0;
+    width: 100%;
 }
 
 table tr th, table tr td {
@@ -127,6 +147,10 @@ td {
 th {
 	border-top: @border-style;
 	padding: 16px;
+}
+
+td.grow, th.grow {
+    width: 100%;
 }
 
 /* ConfigDescription, MachineDescription */

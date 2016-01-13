@@ -188,6 +188,7 @@ type AMChartProps = {
 	options: any;
 	selectListener: (dataItem: any) => void;
     initFunc: (chart: AmCharts.AmSerialChart) => void;
+	selectedIndices: Array<number>;
 };
 
 export class AMChart extends React.Component<AMChartProps, void> {
@@ -215,6 +216,8 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		if (this.props.height !== nextProps.height)
 			return true;
 		if (!xp_utils.deepEquals (this.props.options, nextProps.options))
+			return true;
+		if (!xp_utils.deepEquals (this.props.selectedIndices, nextProps.selectedIndices))
 			return true;
 		// FIXME: what do we do with the selectListener?
 		return false;
@@ -267,6 +270,7 @@ type ComparisonAMChartProps = {
 	metric: string;
 	runSetLabels: Array<string> | void;
 	graphName: string;
+	selectedIndices: Array<number>;
 };
 
 export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, void> {
@@ -463,7 +467,8 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
             graphName={this.props.graphName}
             height={700}
             options={options}
-            initFunc={zoomFunc} />;
+            initFunc={zoomFunc}
+			selectedIndices={this.props.selectedIndices}/>;
     }
 }
 
@@ -478,6 +483,7 @@ export interface TimelineParameters {
 	maxBalloonName?: string;
 	color: string;
 	title?: string;
+	bulletSize: number;
 }
 
 type TimelineAMChartProps = {
@@ -489,6 +495,7 @@ type TimelineAMChartProps = {
 	data: Object;
 	selectListener: (runSet: Database.DBRunSet) => void;
 	zoomInterval: {start: number, end: number};
+	selectedIndices: Array<number>;
 };
 
 function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
@@ -519,7 +526,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 		{
 			"balloonText": "[[" + parameters.midBalloonName + "]]",
 			"bullet": "round",
-			"bulletSize": 4,
+			"bulletSize": parameters.bulletSize,
+			"bulletSizeField": "bulletSize",
 			"lineColor": parameters.color,
 			"lineColorField": "lineColor",
 			"id": parameters.midName,
@@ -575,6 +583,7 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 						"balloon": {},
 						"titles": [],
                         "dataProvider": this.props.data,
+						"zoomOutOnDataUpdate": false
 					};
 		if (haveTitles) {
 			timelineOptions ['legend'] = { "useGraphSettings": true };
@@ -595,7 +604,8 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 			height={this.props.height}
 			options={timelineOptions}
 			selectListener={this.props.selectListener}
-			initFunc={zoomFunc} />;
+			initFunc={zoomFunc}
+			selectedIndices={this.props.selectedIndices} />;
 	}
 }
 
@@ -604,6 +614,7 @@ export interface TimelineChartProps {
 	sortedResults: any;
 	zoomInterval: {start: number, end: number};
 	runSetSelected: (runSet: Database.DBRunSet) => void;
+	selectedIndices: Array<number>;
 }
 
 export interface TimelineChartState {
@@ -630,7 +641,8 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 	}
 
 	public shouldUpdateForNextProps (nextProps: Props) : boolean {
-		return this.props.sortedResults !== nextProps.sortedResults;
+		return this.props.sortedResults !== nextProps.sortedResults
+			|| !xp_utils.deepEquals (this.props.selectedIndices, nextProps.selectedIndices);
 	}
 
 	public componentWillReceiveProps (nextProps: Props) : void {
@@ -648,7 +660,8 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 				lowBalloonName: "lowName",
 				midBalloonName: "tooltip",
 				highBalloonName: "highName",
-				color: xp_common.xamarinColors.blue [2]
+				color: xp_common.xamarinColors.blue [2],
+				bulletSize: 4
 			}
 		];
 	}
@@ -659,13 +672,14 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 
 		return <TimelineAMChart
 			graphName={this.props.graphName}
-			height={300}
+			height={480}
 			data={this.state.table}
 			parameters={this.timelineParameters ()}
 			logarithmic={this.logarithmic ()}
 			zoomInterval={this.props.zoomInterval}
 			title={this.valueAxisTitle ()}
-			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)} />;
+			selectListener={(rs: Database.DBRunSet) => this.props.runSetSelected (rs)}
+			selectedIndices={this.props.selectedIndices}/>;
 	}
 
 	public abstract computeTable (nextProps: Props) : Array<Object>;

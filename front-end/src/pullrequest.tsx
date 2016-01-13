@@ -68,7 +68,8 @@ class Controller {
                         graphName="comparisonChart"
                         runSets={runSets}
 						metric="time"
-                        runSetLabels={["Baseline", "Pull request"]} />
+                        runSetLabels={["Baseline", "Pull request"]}
+						selectedIndices={[]}/>
 					<div style={{ clear: 'both' }}></div>
 					<h2>Pull Request Run Set</h2>
 					<xp_common.RunSetDescription

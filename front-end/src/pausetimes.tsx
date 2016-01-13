@@ -257,7 +257,8 @@ class Page extends React.Component<PageProps, PageState> {
 					percentileRange={0.1}
 					zoomInterval={undefined}
 					runSetSelected={(rs: Database.DBRunSet) => this.runSetSelected (rs)}
-					sortedResults={this.state.sortedPauseTimeCommitResults} />
+					sortedResults={this.state.sortedPauseTimeCommitResults}
+					selectedIndices={[]}/>
 				<div style={{ clear: 'both' }}></div>
 				{runSetSummaries}
 			</article>
@@ -288,6 +289,7 @@ interface PauseTimesChartProps extends xp_charts.TimelineChartProps {
 	sortedResults: Array<PauseTimeCommitResults>;
 	percentile: number;
 	percentileRange: number;
+	selectedIndices: Array<number>;
 };
 
 class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
@@ -318,7 +320,8 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				midBalloonName: 'tooltipConc',
 				highBalloonName: 'highName',
 				color: xp_common.xamarinColors.blue [2],
-				title: "Concurrent"
+				title: "Concurrent",
+				bulletSize: 4
 			},
 			{
 				lowName: 'lowSeq',
@@ -328,7 +331,8 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				midBalloonName: 'tooltipSeq',
 				highBalloonName: 'highSeqName',
 				color: xp_common.xamarinColors.green [2],
-				title: "Non-Concurrent"
+				title: "Non-Concurrent",
+				bulletSize: 4
 			}
 		];
 	}
