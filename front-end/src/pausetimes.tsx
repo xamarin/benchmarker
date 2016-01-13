@@ -31,7 +31,7 @@ class Controller {
 			machineName: machineName,
 			configNameConc: configNameConc,
 			configNameSeq: configNameSeq,
-			benchmark: benchmark === undefined ? 'graph4' : benchmark
+			benchmark: benchmark === undefined ? 'graph4' : benchmark,
 		};
 		this.initialPercentile = percentile === undefined ? 0.5 : percentile;
 	}
@@ -115,7 +115,7 @@ class Page extends React.Component<PageProps, PageState> {
 			sortedResultsSeq: [],
 			sortedPauseTimeCommitResults: [],
 			runSetIndexes: [],
-			percentile: this.props.initialPercentile
+			percentile: this.props.initialPercentile,
 		};
 	}
 
@@ -181,7 +181,7 @@ class Page extends React.Component<PageProps, PageState> {
 			sortedResultsConc: [],
 			sortedResultsSeq: [],
 			sortedPauseTimeCommitResults: [],
-			runSetIndexes: []
+			runSetIndexes: [],
 		} as any);
 		this.props.onChange (newSelectionNames, this.state.percentile);
 		this.fetchResults (newSelectionNames, true);
@@ -321,7 +321,7 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				highBalloonName: 'highName',
 				color: xp_common.xamarinColors.blue [2],
 				title: "Concurrent",
-				bulletSize: 4
+				bulletSize: 4,
 			},
 			{
 				lowName: 'lowSeq',
@@ -332,8 +332,8 @@ class PauseTimesChart extends xp_charts.TimelineChart<PauseTimesChartProps> {
 				highBalloonName: 'highSeqName',
 				color: xp_common.xamarinColors.green [2],
 				title: "Non-Concurrent",
-				bulletSize: 4
-			}
+				bulletSize: 4,
+			},
 		];
 	}
 

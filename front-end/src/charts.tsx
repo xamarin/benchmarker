@@ -198,7 +198,7 @@ export class AMChart extends React.Component<AMChartProps, void> {
 		return React.DOM.div({
 			className: 'AMChart',
 			id: this.props.graphName,
-			style: {height: this.props.height}
+			style: {height: this.props.height},
 		});
 	}
 
@@ -344,7 +344,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 "type": "column",
                 "openField": "stdlow" + i,
                 "closeField": "stdhigh" + i,
-                "switchable": false
+                "switchable": false,
             };
 			const valueText = needStddev ? "Average +/- standard deviation" : "Value";
 			const minMaxText = needStddev ? "\n[[errorBalloon" + i + "]]" : "";
@@ -358,12 +358,12 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                 "valueField": "lowhighavg" + i,
                 "lineAlpha": 0,
                 "visibleInLegend": false,
-                "newStack": true
+                "newStack": true,
             };
 			var guide: Object = {
 				"value": avg,
 				"balloonText": label,
-				"lineThickness": 3
+				"lineThickness": 3,
 			};
 			if (this.props.runSets.length <= xp_common.xamarinColorsOrder.length) {
 				var colors = xp_common.xamarinColors [xp_common.xamarinColorsOrder [i]];
@@ -444,15 +444,13 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
                     "stackType": "regular",
                     "minimum": this.min,
                     "maximum": this.max,
-					"guides": this.guides
-                }
+					"guides": this.guides,
+                },
             ],
             "allLabels": [],
             "balloon": {},
             "titles": [],
-            "legend": {
-                "useGraphSettings": true
-            }
+            "legend": { "useGraphSettings": true },
         };
 
         var zoomFunc;
@@ -508,7 +506,7 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineThickness": 0,
 			"id": parameters.lowName,
 			"valueField": parameters.lowName,
-			"visibleInLegend": false
+			"visibleInLegend": false,
 		},
 		{
 			"balloonText": "[[" + parameters.highBalloonName + "]]",
@@ -521,7 +519,7 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineThickness": 0,
 			"id": parameters.highName,
 			"valueField": parameters.highName,
-			"visibleInLegend": false
+			"visibleInLegend": false,
 		},
 		{
 			"balloonText": "[[" + parameters.midBalloonName + "]]",
@@ -532,8 +530,8 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineColorField": "lineColor",
 			"id": parameters.midName,
 			"valueField": parameters.midName,
-			"title": parameters.title
-		}
+			"title": parameters.title,
+		},
 	];
 
 	if (parameters.maxBalloonName !== undefined) {
@@ -544,7 +542,7 @@ function graphsForParameters (parameters: TimelineParameters) : Array<Object> {
 			"lineColor": parameters.color,
 			"id": parameters.maxName,
 			"valueField": parameters.maxName,
-			"visibleInLegend": false
+			"visibleInLegend": false,
 		});
 	}
 
@@ -562,7 +560,7 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 							"axisThickness": 0,
 							"gridThickness": 0,
 							"labelsEnabled": false,
-							"tickLength": 0
+							"tickLength": 0,
 						},
 						"chartScrollbar": {
 							"graph": this.props.parameters [0].midName
@@ -576,14 +574,14 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 								"fontSize": 12,
 								"gridAlpha": 0.07,
 								"title": this.props.title,
-								"logarithmic": this.props.logarithmic
-							}
+								"logarithmic": this.props.logarithmic,
+							},
 						],
 						"allLabels": [],
 						"balloon": {},
 						"titles": [],
                         "dataProvider": this.props.data,
-						"zoomOutOnDataUpdate": false
+						"zoomOutOnDataUpdate": false,
 					};
 		if (haveTitles) {
 			timelineOptions ['legend'] = { "useGraphSettings": true };
@@ -661,8 +659,8 @@ export abstract class TimelineChart<Props extends TimelineChartProps> extends Re
 				midBalloonName: "tooltip",
 				highBalloonName: "highName",
 				color: xp_common.xamarinColors.blue [2],
-				bulletSize: 4
-			}
+				bulletSize: 4,
+			},
 		];
 	}
 

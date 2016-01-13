@@ -28,7 +28,7 @@ class Controller {
 		if (machineName === undefined && configName === undefined && metric === undefined) {
 			this.initialSelectionNames = [
 				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo', metric: 'time' },
-				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo-binary', metric: 'time' }
+				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo-binary', metric: 'time' },
 			];
 			this.initialZoom = true;
 		} else {
@@ -116,7 +116,7 @@ class Page extends React.Component<PageProps, PageState> {
 			zoom: this.props.initialZoom,
 			runSetIndices: [],
 			sortedResults: [],
-			benchmarkNames: []
+			benchmarkNames: [],
 		};
 	}
 
@@ -309,37 +309,37 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 			return {
 				name: relative ? "Relative wall clock time" : "Wall clock time",
 				lowest: "Fastest",
-				highest: "Slowest"
+				highest: "Slowest",
 			};
 		case 'memory-integral':
 			return {
 				name: relative ? "Relative memory usage" : "MB * Giga Instructions",
 				lowest: "Least memory",
-				highest: "Most memory"
+				highest: "Most memory",
 			};
 		case 'instructions':
 			return {
 				name: relative ? "Relative # of instructions" : "Number of instructions",
 				lowest: "Fewest instructions",
-				highest: "Most instructions"
+				highest: "Most instructions",
 			};
 		case 'cache-miss':
 			return {
 				name: relative ? "Relative cache miss rate" : "Cache miss rate",
 				lowest: "Fewest cache misses",
-				highest: "Most cache misses"
+				highest: "Most cache misses",
 			};
 		case 'branch-mispred':
 			return {
 				name: relative ? "Relative branch misprediction rate" : "Branch misprediction rate",
 				lowest: "Fewest branch mispredictions",
-				highest: "Most branch mispredictions"
+				highest: "Most branch mispredictions",
 			};
 		default:
 			return {
 				name: "Unknown metric",
 				lowest: "Lowest value",
-				highest: "Highest value"
+				highest: "Highest value",
 			};
 	}
 }
@@ -347,8 +347,8 @@ function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
 interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
 	metric: string;
 	sortedResults: Array<Database.Summary>;
-	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
 	selectedIndices: Array<number>;
+	allBenchmarksLoaded (benchmarkNamesByIndices: Array<string>) : void;
 };
 
 class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps> {
@@ -429,7 +429,7 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 			}
 			var tooltip = xp_charts.tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
-			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet)
+			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet);
 			var selected = nextProps.selectedIndices.indexOf (runSetIndex) >= 0;
 			const { lowest: lowestLabel, highest: highestLabel } = axisNameForMetric (this.props.metric, true);
 			table.push ({
@@ -443,7 +443,7 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 				lineColor: selected
 					? broken ? xp_common.xamarinColors.red [4] : xp_common.xamarinColors.blue [4]
 					: broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2],
-				bulletSize: selected ? 12 : 4
+				bulletSize: selected ? 12 : 4,
 			});
 		}
 
@@ -498,7 +498,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 				averageTooltip = "Average: " + formatDuration (average);
 			}
 			var broken = runSetIsBroken (runSet, results [j].averages);
-			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet)
+			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet);
 			var selected = nextProps.selectedIndices.indexOf (runSetIndex) >= 0;
 			table.push ({
 				dataItem: runSet,
@@ -509,7 +509,7 @@ class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 				lineColor: selected
 					? broken ? xp_common.xamarinColors.red [4] : xp_common.xamarinColors.blue [4]
 					: broken ? xp_common.xamarinColors.red [2] : xp_common.xamarinColors.blue [2],
-				bulletSize: selected ? 12 : 4
+				bulletSize: selected ? 12 : 4,
 			});
 		}
 
@@ -538,10 +538,10 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 	public render () : JSX.Element {
 		var benchmarks = this.props.benchmarkNames.slice ();
 		benchmarks.sort ();
-		function chartKey (name: string): string {
+		function chartKey (name: string) : string {
 			return 'benchmarkChart_' + name;
 		}
-		function chartOrExpander (name: string): JSX.Element {
+		function chartOrExpander (name: string) : JSX.Element {
 			if (this.state.expanded [name]) {
 				return <BenchmarkChart
 					zoomInterval={undefined}

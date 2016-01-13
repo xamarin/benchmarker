@@ -24,7 +24,7 @@ export var xamarinColors = {
 	"red": [ "#F8C6BB", "#F69781", "#F56D4F", "#E2553D", "#BC3C26" ],
 	"amber": [ "#F7E28B", "#F9D33C", "#F1C40F", "#F0B240", "#E7963B" ],
 	"gray": [ "#ECF0F1", "#D1D9DD", "#ADB7BE", "#9AA4AB", "#76828A" ],
-	"asphalt": [ "#889DB5", "#66819E", "#365271", "#2B3E50", "#1C2B39" ]
+	"asphalt": [ "#889DB5", "#66819E", "#365271", "#2B3E50", "#1C2B39" ],
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
@@ -492,8 +492,10 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					return <li key={"commit" + c ['hash']}><a href={link}>{c ['product']} {short}</a></li>;
 				});
 			}
-			secondaryProductsList = [<h1 key="secondaryProductsHeader">Secondary products</h1>,
-					<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>];
+			secondaryProductsList = [
+				<h1 key="secondaryProductsHeader">Secondary products</h1>,
+				<ul key="secondaryProductsList" className='secondaryProducts'>{elements}</ul>,
+			];
 		}
 
 		if (this.state.results === undefined) {
@@ -624,8 +626,10 @@ export class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
 			var prevHash = prev.commit.get ('hash');
 			var prevLink = githubCommitLink (prev.commit.get ('product'), prevHash);
 			var compareLink = githubCompareLink (prevHash, commitHash);
-			prevItems = [<dt key="previousName">Previous</dt>,
-				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>];
+			prevItems = [
+				<dt key="previousName">Previous</dt>,
+				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>,
+			];
 		}
 
 		var runSetLink = "runset.html#id=" + runSet.get ('id');
@@ -724,7 +728,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
  * "a+b" => ["a", "b"]
  */
 function splitLocationHashValues (values: string) : Array<string> {
-	return values.split ('+').filter (item => item !== '');
+	return values.split ('+').filter ((item: string) => item !== '');
 }
 
 export function parseLocationHashForDict (items: Array<string>, startFunc: (keyMap: Object) => void) : void {
@@ -817,7 +821,7 @@ function getMonoRepo () : Repo {
 	const github = new GitHub ({
 		// HACK: A read-only access token to allow higher rate limits.
 		token: '319339f37f8f19b7b5ba92ebfcbdb965871440e0',
-		auth: 'oauth'
+		auth: 'oauth',
 	});
 	return github.getRepo ("mono", "mono");
 }

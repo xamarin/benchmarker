@@ -140,7 +140,7 @@ export function fetchSummaries (
 				results.push ({
 					runSet: new DBRunSet (r, 'rs_', new DBObject (r, 'm_'), new DBObject (r, 'cfg_'), new DBObject (r, 'c_')),
 					averages: r ['averages'],
-					variances: r ['variances']
+					variances: r ['variances'],
 				});
 			});
 			success (results);

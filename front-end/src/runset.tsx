@@ -56,7 +56,7 @@ class Controller {
 			selection = {
 				machine: this.runSet.machine,
 				config: this.runSet.config,
-				runSet: this.runSet
+				runSet: this.runSet,
 			};
 		}
 
