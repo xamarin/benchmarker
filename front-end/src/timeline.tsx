@@ -553,7 +553,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 					selectedIndices={this.props.selectedIndices}
 					/>;
 			} else {
-				return <div className="BenchmarkChartList">
+				return <div>
 					<button onClick={(e: React.MouseEvent) => this.expand (name)}>View Timeline</button>
 				</div>;
 			}
@@ -565,10 +565,15 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 			</tr>;
 		});
 
-		return <div>
+		return <div className="BenchmarkChartList">
 			<table>
-				<tr><th>Benchmark</th><th className="grow">Timeline</th></tr>
-				{chartRows}
+				<tbody>
+					<tr><th>Benchmark</th><th className="grow">Timeline</th></tr>
+					<tr><td></td><td>
+						<button onClick={(e: React.MouseEvent) => this.expandAll ()}>View All Timelines</button>
+					</td></tr>
+					{chartRows}
+				</tbody>
 			</table>
 		</div>;
 	}
@@ -576,6 +581,14 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 	private expand (name: string) : void {
 		var expanded: { [name: string]: boolean } = this.state.expanded;
 		expanded [name] = true;
+		this.setState ({ expanded: expanded });
+	}
+
+	private expandAll () : void {
+		var benchmarks = this.props.benchmarkNames.slice ();
+		var expanded: { [name: string]: boolean } = this.state.expanded;
+		for (var i = 0; i < benchmarks.length; ++i)
+			expanded [benchmarks [i]] = true;
 		this.setState ({ expanded: expanded });
 	}
 }
