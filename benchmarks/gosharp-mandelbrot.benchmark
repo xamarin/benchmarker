@@ -1,0 +1,5 @@
+{
+  "Name": "gosharp-mandelbrot",
+  "TestDirectory": "gosharp",
+  "CommandLine": ["Mandelbrot200.exe"]
+}

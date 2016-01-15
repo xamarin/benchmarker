@@ -1,0 +1,5 @@
+{
+  "Name": "gosharp-regexp",
+  "TestDirectory": "gosharp",
+  "CommandLine": ["RegexpMatchHard_1K.exe"]
+}
