@@ -70,7 +70,7 @@ class Compare
 
 		var pullRequest = await gitHubClient.PullRequest.Get ("mono", "mono", pullRequestNumber);
 
-		var prRepo = pullRequest.Head.Repository.SshUrl;
+		var prRepo = pullRequest.Head.Repository.CloneUrl;
 		var prBranch = pullRequest.Head.Ref;
 
 		var prSha = repository.Fetch (prRepo, prBranch);
