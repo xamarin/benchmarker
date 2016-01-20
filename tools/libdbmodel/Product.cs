@@ -25,7 +25,7 @@ namespace Benchmarker.Models
 
 		public string GitRepositoryUrl {
 			get {
-				return string.Format ("git@github.com:{0}/{1}.git", GitHubUser, GitHubRepo);
+				return string.Format ("https://github.com/{0}/{1}.git", GitHubUser, GitHubRepo);
 			}
 		}
 
