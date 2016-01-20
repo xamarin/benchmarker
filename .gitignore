@@ -6,9 +6,10 @@ mytime/mytime
 *.userprefs
 tests/zorn/ahcbench/*.ahd
 tests/zorn/ahcbench/*.orig
-tests/f-sharp-2.0/GeneralTest1.exe
 tests/MSBiology/TestData/PerfTestData/ObjectModel/*.isc
 tests/MSBiology/TestData/PerfTestData/SAMBAMTestData/*.isc
+tests/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll
+tests/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll.mdb
 
 tools/packages
 tools/Components
