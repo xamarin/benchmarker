@@ -7,6 +7,8 @@ mytime/mytime
 tests/zorn/ahcbench/*.ahd
 tests/zorn/ahcbench/*.orig
 tests/f-sharp-2.0/GeneralTest1.exe
+tests/MSBiology/TestData/PerfTestData/ObjectModel/*.isc
+tests/MSBiology/TestData/PerfTestData/SAMBAMTestData/*.isc
 
 tools/packages
 tools/Components
