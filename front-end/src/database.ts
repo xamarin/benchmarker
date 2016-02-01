@@ -40,9 +40,11 @@ export function fetch (query: string, success: (results: Array<Object>) => void,
 	return fetchWithHeaders (query, {}, success, error);
 }
 
+const serverUrl = 'http://performancebot.mono-project.com:81/';
+
 export function fetchWithHeaders (query: string, headers: Object, success: (results: Array<Object>) => void, error: ErrorFunc) : void {
-	var request = new XMLHttpRequest();
-	var url = 'http://performancebot.mono-project.com:81/' + query;
+	const request = new XMLHttpRequest();
+	const url = serverUrl + query;
 
 	request.onreadystatechange = function () : void {
 		if (this.readyState !== 4)

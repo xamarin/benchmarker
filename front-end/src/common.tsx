@@ -552,7 +552,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 					var metricColumns = [];
 					metrics.forEach ((m: string) => {
-						var dataPoints = result.metrics [m];
+						var dataPoints = result.metrics [m] || [];
 						dataPoints.sort ();
 						var dataPointsString = dataPoints.join (", ");
 						var variance = Outliers.outlierVariance (dataPoints);
