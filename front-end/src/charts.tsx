@@ -615,7 +615,7 @@ export interface TimelineChartProps {
 	selectedIndices: Array<number>;
 }
 
-export interface TimelineChartState {
+interface TimelineChartState {
 	table: Array<Object>;
 }
 
