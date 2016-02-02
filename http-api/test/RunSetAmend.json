@@ -1,0 +1,34 @@
+{
+    "MainProduct": {
+        "Name": "mono",
+        "Commit": "459aee6ee492c15d7a6bd8365ec8632f251243a4"        
+    },
+    "SecondaryProducts": [
+        {
+            "Name": "benchmarker",
+            "Commit": "0a0a3362e04439d7553d6ca67850cf822bc123f6"
+        }
+    ],
+    "Machine": {
+        "Name": "api-test",
+        "Architecture": "x86_64"
+    },
+    "Config": {
+        "Name": "auto-sgen",
+        "MonoExecutable": "mono-sgen",
+        "MonoEnvironmentVariables": {"MONO_PATH": "$ROOT/lib/mono/4.5"},
+        "MonoOptions": ["-O=-aot"]
+    },
+    "TimedOutBenchmarks": [],
+    "CrashedBenchmarks": [],
+    "LogURLs": {"compress": "http://dvdsgl.co/2016/a-trello-monad-in-the-dark/"},
+    "Runs": [
+        {
+            "Benchmark": "compress",
+            "Results": {
+                "time": 876,
+                "cachegrind": [33582417464,2153022,14247,10118944732,169111274,16698,1527462014,6155137,54432,5937792399,26765360,2291668,330984]
+            }
+        }
+    ]
+}

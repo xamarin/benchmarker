@@ -1,0 +1,43 @@
+{
+    "MainProduct": {
+        "Name": "mono",
+        "Commit": "459aee6ee492c15d7a6bd8365ec8632f251243a4"        
+    },
+    "SecondaryProducts": [
+        {
+            "Name": "benchmarker",
+            "Commit": "0a0a3362e04439d7553d6ca67850cf822bc123f6"
+        }
+    ],
+    "Machine": {
+        "Name": "api-test",
+        "Architecture": "x86_64"
+    },
+    "Config": {
+        "Name": "auto-sgen",
+        "MonoExecutable": "mono-sgen",
+        "MonoEnvironmentVariables": {"MONO_PATH": "$ROOT/lib/mono/4.5"},
+        "MonoOptions": ["-O=-aot"]
+    },
+    "TimedOutBenchmarks": ["fsharp"],
+    "CrashedBenchmarks": ["ipy"],
+    "StartedAt": "1985-04-12T23:20:50.52Z",
+    "FinishedAt": "1985-04-12T23:50:50.52Z",
+    "BuildURL": "https://medium.com/namely-labs/postgres-in-go-cf794adc4c52",
+    "LogURLs": {"*": "https://astaxie.gitbooks.io/build-web-application-with-golang/content/en/05.4.html"},
+    "Runs": [
+        {
+            "Benchmark": "compress",
+            "Results": {
+                "time": 123
+            }
+        },
+        {
+            "Benchmark": "bh",
+            "Results": {
+                "time": 345,
+                "instructions": 3242523
+            }
+        }
+    ]
+}
