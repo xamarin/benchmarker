@@ -139,10 +139,10 @@ func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []b
 
 func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	pathComponents := strings.Split(r.URL.Path, "/")
-	if len(pathComponents) != 3 || pathComponents[1] != "runset" {
+	if len(pathComponents) != 4 || pathComponents[2] != "runset" {
 		return false, badRequestError("Incorrect path")
 	}
-	runSetID64, err := strconv.ParseInt(pathComponents[2], 10, 32)
+	runSetID64, err := strconv.ParseInt(pathComponents[3], 10, 32)
 	if err != nil {
 		return false, badRequestError("Could not parse run set id")
 	}
@@ -263,8 +263,8 @@ func main() {
         os.Exit(1)
     }
 
-	http.HandleFunc("/runset", newTransactionHandler("POST", authToken, runsetHandlerInTransaction))
-	http.HandleFunc("/runset/", newTransactionHandler("POST", authToken, specificRunsetHandlerInTransaction))
+	http.HandleFunc("/api/runset", newTransactionHandler("POST", authToken, runsetHandlerInTransaction))
+	http.HandleFunc("/api/runset/", newTransactionHandler("POST", authToken, specificRunsetHandlerInTransaction))
 	http.HandleFunc("/", notFoundHandler)
 
     addr := fmt.Sprintf(":%d", port)
