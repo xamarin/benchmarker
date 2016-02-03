@@ -190,12 +190,14 @@ func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, 
 	return true, nil
 }
 
-func newTransactionHandler(method string, f func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)) func(w http.ResponseWriter, r *http.Request) {
+func newTransactionHandler(method string, authToken string, f func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqErr *requestError
 		if r.Method != method {
 			reqErr = &requestError{Explanation: "Only POST method allowed", httpStatus: http.StatusMethodNotAllowed}
-		} else {
+		} else if r.URL.Query().Get("authToken") != authToken {
+            reqErr = &requestError{Explanation: "Auth token invalid", httpStatus: http.StatusUnauthorized}
+        } else {
 			body, err := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			if err != nil {
@@ -242,9 +244,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: Cannot init DB: %s\n", err.Error())
 		os.Exit(1)
 	}
+    
+    authToken, err := getCredentialString("httpAPITokens", "default")
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error: Cannot get auth token: %s\n", err.Error())
+        os.Exit(1)
+    }
 
-	http.HandleFunc("/runset", newTransactionHandler("POST", runsetHandlerInTransaction))
-	http.HandleFunc("/runset/", newTransactionHandler("POST", specificRunsetHandlerInTransaction))
+	http.HandleFunc("/runset", newTransactionHandler("POST", authToken, runsetHandlerInTransaction))
+	http.HandleFunc("/runset/", newTransactionHandler("POST", authToken, specificRunsetHandlerInTransaction))
 	http.HandleFunc("/", notFoundHandler)
 
 	fmt.Printf("listening\n")
