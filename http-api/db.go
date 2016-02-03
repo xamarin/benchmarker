@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -214,28 +212,28 @@ func initGitHub() {
 	githubClient = github.NewClient(nil)
 }
 
-func initDatabase(credentialsFile string) error {
-	credentialsData, err := ioutil.ReadFile(credentialsFile)
+func initDatabase() error {
+	host, err := getCredentialString("benchmarkerPostgres", "host")
 	if err != nil {
 		return err
 	}
-
-	var credentialsMap map[string]map[string]interface{}
-	err = json.Unmarshal(credentialsData, &credentialsMap)
+	portFloat, err := getCredentialNumber("benchmarkerPostgres", "port")
 	if err != nil {
 		return err
 	}
-
-	postgresMap, ok := credentialsMap["benchmarkerPostgres"]
-	if !ok {
-		return errors.New("No benchmarkerPostgres credentials in credentials file")
+	port := uint16(portFloat)
+	dbName, err := getCredentialString("benchmarkerPostgres", "database")
+	if err != nil {
+		return err
 	}
-
-	host := postgresMap["host"].(string)
-	port := uint16(postgresMap["port"].(float64))
-	dbName := postgresMap["database"].(string)
-	user := postgresMap["user"].(string)
-	password := postgresMap["password"].(string)
+	user, err := getCredentialString("benchmarkerPostgres", "user")
+	if err != nil {
+		return err
+	}
+	password, err := getCredentialString("benchmarkerPostgres", "password")
+	if err != nil {
+		return err
+	}
 
 	config := pgx.ConnConfig{
 		Host:     host,

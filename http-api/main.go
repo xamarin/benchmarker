@@ -231,9 +231,14 @@ func main() {
 	credentialsFlag := flag.String("credentials", "benchmarkerCredentials", "path of the credentials file")
 	flag.Parse()
 
+    if err := readCredentials(*credentialsFlag); err != nil {
+        fmt.Fprintf(os.Stderr, "Error: Cannot read credentials from file %s: %s\n", *credentialsFlag, err.Error())
+        os.Exit(1)
+    }
+    
 	initGitHub()
 
-	if err := initDatabase(*credentialsFlag); err != nil {
+	if err := initDatabase(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannot init DB: %s\n", err.Error())
 		os.Exit(1)
 	}
