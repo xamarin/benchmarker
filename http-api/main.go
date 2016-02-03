@@ -229,9 +229,21 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	portFlag := flag.Int("port", 8081, "port on which to listen")
+	portFlag := flag.Int("port", 0, "port on which to listen")
 	credentialsFlag := flag.String("credentials", "benchmarkerCredentials", "path of the credentials file")
+    keyFlag := flag.String("ssl-key", "", "path of the SSL key file")
+    certFlag := flag.String("ssl-certificate", "", "path of the SSL certificate file")
 	flag.Parse()
+    
+    ssl := *certFlag != "" || *keyFlag != ""
+    port := *portFlag
+    if port == 0 {
+        if ssl {
+            port = 10443
+        } else {
+            port = 8081
+        }
+    }
 
     if err := readCredentials(*credentialsFlag); err != nil {
         fmt.Fprintf(os.Stderr, "Error: Cannot read credentials from file %s: %s\n", *credentialsFlag, err.Error())
@@ -255,8 +267,17 @@ func main() {
 	http.HandleFunc("/runset/", newTransactionHandler("POST", authToken, specificRunsetHandlerInTransaction))
 	http.HandleFunc("/", notFoundHandler)
 
-	fmt.Printf("listening\n")
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", *portFlag), nil); err != nil {
+    addr := fmt.Sprintf(":%d", port)
+	fmt.Printf("listening at %s\n", addr)
+    
+    if ssl {
+        // Instructions for generating a certificate: http://www.zytrax.com/tech/survival/ssl.html#self
+        err = http.ListenAndServeTLS(addr, *certFlag, *keyFlag, nil)
+    } else {
+        err = http.ListenAndServe(addr, nil)
+    }
+        
+    if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Listen failed: %s\n", err.Error())
 		os.Exit(1)
 	}
