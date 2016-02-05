@@ -72,7 +72,7 @@ func ensureBenchmarksAndMetricsExist(rs *RunSet) *requestError {
 	return nil
 }
 
-func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
 		fmt.Printf("Unmarshal error: %s\n", err.Error())
@@ -137,7 +137,7 @@ func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []b
 	return true, nil
 }
 
-func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	pathComponents := strings.Split(r.URL.Path, "/")
 	if len(pathComponents) != 4 || pathComponents[2] != "runset" {
 		return false, badRequestError("Incorrect path")
@@ -190,14 +190,17 @@ func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, 
 	return true, nil
 }
 
-func newTransactionHandler(method string, authToken string, f func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)) func(w http.ResponseWriter, r *http.Request) {
+type handlerFunc func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
+
+func newTransactionHandler(authToken string, handlers map[string]handlerFunc) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqErr *requestError
-		if r.Method != method {
-			reqErr = &requestError{Explanation: "Only POST method allowed", httpStatus: http.StatusMethodNotAllowed}
+		handler, ok := handlers[r.Method]
+		if !ok {
+			reqErr = &requestError{Explanation: "Method not allowed", httpStatus: http.StatusMethodNotAllowed}
 		} else if r.URL.Query().Get("authToken") != authToken {
-            reqErr = &requestError{Explanation: "Auth token invalid", httpStatus: http.StatusUnauthorized}
-        } else {
+			reqErr = &requestError{Explanation: "Auth token invalid", httpStatus: http.StatusUnauthorized}
+		} else {
 			body, err := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			if err != nil {
@@ -208,7 +211,7 @@ func newTransactionHandler(method string, authToken string, f func(w http.Respon
 					reqErr = internalServerError("Could not begin transaction")
 				} else {
 					var commit bool
-					commit, reqErr = f(w, r, body)
+					commit, reqErr = handler(w, r, body)
 					if commit {
 						transaction.Commit()
 					} else {
@@ -263,8 +266,8 @@ func main() {
         os.Exit(1)
     }
 
-	http.HandleFunc("/api/runset", newTransactionHandler("POST", authToken, runsetHandlerInTransaction))
-	http.HandleFunc("/api/runset/", newTransactionHandler("POST", authToken, specificRunsetHandlerInTransaction))
+	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"POST": runSetPostHandler}))
+	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunSetPostHandler}))
 	http.HandleFunc("/", notFoundHandler)
 
     addr := fmt.Sprintf(":%d", port)
