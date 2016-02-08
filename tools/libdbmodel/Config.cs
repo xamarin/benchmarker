@@ -82,7 +82,7 @@ namespace Benchmarker.Models
 		public static Config LoadFromString (string content, string root, bool expandRoot)
 		{
 			var config = JsonConvert.DeserializeObject<Config> (content);
-			config.monoRoot = root;
+			config.monoRoot = Path.GetFullPath (root);
 
 			if (String.IsNullOrWhiteSpace (config.Name))
 				throw new InvalidDataException ("Configuration does not have a `Name`.");
@@ -102,7 +102,7 @@ namespace Benchmarker.Models
 			if (String.IsNullOrWhiteSpace (config.Mono)) {
 				config.Mono = String.Empty;
 			} else if (expandRoot && root != null) {
-				config.Mono = config.Mono.Replace (rootVarString, root);
+				config.Mono = config.Mono.Replace (rootVarString, config.monoRoot);
 			} else if (expandRoot && config.Mono.Contains (rootVarString)) {
 				throw new InvalidDataException ("Configuration requires a root directory.");
 			}
