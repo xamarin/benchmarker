@@ -132,6 +132,8 @@ class DebianMonoBuildFactory(BuildFactory):
             name='cp_config',
             command=[
                 'bash',
+                '-o',
+                'pipefail',
                 '-c',
                 Interpolate(
                     'cp -v %s/benchmarker/configs/' % MASTERWORKDIR +
@@ -146,6 +148,8 @@ class DebianMonoBuildFactory(BuildFactory):
             name='cp_machine',
             command=[
                 'bash',
+                '-o',
+                'pipefail',
                 '-c',
                 Interpolate(
                     'cp -v %s/benchmarker/machines/' % MASTERWORKDIR +
