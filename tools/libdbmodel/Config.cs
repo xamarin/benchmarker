@@ -82,7 +82,7 @@ namespace Benchmarker.Models
 		public static Config LoadFromString (string content, string root, bool expandRoot)
 		{
 			var config = JsonConvert.DeserializeObject<Config> (content);
-			config.monoRoot = Path.GetFullPath (root);
+			config.monoRoot = root == null ? null : Path.GetFullPath (root);
 
 			if (String.IsNullOrWhiteSpace (config.Name))
 				throw new InvalidDataException ("Configuration does not have a `Name`.");
