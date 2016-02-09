@@ -21,28 +21,22 @@ namespace Benchmarks.SciMark
 			// initialize FFT data as complex (N real/img pairs)
 			
 			double[] x = RandomVector (2 * N, R);
-			//double oldx[] = NewVectorCopy(x);
-			long cycles = 1;
+			long cycles = 20000;
 			Stopwatch Q = new Stopwatch ();
-			while (true) {
-				Q.start ();
-				for (int i = 0; i < cycles; i++) {
-					FFT.transform (x); // forward transform
-					FFT.inverse (x); // backward transform
-				}
-				Q.stop ();
-				if (Q.read () >= mintime)
-					break;
-
-				cycles *= 2;
+			Q.start ();
+			int i = 0;
+			while (i < cycles) {
+				FFT.transform (x); // forward transform
+				FFT.inverse (x); // backward transform
+				i++;
 			}
-			// approx Mflops
-			
+			Q.stop ();
+
 			const double EPS = 1.0e-10;
 			if (FFT.test (x) / N > EPS)
 				return 0.0;
 			
-			return FFT.num_flops (N) * cycles / Q.read () * 1.0e-6;
+			return FFT.num_flops (N) * (double) cycles / Q.read () * 1.0e-6;
 		}
 
 		
@@ -51,36 +45,23 @@ namespace Benchmarks.SciMark
 			double[][] G = RandomMatrix (N, N, R);
 			
 			Stopwatch Q = new Stopwatch ();
-			int cycles = 1;
-			while (true) {
-				Q.start ();
-				SOR.execute (1.25, G, cycles);
-				Q.stop ();
-				if (Q.read () >= min_time)
-					break;
-
-				cycles *= 2;
-			}
+			int num_iterations = 40000;
+			Q.start ();
+			SOR.execute (1.25, G, num_iterations);
+			Q.stop ();
 			// approx Mflops
-			return SOR.num_flops (N, N, cycles) / Q.read () * 1.0e-6;
+			return SOR.num_flops (N, N, num_iterations) / Q.read () * 1.0e-6;
 		}
 
 		public static double measureMonteCarlo (double min_time, Random R)
 		{
 			Stopwatch Q = new Stopwatch ();
-			
-			int cycles = 1;
-			while (true) {
-				Q.start ();
-				MonteCarlo.integrate (cycles);
-				Q.stop ();
-				if (Q.read () >= min_time)
-					break;
-				
-				cycles *= 2;
-			}
+			int num_samples = 40000000;
+			Q.start ();
+			MonteCarlo.integrate (num_samples);
+			Q.stop ();
 			// approx Mflops
-			return MonteCarlo.num_flops (cycles) / Q.read () * 1.0e-6;
+			return MonteCarlo.num_flops (num_samples) / Q.read () * 1.0e-6;
 		}
 
 		
@@ -139,17 +120,10 @@ namespace Benchmarks.SciMark
 			}
 			
 			Stopwatch Q = new Stopwatch ();
-			
-			int cycles = 1;
-			while (true) {
-				Q.start ();
-				SparseCompRow.matmult (y, val, row, col, x, cycles);
-				Q.stop ();
-				if (Q.read () >= min_time)
-					break;
-				
-				cycles *= 2;
-			}
+			int cycles = 150000;
+			Q.start ();
+			SparseCompRow.matmult (y, val, row, col, x, cycles);
+			Q.stop ();
 			// approx Mflops
 			return SparseCompRow.num_flops (N, nz, cycles) / Q.read () * 1.0e-6;
 		}
@@ -167,21 +141,14 @@ namespace Benchmarks.SciMark
 			int[] pivot = new int[N];
 			
 			Stopwatch Q = new Stopwatch ();
-			
-			int cycles = 1;
-			while (true) {
-				Q.start ();
-				for (int i = 0; i < cycles; i++) {
+			int cycles = 4095;
+			Q.start ();
+
+			for (int j = 0; j < cycles; j++) {
 					CopyMatrix (lu, A);
 					LU.factor (lu, pivot);
-				}
-				Q.stop ();
-				if (Q.read () >= min_time)
-					break;
-				
-				cycles *= 2;
 			}
-			
+			Q.stop ();
 			
 			// verify that LU is correct
 			double[] b = RandomVector (N, R);
@@ -192,8 +159,6 @@ namespace Benchmarks.SciMark
 			const double EPS = 1.0e-12;
 			if (normabs (b, matvec (A, x)) / N > EPS)
 				return 0.0;
-			
-			
 			// else return approx Mflops
 			//
 			return LU.num_flops (N) * cycles / Q.read () * 1.0e-6;
