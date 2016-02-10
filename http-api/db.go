@@ -214,14 +214,16 @@ func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	return &rs, nil
 }
 
-func insertRuns(runSetID int32, runs []Run) *requestError {
+func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
+	var runIDs []int32
 	for _, run := range runs {
 		var runID int32
 		err := database.QueryRow("insertRun", run.Benchmark, runSetID).Scan(&runID)
 		if err != nil {
 			fmt.Printf("run insert error: %s\n", err)
-			return internalServerError("Could not insert run")
+			return nil, internalServerError("Could not insert run")
 		}
+		runIDs = append(runIDs, runID)
 
 		for m, v := range run.Results {
 			if metricIsArray(m) {
@@ -235,11 +237,11 @@ func insertRuns(runSetID int32, runs []Run) *requestError {
 			}
 			if err != nil {
 				fmt.Printf("run metric insert error: %s\n", err)
-				return internalServerError("Could not insert run metric")
+				return nil, internalServerError("Could not insert run metric")
 			}
 		}
 	}
-	return nil
+	return runIDs, nil
 }
 
 func updateRunSet(runSetID int32, rs *RunSet) *requestError {

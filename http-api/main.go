@@ -13,6 +13,7 @@ import (
 
 type runsetPostResponse struct {
 	RunSetID int32
+	RunIDs   []int32
 }
 
 type requestError struct {
@@ -119,12 +120,12 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 		return false, internalServerError("Could not insert run set")
 	}
 
-	reqErr = insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	resp := runsetPostResponse{RunSetID: runSetID}
+	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs}
 	respBytes, err := json.Marshal(&resp)
 	if err != nil {
 		return false, internalServerError("Could not produce JSON for response")
@@ -203,7 +204,7 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 
 	rs.amendWithDataFrom(&params)
 
-	reqErr = insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -213,9 +214,15 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 		return false, reqErr
 	}
 
+	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs}
+	respBytes, err := json.Marshal(&resp)
+	if err != nil {
+		return false, internalServerError("Could not produce JSON for response")
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Write([]byte("{}"))
+	w.Write([]byte(respBytes))
 
 	return true, nil
 }
