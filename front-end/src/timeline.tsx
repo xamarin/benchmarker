@@ -423,10 +423,9 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 				}
 				++count;
 			}
-			if (count === 0) {
-				console.log ("No data for run set " + runSet.get ('id'));
+			if (count === 0)
 				continue;
-			}
+
 			var tooltip = xp_charts.tooltipForRunSet (runSet, true);
 			var broken = runSetIsBroken (runSet, results [j].averages);
 			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet);

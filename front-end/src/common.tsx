@@ -136,10 +136,8 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		};
 
 		const valueStringForSingleSelection = (selection: MachineConfigSelection) => {
-			if (selection.machine === undefined || selection.config === undefined) {
-				console.log ("what is this?", selection);
-				throw "BLA";
-			}
+			if (selection.machine === undefined || selection.config === undefined)
+				return '';
 			var s = selection.machine.get ('name') + '+' + selection.config.get ('name');
 			if (this.props.includeMetric)
 				s = s + '+' + selection.metric;
@@ -321,10 +319,8 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 
 	private configsSelected (selection: Array<MachineConfigSelection>) : void {
-		if (selection.length !== 1) {
-			console.log ("Error: more than one config selected in RunSetSelector");
+		if (selection.length !== 1)
 			return;
-		}
 		this.props.onChange ({machine: selection [0].machine, config: selection [0].config, runSet: undefined});
 	}
 
@@ -437,7 +433,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 		getCommitInfo (runSet.get ('commit'), (info: Object) => {
 			this.setState ({ commitInfo: info } as any);
-			console.log (info);
 		});
 	}
 
