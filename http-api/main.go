@@ -137,16 +137,46 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 	return true, nil
 }
 
-func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
-	pathComponents := strings.Split(r.URL.Path, "/")
-	if len(pathComponents) != 4 || pathComponents[2] != "runset" {
-		return false, badRequestError("Incorrect path")
+func parseIDFromPath(path string, numComponents int) (int32, *requestError) {
+	pathComponents := strings.Split(path, "/")
+	if len(pathComponents) != numComponents {
+		return -1, badRequestError("Incorrect path")
 	}
-	runSetID64, err := strconv.ParseInt(pathComponents[3], 10, 32)
+	id64, err := strconv.ParseInt(pathComponents[numComponents-1], 10, 32)
 	if err != nil {
-		return false, badRequestError("Could not parse run set id")
+		return -1, badRequestError("Could not parse run set id")
 	}
-	runSetID := int32(runSetID64)
+	return int32(id64), nil
+}
+
+func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	rs, reqErr := fetchRunSet(runSetID, true)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	respBytes, err := json.Marshal(&rs)
+	if err != nil {
+		return false, internalServerError("Could not product JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write(respBytes)
+
+	return false, nil
+}
+
+func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4)
+	if reqErr != nil {
+		return false, reqErr
+	}
 
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
@@ -154,12 +184,12 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 		return false, badRequestError("Could not parse request body")
 	}
 
-	rs, reqErr := fetchRunSet(runSetID)
+	reqErr = ensureBenchmarksAndMetricsExist(&params)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	reqErr = ensureBenchmarksAndMetricsExist(rs)
+	rs, reqErr := fetchRunSet(runSetID, false)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -267,7 +297,7 @@ func main() {
 	}
 
 	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"POST": runSetPostHandler}))
-	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunSetPostHandler}))
+	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler}))
 	http.HandleFunc("/", notFoundHandler)
 
 	addr := fmt.Sprintf(":%d", port)

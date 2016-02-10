@@ -125,7 +125,7 @@ func fetchBenchmarks() (map[string]bool, *requestError) {
 	return names, nil
 }
 
-func fetchRunSet(id int32) (*RunSet, *requestError) {
+func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	var rs RunSet
 	var secondaryCommits []string
 	err := database.QueryRow("queryRunSet", id).Scan(&rs.StartedAt, &rs.FinishedAt,
@@ -167,6 +167,49 @@ func fetchRunSet(id int32) (*RunSet, *requestError) {
 	}
 
 	rs.Config = *config
+
+	if withRuns {
+		rows, err := database.Query("queryRunMetrics", id)
+		if err != nil {
+			return nil, internalServerError("Could not get run metrics")
+		}
+		defer rows.Close()
+
+		runs := make(map[int32]*Run)
+
+		for rows.Next() {
+			var runID int32
+			var benchmark string
+			var metric string
+			var resultNumber *float64
+			var resultArray []float64
+
+			if err = rows.Scan(&runID, &benchmark, &metric, &resultNumber, &resultArray); err != nil {
+				return nil, internalServerError("Could not scan run metric: " + err.Error())
+			}
+
+			var resultValue interface{}
+			if metricIsArray(metric) {
+				resultValue = resultArray
+			} else if resultNumber != nil {
+				resultValue = *resultNumber
+			} else {
+				return nil, internalServerError("Run metric data is inconsistent")
+			}
+
+			run := runs[runID]
+			if run == nil {
+				run = &Run{Benchmark: benchmark, Results: make(map[string]interface{})}
+				runs[runID] = run
+			}
+
+			run.Results[metric] = resultValue
+		}
+
+		for _, r := range runs {
+			rs.Runs = append(rs.Runs, *r)
+		}
+	}
 
 	return &rs, nil
 }
@@ -306,6 +349,11 @@ func initDatabase() error {
 	}
 
 	_, err = database.Prepare("insertRun", "insert into run (benchmark, runSet) values ($1, $2) returning id")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("queryRunMetrics", "select r.id, r.benchmark, rm.metric, rm.result, rm.resultArray from run r, runMetric rm where rm.run = r.id and r.runSet = $1")
 	if err != nil {
 		return err
 	}
