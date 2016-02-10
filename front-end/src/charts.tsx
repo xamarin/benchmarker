@@ -419,6 +419,9 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
     }
 
     public render () : JSX.Element {
+        if (this.resultsByIndex === undefined || this.resultsByIndex.length === 0)
+            return <div className="diagnostic">No data available.</div>;
+
         if (this.dataProvider === undefined)
             return <div className="diagnostic">Loading&hellip;</div>;
 
