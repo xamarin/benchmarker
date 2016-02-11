@@ -274,13 +274,23 @@ func runSetsGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 
 type handlerFunc func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
 
+func isAuthorized(r *http.Request, authToken string) bool {
+	if r.URL.Query().Get("authToken") == authToken {
+		return true
+	}
+	if r.Header.Get("Authorization") == "token "+authToken {
+		return true
+	}
+	return false
+}
+
 func newTransactionHandler(authToken string, handlers map[string]handlerFunc) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqErr *requestError
 		handler, ok := handlers[r.Method]
 		if !ok {
 			reqErr = &requestError{Explanation: "Method not allowed", httpStatus: http.StatusMethodNotAllowed}
-		} else if r.URL.Query().Get("authToken") != authToken {
+		} else if !isAuthorized(r, authToken) {
 			reqErr = &requestError{Explanation: "Auth token invalid", httpStatus: http.StatusUnauthorized}
 		} else {
 			body, err := ioutil.ReadAll(r.Body)
