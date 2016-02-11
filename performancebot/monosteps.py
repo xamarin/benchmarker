@@ -198,14 +198,16 @@ class GithubPostPRStatus(LoggingBuildStep):
         headers = {}
         headers['content-type'] = 'application/json'
         headers['Authorization'] = 'token ' + self.githubtoken
-        headers['state'] = self.state
-        headers['target_url'] = '%s/builders/%s/builds/%s' % (BUILDBOT_URL, buildername, str(buildnumber))
-        headers['context'] = 'continous-integration/performancebot'
-        headers['description'] = 'Benchmark results: http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id)
+        data = {}
+        data['state'] = self.state
+        data['description'] = self.state
+        data['context'] = 'performancebot/%s/%s' % (buildername, str(buildnumber))
+        data['target_url'] = 'http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id)
 
         requests.post(
             'https://api.github.com/repos/%s/%s/statuses/%s' % (self.githubuser, self.githubrepo, str(pullrequest_commit_id)),
-            headers=headers
+            headers=headers,
+            data=json.dumps(data)
         )
         self.finished(SUCCESS)
 
