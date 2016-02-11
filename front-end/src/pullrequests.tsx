@@ -89,16 +89,16 @@ class Page extends React.Component<PageProps, PageState> {
 				', ',
 				pullRequest ['blrs_timedoutbenchmarks']
 					.map ((name: string) => <code key={'timed-out-' + name}>{name}</code>));
+			var idLink = <a href={pullRequest ['pr_url']}>#{xp_common.pullRequestIdFromUrl (pullRequest ['pr_url'])}</a>;
+			var compareLink = <a href={'pullrequest.html#id=' + pullRequest ['pr_id']} className="pre">{title}</a>;
+			var relativeDate = xp_common.relativeDate (new Date (pullRequest ['blc_commitdate']));
 			return <tr key={pullRequest ['pr_id']}>
-				<td>#{xp_common.pullRequestIdFromUrl (pullRequest ['pr_url'])}</td>
-				<td><a href={pullRequest ['pr_url']}>{title}</a></td>
-				<td>{new Date (pullRequest ['blc_commitdate']).toString ()}</td>
+				<td>{idLink}</td>
+				<td>{relativeDate}</td>
+				<td>{compareLink}</td>
 				<td>{crashed}</td>
 				<td>{timedOut}</td>
-				<td>
-					<a href={pullRequest ['blrs_buildurl']}>build</a>,{' '}
-					<a href={'pullrequest.html#id=' + pullRequest ['pr_id']}>compare</a>
-				</td>
+				<td><a href={pullRequest ['blrs_buildurl']}>build logs</a></td>
 			</tr>;
 		};
 		return <div className="PullRequestsPage">
@@ -110,8 +110,8 @@ class Page extends React.Component<PageProps, PageState> {
 					<thead>
 						<tr>
 							<th>ID</th>
-							<th>Title</th>
 							<th>Date</th>
+							<th>Title</th>
 							<th>Crashed</th>
 							<th>Timed Out</th>
 							<th></th>

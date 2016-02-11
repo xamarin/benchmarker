@@ -841,3 +841,37 @@ function getCommitInfo (hash: string, success: (info: Object) => void) : void {
 		}
 	});
 }
+
+export function relativeDate (then: Date) : JSX.Element {
+	var now = new Date ();
+	var ago = (now.getTime () - then.getTime ()) / 1000;
+	var text;
+	var s_m = 60;
+	var s_h = s_m * 60;
+	var s_d = s_h * 24;
+	var s_wk = s_d * 7;
+	var s_mo = s_wk * 4;
+	var s_y = s_mo * 12;
+	function agoify (ago: number, unit: string): string {
+		ago = Math.floor (ago);
+		unit = ago == 1 ? unit : unit + 's';
+		return [ago, unit, 'ago'].join (' ');
+	}
+	if (ago < 0)
+		text = 'in the future';
+	else if (ago < s_m)
+		text = agoify (ago, 'second');
+	else if (ago < s_h)
+		text = agoify (ago / s_m, 'minute');
+	else if (ago < s_d)
+		text = agoify (ago / s_h, 'hour');
+	else if (ago < s_wk)
+		text = agoify (ago / s_d, 'day');
+	else if (ago < s_mo)
+		text = agoify (ago / s_wk, 'week');
+	else if (ago < s_y)
+		text = agoify (ago / s_mo, 'month');
+	else
+		text = then.toString ();
+	return <span className="pre" title={then.toString ()}>{text}</span>;
+}
