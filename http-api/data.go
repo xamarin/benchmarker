@@ -40,6 +40,15 @@ type RunSet struct {
 	Runs               []Run
 }
 
+type ProductSummary struct {
+	Commit string
+}
+
+type RunSetSummary struct {
+	ID          int32
+	MainProduct ProductSummary
+}
+
 func stringSlicesSetEqual(a []string, b []string) bool {
 	if len(a) != len(b) {
 		return false

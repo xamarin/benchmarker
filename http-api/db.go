@@ -253,6 +253,22 @@ func updateRunSet(runSetID int32, rs *RunSet) *requestError {
 	return nil
 }
 
+func fetchRunSetSummaries(machine string, config string) ([]RunSetSummary, *requestError) {
+	rows, err := database.Query("queryRunSetSummaries", machine, config)
+	if err != nil {
+		return nil, internalServerError("Could not fetch run set summaries")
+	}
+	var summaries []RunSetSummary
+	for rows.Next() {
+		var rss RunSetSummary
+		if err = rows.Scan(&rss.ID, &rss.MainProduct.Commit); err != nil {
+			return nil, internalServerError("Could not scan run set summary")
+		}
+		summaries = append(summaries, rss)
+	}
+	return summaries, nil
+}
+
 func initGitHub() {
 	githubClient = github.NewClient(nil)
 }
@@ -366,6 +382,11 @@ func initDatabase() error {
 	}
 
 	_, err = database.Prepare("insertRunMetricArray", "insert into runMetric (run, metric, resultArray) values ($1, $2, $3)")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("queryRunSetSummaries", "select id, commit from runSet where machine = $1 and config = $2")
 	if err != nil {
 		return err
 	}

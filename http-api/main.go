@@ -227,6 +227,32 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 	return true, nil
 }
 
+func runSetsGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	machine := r.URL.Query().Get("machine")
+	config := r.URL.Query().Get("config")
+	if machine == "" || config == "" {
+		return false, badRequestError("Missing machine or config")
+	}
+	summaries, reqErr := fetchRunSetSummaries(machine, config)
+	if reqErr != nil {
+		return false, reqErr
+	}
+	if summaries == nil {
+		summaries = []RunSetSummary{}
+	}
+
+	respBytes, err := json.Marshal(summaries)
+	if err != nil {
+		return false, internalServerError("Could not produce JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte(respBytes))
+
+	return false, nil
+}
+
 type handlerFunc func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
 
 func newTransactionHandler(authToken string, handlers map[string]handlerFunc) func(w http.ResponseWriter, r *http.Request) {
@@ -305,6 +331,7 @@ func main() {
 
 	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"POST": runSetPostHandler}))
 	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler}))
+	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
 	http.HandleFunc("/", notFoundHandler)
 
 	addr := fmt.Sprintf(":%d", port)
