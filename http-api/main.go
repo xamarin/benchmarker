@@ -12,8 +12,9 @@ import (
 )
 
 type runsetPostResponse struct {
-	RunSetID int32
-	RunIDs   []int32
+	RunSetID      int32
+	RunIDs        []int32
+	PullRequestID *int32 `json:",omitempty"`
 }
 
 type requestError struct {
@@ -109,12 +110,26 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 		return false, reqErr
 	}
 
+	var pullRequestID *int32
+	if params.PullRequest != nil {
+		var prID int32
+		pullRequestID = &prID
+		err := database.QueryRow("insertPullRequest",
+			params.PullRequest.BaselineRunSetID,
+			params.PullRequest.URL).Scan(pullRequestID)
+		if err != nil {
+			fmt.Printf("pull request insert error: %s\n", err)
+			return false, internalServerError("Could not insert pull request")
+		}
+	}
+
 	var runSetID int32
 	err := database.QueryRow("insertRunSet",
 		params.StartedAt, params.FinishedAt,
 		params.BuildURL, params.LogURLs,
 		mainCommit, secondaryCommits, params.Machine.Name, params.Config.Name,
-		params.TimedOutBenchmarks, params.CrashedBenchmarks).Scan(&runSetID)
+		params.TimedOutBenchmarks, params.CrashedBenchmarks,
+		pullRequestID).Scan(&runSetID)
 	if err != nil {
 		fmt.Printf("run set insert error: %s\n", err)
 		return false, internalServerError("Could not insert run set")
@@ -125,7 +140,7 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 		return false, reqErr
 	}
 
-	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs}
+	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs, PullRequestID: pullRequestID}
 	respBytes, err := json.Marshal(&resp)
 	if err != nil {
 		return false, internalServerError("Could not produce JSON for response")
@@ -183,6 +198,10 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 	if err := json.Unmarshal(body, &params); err != nil {
 		fmt.Printf("Unmarshal error: %s\n", err.Error())
 		return false, badRequestError("Could not parse request body")
+	}
+
+	if params.PullRequest != nil {
+		return false, badRequestError("PullRequest is not allowed for amending")
 	}
 
 	reqErr = ensureBenchmarksAndMetricsExist(&params)

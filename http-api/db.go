@@ -128,10 +128,12 @@ func fetchBenchmarks() (map[string]bool, *requestError) {
 func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	var rs RunSet
 	var secondaryCommits []string
+	var pullRequestID int32
 	err := database.QueryRow("queryRunSet", id).Scan(&rs.StartedAt, &rs.FinishedAt,
 		&rs.BuildURL, &rs.LogURLs,
 		&rs.MainProduct.Commit, &secondaryCommits, &rs.Machine.Name, &rs.Config.Name,
-		&rs.TimedOutBenchmarks, &rs.CrashedBenchmarks)
+		&rs.TimedOutBenchmarks, &rs.CrashedBenchmarks,
+		&pullRequestID)
 	if err == pgx.ErrNoRows {
 		return nil, badRequestError("Run set does not exist")
 	}
@@ -350,13 +352,13 @@ func initDatabase() error {
 		return err
 	}
 
-	runSetColumns := "startedAt, finishedAt, buildURL, logURLs, commit, secondaryCommits, machine, config, timedOutBenchmarks, crashedBenchmarks"
+	runSetColumns := "startedAt, finishedAt, buildURL, logURLs, commit, secondaryCommits, machine, config, timedOutBenchmarks, crashedBenchmarks, pullRequest"
 	_, err = database.Prepare("queryRunSet", "select "+runSetColumns+" from runset where id = $1")
 	if err != nil {
 		return err
 	}
 
-	_, err = database.Prepare("insertRunSet", "insert into runSet ("+runSetColumns+") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id")
+	_, err = database.Prepare("insertRunSet", "insert into runSet ("+runSetColumns+") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id")
 	if err != nil {
 		return err
 	}
@@ -387,6 +389,11 @@ func initDatabase() error {
 	}
 
 	_, err = database.Prepare("queryRunSetSummaries", "select id, commit from runSet where machine = $1 and config = $2")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("insertPullRequest", "insert into pullRequest (baselineRunSet, url) values ($1, $2) returning id")
 	if err != nil {
 		return err
 	}

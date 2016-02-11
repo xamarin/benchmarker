@@ -26,11 +26,17 @@ type Product struct {
 	Commit string
 }
 
+type PullRequest struct {
+	BaselineRunSetID int32
+	URL              string
+}
+
 type RunSet struct {
 	MainProduct        Product
 	SecondaryProducts  []Product
 	Machine            Machine
 	Config             Config
+	PullRequest        *PullRequest
 	StartedAt          time.Time
 	FinishedAt         time.Time
 	BuildURL           string
