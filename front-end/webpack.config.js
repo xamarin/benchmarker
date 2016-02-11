@@ -33,5 +33,6 @@ module.exports = {
     		},
         ]
     },
-    plugins: plugins
+    plugins: plugins,
+    devtool: 'eval'
 };
