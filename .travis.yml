@@ -5,6 +5,11 @@ env:
 language: csharp
 sudo: required
 before_script:
+    - curl -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz
+    - sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    - mkdir $HOME/go
+    - GOPATH=$HOME/go GOROOT=/usr/local/go /usr/local/go/bin/go get github.com/google/go-github/github github.com/jackc/pgx
+    - ( GOPATH=$HOME/go GOROOT=/usr/local/go cd http-api ; GOPATH=$HOME/go GOROOT=/usr/local/go /usr/local/go/bin/go build credentials.go data.go db.go main.go )
     - sudo pip2 install --upgrade pip
     - sudo pip2 install astroid==1.3.8
     - sudo pip2 install pylint==1.4.4
