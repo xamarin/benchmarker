@@ -203,7 +203,7 @@ class GithubPostPRStatus(LoggingBuildStep):
         data = {}
         data['state'] = self.state
         data['description'] = self.state
-        data['context'] = 'pbot/%s_%s/%s' % (platform, short_config_name, str(buildnumber))
+        data['context'] = 'perf/%s_%s/%s' % (platform, short_config_name, str(buildnumber))
         data['target_url'] = 'http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id)
 
         requests.post(
