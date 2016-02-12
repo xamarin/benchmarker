@@ -113,7 +113,6 @@ type ConfigSelectorProps = {
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
 	selection: Array<MachineConfigSelection>;
-	showControls: boolean;
 	onChange: (selection: Array<MachineConfigSelection>) => void;
 };
 
@@ -210,11 +209,17 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 		};
 
 		const selectedValue = valueStringForSelection (this.props.selection);
-		var aboutConfig = undefined;
-		var aboutMachine = undefined;
-		if (this.props.showControls) {
-			aboutConfig = <button onClick={() => this.openConfigDescription ()}>About Config</button>;
-			aboutMachine = <button onClick={() => this.openMachineDescription ()}>About Machine</button>;
+		var aboutConfig;
+		var aboutMachine;
+		var aboutMachineConfig;
+		if (this.props.selection.length !== 0) {
+			aboutConfig = <ConfigDescription
+				config={this.props.selection [0].config}
+				format={DescriptionFormat.Compact} />;
+			aboutMachine = <MachineDescription
+				machine={this.props.selection [0].machine}
+				format={DescriptionFormat.Compact} />;
+			aboutMachineConfig = <p>{aboutConfig}@{aboutMachine}</p>;
 		}
 		let featuredTimelinesElement: JSX.Element;
 		if (this.props.featuredTimelines !== undefined) {
@@ -228,21 +233,9 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 				{featuredTimelinesElement}
 				{Object.keys (machines).map ((m: string) => renderGroup (machines, m))}
 			</select>
-			{aboutConfig}{aboutMachine}
+			{aboutMachineConfig}
 			<div style={{ clear: 'both' }}></div>
 		</div>;
-	}
-
-	private openConfigDescription () : void {
-		if (this.props.selection.length < 1)
-			return;
-		window.open ('config.html#name=' + this.props.selection [0].config.get ('name'));
-	}
-
-	private openMachineDescription () : void {
-		if (this.props.selection.length < 1)
-			return;
-		window.open ('machine.html#name=' + this.props.selection [0].machine.get ('name'));
 	}
 
 	private combinationSelected (event: React.FormEvent) : void {
@@ -357,8 +350,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 				selection={ machineConfigSelections }
 				includeMetric={false}
 				runSetCounts={this.props.runSetCounts}
-				onChange={(s: Array<MachineConfigSelection>) => this.configsSelected (s)}
-				showControls={true} />;
+				onChange={(s: Array<MachineConfigSelection>) => this.configsSelected (s)} />;
 		var runSetsSelect = undefined;
 		if (runSets === undefined && machine !== undefined && config !== undefined) {
 			runSetsSelect = <div className="diagnostic">Loading&hellip;</div>;

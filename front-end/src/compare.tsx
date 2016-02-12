@@ -168,14 +168,20 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 					runSetCounts={this.props.runSetCounts}
 					selection={{runSet: runSet, machine: machine, config: config}}
 					onChange={(s: xp_common.RunSetSelection) => this.changeSelector (index, s)} />
-				<button onClick={(e: React.MouseEvent) => this.removeSelector (index)}>&minus;&ensp;Remove</button>
+				<button onClick={(e: React.MouseEvent) => this.removeSelector (index)} className="delete">
+					<span className="fa fa-minus"></span>&ensp;Remove
+				</button>
 				<div style={{ clear: 'both' }}></div>
 			</section>;
 		};
 		return <div className="RunSetSelectorList">
 			{this.props.selections.map (renderSelector)}
-			<footer><button onClick={(e: React.MouseEvent) => this.addSelector ()}>+&ensp;Add Run Set</button></footer>
-			</div>;
+			<footer>
+				<button onClick={(e: React.MouseEvent) => this.addSelector ()}>
+					<span className="fa fa-plus"></span>&ensp;Add Run Set
+				</button>
+			</footer>
+		</div>;
 	}
 }
 

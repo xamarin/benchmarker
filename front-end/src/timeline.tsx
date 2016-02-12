@@ -298,15 +298,7 @@ class Page extends React.Component<PageProps, PageState> {
 							runSetCounts={this.props.runSetCounts}
 							featuredTimelines={this.props.featuredTimelines}
 							selection={this.state.selection}
-							onChange={this.selectionChanged.bind (this)}
-							showControls={false} />
-						<xp_common.ConfigDescription
-							config={firstSelection.config}
-							format={xp_common.DescriptionFormat.Compact} />
-						@
-						<xp_common.MachineDescription
-							machine={firstSelection.machine}
-							format={xp_common.DescriptionFormat.Compact} />
+							onChange={this.selectionChanged.bind (this)} />
 					</div>
 				</div>
 				{chart}
