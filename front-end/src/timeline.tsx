@@ -19,12 +19,14 @@ interface SelectionNames {
 }
 
 class Controller {
+	private initialRunSetIds: Array<number>;
 	private initialSelectionNames: Array<SelectionNames>;
 	private initialZoom: boolean;
 	private runSetCounts: Array<Database.RunSetCount>;
 	private featuredTimelines: Array<Database.DBObject>;
 
-	constructor (machineName: string, configName: string, metric: string) {
+	constructor (machineName: string, configName: string, metric: string, selection: Array<number>) {
+		this.initialRunSetIds = selection;
 		if (machineName === undefined && configName === undefined && metric === undefined) {
 			this.initialSelectionNames = [
 				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo', metric: 'time' },
@@ -69,18 +71,22 @@ class Controller {
 		});
 
 		ReactDOM.render (<Page
+					initialRunSetIds={this.initialRunSetIds}
 					initialSelection={selection}
 					initialZoom={this.initialZoom}
 					runSetCounts={this.runSetCounts}
 					featuredTimelines={this.featuredTimelines}
-					onChange={(s: Array<xp_common.MachineConfigSelection>) => this.updateForSelection (s)} />,
+					onChange={this.updateForSelection.bind (this)} />,
 			document.getElementById ('timelinePage')
 		);
 
-		this.updateForSelection (selection);
+		this.updateForSelection (selection, this.initialRunSetIds);
 	}
 
-	private updateForSelection (selection: Array<xp_common.MachineConfigSelection>) : void {
+	private updateForSelection (
+		selection: Array<xp_common.MachineConfigSelection>,
+		runSetSelection: Array<number>
+	) : void {
 		if (selection.length < 1) {
 			return;
 		}
@@ -88,14 +94,21 @@ class Controller {
 		var machine = selection [0].machine;
 		var config = selection [0].config;
 		var metric = selection [0].metric;
-		xp_common.setLocationForDict ({ machine: machine.get ('name'), config: config.get ('name'), metric: metric });
+
+		xp_common.setLocationForDict ({
+			machine: machine.get ('name'),
+			config: config.get ('name'),
+			metric: metric,
+			selection: runSetSelection.length === 0 ? undefined : runSetSelection.join ('+'),
+		});
 	}
 }
 
 interface PageProps {
 	initialSelection: Array<xp_common.MachineConfigSelection>;
+	initialRunSetIds: Array<number>;
 	initialZoom: boolean;
-	onChange: (selection: Array<xp_common.MachineConfigSelection>) => void;
+	onChange: (selection: Array<xp_common.MachineConfigSelection>, runSetIds: Array<number>) => void;
 	runSetCounts: Array<Database.RunSetCount>;
 	featuredTimelines: Array<Database.DBObject>;
 }
@@ -124,10 +137,27 @@ class Page extends React.Component<PageProps, PageState> {
 		this.fetchSummaries (this.state.selection);
 	}
 
-	private runSetSelected (runSet: Database.DBObject) : void {
+	private selectedRunSetIds () : Array<number> {
+		if (this.state.runSetIndices !== undefined)
+			return this.state.runSetIndices.map
+				((index: number) => this.state.sortedResults [index].runSet.get ('id'));
+		return [];
+	}
+
+	private runSetSelected (metric: string, runSet: Database.DBObject) : void {
 		var index = xp_utils.findIndex (this.state.sortedResults, (r: Database.Summary) => r.runSet === runSet);
 		if (this.state.runSetIndices.indexOf (index) < 0)
 			this.setState ({ runSetIndices: this.state.runSetIndices.concat ([index]), zoom: false } as any);
+		var machine = runSet.get ('machine');
+		var config = runSet.get ('config');
+		var metric = metric;
+		var selection = this.selectedRunSetIds ();
+		xp_common.setLocationForDict ({
+			machine: machine,
+			config: config,
+			metric: metric,
+			selection: selection === undefined ? undefined : selection.join ('+'),
+		});
 	}
 
 	private allBenchmarksLoaded (names: Array<string>) : void {
@@ -158,7 +188,14 @@ class Page extends React.Component<PageProps, PageState> {
 						return a.runSet.get ('startedAt') - b.runSet.get ('startedAt');
 					});
 
-					this.setState ({sortedResults: results} as any);
+					var indices = this.state.runSetIndices;
+					if (this.props.initialRunSetIds !== undefined) {
+						indices = this.props.initialRunSetIds.map (
+							(id: number) => xp_utils.findIndex (
+								results, (r: Database.Summary) => r.runSet.get ('id') === id));
+					}
+
+					this.setState ({ sortedResults: results, runSetIndices: indices } as any);
 				}, (error: Object) => {
 					alert ("error loading summaries: " + error.toString ());
 				});
@@ -168,7 +205,7 @@ class Page extends React.Component<PageProps, PageState> {
 	private selectionChanged (selection: Array<xp_common.MachineConfigSelection>) : void {
 		this.setState ({selection: selection, runSetIndices: [], sortedResults: [], benchmarkNames: [], zoom: false});
 		this.fetchSummaries (selection);
-		this.props.onChange (selection);
+		this.props.onChange (selection, []);
 	}
 
 	public render () : JSX.Element {
@@ -187,7 +224,7 @@ class Page extends React.Component<PageProps, PageState> {
 				metric={firstSelection.metric}
 				sortedResults={this.state.sortedResults}
 				zoomInterval={zoomInterval}
-				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
+				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (firstSelection.metric, rs)}
 				allBenchmarksLoaded={(names: Array<string>) => this.allBenchmarksLoaded (names)}
 				selectedIndices={this.state.runSetIndices}
 				/>;
@@ -195,7 +232,7 @@ class Page extends React.Component<PageProps, PageState> {
 				benchmarkNames={this.state.benchmarkNames}
 				metric={firstSelection.metric}
 				sortedResults={this.state.sortedResults}
-				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (rs)}
+				runSetSelected={(rs: Database.DBObject) => this.runSetSelected (firstSelection.metric, rs)}
 				selectedIndices={this.state.runSetIndices}
 				/>;
 		} else {
@@ -261,7 +298,7 @@ class Page extends React.Component<PageProps, PageState> {
 							runSetCounts={this.props.runSetCounts}
 							featuredTimelines={this.props.featuredTimelines}
 							selection={this.state.selection}
-							onChange={(s: Array<xp_common.MachineConfigSelection>) => this.selectionChanged (s)}
+							onChange={this.selectionChanged.bind (this)}
 							showControls={false} />
 						<xp_common.MachineDescription
 							machine={firstSelection.machine}
@@ -596,8 +633,12 @@ function start (params: Object) : void {
 	var machine = params ['machine'];
 	var config = params ['config'];
 	var metric = params ['metric'];
-	var controller = new Controller (machine, config, metric);
+	var selection = [];
+	if (params ['selection'] !== undefined)
+		selection = xp_common.splitLocationHashValues (params ['selection']).map (
+			(id: string) => parseInt (id));
+	var controller = new Controller (machine, config, metric, selection);
 	controller.loadAsync ();
 }
 
-xp_common.parseLocationHashForDict (['machine', 'config', 'metric'], start);
+xp_common.parseLocationHashForDict (['machine', 'config', 'metric', 'selection'], start);

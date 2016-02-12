@@ -693,16 +693,23 @@ export class Navigation extends React.Component<NavigationProps, void> {
 		var classFor = (page: string) =>
 			this.props.currentPage === page ? 'selected' : 'deselected';
 		var compareLink = "compare.html";
+		var timelineLink = "index.html";
 		if (this.props.comparisonRunSetIds !== undefined
 			&& this.props.comparisonRunSetIds.length !== 0) {
-			compareLink = compareLink + "#ids=" + this.props.comparisonRunSetIds.join ("+");
+			var selectionIds = this.props.comparisonRunSetIds.join ("+");
+			compareLink = compareLink + "#ids=" + selectionIds;
+
+			// FIXME: This would be nice to preserve, but if we do, then the
+			// machine/config selection should also be preserved.
+
+			// timelineLink = timelineLink + "#selection=" + selectionIds;
 		}
 		return <div className="Navigation">
 			<div className="NavigationSection" />
 			<div className="NavigationSection Center" >
 				<a title="View a timeline of all benchmarks"
 					className={classFor ('timeline')}
-					href="index.html">Timeline</a>
+					href={timelineLink}>Timeline</a>
 				<a title="Compare the results of multiple run sets"
 					className={classFor ('compare')}
 					href={compareLink}>Compare</a>
@@ -726,7 +733,7 @@ export class Navigation extends React.Component<NavigationProps, void> {
  * "a+" => ["a"]
  * "a+b" => ["a", "b"]
  */
-function splitLocationHashValues (values: string) : Array<string> {
+export function splitLocationHashValues (values: string) : Array<string> {
 	return values.split ('+').filter ((item: string) => item !== '');
 }
 

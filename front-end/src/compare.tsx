@@ -110,9 +110,15 @@ class Page extends React.Component<PageProps, PageState> {
 			chart = <div className="DiagnosticBlock">Please select at least two run sets.</div>;
 		}
 
+		var runSetIds = [].concat.apply ([],
+			this.state.selections.map (
+				s => s.runSet !== undefined ? [s.runSet.get ('id')] : []));
+
 		return <div className="ComparePage">
 			<header>
-				<xp_common.Navigation currentPage="compare" />
+				<xp_common.Navigation
+					currentPage="compare"
+					comparisonRunSetIds={runSetIds} />
 			</header>
 			<article>
 				<RunSetSelectorList
