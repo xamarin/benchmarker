@@ -43,20 +43,28 @@ func internalServerError(explanation string) *requestError {
 	return &requestError{Explanation: explanation, httpStatus: http.StatusInternalServerError}
 }
 
-func ensureBenchmarksAndMetricsExist(rs *RunSet) *requestError {
+func (r *Run) ensureBenchmarksAndMetricsExist(benchmarks map[string]bool) *requestError {
+	if benchmarks != nil && !benchmarks[r.Benchmark] {
+		return badRequestError("Benchmark does not exist: " + r.Benchmark)
+	}
+	for m, v := range r.Results {
+		if !metricIsAllowed(m, v) {
+			return badRequestError("Metric not supported or results of wrong type: " + m)
+		}
+	}
+	return nil
+}
+
+func (rs *RunSet) ensureBenchmarksAndMetricsExist() *requestError {
 	benchmarks, reqErr := fetchBenchmarks()
 	if reqErr != nil {
 		return reqErr
 	}
 
 	for _, run := range rs.Runs {
-		if !benchmarks[run.Benchmark] {
-			return badRequestError("Benchmark does not exist: " + run.Benchmark)
-		}
-		for m, v := range run.Results {
-			if !metricIsAllowed(m, v) {
-				return badRequestError("Metric not supported or results of wrong type: " + m)
-			}
+		reqErr = run.ensureBenchmarksAndMetricsExist(benchmarks)
+		if reqErr != nil {
+			return reqErr
 		}
 	}
 
@@ -100,7 +108,7 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 		secondaryCommits = append(secondaryCommits, commit)
 	}
 
-	reqErr = ensureBenchmarksAndMetricsExist(&params)
+	reqErr = params.ensureBenchmarksAndMetricsExist()
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -153,12 +161,12 @@ func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 	return true, nil
 }
 
-func parseIDFromPath(path string, numComponents int) (int32, *requestError) {
+func parseIDFromPath(path string, numComponents int, index int) (int32, *requestError) {
 	pathComponents := strings.Split(path, "/")
 	if len(pathComponents) != numComponents {
 		return -1, badRequestError("Incorrect path")
 	}
-	id64, err := strconv.ParseInt(pathComponents[numComponents-1], 10, 32)
+	id64, err := strconv.ParseInt(pathComponents[index], 10, 32)
 	if err != nil {
 		return -1, badRequestError("Could not parse run set id")
 	}
@@ -166,7 +174,7 @@ func parseIDFromPath(path string, numComponents int) (int32, *requestError) {
 }
 
 func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
-	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4)
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -189,7 +197,7 @@ func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byt
 }
 
 func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
-	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4)
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -204,7 +212,7 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 		return false, badRequestError("PullRequest is not allowed for amending")
 	}
 
-	reqErr = ensureBenchmarksAndMetricsExist(&params)
+	reqErr = params.ensureBenchmarksAndMetricsExist()
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -242,6 +250,35 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Write([]byte(respBytes))
+
+	return true, nil
+}
+
+func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	var params Run
+	if err := json.Unmarshal(body, &params); err != nil {
+		fmt.Printf("Unmarshal error: %s\n", err.Error())
+		return false, badRequestError("Could not parse request body")
+	}
+
+	reqErr = params.ensureBenchmarksAndMetricsExist(nil)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	reqErr = insertResults(runID, params.Results)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte("{}"))
 
 	return true, nil
 }
@@ -360,6 +397,7 @@ func main() {
 
 	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"POST": runSetPostHandler}))
 	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler}))
+	http.HandleFunc("/api/run/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunPostHandler}))
 	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
 	http.HandleFunc("/", notFoundHandler)
 

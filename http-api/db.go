@@ -216,6 +216,26 @@ func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	return &rs, nil
 }
 
+func insertResults(runID int32, results Results) *requestError {
+	for m, v := range results {
+		var err error
+		if metricIsArray(m) {
+			var arr []float64
+			for _, x := range v.([]interface{}) {
+				arr = append(arr, x.(float64))
+			}
+			_, err = database.Exec("insertRunMetricArray", runID, m, arr)
+		} else {
+			_, err = database.Exec("insertRunMetricNumber", runID, m, v)
+		}
+		if err != nil {
+			fmt.Printf("run metric insert error: %s\n", err)
+			return internalServerError("Could not insert run metric")
+		}
+	}
+	return nil
+}
+
 func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
 	var runIDs []int32
 	for _, run := range runs {
@@ -227,20 +247,9 @@ func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
 		}
 		runIDs = append(runIDs, runID)
 
-		for m, v := range run.Results {
-			if metricIsArray(m) {
-				var arr []float64
-				for _, x := range v.([]interface{}) {
-					arr = append(arr, x.(float64))
-				}
-				_, err = database.Exec("insertRunMetricArray", runID, m, arr)
-			} else {
-				_, err = database.Exec("insertRunMetricNumber", runID, m, v)
-			}
-			if err != nil {
-				fmt.Printf("run metric insert error: %s\n", err)
-				return nil, internalServerError("Could not insert run metric")
-			}
+		reqErr := insertResults(runID, run.Results)
+		if reqErr != nil {
+			return nil, reqErr
 		}
 	}
 	return runIDs, nil

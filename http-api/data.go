@@ -11,9 +11,11 @@ type Config struct {
 	MonoOptions              []string
 }
 
+type Results map[string]interface{}
+
 type Run struct {
 	Benchmark string
-	Results   map[string]interface{}
+	Results   Results
 }
 
 type Machine struct {
@@ -109,7 +111,7 @@ func (config *Config) isSameAs(other *Config) bool {
 }
 
 func metricIsArray(metric string) bool {
-	return metric == "cachegrind" || metric == "pause-times"
+	return metric == "cachegrind" || metric == "pause-times" || metric == "pause-starts"
 }
 
 func metricIsAllowed(metric string, value interface{}) bool {
