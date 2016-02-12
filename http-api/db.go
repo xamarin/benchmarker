@@ -15,6 +15,7 @@ var database *pgx.Conn
 
 func ensureProductExists(product Product) (string, *requestError) {
 	var commitDate time.Time
+	// FIXME: check and update mergeBaseHash
 	err := database.QueryRow("queryCommitWithProduct", product.Commit, product.Name).Scan(&commitDate)
 	if err == nil {
 		return product.Commit, nil
@@ -33,7 +34,7 @@ func ensureProductExists(product Product) (string, *requestError) {
 			return "", badRequestError("Could not get commit")
 		}
 
-		_, err = database.Exec("insertCommit", *commit.SHA, *commit.Committer.Date, product.Name)
+		_, err = database.Exec("insertCommit", *commit.SHA, *commit.Committer.Date, product.Name, product.MergeBaseHash)
 		if err != nil {
 			return "", internalServerError("Couldn't insert commit")
 		}
@@ -331,7 +332,7 @@ func initDatabase() error {
 		return err
 	}
 
-	_, err = database.Prepare("insertCommit", "insert into commit (hash, commitDate, product) values ($1, $2, $3)")
+	_, err = database.Prepare("insertCommit", "insert into commit (hash, commitDate, product, mergeBaseHash) values ($1, $2, $3, $4)")
 	if err != nil {
 		return err
 	}

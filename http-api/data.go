@@ -24,8 +24,9 @@ type Machine struct {
 }
 
 type Product struct {
-	Name   string
-	Commit string
+	Name          string
+	Commit        string
+	MergeBaseHash *string
 }
 
 type PullRequest struct {
