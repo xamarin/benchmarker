@@ -9,7 +9,9 @@ STYLES = \
 	colors \
 	common \
 	compare \
+	config \
 	font-awesome.min \
+	machine \
 	navigation \
 	pausetimes \
 	pullrequest \

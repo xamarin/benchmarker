@@ -34,8 +34,8 @@ class Controller {
 				<xp_common.Navigation currentPage="" />
 				<article>
 					<xp_common.MachineDescription
-						omitHeader={false}
-						machine={this.machine} />
+						machine={this.machine}
+						format={xp_common.DescriptionFormat.Full} />
 				</article>
 			</div>,
 			document.getElementById ('machinePage')

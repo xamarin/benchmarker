@@ -28,9 +28,14 @@ export var xamarinColors = {
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
+export enum DescriptionFormat {
+    Compact,
+    Full
+};
+
 type ConfigDescriptionProps = {
 	config: Database.DBObject;
-	omitHeader: boolean;
+	format: DescriptionFormat;
 };
 
 export class ConfigDescription extends React.Component<ConfigDescriptionProps, void> {
@@ -40,9 +45,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, v
 		if (config === undefined)
 			return <div></div>;
 
-		var header = this.props.omitHeader
-			? undefined
-			: <h1>Config: {config.get ('name')}</h1>;
+		var link = <a href={"config.html#name=" + config.get ('name')}>{config.get ('name')}</a>;
 		var mono = config.get ('monoExecutable');
 		var monoExecutable = mono === undefined
 			? <span className="diagnostic">No mono executable specified.</span>
@@ -59,15 +62,15 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, v
 			? <span className="diagnostic">No command-line options specified.</span>
 			: <code>{options.join (' ')}</code>;
 
+        if (this.props.format === DescriptionFormat.Compact)
+            return link;
+
 		return <div className="Description">
-			{header}
+			<p>{link}</p>
 			<dl>
-			<dt>Mono Executable</dt>
-			<dd>{monoExecutable}</dd>
-			<dt>Environment Variables</dt>
-			<dd>{envVarsList}</dd>
-			<dt>Command-line Options</dt>
-			<dd>{optionsList}</dd>
+				<dt>Environment Variables</dt><dd>{envVarsList}</dd>
+				<dt>Mono Executable</dt><dd>{monoExecutable}</dd>
+				<dt>Command-line Options</dt><dd>{optionsList}</dd>
 			</dl>
 		</div>;
 	}
@@ -75,7 +78,7 @@ export class ConfigDescription extends React.Component<ConfigDescriptionProps, v
 
 type MachineDescriptionProps = {
 	machine: Database.DBObject;
-	omitHeader: boolean;
+	format: DescriptionFormat;
 };
 
 export class MachineDescription extends React.Component<MachineDescriptionProps, void> {
@@ -84,18 +87,17 @@ export class MachineDescription extends React.Component<MachineDescriptionProps,
 
 		if (machine === undefined)
 			return <div></div>;
-		var header = this.props.omitHeader
-			? undefined
-			: <h1>Machine: {machine.get ('name')}</h1>;
-
+		var link = <a href={"machine.html#name=" + machine.get ('name')}>{machine.get ('name')}</a>;
+		if (this.props.format === DescriptionFormat.Compact)
+			return link;
 		return <div className="Description">
-			{header}
-			<dl>
-			<dt>Architecture</dt>
-			<dd>{machine.get ('architecture')}</dd>
-			<dt>Dedicated?</dt>
-			<dd>{machine.get ('isDedicated').toString ()}</dd>
-			</dl>
+			<p>
+				{link}
+				{' '}
+				({machine.get ('isDedicated') ? "dedicated" : "non-dedicated"}
+				{' '}
+				{machine.get ('architecture')})
+			</p>
 		</div>;
 	}
 }
@@ -512,7 +514,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
 			var reportedCrashed: {[name: string]: boolean} = {};
 			var reportedTimedOut: {[name: string]: boolean} = {};
-			var benchmarkNames = Object.keys (resultsByBenchmark);
+			var benchmarkNames = xp_utils.uniqStringArray
+				(Object.keys (resultsByBenchmark).concat (crashedBenchmarks).concat (timedOutBenchmarks));
 			benchmarkNames.sort ();
 			var metrics = Object.keys (metricsDict);
 			metrics.sort ();
@@ -532,18 +535,24 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				<tbody>
 				{benchmarkNames.map ((name: string) => {
 					var result = resultsByBenchmark [name];
-					var disabled = result.disabled;
+
 					var statusIcons = [];
-					if (crashedBenchmarks.indexOf (name) !== -1) {
+					if (crashedBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-						reportedCrashed [name] = true;
-					}
-					if (timedOutBenchmarks.indexOf (name) !== -1) {
+					if (timedOutBenchmarks.indexOf (name) !== -1)
 						statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
-						reportedTimedOut [name] = true;
-					}
 					if (statusIcons.length === 0)
 						statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
+
+					if (result === undefined) {
+						return <tr key={"benchmark" + name} className="broken">
+							<td key="name"><code>{name}</code></td>
+							<td key="status" className="statusColumn">{statusIcons}</td>
+							<td colSpan={metrics.length * 2} className="diagnostic">All runs in this run set timed out or crashed.</td>
+						</tr>;
+					}
+
+					var disabled = result.disabled;
 
 					var metricColumns = [];
 					metrics.forEach ((m: string) => {
@@ -570,16 +579,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					</tr>;
 				})}
 			</tbody></table>;
-
-			var notReportedCrashed = crashedBenchmarks.filter ((n: string) => !reportedCrashed [n]);
-			var notReportedTimedOut = timedOutBenchmarks.filter ((n: string) => !reportedTimedOut [n]);
-
-			if (notReportedCrashed.length > 0) {
-				crashedElem = <p>All crashed: {notReportedCrashed.join (", ")}</p>;
-			}
-			if (notReportedTimedOut.length > 0) {
-				timedOutElem = <p>All timed out: {notReportedTimedOut.join (", ")}</p>;
-			}
 		}
 
 		const product = runSet.commit ? runSet.commit.get ('product') : 'mono';
@@ -589,8 +588,16 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		let commitInfo: JSX.Element = undefined;
 
 		if (this.state.commitInfo !== undefined) {
-			commitName = this.state.commitInfo ['message'];
-			commitInfo = <p>Authored by {this.state.commitInfo ['author']['name']}.</p>;
+			var info = this.state.commitInfo;
+			commitName = info ['message'];
+			var newlineIndex = commitName.indexOf ('\n');
+			if (newlineIndex >= 0)
+				commitName = commitName.substring (0, newlineIndex);
+			if (info ['author'] ['name'] === info ['committer'] ['name']) {
+				commitInfo = <p>Authored by {info ['author'] ['name']}.</p>;
+			} else {
+				commitInfo = <p>Authored by {info ['author'] ['name']}, committed by {info ['committer'] ['name']}.</p>;
+			}
 		} else {
 			commitName = commitHash.substring (0, 10);
 		}
@@ -601,8 +608,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
-			{crashedElem}
-			{timedOutElem}
 			{table}
 		</div>;
 	}

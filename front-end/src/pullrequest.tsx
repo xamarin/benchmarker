@@ -49,21 +49,14 @@ class Controller {
 			<div className="PullRequestPage">
 				<xp_common.Navigation
 					comparisonRunSetIds={ [baselineRunSet.get ('id'), this.prRunSet.get ('id')] }
-					currentPage="" />
+					currentPage="pullRequests" />
                 <article>
-					<div className="outer">
-						<div className="inner">
-							<PullRequestDescription
-								pullRequest={pullRequest}
-								baselineRunSet={baselineRunSet} />
-							<xp_common.MachineDescription
-								machine={machine}
-								omitHeader={false} />
-							<xp_common.ConfigDescription
-								config={config}
-								omitHeader={false} />
-						</div>
-					</div>
+					<h1>Pull Request</h1>
+					<PullRequestDescription
+						pullRequest={pullRequest}
+						baselineRunSet={baselineRunSet}
+						config={config}
+						machine={machine} />
                     <xp_charts.ComparisonAMChart
                         graphName="comparisonChart"
                         runSets={runSets}
@@ -71,12 +64,10 @@ class Controller {
                         runSetLabels={["Baseline", "Pull request"]}
 						selectedIndices={[]}/>
 					<div style={{ clear: 'both' }}></div>
-					<h2>Pull Request Run Set</h2>
-					<xp_common.RunSetDescription
-						runSet={this.prRunSet} />
-					<h2>Baseline Run Set</h2>
-					<xp_common.RunSetDescription
-						runSet={baselineRunSet} />
+					<h2><a href={"runset.html#id=" + this.prRunSet.get ('id')}>Pull Request Run Set</a></h2>
+					<xp_common.RunSetDescription runSet={this.prRunSet} />
+					<h2><a href={"runset.html#id=" + baselineRunSet.get ('id')}>Baseline Run Set</a></h2>
+					<xp_common.RunSetDescription runSet={baselineRunSet} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')
@@ -87,6 +78,8 @@ class Controller {
 interface PullRequestDescriptionProps {
 	pullRequest: Database.DBObject;
 	baselineRunSet: Database.DBObject;
+	machine: Database.DBObject;
+	config: Database.DBObject;
 }
 
 interface PullRequestDescriptionState {
@@ -116,15 +109,25 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
 
 		var description = undefined;
 		var commit = <a href={xp_common.githubCommitLink ('mono', baselineHash)}>{baselineHash.substring (0, 10)}</a>;
+		var configAndMachine = <span>
+			<xp_common.ConfigDescription
+				config={this.props.config}
+				format={xp_common.DescriptionFormat.Compact} />
+			@
+			<xp_common.MachineDescription
+				machine={this.props.machine}
+				format={xp_common.DescriptionFormat.Compact} />
+		</span>;
+
         if (info !== undefined && info ['user'] !== undefined) {
 			var user = <a href={info ['user'] ["html_url"]}>{info ['user'] ['login']}</a>;
-			description = <p>Authored by {user}, based on {commit}.</p>;
+			description = <p>Authored by {user} based on {commit} and benchmarked on {configAndMachine}.</p>;
 		} else {
-			description = <p>Based on {commit}.</p>;
+			description = <p>Based on {commit} and benchmarked on {configAndMachine}.</p>;
 		}
 
 		return <div className="Description">
-			<h1><a href={pr.get ('URL')}>{title}</a></h1>
+			<h2><a href={pr.get ('URL')} className="pre">{title}</a></h2>
 			{description}
 		</div>;
 	}

@@ -300,12 +300,13 @@ class Page extends React.Component<PageProps, PageState> {
 							selection={this.state.selection}
 							onChange={this.selectionChanged.bind (this)}
 							showControls={false} />
-						<xp_common.MachineDescription
-							machine={firstSelection.machine}
-							omitHeader={true} />
 						<xp_common.ConfigDescription
 							config={firstSelection.config}
-							omitHeader={true} />
+							format={xp_common.DescriptionFormat.Compact} />
+						@
+						<xp_common.MachineDescription
+							machine={firstSelection.machine}
+							format={xp_common.DescriptionFormat.Compact} />
 					</div>
 				</div>
 				{chart}

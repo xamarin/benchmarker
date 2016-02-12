@@ -34,8 +34,8 @@ class Controller {
 				<xp_common.Navigation currentPage="" />
 				<article>
 					<xp_common.ConfigDescription
-						omitHeader={false}
-						config={this.config} />
+						config={this.config}
+						format={xp_common.DescriptionFormat.Full} />
 				</article>
 			</div>,
 			document.getElementById ('configPage')
