@@ -191,7 +191,9 @@ class GithubPostPRStatus(LoggingBuildStep):
 
     def start(self):
         parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
-        buildername = self.getProperty('buildername')
+        config_name = self.getProperty('config_name')
+        short_config_name = ''.join(map(lambda x: x[0], config_name.split('-')))
+        platform = self.getProperty('platform')
         buildnumber = self.getProperty('buildnumber')
         pullrequest_commit_id = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
 
@@ -201,7 +203,7 @@ class GithubPostPRStatus(LoggingBuildStep):
         data = {}
         data['state'] = self.state
         data['description'] = self.state
-        data['context'] = 'performancebot/%s/%s' % (buildername, str(buildnumber))
+        data['context'] = 'pbot/%s_%s/%s' % (platform, short_config_name, str(buildnumber))
         data['target_url'] = 'http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id)
 
         requests.post(
