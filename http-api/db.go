@@ -128,7 +128,7 @@ func fetchBenchmarks() (map[string]bool, *requestError) {
 func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	var rs RunSet
 	var secondaryCommits []string
-	var pullRequestID int32
+	var pullRequestID *int32
 	err := database.QueryRow("queryRunSet", id).Scan(&rs.StartedAt, &rs.FinishedAt,
 		&rs.BuildURL, &rs.LogURLs,
 		&rs.MainProduct.Commit, &secondaryCommits, &rs.Machine.Name, &rs.Config.Name,

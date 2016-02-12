@@ -82,7 +82,7 @@ func (rs *RunSet) ensureBenchmarksAndMetricsExist() *requestError {
 	return nil
 }
 
-func runSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func runSetPutHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
 		fmt.Printf("Unmarshal error: %s\n", err.Error())
@@ -395,7 +395,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"POST": runSetPostHandler}))
+	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"PUT": runSetPutHandler}))
 	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler}))
 	http.HandleFunc("/api/run/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunPostHandler}))
 	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
