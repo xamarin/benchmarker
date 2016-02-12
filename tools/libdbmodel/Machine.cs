@@ -21,5 +21,15 @@ namespace Benchmarker.Models
 		{
 			return JsonConvert.DeserializeObject<Machine> (content);
 		}
+
+		public IDictionary<string, string> ApiObject
+		{
+			get {
+				var dict = new Dictionary<string, string> ();
+				dict ["Name"] = Name;
+				dict ["Architecture"] = Architecture;
+				return dict;
+			}
+		}
 	}
 }

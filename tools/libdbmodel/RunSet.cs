@@ -1,20 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Npgsql;
 using Nito.AsyncEx;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Benchmarker.Models
 {
 	public class RunSet
 	{
-		PostgresRow postgresRow;
-
-		List<Result> results;
-		public List<Result> Results { get { return results; } }
+		public long? Id { get; set; }
+		List<Run> runs;
+		public List<Run> Runs { get { return runs; } }
 		public DateTime StartDateTime { get; set; }
 		public DateTime FinishDateTime { get; set; }
+		public Machine Machine { get; set; }
 		public Config Config { get; set; }
 		public Commit Commit { get; set; }
 		public List<Commit> SecondaryCommits { get; set; }
@@ -27,194 +30,129 @@ namespace Benchmarker.Models
 
 		public RunSet ()
 		{
-			results = new List<Result> ();
+			runs = new List<Run> ();
 			TimedOutBenchmarks = new List<string> ();
 			CrashedBenchmarks = new List<string> ();
 		}
 
-		public IEnumerable<Result.Run> AllRuns {
+		public static async Task<RunSet> FromId (Machine machine, long id, Config config, Commit mainCommit, List<Commit> secondaryCommits, string buildURL, string logURL)
+		{
+			using (var client = new HttpClient ()) {
+				var body = await HttpApi.Get (String.Format ("/runset/{0}", id), null);
+				if (body == null)
+					return null;
+				var result = JObject.Parse (body);
+
+				var runSet = new RunSet {
+					Id = id,
+					StartDateTime = result ["StartedAt"].ToObject<DateTime> (),
+					FinishDateTime = result ["FinishedAt"].ToObject<DateTime> (),
+					BuildURL = result ["BuildURL"].ToObject<string> (),
+					Machine = machine,
+					LogURL = logURL,
+					Config = config,
+					Commit = mainCommit,
+					TimedOutBenchmarks = result ["TimedOutBenchmarks"].ToObject<List<string>> (),
+					CrashedBenchmarks = result ["CrashedBenchmarks"].ToObject<List<string>> ()
+				};
+
+				var mainProductCommit = result ["MainProduct"] ["Commit"].ToObject<string> ();
+				if (mainCommit.Hash != mainProductCommit)
+					throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", mainCommit.Hash, mainProductCommit));
+
+				var secondaryCommitsFromDatabase = new List<Commit> ();
+				foreach (var sc in result ["SecondaryProducts"]) {
+					secondaryCommitsFromDatabase.Add (new Commit {
+						Hash = sc ["Commit"].ToObject<string> (),
+						Product = new Product { Name = sc ["Name"].ToObject<string> () }
+					});
+				}
+				if (secondaryCommits != null) {
+					if (secondaryCommits.Count != secondaryCommitsFromDatabase.Count)
+						throw new Exception ("Secondary commits don't match the database.");
+					foreach (var sc in secondaryCommitsFromDatabase) {
+						if (!secondaryCommits.Any (c => c.Hash == sc.Hash && c.Product.Name == sc.Product.Name))
+							throw new Exception ("Secondary commits don't match the database.");
+					}
+				}
+				runSet.SecondaryCommits = secondaryCommitsFromDatabase;
+
+				if (buildURL != null && buildURL != runSet.BuildURL)
+					throw new Exception ("Build URL does not match the one in the database.");
+				
+				var machineName = result ["Machine"] ["Name"].ToObject<string> ();
+				// The `StartsWith` case here is a weird exception we need for TestCloud devices,
+				// which have a common prefix, and we treat them as the same machine.
+				if ((machine.Name != machineName && !machineName.StartsWith (machine.Name)) || machine.Architecture != result ["Machine"]["Architecture"].ToObject<string> ())
+					throw new Exception ("Machine does not match the one in the database.");
+
+				if (!config.EqualsApiObject (result ["Config"]))
+					throw new Exception ("Config does not match the one in the database.");
+
+				return runSet;
+			}
+		}
+
+		public Dictionary<string, object> ApiObject
+		{
 			get {
-				return Results.SelectMany (res => res.Runs);
+				var logURLs = new Dictionary<string, string> ();
+				if (LogURL != null) {
+					string defaultURL;
+					logURLs.TryGetValue ("*", out defaultURL);
+					if (defaultURL == null) {
+						logURLs ["*"] = LogURL;
+					} else if (defaultURL != LogURL) {
+						foreach (var run in Runs)
+							logURLs [run.Benchmark.Name] = LogURL;
+					}
+				}
+
+				var dict = new Dictionary<string, object> ();
+				dict ["MainProduct"] = Commit.ApiObject;
+				dict ["SecondaryProducts"] = SecondaryCommits.Select(c => c.ApiObject).ToList ();
+				dict ["Machine"] = Machine.ApiObject;
+				dict ["Config"] = Config.ApiObject;
+				dict ["TimedOutBenchmarks"] = new List<string> (TimedOutBenchmarks);
+				dict ["CrashedBenchmarks"] = new List<string> (CrashedBenchmarks);
+				dict ["StartedAt"] = StartDateTime;
+				dict ["FinishedAt"] = FinishDateTime;
+				dict ["BuildURL"] = BuildURL;
+				dict ["LogURLs"] = logURLs;
+				dict ["Runs"] = Runs.Select (r => r.ApiObject).ToList ();
+				if (PullRequestBaselineRunSetId != null) {
+					var prDict = new Dictionary<string, object> ();
+					prDict ["BaselineRunSetID"] = PullRequestBaselineRunSetId.Value;
+					prDict ["URL"] = PullRequestURL;
+					dict ["PullRequest"] = prDict;
+				}
+				return dict;
 			}
 		}
 
-		public static bool MachineExistsInPostgres (NpgsqlConnection conn, Machine machine)
-		{
-			using (var cmd = conn.CreateCommand ()) {
-				cmd.CommandText = "select architecture, isDedicated from machine where name = :name";
-				cmd.Parameters.Add (new NpgsqlParameter ("name", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Name;
+		public class UploadResult {
+			[JsonProperty ("RunSetID")]
+			public long RunSetId { get; set; }
 
-				using (var reader = cmd.ExecuteReader ()) {
-					if (!reader.Read ())
-						return false;
+			[JsonProperty ("RunIDs")]
+			public long[] RunIds { get; set; }
 
-					if (reader.GetString (0) != machine.Architecture)
-						throw new Exception (string.Format ("Error: Machine {0} exists but is not the same as the local machine.", machine.Name));
+			[JsonProperty ("PullRequestID")]
+			public long? PullRequestId { get; set; }
 
-					return true;
-				}
-			}
+			public UploadResult () { }
 		}
 
-		static string GetOrUploadMachineToPostgres (NpgsqlConnection conn, Machine machine)
-		{
-			if (MachineExistsInPostgres (conn, machine))
-				return machine.Name;
-
-			Logging.GetLogging ().Info ("machine " + machine.Name + " not found - inserting");
-
-			using (var cmd = conn.CreateCommand ()) {
-				cmd.CommandText = "insert into machine (name, architecture, isDedicated) values (:name, :arch, :dedicated)";
-				cmd.Parameters.Add (new NpgsqlParameter ("name", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Name;
-				cmd.Parameters.Add (new NpgsqlParameter ("arch", NpgsqlTypes.NpgsqlDbType.Varchar)).Value = machine.Architecture;
-				cmd.Parameters.Add (new NpgsqlParameter ("dedicated", NpgsqlTypes.NpgsqlDbType.Boolean)).Value = false;
-
-				if (cmd.ExecuteNonQuery () != 1)
-					throw new Exception ("Error: Failure inserting machine " + machine.Name);
-			}
-
-			return machine.Name;
-		}
-
-		public static RunSet FromId (NpgsqlConnection conn, Machine machine, long id, Config config, Commit mainCommit, List<Commit> secondaryCommits, string buildURL, string logURL)
-		{
-			var whereValues = new PostgresRow ();
-			whereValues.Set ("id", NpgsqlTypes.NpgsqlDbType.Integer, id);
-			var row = PostgresInterface.Select (conn, new Dictionary<string, string> { ["RunSet"] = "rs", ["Config"] = "c", ["Machine"] = "m" },
-				new string[] {
-					"rs.id",
-					"rs.startedAt",
-					"rs.finishedAt",
-					"rs.buildURL",
-					"rs.commit",
-					"rs.timedOutBenchmarks",
-					"rs.crashedBenchmarks",
-					"rs.secondaryCommits",
-					"rs.logURLs",
-					"m.name",
-					"m.architecture",
-					"c.name",
-					"c.monoExecutable",
-					"c.monoEnvironmentVariables",
-					"c.monoOptions"
-					},
-				"rs.id = :id and rs.config = c.name and rs.machine = m.name", whereValues).First ();
-
-			var runSet = new RunSet {
-				postgresRow = row,
-				StartDateTime = row.GetValue<DateTime> ("rs.startedAt").Value,
-				FinishDateTime = row.GetValue<DateTime> ("rs.finishedAt").Value,
-				BuildURL = row.GetReference<string> ("rs.buildURL"),
-				LogURL = logURL,
-				Config = config,
-				Commit = mainCommit,
-				SecondaryCommits = secondaryCommits,
-				TimedOutBenchmarks = row.GetReference<string[]> ("rs.timedOutBenchmarks").ToList (),
-				CrashedBenchmarks = row.GetReference<string[]> ("rs.crashedBenchmarks").ToList ()
-			};
-
-			if (mainCommit.Hash != row.GetReference<string> ("rs.commit"))
-				throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", mainCommit.Hash, row.GetReference<string> ("rs.commit")));
-			if (buildURL != null && buildURL != runSet.BuildURL)
-				throw new Exception ("Build URL does not match the one in the database.");
-			if ((machine.Name != row.GetReference<string> ("m.name") && !row.GetReference<string> ("m.name").StartsWith (machine.Name)) || machine.Architecture != row.GetReference<string> ("m.architecture"))
-				throw new Exception ("Machine does not match the one in the database.");
-			if (!config.EqualsPostgresObject (row, "c."))
-				throw new Exception ("Config does not match the one in the database.");
-
-			if (secondaryCommits != null) {
-				var secondaryHashes = (row.GetReference<string[]> ("rs.secondaryCommits") ?? new string[] { }).ToList ();
-				// FIXME: This is a hack.  We're adding the hashes in `secondaryCommits`
-				// to the Postgres row, but not the other way around.  We're relying on the fact
-				// that nobody's actually using the `SecondaryCommits` property if a row
-				// is available.  If we were to do it properly, we'd have to fetch the full
-				// commits in the row, which include the product names. 
-				foreach (var c in secondaryCommits) {
-					if (!secondaryHashes.Contains (c.Hash))
-						secondaryHashes.Add (c.Hash);
-				}
-				row.Set ("rs.secondaryCommits", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, secondaryHashes);
-			}
-
-			return runSet;
-		}
-
-		public Tuple<long, long?> UploadToPostgres (NpgsqlConnection conn, Machine machine)
-		{
-			// FIXME: for amended run sets, delete existing runs of benchmarks we just ran
-
-			var logURLs = new Dictionary<string, string> ();
-
-			if (postgresRow != null) {
-				var originalLogURLs = postgresRow.GetReference<JObject> ("rs.logURLs");
-				foreach (var p in originalLogURLs.Properties ())
-					logURLs [p.Name] = p.Value.Value<string> ();
-			}
-
-			if (LogURL != null) {
-				string defaultURL;
-				logURLs.TryGetValue ("*", out defaultURL);
-				if (defaultURL == null) {
-					logURLs ["*"] = LogURL;
-				} else if (defaultURL != LogURL) {
-					foreach (var result in results)
-						logURLs [result.Benchmark.Name] = LogURL;
-				}
-			}
-
-			var row = new PostgresRow ();
-			long? prId = null;
-
-			if (postgresRow == null) {
-				row.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, GetOrUploadMachineToPostgres (conn, machine));
-				row.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, Config.GetOrUploadToPostgres (conn));
-				row.Set ("commit", NpgsqlTypes.NpgsqlDbType.Varchar, Commit.GetOrUploadToPostgres (conn));
-				var secondaryHashes = new List<string> ();
-				foreach (var commit in SecondaryCommits)
-					secondaryHashes.Add (commit.GetOrUploadToPostgres (conn));
-				row.Set ("secondaryCommits", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, secondaryHashes);
-				row.Set ("buildURL", NpgsqlTypes.NpgsqlDbType.Varchar, BuildURL);
-				row.Set ("startedAt", NpgsqlTypes.NpgsqlDbType.TimestampTZ, StartDateTime);
-
-				if (PullRequestURL != null) {
-					var prRow = new PostgresRow ();
-					prRow.Set ("URL", NpgsqlTypes.NpgsqlDbType.Varchar, PullRequestURL);
-					prRow.Set ("baselineRunSet", NpgsqlTypes.NpgsqlDbType.Integer, PullRequestBaselineRunSetId);
-					prId = PostgresInterface.Insert<long> (conn, "PullRequest", prRow, "id");
-					row.Set ("pullRequest", NpgsqlTypes.NpgsqlDbType.Integer, prId);
-				}
+		public async Task<UploadResult> Upload () {
+			string responseBody;
+			if (Id == null) {
+				responseBody = await HttpApi.Put ("/runset", null, ApiObject);
 			} else {
-				row.TakeValuesFrom (postgresRow, "rs.");
+				responseBody = await HttpApi.Post (String.Format ("/runset/{0}", Id.Value), null, ApiObject);
 			}
-
-			row.Set ("finishedAt", NpgsqlTypes.NpgsqlDbType.TimestampTZ, FinishDateTime);
-
-			row.Set ("logURLs", NpgsqlTypes.NpgsqlDbType.Jsonb, logURLs);
-
-			row.Set ("timedOutBenchmarks", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, TimedOutBenchmarks);
-			row.Set ("crashedBenchmarks", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Varchar, CrashedBenchmarks);
-
-			Logging.GetLogging ().Info ("uploading run set");
-
-			long runSetId;
-			if (postgresRow == null) {
-				runSetId = PostgresInterface.Insert<long> (conn, "RunSet", row, "id");
-			} else {
-				PostgresInterface.Update (conn, "RunSet", row, "id");
-				runSetId = postgresRow.GetValue<long> ("rs.id").Value;
-			}
-
-			Logging.GetLogging ().Info ("uploading runs");
-
-			foreach (var result in results) {
-				if (result.Config != Config)
-					throw new Exception ("Results must have the same config as their RunSets");
-				result.UploadRunsToPostgres (conn, runSetId);
-			}
-
-			Logging.GetLogging ().Info ("done uploading");
-
-			return Tuple.Create (runSetId, prId);
+			if (responseBody == null)
+				return null;
+			return JsonConvert.DeserializeObject<UploadResult> (responseBody);
 		}
 	}
 }

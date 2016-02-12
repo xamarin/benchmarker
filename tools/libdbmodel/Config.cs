@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using System.Collections;
 using System.Text;
 using System.Linq;
-using Npgsql;
 using Newtonsoft.Json.Linq;
 using Benchmarker;
 
@@ -152,59 +151,31 @@ namespace Benchmarker.Models
 			return true;
 		}
 
-		public bool EqualsPostgresObject (PostgresRow row, string prefix = "")
-		{
-			if (row.GetReference<string> (prefix + "name") != Name)
+		static bool OptionsEqual (IList<string> native, JToken json) {
+			if (native.Count != json.Count ())
 				return false;
-
-			if (row.GetReference<string> (prefix + "monoExecutable") != MonoExecutable)
-				return false;
-
-			var envVars = row.GetReference<JToken> (prefix + "monoEnvironmentVariables");
-			if (!EnvironmentVariablesEqual (MonoEnvironmentVariables, envVars))
-				return false;
-			
-			if (!row.GetReference<string[]> (prefix + "monoOptions").SequenceEqual (MonoOptions))
-				return false;
-
-			return true;
+			return native.All (opt => json.Any (j => opt == j.ToObject<string> ()));
 		}
 
-		public bool ExistsInPostgres (NpgsqlConnection conn)
+		public IDictionary<string, object> ApiObject
 		{
-			var parameters = new PostgresRow ();
-			parameters.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
-			var rows = PostgresInterface.Select (conn, "config", new string[] {
-				"name",
-				"monoExecutable",
-				"monoEnvironmentVariables",
-				"monoOptions"
-			}, "name = :name", parameters);
+			get {
+				var dict = new Dictionary<string, object> ();
 
-			if (rows.Count () == 0)
-				return false;
+				dict ["Name"] = Name;
+				dict ["MonoExecutable"] = MonoExecutable;
+				dict ["MonoEnvironmentVariables"] = new Dictionary<string, string> (MonoEnvironmentVariables);
+				dict ["MonoOptions"] = new List<string> (MonoOptions);
 
-			var row = rows.First ();
-
-			if (!EqualsPostgresObject (row))
-				throw new Exception (string.Format ("Error: Config {0} exists but is not the same as the local config of the same name.", Name));
-
-			return true;
+				return dict;
+			}
 		}
 
-		public string GetOrUploadToPostgres (NpgsqlConnection conn)
-		{
-			if (ExistsInPostgres (conn))
-				return Name;
-
-			Logging.GetLogging ().Info ("config " + Name + " not found - inserting");
-
-			var row = new PostgresRow ();
-			row.Set ("name", NpgsqlTypes.NpgsqlDbType.Varchar, Name);
-			row.Set ("monoExecutable", NpgsqlTypes.NpgsqlDbType.Varchar, MonoExecutable);
-			row.Set ("monoEnvironmentVariables", NpgsqlTypes.NpgsqlDbType.Jsonb, MonoEnvironmentVariables);
-			row.Set ("monoOptions", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text, MonoOptions);
-			return PostgresInterface.Insert<string> (conn, "config", row, "name");
+		public bool EqualsApiObject (JToken other) {
+			return Name == other ["Name"].ToObject<string> () &&
+				MonoExecutable == other ["MonoExecutable"].ToObject<string> () &&
+				EnvironmentVariablesEqual (MonoEnvironmentVariables, other ["MonoEnvironmentVariables"]) &&
+				OptionsEqual (MonoOptions, other ["MonoOptions"]);
 		}
 	}
 }

@@ -7,9 +7,10 @@ using Benchmarker.Models;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Nito.AsyncEx;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Common.Logging;
 using Common.Logging.Simple;
-using Npgsql;
 using compare;
 
 class Compare
@@ -57,7 +58,7 @@ class Compare
 		return exitcode;
 	}
 
-	static async Task<long?> GetPullRequestBaselineRunSetId (NpgsqlConnection conn, Product product, string pullRequestURL, compare.Repository repository, Config config)
+	static async Task<Tuple<long, string>> GetPullRequestBaselineRunSetId (Product product, string pullRequestURL, compare.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
 		var match = Regex.Match (pullRequestURL, product.PullRequestRegexp);
@@ -100,39 +101,34 @@ class Compare
 		}
 		Console.WriteLine ("{0} commits in rev-list", revList.Length);
 
-		if (!config.ExistsInPostgres (conn)) {
-			Console.Error.WriteLine ("Error: The config {0} does not exist or is incompatible.", config.Name);
-			Environment.Exit (1);
-		}
-
 		// FIXME: also support `--machine`
 		var hostarch = compare.Utils.LocalHostnameAndArch ();
 		var machine = new Machine { Name = hostarch.Item1, Architecture = hostarch.Item2 };
-		if (!RunSet.MachineExistsInPostgres (conn, machine)) {
-			Console.Error.WriteLine ("Error: The machine does not exist.");
+
+		var args = new Dictionary<string, string> {
+			{ "machine", machine.Name },
+			{ "config", config.Name }
+		};
+		var response = await HttpApi.Get ("/runsets", args);
+		if (response == null) {
+			Console.Error.WriteLine ("Error: Could not get run sets.");
 			Environment.Exit (1);
 		}
-
-		var whereValues = new PostgresRow ();
-		whereValues.Set ("machine", NpgsqlTypes.NpgsqlDbType.Varchar, machine.Name);
-		whereValues.Set ("config", NpgsqlTypes.NpgsqlDbType.Varchar, config.Name);
-		var rows = PostgresInterface.Select (conn, "runSet", new string[] { "id", "commit" }, "machine = :machine and config = :config", whereValues);
-		Console.WriteLine ("{0} run sets", rows.Count ());
+		Console.WriteLine ("Response is: {0}", response);
 
 		var runSetIdsByCommits = new Dictionary<string, long> ();
-		foreach (var row in rows) {
-			var sha = row.GetReference<string> ("commit");
-			if (runSetIdsByCommits.ContainsKey (sha)) {
-				// FIXME: select between them?
-				continue;
-			}
-			runSetIdsByCommits.Add (sha, row.GetValue<long> ("id").Value);
+		foreach (var rs in JArray.Parse (response)) {
+			var id = rs ["ID"].ToObject<long> ();
+			var commit = rs ["MainProduct"] ["Commit"].ToObject<string> ();
+			runSetIdsByCommits [commit] = id;
 		}
+
+		Console.WriteLine ("{0} run sets", runSetIdsByCommits.Count);
 
 		foreach (var sha in revList) {
 			if (runSetIdsByCommits.ContainsKey (sha)) {
 				Console.WriteLine ("tested base commit is {0}", sha);
-				return runSetIdsByCommits [sha];
+				return Tuple.Create (runSetIdsByCommits [sha], baseSha);
 			}
 		}
 
@@ -144,6 +140,7 @@ class Compare
 		Logging.SetLogging (LogManager.GetLogger<Compare> ());
 
 		GitHubInterface.githubCredentials = Accredit.GetCredentials ("gitHub") ["privateReadAccessToken"].ToString ();
+		HttpApi.AuthToken = Accredit.GetCredentials ("httpAPITokens") ["default"].ToString ();
 	}
 
 	static Tuple<long, long> ParseMassifEntry (Dictionary<string, string> dict) {
@@ -246,22 +243,28 @@ class Compare
 		throw new Exception ("No summary line found in Cachegrind output file.");
 	}
 
-	static bool UploadPauseTimes (NpgsqlConnection conn, string binprotFilePath, string grepBinprotPath, long runId) {
+	static async Task<bool> UploadPauseTimes (string binprotFilePath, string grepBinprotPath, long runId) {
 		var grepString = Utils.RunForStdout (grepBinprotPath, null, "--pause-times", "--input", binprotFilePath);
 		if (grepString == null) {
 			Console.Error.WriteLine ("Error: sgen-grep-binprot failed.");
 			return false;
 		}
 		var times = new List<double> ();
+		var starts = new List<double> ();
 		foreach (var line in grepString.Split ('\n')) {
 			var fields = line.Split (' ', '\t');
 			if (fields.Count () < 6)
 				continue;
 			if (fields [0] != "pause-time")
 				continue;
+
 			var ticks = Int64.Parse (fields [4]);
 			var ms = (double)ticks / 10000.0;
 			times.Add (ms);
+
+			ticks = Int64.Parse (fields [5]);
+			ms = (double)ticks / 10000.0;
+			starts.Add (ms);
 		}
 
 		if (times.Count == 0) {
@@ -271,13 +274,17 @@ class Compare
 
 		Console.WriteLine ("Uploading pause times: {0}", string.Join (" ", times));
 
-		var metricRow = new PostgresRow ();
-		metricRow.Set ("run", NpgsqlTypes.NpgsqlDbType.Integer, runId);
-		metricRow.Set ("metric", NpgsqlTypes.NpgsqlDbType.Varchar, "pause-times");
-		metricRow.Set ("resultArray", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Double, times.ToArray ());
-		PostgresInterface.Insert<long> (conn, "RunMetric", metricRow, "id");
+		var run = new Run ();
+		run.RunMetrics.Add (new RunMetric {
+			Metric = RunMetric.MetricType.PauseTimes,
+			Value = times.ToArray ()
+		});
+		run.RunMetrics.Add (new RunMetric {
+			Metric = RunMetric.MetricType.PauseStarts,
+			Value = starts.ToArray ()
+		});
 
-		return true;
+		return await run.UploadForAmend (runId);
 	}
 
 	enum ValgrindTool {
@@ -462,10 +469,8 @@ class Compare
 
 		InitCommons ();
 
-		var dbConnection = PostgresInterface.Connect ();
-
 		if (binprotFilePath != null) {
-			var success = UploadPauseTimes (dbConnection, binprotFilePath, grepBinprotPath, runId.Value);
+			var success = AsyncContext.Run (() => UploadPauseTimes (binprotFilePath, grepBinprotPath, runId.Value));
 			Environment.Exit (success ? 0 : 1);
 		}
 
@@ -504,7 +509,7 @@ class Compare
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (dbConnection, machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
+			runSet = AsyncContext.Run (() => RunSet.FromId (machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -520,15 +525,18 @@ class Compare
 
 				var repo = new compare.Repository (monoRepositoryPath);
 
-				pullRequestBaselineRunSetId = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (dbConnection, mainCommit.Product, pullRequestURL, repo, config));
-				if (pullRequestBaselineRunSetId == null) {
+				var baselineResult = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (mainCommit.Product, pullRequestURL, repo, config));
+				if (baselineResult == null) {
 					Console.Error.WriteLine ("Error: No appropriate baseline run set found.");
 					Environment.Exit (1);
 				}
+				pullRequestBaselineRunSetId = baselineResult.Item1;
+				mainCommit.MergeBaseHash = baselineResult.Item2;
 			}
 
 			runSet = new RunSet {
 				StartDateTime = DateTime.Now,
+				Machine = machine,
 				Config = config,
 				Commit = mainCommit,
 				SecondaryCommits = secondaryCommits,
@@ -574,16 +582,11 @@ class Compare
 
 				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout, runTool, runToolArguments);
 
-				var result = new Result {
-					DateTime = DateTime.Now,
-					Benchmark = benchmark,
-					Config = config,
-				};
-
 				var haveTimedOut = false;
 				var haveCrashed = false;
 
 				var count = valgrindBinary == null ? config.Count + 1 : 1;
+				var successCount = 0;
 
 				for (var i = 0; i < count; ++i) {
 					bool timedOut;
@@ -607,11 +610,14 @@ class Compare
 						continue;
 
 					if (elapsedMilliseconds != null) {
-						var run = new Result.Run { BinaryProtocolFilename = binaryProtocolFile == null ? null : Path.Combine(workingDirectory, binaryProtocolFile) };
+						var run = new Run {
+							Benchmark = benchmark,
+							BinaryProtocolFilename = binaryProtocolFile == null ? null : Path.Combine(workingDirectory, binaryProtocolFile)
+						};
 
 						if (valgrindBinary == null) {
-							run.RunMetrics.Add (new Result.RunMetric {
-								Metric = Result.RunMetric.MetricType.Time,
+							run.RunMetrics.Add (new RunMetric {
+								Metric = RunMetric.MetricType.Time,
 								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
 							});
 						} else {
@@ -619,12 +625,12 @@ class Compare
 							case ValgrindTool.Massif:
 								{
 									var results = MemoryIntegral (valgrindOutputFilename);
-									run.RunMetrics.Add (new Result.RunMetric {
-										Metric = Result.RunMetric.MetricType.MemoryIntegral,
+									run.RunMetrics.Add (new RunMetric {
+										Metric = RunMetric.MetricType.MemoryIntegral,
 										Value = results.Item1
 									});
-									run.RunMetrics.Add (new Result.RunMetric {
-										Metric = Result.RunMetric.MetricType.Instructions,
+									run.RunMetrics.Add (new RunMetric {
+										Metric = RunMetric.MetricType.Instructions,
 										Value = results.Item2
 									});
 								}
@@ -632,23 +638,24 @@ class Compare
 							case ValgrindTool.Cachegrind:
 								{
 									var results = CacheAndBranches (valgrindOutputFilename);
-									run.RunMetrics.Add (new Result.RunMetric {
-										Metric = Result.RunMetric.MetricType.CachegrindResults,
+									run.RunMetrics.Add (new RunMetric {
+										Metric = RunMetric.MetricType.CachegrindResults,
 										Value = results.Item1
 									});
-									run.RunMetrics.Add (new Result.RunMetric {
-										Metric = Result.RunMetric.MetricType.CacheMissRate,
+									run.RunMetrics.Add (new RunMetric {
+										Metric = RunMetric.MetricType.CacheMissRate,
 										Value = results.Item2
 									});
-									run.RunMetrics.Add (new Result.RunMetric {
-										Metric = Result.RunMetric.MetricType.BranchMispredictionRate,
+									run.RunMetrics.Add (new RunMetric {
+										Metric = RunMetric.MetricType.BranchMispredictionRate,
 										Value = results.Item3
 									});
 								}
 								break;
 							}
 						}
-						result.Runs.Add (run);
+						runSet.Runs.Add (run);
+						successCount++;
 						someSuccess = true;
 					} else {
 						if (timedOut)
@@ -663,9 +670,7 @@ class Compare
 				if (haveCrashed)
 					runSet.CrashedBenchmarks.Add (benchmark.Name);
 
-				runSet.Results.Add (result);
-
-				if (haveTimedOut || result.Runs.Count == 0)
+				if (haveTimedOut || successCount == 0)
 					reportFailure = true;
 			}
 
@@ -676,27 +681,30 @@ class Compare
 		runSet.FinishDateTime = DateTime.Now;
 		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime, runSet.FinishDateTime);
 
-		Console.WriteLine ("uploading");
+		Console.WriteLine (JsonConvert.SerializeObject (runSet.ApiObject));
 
-		bool uploadSuccess;
-		var newIds = PostgresInterface.RunInTransactionWithRetry (dbConnection, (conn) => runSet.UploadToPostgres (conn, machine), out uploadSuccess);
-		if (!uploadSuccess) {
-			Console.Error.WriteLine ("Error: Failure uploading data.");
+		var uploadResult = AsyncContext.Run (() => Utils.RunWithRetry (() => runSet.Upload ()));
+		if (uploadResult == null) {
+			Console.Error.WriteLine ("Error: Could not upload run set.");
 			Environment.Exit (1);
 		}
 
-		Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#id={0}", newIds.Item1);
-		if (pullRequestURL != null) {
-			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", newIds.Item2.Value);
-		}
-		Console.Write ("{{ \"runSetId\": \"{0}\"", newIds.Item1);
-        if (pullRequestURL != null)
-			Console.Write (", \"pullRequestId\": \"{0}\"", newIds.Item2.Value);
+		Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/runset.html#id={0}", uploadResult.RunSetId);
+		if (pullRequestURL != null)
+			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", uploadResult.PullRequestId.Value);
+
+		Console.Write ("{{ \"runSetId\": \"{0}\"", uploadResult.RunSetId);
+		if (pullRequestURL != null)
+			Console.Write (", \"pullRequestId\": \"{0}\"", uploadResult.PullRequestId.Value);
 		Console.Write (", \"runs\": [ ");
 
 		var runStrings = new List<string> ();
-		foreach (var run in runSet.AllRuns) {
-			var str = string.Format ("\"id\": {0}", run.PostgresId.Value);
+		var allRuns = runSet.Runs.ToList ();
+		for (var i = 0; i < allRuns.Count; i++) {
+			var run = allRuns [i];
+			var id = uploadResult.RunIds [i];
+
+			var str = string.Format ("\"id\": {0}", id);
 			if (run.BinaryProtocolFilename != null)
 				str = string.Format ("{0}, \"binaryProtocolFile\": \"{1}\"", str, run.BinaryProtocolFilename);
 			runStrings.Add ("{ " + str + " }");
@@ -705,8 +713,6 @@ class Compare
 
 		Console.Write (" ]");
         Console.WriteLine (" }");
-
-		dbConnection.Close ();
 
 		if (reportFailure) {
 			Console.Error.WriteLine ("Error: Some benchmarks timed out or failed completely.");
