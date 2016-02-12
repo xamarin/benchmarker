@@ -444,7 +444,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	public render () : JSX.Element  {
 		var runSet = this.props.runSet;
 		var buildURL = runSet.get ('buildURL');
-		var buildLink: JSX.Element;
+		var buildIcon: JSX.Element;
 		var logURLs = runSet.get ('logURLs');
 		var logLinks = [];
 		var logLinkList: JSX.Element;
@@ -454,7 +454,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var timedOutElem: JSX.Element;
 
 		if (buildURL !== undefined)
-			buildLink = <a href={buildURL}>build</a>;
+			buildIcon = makeBuildIcon (buildURL);
 
 		if (logURLs !== undefined && Object.keys (logURLs).length !== 0) {
 			for (var key of Object.keys (logURLs)) {
@@ -591,9 +591,9 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			commitName = commitHash.substring (0, 10);
 		}
 
-		const commitElement = <a href={commitLink}>{commitName}</a>;
+		const commitElement = <p><strong><a href={commitLink}>{commitName}</a></strong> {buildIcon}</p>;
 		return <div className="Description">
-			<h1 key="commit">{commitElement} ({buildLink})</h1>
+			{commitElement}
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
@@ -874,4 +874,8 @@ export function relativeDate (then: Date) : JSX.Element {
 	else
 		text = then.toString ();
 	return <span className="pre" title={then.toString ()}>{text}</span>;
+}
+
+export function makeBuildIcon (url: string) : JSX.Element {
+	return <a href={url} className="buildIcon fa fa-cogs" title="Build Logs"></a>
 }
