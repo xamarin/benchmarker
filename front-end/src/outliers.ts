@@ -6,7 +6,7 @@ function minBy (f: (x: number) => number, x: number, y: number) : number {
 	return Math.min (f (x), f (y));
 }
 
-export function outlierVariance (samples: Array<number>) : string {
+export function outlierVariance (samples: Array<number>) : number {
 	return computeOutlierVariance (
 		jackknife (samples, computeMean),
 		jackknife (samples, computeStandardDeviation),
@@ -39,7 +39,7 @@ function computeOutlierVariance (
 	mean: number /* jackknife estimate of mean */,
 	stdDev: number /* jackknife estimate of standard deviation */,
 	n: number  /* number of samples */
-) : string /* report */ {
+) : number {
 	var variance = stdDev * stdDev;
 	var mn = mean / n;
 	var mgMin = mn / 2;
@@ -61,8 +61,5 @@ function computeOutlierVariance (
 	var result = minBy (outlierVariance, 1, minBy (cMax, 0, mgMin)) / variance;
 	if (isNaN (result))
 		result = 0;
-	return result < 0.01 ? 'none'
-		: result < 0.10 ? 'slight'
-		: result < 0.50 ? 'moderate'
-		: 'severe';
+    return result;
 }

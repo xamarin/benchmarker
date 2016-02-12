@@ -551,10 +551,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 						dataPoints.sort ();
 						var dataPointsString = dataPoints.join (", ");
 						var variance = Outliers.outlierVariance (dataPoints);
+						var degree = variance < 0.01 ? 'none'
+							: variance < 0.10 ? 'slight'
+							: variance < 0.50 ? 'moderate'
+							: 'severe';
 						metricColumns.push (<td key={"metricValues" + m}>{dataPointsString}</td>);
 						metricColumns.push (<td key={"metricDegree" + m}>
-								<div className="degree" title={variance}>
-									<div className={variance}>&nbsp;</div>
+								<div className="degree" title={degree}>
+									<div className={degree}>&nbsp;</div>
 								</div>
 							</td>);
 					});
