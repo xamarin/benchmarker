@@ -15,6 +15,7 @@ STYLES = \
 	pullrequest \
 	pullrequests \
 	runset \
+	status \
 	timeline
 
 #

@@ -112,8 +112,8 @@ class Page extends React.Component<PageProps, PageState> {
 							<th>ID</th>
 							<th>Date</th>
 							<th>Title</th>
-							<th>Crashed</th>
-							<th>Timed Out</th>
+							<th><span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span> Crashed</th>
+							<th><span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span> Timed Out</th>
 							<th></th>
 						</tr>
 					</thead>
