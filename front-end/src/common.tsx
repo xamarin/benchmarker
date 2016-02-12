@@ -774,7 +774,8 @@ export function setLocationForDict (dict: Object) : void {
 	var keys = Object.keys (dict);
 	for (var i = 0; i < keys.length; ++i) {
 		var k = keys [i];
-		components.push (k + "=" + dict [k].toString ());
+		if (dict [k] !== undefined)
+			components.push (k + "=" + dict [k].toString ());
 	}
 	window.location.hash = components.join ("&");
 }
