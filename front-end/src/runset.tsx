@@ -11,11 +11,11 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 
 class Controller {
-	private startupRunSetId: number;
+	private startupRunSetId: number | void;
 	private runSetCounts: Array<Database.RunSetCount>;
 	private runSet: Database.DBRunSet;
 
-	constructor (startupRunSetId: number) {
+	constructor (startupRunSetId: number | void) {
 		this.startupRunSetId = startupRunSetId;
 	}
 
@@ -27,9 +27,9 @@ class Controller {
 				alert ("error loading run set counts: " + error.toString ());
 			});
 
-		if (this.startupRunSetId === undefined)
+		if (typeof (this.startupRunSetId) === 'undefined')
 			return;
-		Database.fetchRunSet (this.startupRunSetId,
+		Database.fetchRunSet (Number (this.startupRunSetId),
 			(runSet: Database.DBRunSet) => {
 				if (runSet === undefined) {
 					this.startupRunSetId = undefined;
@@ -132,10 +132,6 @@ class Page extends React.Component<PageProps, PageState> {
 
 function start (params: Object) : void {
 	var startupRunSetId = params ['id'];
-	if (startupRunSetId === undefined) {
-		alert ("Error: Please provide a run set ID.");
-		return;
-	}
 	var controller = new Controller (startupRunSetId);
 	controller.loadAsync ();
 }
