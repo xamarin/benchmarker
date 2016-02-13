@@ -153,33 +153,6 @@ class ProcessBinaryProtocolFiles(MasterShellCommand):
         MasterShellCommand.start(self)
 
 
-class GithubWritePullrequestComment(LoggingBuildStep):
-    def __init__(self, githubuser, githubrepo, githubtoken, *args, **kwargs):
-        self.githubuser = githubuser
-        self.githubrepo = githubrepo
-        self.githubtoken = githubtoken
-        LoggingBuildStep.__init__(self, *args, **kwargs)
-
-    def start(self):
-        parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
-        buildername = self.getProperty('buildername')
-        buildnumber = self.getProperty('buildnumber')
-        pullrequest_id = self.getProperty(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
-
-        payload = [
-            '`<botmode>`',
-            'Benchmark results: http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id),
-            'buildbot logs: %s/builders/%s/builds/%s' % (BUILDBOT_URL, buildername, str(buildnumber)),
-            '`</botmode>`'
-        ]
-        requests.post(
-            'https://api.github.com/repos/%s/%s/issues/%s/comments' % (self.githubuser, self.githubrepo, str(pullrequest_id)),
-            headers={'content-type': 'application/json', 'Authorization': 'token ' + self.githubtoken},
-            data=json.dumps({'body': '\n'.join(payload)})
-        )
-        self.finished(SUCCESS)
-
-
 class GithubPostPRStatus(LoggingBuildStep):
     def __init__(self, githubuser, githubrepo, githubtoken, state, *args, **kwargs):
         self.githubuser = githubuser

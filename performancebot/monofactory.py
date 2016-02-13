@@ -8,7 +8,7 @@ from buildbot.steps.source import git
 from buildbot.status.builder import SUCCESS
 
 from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME, MASTERWORKDIR
-from monosteps import CreateRunSetIdStep, GithubWritePullrequestComment, GithubPostPRStatus, ParsingShellCommand, GrabBinaryLogFilesStep, ProcessBinaryProtocolFiles
+from monosteps import CreateRunSetIdStep, GithubPostPRStatus, ParsingShellCommand, GrabBinaryLogFilesStep, ProcessBinaryProtocolFiles
 
 import re
 
@@ -253,11 +253,6 @@ class DebianMonoBuildFactory(BuildFactory):
                 haltOnFailure=True
             )
         )
-
-    def report_github(self, secret_github_token):
-        def _guard_pullrequest_only(step):
-            return step.build.getProperties().has_key(PROPERTYNAME_JENKINSGITHUBPULLREQUEST)
-        self.addStep(GithubWritePullrequestComment(name='report_github', githubuser='mono', githubrepo='mono', githubtoken=secret_github_token, doStepIf=_guard_pullrequest_only))
 
     def report_github_status(self, secret_github_token, state):
         def _guard_pullrequest_only(step):
