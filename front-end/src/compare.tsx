@@ -69,7 +69,8 @@ class Controller {
 }
 
 function runSetsFromSelections (selections: Array<xp_common.RunSetSelection>) : Array<Database.DBRunSet> {
-	return selections.map ((s: xp_common.RunSetSelection) => s.runSet).filter ((rs: Database.DBRunSet) => rs !== undefined);
+	return [].concat.apply ([], selections.map ((s: xp_common.RunSetSelection) => s.runSets))
+		.filter ((rs: Database.DBRunSet) => rs !== undefined);
 }
 
 interface PageProps {
@@ -85,9 +86,9 @@ interface PageState {
 class Page extends React.Component<PageProps, PageState> {
 	constructor (props: PageProps) {
 		super (props);
-		const emptySelection: xp_common.RunSetSelection = { runSet: undefined, machine: undefined, config: undefined };
+		const emptySelection: xp_common.RunSetSelection = { runSets: undefined, machine: undefined, config: undefined };
 		const runSetToSelection = (rs: Database.DBRunSet) => {
-			return { runSet: rs, machine: rs.machine, config: rs.config };
+			return { runSets: [rs], machine: rs.machine, config: rs.config };
 		};
 		var selections = props.initialRunSets.map (runSetToSelection).concat ([emptySelection]);
 		this.state = { selections: selections };
@@ -112,7 +113,7 @@ class Page extends React.Component<PageProps, PageState> {
 
 		var runSetIds = [].concat.apply ([],
 			this.state.selections.map (
-				s => s.runSet !== undefined ? [s.runSet.get ('id')] : []));
+				s => s.runSets !== undefined ? s.runSets.map (rs => rs.get ('id')) : []));
 
 		return <div className="ComparePage">
 			<header>
@@ -149,7 +150,7 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 	}
 
 	private addSelector () : void {
-		var selections = this.props.selections.concat ([{ runSet: undefined, machine: undefined, config: undefined }]);
+		var selections = this.props.selections.concat ([{ runSets: undefined, machine: undefined, config: undefined }]);
 		this.props.onChange (selections);
 	}
 
@@ -160,13 +161,14 @@ class RunSetSelectorList extends React.Component<RunSetSelectorListProps, void> 
 
 	public render () : JSX.Element {
 		var renderSelector = (selection: xp_common.RunSetSelection, index: number) => {
-			var runSet = selection.runSet;
+			var runSets = selection.runSets;
 			var machine = selection.machine;
 			var config = selection.config;
 			return <section key={"selector" + index.toString ()}>
 				<xp_common.RunSetSelector
+					multiple={true}
 					runSetCounts={this.props.runSetCounts}
-					selection={{runSet: runSet, machine: machine, config: config}}
+					selection={{runSets: runSets, machine: machine, config: config}}
 					onChange={(s: xp_common.RunSetSelection) => this.changeSelector (index, s)} />
 				<button onClick={(e: React.MouseEvent) => this.removeSelector (index)} className="delete">
 					<span className="fa fa-minus"></span>&ensp;Remove

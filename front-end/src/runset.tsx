@@ -51,12 +51,12 @@ class Controller {
 	}
 
 	private allDataLoaded () : void {
-		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSet: undefined };
+		var selection: xp_common.RunSetSelection = { machine: undefined, config: undefined, runSets: undefined };
 		if (this.runSet !== undefined) {
 			selection = {
 				machine: this.runSet.machine,
 				config: this.runSet.config,
-				runSet: this.runSet,
+				runSets: [this.runSet],
 			};
 		}
 
@@ -71,7 +71,7 @@ class Controller {
 	}
 
 	private updateForRunSet (selection: xp_common.RunSetSelection) : void {
-		var runSet = selection.runSet;
+		var runSet = selection.runSets [0];
 		if (runSet === undefined)
 			return;
 		xp_common.setLocationForDict ({ id: runSet.get ('id') });
@@ -101,7 +101,7 @@ class Page extends React.Component<PageProps, PageState> {
 
 	public render () : JSX.Element {
 		let detail: JSX.Element;
-		const runSet = this.state.selection.runSet;
+		const runSet = this.state.selection.runSets [0];
 		let runSetIds: Array<number> = undefined;
 		if (runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
@@ -120,6 +120,7 @@ class Page extends React.Component<PageProps, PageState> {
 			<article>
 				<div className="panel">
 					<xp_common.RunSetSelector
+						multiple={false}
 						selection={this.state.selection}
 						runSetCounts={this.props.runSetCounts}
 						onChange={(s: xp_common.RunSetSelection) => this.handleChange (s)} />

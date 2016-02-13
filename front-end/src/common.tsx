@@ -250,13 +250,14 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 export type RunSetSelection = {
 	machine: Database.DBObject;
 	config: Database.DBObject;
-	runSet: Database.DBRunSet;
+	runSets: Array<Database.DBRunSet>;
 }
 
 type RunSetSelectorProps = {
 	runSetCounts: Array<Database.RunSetCount>;
 	selection: RunSetSelection;
 	onChange: (selection: RunSetSelection) => void;
+	multiple: boolean;
 };
 
 type RunSetSelectorState = {
@@ -306,17 +307,20 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	private runSetSelected (event: React.FormEvent) : void {
 		if (this.state.runSets === undefined)
 			return;
-		var target: any = event.target;
-		var runSetId = parseInt (target.value);
-		var runSet = Database.findRunSet (this.state.runSets, runSetId);
-		if (runSet !== undefined)
-			this.props.onChange ({machine: runSet.machine, config: runSet.config, runSet: runSet});
+		var options: any = (event.target as HTMLSelectElement).options;
+		var runSetIds = [];
+		for (var i = 0; i < options.length; ++i)
+			if (options [i].selected)
+				runSetIds.push (parseInt (options [i].value));
+		var runSets = runSetIds.map (runSetId => Database.findRunSet (this.state.runSets, runSetId));
+		if (runSets !== undefined && runSets.length !== 0)
+			this.props.onChange ({machine: runSets [0].machine, config: runSets [0].config, runSets: runSets});
 	}
 
 	private configsSelected (selection: Array<MachineConfigSelection>) : void {
 		if (selection.length !== 1)
 			return;
-		this.props.onChange ({machine: selection [0].machine, config: selection [0].config, runSet: undefined});
+		this.props.onChange ({machine: selection [0].machine, config: selection [0].config, runSets: []});
 	}
 
 	public render () : JSX.Element {
@@ -325,10 +329,10 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		var config = selection.config;
 		var runSets = this.state.runSets;
 
-		var runSetId = undefined;
+		var runSetIds = undefined;
 
-		if (selection.runSet !== undefined)
-			runSetId = selection.runSet.get ('id');
+		if (selection.runSets !== undefined)
+			runSetIds = selection.runSets.map (rs => rs.get ('id'));
 
 		const openRunSetDescription = (id: number) => {
 			return window.open ('runset.html#id=' + id);
@@ -360,8 +364,9 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 			runSetsSelect = <div className="diagnostic">No run sets found for this machine and config.</div>;
 		} else {
 			runSetsSelect = <select
+				multiple={this.props.multiple}
 				size={10}
-				value={runSetId}
+				value={runSetIds}
 				onChange={(e: React.FormEvent) => this.runSetSelected (e)}>
 				{runSets.map (renderRunSet)}
 			</select>;
