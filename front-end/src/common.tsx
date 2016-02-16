@@ -312,7 +312,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		for (var i = 0; i < options.length; ++i)
 			if (options [i].selected)
 				runSetIds.push (parseInt (options [i].value));
-		var runSets = runSetIds.map (runSetId => Database.findRunSet (this.state.runSets, runSetId));
+		var runSets = runSetIds.map ((runSetId: number) => Database.findRunSet (this.state.runSets, runSetId));
 		if (runSets !== undefined && runSets.length !== 0)
 			this.props.onChange ({machine: runSets [0].machine, config: runSets [0].config, runSets: runSets});
 	}
@@ -332,7 +332,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		var runSetIds = undefined;
 
 		if (selection.runSets !== undefined)
-			runSetIds = selection.runSets.map (rs => rs.get ('id'));
+			runSetIds = selection.runSets.map ((rs: Database.DBRunSet) => rs.get ('id'));
 
 		const openRunSetDescription = (id: number) => {
 			return window.open ('runset.html#id=' + id);
@@ -866,30 +866,31 @@ export function relativeDate (then: Date) : JSX.Element {
 	var s_wk = s_d * 7;
 	var s_mo = s_wk * 4;
 	var s_y = s_mo * 12;
-	function agoify (ago: number, unit: string): string {
-		ago = Math.floor (ago);
-		unit = ago == 1 ? unit : unit + 's';
-		return [ago, unit, 'ago'].join (' ');
+	function agoify (x: number, unit: string) : string {
+		x = Math.floor (x);
+		unit = x === 1 ? unit : unit + 's';
+		return [x, unit, 'ago'].join (' ');
 	}
-	if (ago < 0)
+	if (ago < 0) {
 		text = 'in the future';
-	else if (ago < s_m)
+	} else if (ago < s_m) {
 		text = agoify (ago, 'second');
-	else if (ago < s_h)
+	} else if (ago < s_h) {
 		text = agoify (ago / s_m, 'minute');
-	else if (ago < s_d)
+	} else if (ago < s_d) {
 		text = agoify (ago / s_h, 'hour');
-	else if (ago < s_wk)
+	} else if (ago < s_wk) {
 		text = agoify (ago / s_d, 'day');
-	else if (ago < s_mo)
+	} else if (ago < s_mo) {
 		text = agoify (ago / s_wk, 'week');
-	else if (ago < s_y)
+	} else if (ago < s_y) {
 		text = agoify (ago / s_mo, 'month');
-	else
+	} else {
 		text = then.toString ();
+	}
 	return <span className="pre" title={then.toString ()}>{text}</span>;
 }
 
 export function makeBuildIcon (url: string) : JSX.Element {
-	return <a href={url} className="buildIcon fa fa-cogs" title="Build Logs"></a>
+	return <a href={url} className="buildIcon fa fa-cogs" title="Build Logs"></a>;
 }

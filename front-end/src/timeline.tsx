@@ -150,7 +150,6 @@ class Page extends React.Component<PageProps, PageState> {
 			this.setState ({ runSetIndices: this.state.runSetIndices.concat ([index]), zoom: false } as any);
 		var machine = runSet.get ('machine');
 		var config = runSet.get ('config');
-		var metric = metric;
 		var selection = this.selectedRunSetIds ();
 		xp_common.setLocationForDict ({
 			machine: machine,

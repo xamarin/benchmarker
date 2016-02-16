@@ -112,8 +112,10 @@ class Page extends React.Component<PageProps, PageState> {
 		}
 
 		var runSetIds = [].concat.apply ([],
-			this.state.selections.map (
-				s => s.runSets !== undefined ? s.runSets.map (rs => rs.get ('id')) : []));
+			this.state.selections.map ((s: xp_common.RunSetSelection) =>
+				s.runSets !== undefined
+					? s.runSets.map ((rs: Database.DBRunSet) => rs.get ('id'))
+					: []));
 
 		return <div className="ComparePage">
 			<header>
