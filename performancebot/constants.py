@@ -33,7 +33,7 @@ MONO_SOURCETARBALL_PULLREQUEST_URL = JENKINS_URL + '/job/build-source-tarball-mo
 
 MASTERWORKDIR = 'tmp/%(prop:buildername)s/%(prop:buildnumber)s'
 
-BUILDBOT_URL = 'https://performancebot.mono-project.com'
+BUILDBOT_URL = 'https://performancebot.mono-project.com/'
 
 BOSTON_NAS_URL = r'http://storage.bos.internalx.com'
 
