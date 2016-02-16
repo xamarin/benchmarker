@@ -28,20 +28,7 @@ if [ ! -f $PARAMSJSON ]; then
     exit 3
 fi
 
-nuget restore tools.sln
-xbuild /t:clean
-rm -rf AndroidAgent/{bin,obj}
-
-# build compare
-xbuild /p:Configuration=Release /target:compare
-
-# build xtcloghelper
-xbuild /t:xtcloghelper /p:Configuration=Debug
-
-OLDIFS=$IFS
-IFS=','
-for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,""; do
-	set $i
+submitjob () {
 	DEVICENAME=$1
 	DEVICEID=$2
 	XTCOPTS=$3
@@ -58,8 +45,8 @@ for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f3
 	echo "runSetId: $RUNSETID"
 
 	# build app + uitests
-	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /verbosity:diagnostic /target:SignAndroidPackage )
-	(cd AndroidAgent.UITests/ && $XBUILDANDROID /verbosity:diagnostic /p:Configuration=Release )
+	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
+	(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
 
 	XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
 	UITESTS=(./packages/Xamarin.UITest.*/tools/test-cloud.exe)
@@ -86,7 +73,28 @@ for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f3
 	rm -f "$XTCUPLOADLOG"
 	echo "submitted job has id $XTCJOBID"
 	env
-	mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+	echo mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+}
+
+nuget restore tools.sln
+xbuild /t:clean
+rm -rf AndroidAgent/{bin,obj}
+
+# build compare
+xbuild /p:Configuration=Release /target:compare
+
+# build xtcloghelper
+xbuild /t:xtcloghelper /p:Configuration=Debug
+
+OLDIFS=$IFS
+IFS=','
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,""; do
+	set $i
+	DEVICENAME=$1
+	DEVICEID=$2
+	XTCOPTS=$3
+
+	submitjob "$DEVICENAME" "$DEVICEID" "$XTCOPTS"
 done
 
 IFS=$OLDIFS
