@@ -7,11 +7,10 @@ from buildbot.status.builder import Results, SUCCESS, EXCEPTION, RETRY
 
 class StatusPush(StatusReceiverMultiService):
 
-    def __init__(self, url, username=None, channel=None, localhost_replace=False, *args, **kwargs):
+    def __init__(self, url, username=None, channel=None, *args, **kwargs):
         self.url = url
         self.username = username
         self.channel = channel
-        self.localhost_replace = localhost_replace
         self.master_status = None
         StatusReceiverMultiService.__init__(self, *args, **kwargs)
 
@@ -43,9 +42,6 @@ class StatusPush(StatusReceiverMultiService):
             #pylint: enable=E1101
         except AttributeError:
             return
-
-        if self.localhost_replace:
-            url = url.replace("http://localhost:8010", self.localhost_replace)
 
         message = "%s - %s - <%s>" % \
             (builderName, Results[result].upper(), url)
