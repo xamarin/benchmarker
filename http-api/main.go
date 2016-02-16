@@ -271,7 +271,7 @@ func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte)
 		return false, reqErr
 	}
 
-	reqErr = insertResults(runID, params.Results)
+	reqErr = insertResults(runID, params.Results, true)
 	if reqErr != nil {
 		return false, reqErr
 	}

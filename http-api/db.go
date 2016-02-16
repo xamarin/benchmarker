@@ -217,17 +217,43 @@ func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	return &rs, nil
 }
 
-func insertResults(runID int32, results Results) *requestError {
+func insertResults(runID int32, results Results, update bool) *requestError {
+	idByMetric := make(map[string]int32)
+	if update {
+		rows, err := database.Query("queryRunMetricsForRun", runID)
+		if err != nil {
+			return internalServerError("Could not query run metrics")
+		}
+		for rows.Next() {
+			var runMetricID int32
+			var metric string
+			err = rows.Scan(&runMetricID, &metric)
+			if err != nil {
+				return internalServerError("Could not scan run metric")
+			}
+			idByMetric[metric] = runMetricID
+		}
+	}
+
 	for m, v := range results {
 		var err error
+		runMetricID, exists := idByMetric[m]
 		if metricIsArray(m) {
 			var arr []float64
 			for _, x := range v.([]interface{}) {
 				arr = append(arr, x.(float64))
 			}
-			_, err = database.Exec("insertRunMetricArray", runID, m, arr)
+			if exists {
+				_, err = database.Exec("updateRunMetricArray", runMetricID, arr)
+			} else {
+				_, err = database.Exec("insertRunMetricArray", runID, m, arr)
+			}
 		} else {
-			_, err = database.Exec("insertRunMetricNumber", runID, m, v)
+			if exists {
+				_, err = database.Exec("updateRunMetricNumber", runMetricID, v)
+			} else {
+				_, err = database.Exec("insertRunMetricNumber", runID, m, v)
+			}
 		}
 		if err != nil {
 			fmt.Printf("run metric insert error: %s\n", err)
@@ -248,7 +274,7 @@ func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
 		}
 		runIDs = append(runIDs, runID)
 
-		reqErr := insertResults(runID, run.Results)
+		reqErr := insertResults(runID, run.Results, false)
 		if reqErr != nil {
 			return nil, reqErr
 		}
@@ -388,12 +414,27 @@ func initDatabase() error {
 		return err
 	}
 
+	_, err = database.Prepare("queryRunMetricsForRun", "select rm.id, rm.metric from runMetric rm where rm.run = $1")
+	if err != nil {
+		return err
+	}
+
 	_, err = database.Prepare("insertRunMetricNumber", "insert into runMetric (run, metric, result) values ($1, $2, $3)")
 	if err != nil {
 		return err
 	}
 
+	_, err = database.Prepare("updateRunMetricNumber", "update runMetric set result = $2 where id = $1")
+	if err != nil {
+		return err
+	}
+
 	_, err = database.Prepare("insertRunMetricArray", "insert into runMetric (run, metric, resultArray) values ($1, $2, $3)")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("updateRunMetricArray", "update runMetric set resultArray = $2 where id = $1")
 	if err != nil {
 		return err
 	}
