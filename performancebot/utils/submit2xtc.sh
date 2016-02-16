@@ -32,6 +32,12 @@ submitjob () {
 	DEVICENAME=$1
 	DEVICEID=$2
 	XTCOPTS=$3
+	RANDOMMOD=$4
+
+	# on certain device groups we want to reduce pressure on the xtc queue
+	if [ $(($RANDOM % $RANDOMMOD)) -ne 0 ]; then
+		return
+	fi
 
 	RUNSETID=$(mono --debug ./compare.exe \
 		--main-product mono $MONOCOMMITSHA \
@@ -88,13 +94,14 @@ xbuild /t:xtcloghelper /p:Configuration=Debug
 
 OLDIFS=$IFS
 IFS=','
-for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,""; do
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2"; do
 	set $i
 	DEVICENAME=$1
 	DEVICEID=$2
 	XTCOPTS=$3
+	RANDOMMOD=$4
 
-	submitjob "$DEVICENAME" "$DEVICEID" "$XTCOPTS"
+	submitjob "$DEVICENAME" "$DEVICEID" "$XTCOPTS" "$RANDOMMOD"
 done
 
 IFS=$OLDIFS
