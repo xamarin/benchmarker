@@ -42,7 +42,7 @@ def check_retry(base_url, buildername, buildernumber, build_url, gitcommit, logg
     buildernumber = int(buildernumber)
     log.msg("check-retry: start with " + str(buildernumber))
     for build_nr in range(buildernumber-1, 0, -1):
-        request_url = base_url + "/json/builders/" + buildername + "/builds/" + str(build_nr)
+        request_url = base_url + "json/builders/" + buildername + "/builds/" + str(build_nr)
         logging("trying... " + str(request_url))
         log.msg("check-retry: requesting page for" + str(request_url))
         response = yield getPage(request_url)

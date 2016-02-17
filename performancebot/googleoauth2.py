@@ -63,7 +63,7 @@ class GoogleOAuth2Handler(resource.Resource):
             return redirectTo(self.authz.root_uri, request)
 
     def verifyCode(self, code):
-        data = {'redirect_uri': self.authz.root_uri + '/_google_oauth2_handler',
+        data = {'redirect_uri': self.authz.root_uri + '_google_oauth2_handler',
                 'grant_type': 'authorization_code',
                 'code': code,
                 'client_id': self.authz.client_id,
@@ -205,7 +205,7 @@ class GoogleOAuth2AuthZ(object):
             self.sessions.remove(cookie)
 
     def getLoginURL(self):
-        oauth_params = {'redirect_uri': self.root_uri + '/_google_oauth2_handler',
+        oauth_params = {'redirect_uri': self.root_uri + '_google_oauth2_handler',
                         'client_id': self.client_id,
                         'response_type': 'code',
                         'scope': INFOSCOPE,
