@@ -1,0 +1,5 @@
+{
+  "Name": "concurrentdict",
+  "TestDirectory": "small",
+  "CommandLine": ["concurrentdict.exe"]
+}
