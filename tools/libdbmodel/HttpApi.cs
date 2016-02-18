@@ -42,7 +42,8 @@ namespace Benchmarker.Models
 			return String.Format ("https://performancebot.mono-project.com/api{0}{1}", path, queryString);
 		}
 
-		static async Task<string> Send (string method, string path, IDictionary<string, string> args, object contentObject) {
+		static async Task<string> Send (string method, string path, IDictionary<string, string> args, object contentObject)
+		{
 			HttpContent content = null;
 			if (contentObject != null) {
 				var body = JsonConvert.SerializeObject (contentObject);
@@ -65,15 +66,18 @@ namespace Benchmarker.Models
 			}
 		}
 
-		public static async Task<string> Get (string path, IDictionary<string, string> args) {
+		public static async Task<string> Get (string path, IDictionary<string, string> args)
+		{
 			return await Send ("GET", path, args, null);
 		}
 
-		public static async Task<string> Put (string path, IDictionary<string, string> args, object contentObject) {
+		public static async Task<string> Put (string path, IDictionary<string, string> args, object contentObject)
+		{
 			return await Send ("PUT", path, args, contentObject);
 		}
 
-		public static async Task<string> Post (string path, IDictionary<string, string> args, object contentObject) {
+		public static async Task<string> Post (string path, IDictionary<string, string> args, object contentObject)
+		{
 			return await Send ("POST", path, args, contentObject);
 		}
 	}
