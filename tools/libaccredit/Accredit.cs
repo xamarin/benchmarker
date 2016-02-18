@@ -30,9 +30,13 @@ namespace Benchmarker
 			}
 		}
 
-		private static void WaitForConfirmation (string key)
+		private static void WaitForConfirmation (string oauthLink, string key)
 		{
+			/* Log in github OAuth */
+			System.Diagnostics.Process.Start (oauthLink);
+
 			Console.Error.WriteLine ("Log in on browser for access, confirmation key {0}", key);
+			Console.Error.WriteLine ("If no browser opens, go to {0}", oauthLink);
 			ParseQuery<ParseObject> query = ParseObject.GetQuery ("CredentialsResponse").WhereEqualTo ("key", key);
 			while (true) {
 				var task = query.FirstOrDefaultAsync ();
@@ -92,11 +96,8 @@ namespace Benchmarker
 			/* Get github OAuth authentication link */
 			string oauthLink = GetResponse ("https://accredit.parseapp.com/requestCredentials", string.Format("service={0}&key={1}&secret={2}", serviceName, key, secret));
 
-			/* Log in github OAuth */
-			System.Diagnostics.Process.Start (oauthLink);
-
 			/* Wait for login confirmation */
-			WaitForConfirmation (key);
+			WaitForConfirmation (oauthLink, key);
 
 			/* Request the password */
 			var response = GetResponse ("https://accredit.parseapp.com/getCredentials", string.Format ("key={0}&secret={1}", key, secret));
