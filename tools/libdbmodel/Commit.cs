@@ -25,7 +25,7 @@ namespace Benchmarker.Models
 				if (MergeBaseHash != null)
 					dict ["MergeBaseHash"] = MergeBaseHash;
 				if (CommitDate.HasValue)
-					dict ["CommitDate"] = CommitDate.Value;
+					dict ["CommitDate"] = CommitDate.Value.ToString (RunSet.DATETIME_FORMAT);
 				return dict;
 			}
 		}

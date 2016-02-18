@@ -27,6 +27,7 @@ type Product struct {
 	Name          string
 	Commit        string
 	MergeBaseHash *string
+	CommitDate    *time.Time
 }
 
 type PullRequest struct {

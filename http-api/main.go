@@ -333,7 +333,7 @@ func newTransactionHandler(authToken string, handlers map[string]handlerFunc) fu
 			body, err := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			if err != nil {
-				reqErr = internalServerError("Could not read request body")
+				reqErr = internalServerError("Could not read request body: ")
 			} else {
 				transaction, err := database.Begin()
 				if err != nil {

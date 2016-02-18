@@ -12,6 +12,8 @@ namespace Benchmarker.Models
 {
 	public class RunSet
 	{
+		public static string DATETIME_FORMAT = "yyyy-MM-ddTHH:mm:sszzz";
+
 		public long? Id { get; set; }
 		List<Run> runs;
 		public List<Run> Runs { get { return runs; } }
@@ -115,8 +117,8 @@ namespace Benchmarker.Models
 				dict ["Config"] = Config.ApiObject;
 				dict ["TimedOutBenchmarks"] = new List<string> (TimedOutBenchmarks);
 				dict ["CrashedBenchmarks"] = new List<string> (CrashedBenchmarks);
-				dict ["StartedAt"] = StartDateTime;
-				dict ["FinishedAt"] = FinishDateTime;
+				dict ["StartedAt"] = StartDateTime.ToString (DATETIME_FORMAT);
+				dict ["FinishedAt"] = FinishDateTime.ToString (DATETIME_FORMAT);
 				dict ["BuildURL"] = BuildURL;
 				dict ["LogURLs"] = logURLs;
 				dict ["Runs"] = Runs.Select (r => r.ApiObject).ToList ();

@@ -22,6 +22,7 @@ func ensureProductExists(product Product) (string, *requestError) {
 	}
 
 	if err == pgx.ErrNoRows {
+		var sha string
 		fmt.Printf("Commit %s for product %s not found in DB.\n", product.Commit, product.Name)
 
 		owner, repo := githubRepoForProduct(product.Name)
@@ -30,16 +31,25 @@ func ensureProductExists(product Product) (string, *requestError) {
 		}
 
 		commit, _, err := githubClient.Git.GetCommit(owner, repo, product.Commit)
-		if err != nil {
-			return "", badRequestError("Could not get commit")
+		if err == nil {
+			sha = *commit.SHA
+			commitDate = *commit.Committer.Date
+		} else {
+			// try to fall back to provided commitDate
+			if product.CommitDate != nil {
+				sha = product.Commit
+				commitDate = *product.CommitDate
+			} else {
+				return "", badRequestError("Could not get date for provided commit " + product.Commit)
+			}
 		}
 
-		_, err = database.Exec("insertCommit", *commit.SHA, *commit.Committer.Date, product.Name, product.MergeBaseHash)
+		_, err = database.Exec("insertCommit", sha, commitDate, product.Name, product.MergeBaseHash)
 		if err != nil {
 			return "", internalServerError("Couldn't insert commit")
 		}
 
-		return *commit.SHA, nil
+		return sha, nil
 	}
 
 	return "", internalServerError("Database query error")
