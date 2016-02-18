@@ -16,14 +16,16 @@ namespace Benchmarker.Models
 		{
 		}
 
-		public IDictionary<string, string> ApiObject {
+		public IDictionary<string, object> ApiObject {
 			get {
-				var dict = new Dictionary<string, string> ();
+				var dict = new Dictionary<string, object> ();
 				dict ["Name"] = Product.Name;
 				dict ["Commit"] = Hash;
 				// FIXME: add MergeBaseHash to API
 				if (MergeBaseHash != null)
 					dict ["MergeBaseHash"] = MergeBaseHash;
+				if (CommitDate.HasValue)
+					dict ["CommitDate"] = CommitDate.Value;
 				return dict;
 			}
 		}
