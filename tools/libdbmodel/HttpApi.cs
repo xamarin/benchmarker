@@ -4,20 +4,42 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Benchmarker.Models
 {
 	public class HttpApi
 	{
+		public class TrustAllCertificatePolicy : System.Net.ICertificatePolicy
+		{
+			public TrustAllCertificatePolicy ()
+			{
+			}
+
+			public bool CheckValidationResult (ServicePoint sp, X509Certificate cert, WebRequest req, int problem)
+			{
+				return true;
+			}
+		}
+
+
+		static HttpApi ()
+		{
+			// remove when we have a valid SSL cert
+			System.Net.ServicePointManager.CertificatePolicy = new TrustAllCertificatePolicy ();
+		}
+
 		public static string AuthToken { get; set; }
 
-		static string ApiUrl (string path, IDictionary<string, string> args) {
+		static string ApiUrl (string path, IDictionary<string, string> args)
+		{
 			string queryString;
 			if (args == null)
 				queryString = "";
 			else
 				queryString = "?" + String.Join ("&", args.Select (kvp => String.Format ("{0}={1}", kvp.Key, Uri.EscapeUriString (kvp.Value))));
-			return String.Format ("http://localhost:8081/api{0}{1}", path, queryString);
+			return String.Format ("https://performancebot.mono-project.com/api{0}{1}", path, queryString);
 		}
 
 		static async Task<string> Send (string method, string path, IDictionary<string, string> args, object contentObject) {
