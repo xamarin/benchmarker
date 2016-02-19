@@ -101,6 +101,7 @@
   </ItemGroup>
   <Import Project="..\libgithub\libgithub.projitems" Label="Shared" Condition="Exists('..\libgithub\libgithub.projitems')" />
   <Import Project="..\liblogging\logging.projitems" Label="Shared" Condition="Exists('..\liblogging\logging.projitems')" />
+  <Import Project="..\libdbmodel\common.projitems" Label="Shared" Condition="Exists('..\libdbmodel\common.projitems')" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <ItemGroup>

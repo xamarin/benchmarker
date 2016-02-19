@@ -78,6 +78,7 @@ submitjob () {
 	XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
 	rm -f "$XTCUPLOADLOG"
 	echo "submitted job has id $XTCJOBID"
+	echo "TODO: add xtc job id as log url to existing runset"
 }
 
 nuget restore tools.sln

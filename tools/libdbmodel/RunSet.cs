@@ -100,7 +100,7 @@ namespace Benchmarker.Models
 				// The `StartsWith` case here is a weird exception we need for TestCloud devices,
 				// which have a common prefix, and we treat them as the same machine.
 				if ((machine.Name != machineName && !machineName.StartsWith (machine.Name)) || machine.Architecture != result ["Machine"] ["Architecture"].ToObject<string> ())
-					throw new Exception ("Machine does not match the one in the database.");
+					throw new Exception ("Machine does not match the one in the database. \"" + machineName + "\" vs. \"" + machine.Name + "\"");
 
 				if (!config.EqualsApiObject (result ["Config"]))
 					throw new Exception ("Config does not match the one in the database.");

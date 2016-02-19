@@ -149,6 +149,9 @@ func githubRepoForProduct(name string) (string, string) {
 	if name == "benchmarker" {
 		return "xamarin", "benchmarker"
 	}
+	if name == "monodroid" {
+		return "xamarin", "monodroid"
+	}
 	return "", ""
 }
 

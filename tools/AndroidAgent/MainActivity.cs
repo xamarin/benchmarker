@@ -9,6 +9,7 @@ using Android.Widget;
 using Android.OS;
 
 using Benchmarker;
+using models = Benchmarker.Models;
 using System.Reflection;
 using System.Diagnostics;
 
@@ -70,7 +71,7 @@ namespace AndroidAgent
 			button.Text = text;
 		}
 
-		void Iteration (string benchmark, int iteration, bool isDryRun)
+		private models.Run Iteration (string benchmark, int iteration, bool isDryRun)
 		{
 			var dryRun = isDryRun ? " dryrun" : "";
 			Logging.GetLogging ().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": start iteration {2}", dryRun, benchmark, iteration);
@@ -159,9 +160,17 @@ namespace AndroidAgent
 			}
 			sw.Stop ();
 			Logging.GetLogging ().InfoFormat ("Benchmarker | Benchmark{0} \"{1}\": finished iteration {2}, took {3}ms", dryRun, benchmark, iteration, sw.ElapsedMilliseconds);
+			var run = new models.Run { Benchmark = new models.Benchmark { Name = benchmark } };
+			run.RunMetrics.Add (
+				new models.RunMetric {
+					Metric = models.RunMetric.MetricType.Time,
+					Value = TimeSpan.FromMilliseconds (sw.ElapsedMilliseconds)
+				}
+			);
+			return run;
 		}
 
-		private static void PrintCommit ()
+		private static models.Commit DetermineCommit ()
 		{
 			// e.g.: "4.3.0 (master/[a-f0-9A-F]{7..40})"
 			var regex = new Regex ("^[0-9].*\\((.*)/([0-9a-f]+)\\)");
@@ -195,24 +204,51 @@ namespace AndroidAgent
 			}
 
 			Logging.GetLogging ().InfoFormat ("Benchmarker | commit \"{0}\" on branch \"{1}\"", hash, branch);
+			return new models.Commit {
+				Hash = hash,
+				Branch = branch,
+				Product = new models.Product {
+					Name = "mono",
+					GitHubUser = "mono",
+					GitHubRepo = "mono"
+				}
+			};
 		}
 
 
 		AndroidCPUManagment CpuManager;
 
-		void RunBenchmark (string benchmarkName, string hostname, string architecture)
+		void RunBenchmark (long runSetId, string benchmarkName, string hostname, string architecture)
 		{
 			const int DRY_RUNS = 3;
 			const int ITERATIONS = 10;
 
-			PrintCommit ();
+
 			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
 			Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"", "default");
+
+			models.Commit mainCommit = DetermineCommit ();
+			models.Machine machine = new models.Machine { Name = hostname, Architecture = architecture };
+			models.Config config = new models.Config { Name = "default", Mono = String.Empty,		
+				MonoOptions = new string[0],		
+				MonoEnvironmentVariables = new Dictionary<string, string> (),		
+				Count = ITERATIONS
+			};
+			models.RunSet runSet = AsyncContext.Run (() => models.RunSet.FromId (machine, runSetId, config, mainCommit, null, null, null /* TODO: logURL? */));
+
+			if (runSet == null) {
+				Logging.GetLogging ().Warn ("RunSetID " + runSetId + " not found");
+				return;
+			}
 			new Task (() => {
 				try {
 					for (var i = 0; i < (ITERATIONS + DRY_RUNS); i++) {
-						Iteration (benchmarkName, i, i < DRY_RUNS);
+						var run = Iteration (benchmarkName, i, i < DRY_RUNS);
+						if (i >= DRY_RUNS) {
+							runSet.Runs.Add (run);
+						}
 					}
+					AsyncContext.Run (() => runSet.Upload ());
 					RunOnUiThread (() => SetStartButtonText ("start"));
 				} catch (Exception e) {
 					RunOnUiThread (() => SetStartButtonText ("failed"));
@@ -225,9 +261,10 @@ namespace AndroidAgent
 			}).Start ();
 		}
 
-		private static void InitCommons (string githubAPIKey)
+		private static void InitCommons (string githubAPIKey, string httpAPITokens)
 		{
 			GitHubInterface.githubCredentials = githubAPIKey;
+			models.HttpApi.AuthToken = httpAPITokens;
 		}
 
 		protected override void OnCreate (Bundle savedInstanceState)
@@ -238,11 +275,13 @@ namespace AndroidAgent
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
 			FindViewById<Button> (Resource.Id.myButton).Click += delegate {
-				var benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
-				var githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
-				InitCommons (githubAPIKey);
+				string benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
+				string githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
+				string httpAPITokens = FindViewById<TextView> (Resource.Id.httpAPITokens).Text;
+				long runSetId = Int64.Parse (FindViewById<TextView> (Resource.Id.runSetId).Text);
+				InitCommons (githubAPIKey, httpAPITokens);
 				SetStartButtonText ("running");
-				RunBenchmark (benchmarkName, hostname, architecture);
+				RunBenchmark (runSetId, benchmarkName, hostname, architecture);
 			};
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();
