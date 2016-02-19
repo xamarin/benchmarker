@@ -78,8 +78,6 @@ submitjob () {
 	XTCJOBID=$(grep -E -o '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' "$XTCUPLOADLOG")
 	rm -f "$XTCUPLOADLOG"
 	echo "submitted job has id $XTCJOBID"
-	env
-	echo mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
 }
 
 nuget restore tools.sln
@@ -88,9 +86,6 @@ rm -rf AndroidAgent/{bin,obj}
 
 # build compare
 xbuild /p:Configuration=Release /target:compare
-
-# build xtcloghelper
-xbuild /t:xtcloghelper /p:Configuration=Debug
 
 OLDIFS=$IFS
 IFS=','
