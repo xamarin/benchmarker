@@ -119,5 +119,15 @@ namespace Benchmarker.Models
 		{
 			return await Send ("POST", path, args, contentObject);
 		}
+
+		public static async Task<string> DeleteRunset (long runSetId)
+		{
+			return await Delete (String.Format ("/runset/{0}", runSetId), null, null);
+		}
+
+		private static async Task<string> Delete (string path, IDictionary<string, string> args, ApiObject contentObject)
+		{
+			return await Send ("DELETE", path, args, contentObject);
+		}
 	}
 }
