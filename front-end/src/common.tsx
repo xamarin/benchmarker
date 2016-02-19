@@ -387,9 +387,60 @@ function descriptiveMetricName (metric: string) : string {
 		return "Instruction count";
 	case 'memory-integral':
 		return "Memory usage (MB * Giga Instructions)";
+    case 'acceptable-time-slices':
+        return "Percent acceptable time slices";
 	default:
 		return "Unknown metric";
 	}
+}
+
+type TimeSliceCount = {
+    total: number;
+    failed: number;
+};
+
+// We define a time slice as failed if its mutator utilization is below
+// a certain threshold.  For now we've hard-coded a slice length of 100ms
+// and an acceptable fraction of 50%.
+function computeTimeSlices (starts: Array<number>, times: Array<number>) : TimeSliceCount {
+    const sliceLength = 100;
+    const acceptableFraction = 0.5;
+
+    if (starts.length !== times.length) {
+        console.log ("Error: starts and times have different lengths");
+        return { total: 0, failed: 0 };
+    }
+
+    let slice = 0;
+    let failed = 0;
+
+    let i = 0;
+    while (i < starts.length) {
+        const sliceStart = slice * sliceLength;
+        const sliceEnd = sliceStart + sliceLength;
+
+        slice++;
+
+        // FIXME: optimize
+        if (sliceEnd <= starts [i]) {
+            continue;
+        }
+
+        let pauseTime = 0;
+        while (i < starts.length && starts [i] < sliceEnd) {
+            const pauseEnd = starts [i] + times [i];
+            pauseTime += Math.min (sliceEnd, pauseEnd) - Math.max (sliceStart, starts [i]);
+            i++;
+        }
+
+        const mutatorTime = sliceLength - pauseTime;
+
+        if (mutatorTime < sliceLength * acceptableFraction) {
+            failed++;
+        }
+    }
+
+    return { total: slice, failed: failed };
 }
 
 type RunSetDescriptionProps = {
@@ -398,6 +449,7 @@ type RunSetDescriptionProps = {
 
 type RunSetDescriptionState = {
 	results: Array<Object>;
+    resultArrays: Array<Object>;
 	secondaryCommits: Array<Object>;
 	commitInfo: Object;
 };
@@ -405,7 +457,7 @@ type RunSetDescriptionState = {
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = { results: undefined, secondaryCommits: undefined, commitInfo: undefined };
+		this.state = { results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined };
 		this.fetchResults (props.runSet);
 	}
 
@@ -418,6 +470,14 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			}, (error: Object) => {
 				alert ("error loading results: " + error.toString ());
 			});
+        Database.fetch ('resultarrays?rs_id=eq.' + runSet.get ('id'),
+            (objs: Array<Object>) => {
+                if (runSet !== this.props.runSet)
+                    return;
+                this.setState ({ resultArrays: objs } as any);
+            }, (error: Object) => {
+				alert ("error loading result arrays: " + error.toString ());
+            });
 		var secondaryCommits = runSet.get ('secondaryCommits');
 		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
 			Database.fetch ('commit?hash=in.' + secondaryCommits.join (','),
@@ -436,7 +496,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	}
 
 	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
-		this.setState ({ results: undefined, secondaryCommits: undefined, commitInfo: undefined });
+		this.setState ({ results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
@@ -495,18 +555,57 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		if (this.state.results === undefined) {
 			table = <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
-			var resultsByBenchmark = {};
-			var metricsDict = {};
-			for (var i = 0; i < this.state.results.length; ++i) {
+			var resultsByBenchmark: {[benchmark: string]: { metrics: {[metric: string]: Array<number>}, disabled: boolean }} = {};
+			var metricsDict: {[metric: string]: Object} = {};
+			for (let i = 0; i < this.state.results.length; ++i) {
 				let result = this.state.results [i];
-				var benchmark = result ['benchmark'];
-				var metric = result ['metric'];
-				var entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] };
+				const benchmark = result ['benchmark'];
+				const metric = result ['metric'];
+				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] as boolean };
 				entry.metrics [metric] = result ['results'];
 				resultsByBenchmark [benchmark] = entry;
 
 				metricsDict [metric] = {};
 			}
+            if (this.state.resultArrays !== undefined) {
+                const runs: {[id: string]: { benchmark: string, starts: Array<number>, times: Array<number> }} = {};
+                for (let i = 0; i < this.state.resultArrays.length; ++i) {
+                    const row = this.state.resultArrays [i];
+                    const id = row ['r_id'].toString ();
+                    const entry = runs [id] || { benchmark: row ['benchmark'], starts: undefined, times: undefined };
+                    const metric = row ['metric'];
+                    if (metric === 'pause-starts') {
+                        entry.starts = row ['resultarray'];
+                    } else if (metric === 'pause-times') {
+                        entry.times = row ['resultarray'];
+                    } else {
+                        continue;
+                    }
+                    runs [id] = entry;
+                }
+                const timeSlicesByBenchmark: {[benchmark: string]: TimeSliceCount} = {};
+                Object.keys (runs).forEach ((id: string) => {
+                    const entry = runs [id];
+                    if (entry.starts === undefined || entry.times === undefined) {
+                        return;
+                    }
+                    const timeSlices = timeSlicesByBenchmark [entry.benchmark] || { total: 0, failed: 0 };
+                    const {total, failed} = computeTimeSlices (entry.starts, entry.times);
+                    timeSlices.total += total;
+                    timeSlices.failed += failed;
+                    timeSlicesByBenchmark [entry.benchmark] = timeSlices;
+                });
+                Object.keys (timeSlicesByBenchmark).forEach ((benchmark: string) => {
+                    const {total, failed} = timeSlicesByBenchmark [benchmark];
+                    const percentage = parseFloat (((total - failed) / total * 100).toPrecision (3));
+                    // FIXME: set disabled to proper value (it's not in the DB view yet)
+    				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: false };
+                    entry.metrics ['acceptable-time-slices'] = [percentage];
+                    resultsByBenchmark [benchmark] = entry;
+                    metricsDict ['acceptable-time-slices'] = {};
+                });
+            }
+
 			var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
 			var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
 			var reportedCrashed: {[name: string]: boolean} = {};

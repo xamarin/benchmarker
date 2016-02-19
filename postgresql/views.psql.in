@@ -64,7 +64,8 @@ group by r.runset, r.benchmark, rm.metric, b.disabled;
 create view "1".resultarrays as
 select rs.id as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
 		r.benchmark, b.disabled, rm.metric, rm.resultarray,
-       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product
+       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product,
+       r.id as r_id
 from run r, runmetric rm, benchmark b, runset rs, commit c
 where rs.commit = c.hash and r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
 
