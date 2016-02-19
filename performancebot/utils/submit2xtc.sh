@@ -79,7 +79,7 @@ submitjob () {
 	rm -f "$XTCUPLOADLOG"
 	echo "submitted job has id $XTCJOBID"
 	env
-	echo mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
+	mono --debug xtcloghelper/bin/Debug/xtcloghelper.exe --push "$XTCJOBID" "$RUNSETID"
 }
 
 nuget restore tools.sln
