@@ -170,6 +170,9 @@ func parseIDFromPath(path string, numComponents int, index int) (int32, *request
 	if err != nil {
 		return -1, badRequestError("Could not parse run set id")
 	}
+	if id64 < 0 {
+		return -1, badRequestError("Run set id must be a positive number")
+	}
 	return int32(id64), nil
 }
 
