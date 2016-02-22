@@ -12,20 +12,27 @@ export function find<T> (arr: Array<T>, f: (v: T) => boolean) : T {
     return arr [findIndex (arr, f)];
 }
 
+/* Stably uniquify string array. */
 export function uniqStringArray (arr: Array<string>) : Array<string> {
-    var hash = {};
-    for (var i = 0; i < arr.length; ++i) {
-		hash [arr [i]] = true;
-    }
-	return Object.keys (hash);
+	var result = [];
+	for (var i = 0; i < arr.length; ++i)
+		if (result.indexOf (arr [i]) === -1)
+			result.push (arr [i]);
+	return result;
 }
 
+/* Stably uniquify array by string key. */
 export function uniqArrayByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<T> {
-    var hash = {};
-    for (var i = 0; i < arr.length; ++i) {
-		hash [keyFunc (arr [i])] = arr [i];
-    }
-	return Object.keys (hash).map ((k: string) => hash [k]);
+	var result = [];
+	var keys = [];
+	for (var i = 0; i < arr.length; ++i) {
+		var key = keyFunc (arr [i]);
+		if (keys.indexOf (key) === -1) {
+			keys.push (key);
+			result.push (arr [i]);
+		}
+	}
+	return result;
 }
 
 export function histogramByString<T> (arr: Array<T>, keyFunc: (v: T) => string) : Array<[T, number]> {

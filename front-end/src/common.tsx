@@ -1,10 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/github-api/github-api.d.ts"/>
 
-/* @flow */
-
-/* global process */
-
 "use strict";
 
 declare var process: any;
