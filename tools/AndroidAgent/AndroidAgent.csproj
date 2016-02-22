@@ -101,8 +101,8 @@
   </ItemGroup>
   <Import Project="..\libgithub\libgithub.projitems" Label="Shared" Condition="Exists('..\libgithub\libgithub.projitems')" />
   <Import Project="..\liblogging\logging.projitems" Label="Shared" Condition="Exists('..\liblogging\logging.projitems')" />
-  <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <ItemGroup>
     <ProjectReference Include="..\Benchmarks\Benchmarks.csproj">
       <Project>{7940B561-C489-4D75-9582-99B09E6BEEC8}</Project>
