@@ -196,6 +196,31 @@ func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byt
 	return false, nil
 }
 
+func specificRunSetDeleteHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
+	numRuns, numMetrics, err := deleteRunSet(runSetID)
+	if err != nil {
+		return false, err
+	}
+
+	status := make(map[string]int64)
+	status["DeletedRunMetrics"] = numMetrics
+	status["DeletedRuns"] = numRuns
+	respBytes, err2 := json.Marshal(&status)
+	if err2 != nil {
+		return false, internalServerError("Could not product JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write(respBytes)
+
+	return true, nil
+}
+
 func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
@@ -396,7 +421,7 @@ func main() {
 	}
 
 	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"PUT": runSetPutHandler}))
-	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler}))
+	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler, "DELETE": specificRunSetDeleteHandler}))
 	http.HandleFunc("/api/run/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunPostHandler}))
 	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
 	http.HandleFunc("/", notFoundHandler)

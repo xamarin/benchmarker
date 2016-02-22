@@ -301,6 +301,30 @@ func updateRunSet(runSetID int32, rs *RunSet) *requestError {
 	return nil
 }
 
+func deleteRunSet(runSetID int32) (int64, int64, *requestError) {
+	res, err := database.Exec("deleteRunMetricByRunSetId", runSetID)
+	if err != nil {
+		fmt.Printf("delete runmetric by runsetid: %s\n", err)
+		return 0, 0, internalServerError("Could not delete runset")
+	}
+	numMetrics := res.RowsAffected()
+
+	res, err = database.Exec("deleteRunByRunSetId", runSetID)
+	if err != nil {
+		fmt.Printf("delete run by runsetid: %s\n", err)
+		return 0, 0, internalServerError("Could not delete runset")
+	}
+	numRuns := res.RowsAffected()
+
+	_, err = database.Exec("deleteRunSet", runSetID)
+	if err != nil {
+		fmt.Printf("delete runset: %s\n", err)
+		return 0, 0, internalServerError("Could not delete runset")
+	}
+
+	return numMetrics, numRuns, nil;
+}
+
 func fetchRunSetSummaries(machine string, config string) ([]RunSetSummary, *requestError) {
 	rows, err := database.Query("queryRunSetSummaries", machine, config)
 	if err != nil {
@@ -414,7 +438,17 @@ func initDatabase() error {
 		return err
 	}
 
+	_, err = database.Prepare("deleteRunSet", "delete from RunSet where id = $1")
+	if err != nil {
+		return err
+	}
+
 	_, err = database.Prepare("insertRun", "insert into run (benchmark, runSet) values ($1, $2) returning id")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("deleteRunByRunSetId", "delete from Run where runSet = $1")
 	if err != nil {
 		return err
 	}
@@ -440,6 +474,11 @@ func initDatabase() error {
 	}
 
 	_, err = database.Prepare("insertRunMetricArray", "insert into runMetric (run, metric, resultArray) values ($1, $2, $3)")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("deleteRunMetricByRunSetId", "delete from RunMetric where run in (select id from Run where runSet = $1)")
 	if err != nil {
 		return err
 	}
