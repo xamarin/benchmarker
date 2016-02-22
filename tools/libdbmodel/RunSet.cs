@@ -91,7 +91,7 @@ namespace Benchmarker.Models
 							throw new Exception ("Secondary commits don't match the database.");
 					}
 				}
-				runSet.SecondaryCommits = secondaryCommitsFromDatabase;
+				runSet.SecondaryCommits = secondaryCommits;
 
 				if (buildURL != null && buildURL != runSet.BuildURL)
 					throw new Exception ("Build URL does not match the one in the database.");
