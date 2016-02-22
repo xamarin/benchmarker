@@ -51,58 +51,58 @@ namespace Benchmarker.Models
 			CrashedBenchmarks = new List<string> ();
 		}
 
-		public static async Task<RunSet> FromId (Machine machine, long id, Config config, Commit mainCommit, List<Commit> secondaryCommits, string buildURL, string logURL)
+		public static async Task<RunSet> FromId (Machine local_machine, long local_runsetid, Config local_config, Commit local_mainCommit, List<Commit> local_secondaryCommits, string local_buildURL, string local_logURL)
 		{
 			using (var client = new HttpClient ()) {
-				JObject result = await HttpApi.GetRunset (id);
-				if (result == null) {
+				JObject db_result = await HttpApi.GetRunset (local_runsetid);
+				if (db_result == null) {
 					return null;
 				}
 
 				var runSet = new RunSet {
-					Id = id,
-					StartDateTime = result ["StartedAt"].ToObject<DateTime> (),
-					FinishDateTime = result ["FinishedAt"].ToObject<DateTime> (),
-					BuildURL = result ["BuildURL"].ToObject<string> (),
-					Machine = machine,
-					LogURL = logURL,
-					Config = config,
-					Commit = mainCommit,
-					TimedOutBenchmarks = result ["TimedOutBenchmarks"].ToObject<List<string>> (),
-					CrashedBenchmarks = result ["CrashedBenchmarks"].ToObject<List<string>> ()
+					Id = local_runsetid,
+					StartDateTime = db_result ["StartedAt"].ToObject<DateTime> (),
+					FinishDateTime = db_result ["FinishedAt"].ToObject<DateTime> (),
+					BuildURL = db_result ["BuildURL"].ToObject<string> (),
+					Machine = local_machine,
+					LogURL = local_logURL,
+					Config = local_config,
+					Commit = local_mainCommit,
+					TimedOutBenchmarks = db_result ["TimedOutBenchmarks"].ToObject<List<string>> (),
+					CrashedBenchmarks = db_result ["CrashedBenchmarks"].ToObject<List<string>> ()
 				};
 
-				var mainProductCommit = result ["MainProduct"] ["Commit"].ToObject<string> ();
-				if (mainCommit.Hash != mainProductCommit)
-					throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", mainCommit.Hash, mainProductCommit));
+				var db_mainProductCommit = db_result ["MainProduct"] ["Commit"].ToObject<string> ();
+				if (local_mainCommit.Hash != db_mainProductCommit)
+					throw new Exception (String.Format ("Commit ({0}) does not match the one in the database ({1}).", local_mainCommit.Hash, db_mainProductCommit));
 
-				var secondaryCommitsFromDatabase = new List<Commit> ();
-				foreach (var sc in result ["SecondaryProducts"]) {
-					secondaryCommitsFromDatabase.Add (new Commit {
+				var db_secondaryCommits = new List<Commit> ();
+				foreach (var sc in db_result ["SecondaryProducts"]) {
+					db_secondaryCommits.Add (new Commit {
 						Hash = sc ["Commit"].ToObject<string> (),
 						Product = new Product { Name = sc ["Name"].ToObject<string> () }
 					});
 				}
-				if (secondaryCommits != null) {
-					if (secondaryCommits.Count != secondaryCommitsFromDatabase.Count)
+				if (local_secondaryCommits != null) {
+					if (local_secondaryCommits.Count != db_secondaryCommits.Count)
 						throw new Exception ("Secondary commits don't match the database.");
-					foreach (var sc in secondaryCommitsFromDatabase) {
-						if (!secondaryCommits.Any (c => c.Hash == sc.Hash && c.Product.Name == sc.Product.Name))
+					foreach (var sc in db_secondaryCommits) {
+						if (!local_secondaryCommits.Any (c => c.Hash == sc.Hash && c.Product.Name == sc.Product.Name))
 							throw new Exception ("Secondary commits don't match the database.");
 					}
 				}
-				runSet.SecondaryCommits = secondaryCommits;
+				runSet.SecondaryCommits = local_secondaryCommits;
 
-				if (buildURL != null && buildURL != runSet.BuildURL)
+				if (local_buildURL != null && local_buildURL != runSet.BuildURL)
 					throw new Exception ("Build URL does not match the one in the database.");
 				
-				var machineName = result ["Machine"] ["Name"].ToObject<string> ();
+				var db_machineName = db_result ["Machine"] ["Name"].ToObject<string> ();
 				// The `StartsWith` case here is a weird exception we need for TestCloud devices,
 				// which have a common prefix, and we treat them as the same machine.
-				if ((machine.Name != machineName && !machineName.StartsWith (machine.Name)) || machine.Architecture != result ["Machine"] ["Architecture"].ToObject<string> ())
-					throw new Exception ("Machine does not match the one in the database. \"" + machineName + "\" vs. \"" + machine.Name + "\"");
+				if ((local_machine.Name != db_machineName && !db_machineName.StartsWith (local_machine.Name)) || local_machine.Architecture != db_result ["Machine"] ["Architecture"].ToObject<string> ())
+					throw new Exception ("Machine does not match the one in the database. \"" + db_machineName + "\" vs. \"" + local_machine.Name + "\"");
 
-				if (!config.EqualsApiObject (result ["Config"]))
+				if (!local_config.EqualsApiObject (db_result ["Config"]))
 					throw new Exception ("Config does not match the one in the database.");
 
 				return runSet;
