@@ -322,7 +322,7 @@ func deleteRunSet(runSetID int32) (int64, int64, *requestError) {
 		return 0, 0, internalServerError("Could not delete runset")
 	}
 
-	return numMetrics, numRuns, nil;
+	return numMetrics, numRuns, nil
 }
 
 func fetchRunSetSummaries(machine string, config string) ([]RunSetSummary, *requestError) {

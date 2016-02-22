@@ -92,7 +92,7 @@ func productSetsEqual(a []Product, b []Product) bool {
 
 func (product *Product) isSameAs(other *Product) bool {
 	if product.Name != other.Name || product.Commit != other.Commit {
-		return false;
+		return false
 	}
 	// ignore mergebase and datetime.
 	return true
