@@ -61,7 +61,7 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(FileDownload(MONO_SGEN_GREP_BINPROT_FILENAME, 'sgen-grep-binprot', workdir='benchmarker'))
         self.addStep(ShellCommand(name='chmod', command=['chmod', 'a+x', 'sgen-grep-binprot'], workdir='benchmarker'))
 
-    def benchmarker_on_master(self):
+    def benchmarker_on_master(self, benchmarker_branch=BENCHMARKER_BRANCH):
         step = MasterShellCommand(
             name="build_benchmarker",
             command=[
@@ -70,7 +70,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     'pwd && ' +
                     'mkdir -p %s && ' % MASTERWORKDIR +
                     'cd %s && ' % MASTERWORKDIR +
-                    'git clone --depth 1 -b ' + BENCHMARKER_BRANCH + ' https://github.com/xamarin/benchmarker && ' +
+                    'git clone --depth 1 -b ' + benchmarker_branch + ' https://github.com/xamarin/benchmarker && ' +
                     'cd benchmarker/tools && (/usr/bin/cli --version || true) && ' +
                     'bash ../performancebot/utils/nugethack.sh && ' +
                     'xbuild /t:compare && ' +
@@ -168,11 +168,11 @@ class DebianMonoBuildFactory(BuildFactory):
     def upload_credentials(self):
         self.addStep(FileDownload('benchmarkerCredentials', 'benchmarkerCredentials', workdir='benchmarker'))
 
-    def clone_benchmarker(self):
+    def clone_benchmarker(self, benchmarker_branch=BENCHMARKER_BRANCH):
         step = git.Git(
             repourl='https://github.com/xamarin/benchmarker/',
             workdir='benchmarker',
-            branch=BENCHMARKER_BRANCH,
+            branch=benchmarker_branch,
             mode='full',
             method='fresh',
             codebase='benchmarker',
