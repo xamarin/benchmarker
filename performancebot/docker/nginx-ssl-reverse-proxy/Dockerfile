@@ -1,13 +1,9 @@
-from ubuntu:precise
+FROM alpine:3.3
+RUN apk add --update nginx && rm -rf /var/cache/apk/*
+EXPOSE 443
 
-run echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
-run apt-get update
-run apt-get install -y nginx
-run rm /etc/nginx/sites-enabled/default
-add site.conf /etc/nginx/sites-enabled/
-add server.crt /etc/nginx/certificates/
-add server.key /etc/nginx/certificates/
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY server.crt /etc/nginx/certificates/server.crt
+COPY server.key /etc/nginx/certificates/server.key
 
-expose 443
-cmd nginx
+CMD ["nginx", "-g", "daemon off;"]

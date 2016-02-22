@@ -1,0 +1,51 @@
+postgrest:
+  image: ubergesundheit/docker-postgrest
+  environment:
+    DBHOST: $DBHOST
+    DBPORT: $DBPORT
+    DBNAME: $DBNAME
+    DBUSER: $DBUSER
+    DBPASS: $DBPASS
+    ANONUSER: $DBUSER
+
+reloadcache:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/reloadcache:latest
+  ports:
+    - 81:8081
+  links:
+    - postgrest
+  environment:
+    RELOADCACHE_SERVER: http://postgrest:3000
+
+http-api:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/http-api:latest
+
+pbot-master:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/pbot-master:latest
+  ports:
+    - 9989:9989
+    - 9999:9999
+  volumes:
+    - /ebs:/ebs
+
+pbot-slave-1:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/pbot-slave:latest
+  hostname: ec2-slave1
+  entrypoint: /usr/local/bin/run_ec2slave.sh pbot-master $EC2_SLAVE1 ec2-slave1
+  links:
+    - pbot-master
+
+pbot-slave-2:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/pbot-slave:latest
+  hostname: ec2-slave1
+  entrypoint: /usr/local/bin/run_ec2slave.sh pbot-master $EC2_SLAVE2 ec2-slave2
+  links:
+    - pbot-master
+
+nginx:
+  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/nginx:latest
+  ports:
+    - 443:443
+  links:
+    - http-api
+    - pbot-master

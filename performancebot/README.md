@@ -8,7 +8,23 @@ See `../.travis.yml` on which packages to `pip install`.
 
 # Deployment
 
+On your machine:
+
     env EC2PBOTMASTERIP=performancebot.mono-project.com make ec2-deploy
+
+# Stopping
+
+On your machine:
+
+    env EC2PBOTMASTERIP=performancebot.mono-project.com make ec2-stop
+
+To kill the Docker instance:
+
+    env EC2PBOTMASTERIP=performancebot.mono-project.com make ec2-kill
+
+# Look at log file
+
+    env EC2PBOTMASTERIP=performancebot.mono-project.com make ec2-follow-log
 
 # Running a slave
 

@@ -12,7 +12,9 @@ import (
 )
 
 type runsetPostResponse struct {
-	RunSetID int32
+	RunSetID      int32
+	RunIDs        []int32
+	PullRequestID *int32 `json:",omitempty"`
 }
 
 type requestError struct {
@@ -41,20 +43,28 @@ func internalServerError(explanation string) *requestError {
 	return &requestError{Explanation: explanation, httpStatus: http.StatusInternalServerError}
 }
 
-func ensureBenchmarksAndMetricsExist(rs *RunSet) *requestError {
+func (r *Run) ensureBenchmarksAndMetricsExist(benchmarks map[string]bool) *requestError {
+	if benchmarks != nil && !benchmarks[r.Benchmark] {
+		return badRequestError("Benchmark does not exist: " + r.Benchmark)
+	}
+	for m, v := range r.Results {
+		if !metricIsAllowed(m, v) {
+			return badRequestError("Metric not supported or results of wrong type: " + m)
+		}
+	}
+	return nil
+}
+
+func (rs *RunSet) ensureBenchmarksAndMetricsExist() *requestError {
 	benchmarks, reqErr := fetchBenchmarks()
 	if reqErr != nil {
 		return reqErr
 	}
 
 	for _, run := range rs.Runs {
-		if !benchmarks[run.Benchmark] {
-			return badRequestError("Benchmark does not exist: " + run.Benchmark)
-		}
-		for m, v := range run.Results {
-			if !metricIsAllowed(m, v) {
-				return badRequestError("Metric not supported or results of wrong type: " + m)
-			}
+		reqErr = run.ensureBenchmarksAndMetricsExist(benchmarks)
+		if reqErr != nil {
+			return reqErr
 		}
 	}
 
@@ -72,7 +82,7 @@ func ensureBenchmarksAndMetricsExist(rs *RunSet) *requestError {
 	return nil
 }
 
-func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func runSetPutHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
 		fmt.Printf("Unmarshal error: %s\n", err.Error())
@@ -98,7 +108,7 @@ func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []b
 		secondaryCommits = append(secondaryCommits, commit)
 	}
 
-	reqErr = ensureBenchmarksAndMetricsExist(&params)
+	reqErr = params.ensureBenchmarksAndMetricsExist()
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -108,23 +118,37 @@ func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []b
 		return false, reqErr
 	}
 
+	var pullRequestID *int32
+	if params.PullRequest != nil {
+		var prID int32
+		pullRequestID = &prID
+		err := database.QueryRow("insertPullRequest",
+			params.PullRequest.BaselineRunSetID,
+			params.PullRequest.URL).Scan(pullRequestID)
+		if err != nil {
+			fmt.Printf("pull request insert error: %s\n", err)
+			return false, internalServerError("Could not insert pull request")
+		}
+	}
+
 	var runSetID int32
 	err := database.QueryRow("insertRunSet",
 		params.StartedAt, params.FinishedAt,
 		params.BuildURL, params.LogURLs,
 		mainCommit, secondaryCommits, params.Machine.Name, params.Config.Name,
-		params.TimedOutBenchmarks, params.CrashedBenchmarks).Scan(&runSetID)
+		params.TimedOutBenchmarks, params.CrashedBenchmarks,
+		pullRequestID).Scan(&runSetID)
 	if err != nil {
 		fmt.Printf("run set insert error: %s\n", err)
 		return false, internalServerError("Could not insert run set")
 	}
 
-	reqErr = insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	resp := runsetPostResponse{RunSetID: runSetID}
+	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs, PullRequestID: pullRequestID}
 	respBytes, err := json.Marshal(&resp)
 	if err != nil {
 		return false, internalServerError("Could not produce JSON for response")
@@ -137,16 +161,74 @@ func runsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []b
 	return true, nil
 }
 
-func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
-	pathComponents := strings.Split(r.URL.Path, "/")
-	if len(pathComponents) != 3 || pathComponents[1] != "runset" {
-		return false, badRequestError("Incorrect path")
+func parseIDFromPath(path string, numComponents int, index int) (int32, *requestError) {
+	pathComponents := strings.Split(path, "/")
+	if len(pathComponents) != numComponents {
+		return -1, badRequestError("Incorrect path")
 	}
-	runSetID64, err := strconv.ParseInt(pathComponents[2], 10, 32)
+	id64, err := strconv.ParseInt(pathComponents[index], 10, 32)
 	if err != nil {
-		return false, badRequestError("Could not parse run set id")
+		return -1, badRequestError("Could not parse run set id")
 	}
-	runSetID := int32(runSetID64)
+	if id64 < 0 {
+		return -1, badRequestError("Run set id must be a positive number")
+	}
+	return int32(id64), nil
+}
+
+func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	rs, reqErr := fetchRunSet(runSetID, true)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	respBytes, err := json.Marshal(&rs)
+	if err != nil {
+		return false, internalServerError("Could not product JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write(respBytes)
+
+	return false, nil
+}
+
+func specificRunSetDeleteHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
+	numRuns, numMetrics, err := deleteRunSet(runSetID)
+	if err != nil {
+		return false, err
+	}
+
+	status := make(map[string]int64)
+	status["DeletedRunMetrics"] = numMetrics
+	status["DeletedRuns"] = numRuns
+	respBytes, err2 := json.Marshal(&status)
+	if err2 != nil {
+		return false, internalServerError("Could not product JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write(respBytes)
+
+	return true, nil
+}
+
+func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
 
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
@@ -154,17 +236,21 @@ func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, 
 		return false, badRequestError("Could not parse request body")
 	}
 
-	rs, reqErr := fetchRunSet(runSetID)
+	if params.PullRequest != nil {
+		return false, badRequestError("PullRequest is not allowed for amending")
+	}
+
+	reqErr = params.ensureBenchmarksAndMetricsExist()
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	reqErr = ensureBenchmarksAndMetricsExist(rs)
+	rs, reqErr := fetchRunSet(runSetID, false)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	if params.MainProduct != rs.MainProduct ||
+	if !params.MainProduct.isSameAs(&rs.MainProduct) ||
 		!productSetsEqual(params.SecondaryProducts, rs.SecondaryProducts) ||
 		params.Machine != rs.Machine ||
 		!params.Config.isSameAs(&rs.Config) {
@@ -173,12 +259,47 @@ func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, 
 
 	rs.amendWithDataFrom(&params)
 
-	reqErr = insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
 	reqErr = updateRunSet(runSetID, rs)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	resp := runsetPostResponse{RunSetID: runSetID, RunIDs: runIDs}
+	respBytes, err := json.Marshal(&resp)
+	if err != nil {
+		return false, internalServerError("Could not produce JSON for response")
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte(respBytes))
+
+	return true, nil
+}
+
+func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	runID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	var params Run
+	if err := json.Unmarshal(body, &params); err != nil {
+		fmt.Printf("Unmarshal error: %s\n", err.Error())
+		return false, badRequestError("Could not parse request body")
+	}
+
+	reqErr = params.ensureBenchmarksAndMetricsExist(nil)
+	if reqErr != nil {
+		return false, reqErr
+	}
+
+	reqErr = insertResults(runID, params.Results, true)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -190,23 +311,64 @@ func specificRunsetHandlerInTransaction(w http.ResponseWriter, r *http.Request, 
 	return true, nil
 }
 
-func newTransactionHandler(method string, f func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)) func(w http.ResponseWriter, r *http.Request) {
+func runSetsGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+	machine := r.URL.Query().Get("machine")
+	config := r.URL.Query().Get("config")
+	if machine == "" || config == "" {
+		return false, badRequestError("Missing machine or config")
+	}
+	summaries, reqErr := fetchRunSetSummaries(machine, config)
+	if reqErr != nil {
+		return false, reqErr
+	}
+	if summaries == nil {
+		summaries = []RunSetSummary{}
+	}
+
+	respBytes, err := json.Marshal(summaries)
+	if err != nil {
+		return false, internalServerError("Could not produce JSON for response")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte(respBytes))
+
+	return false, nil
+}
+
+type handlerFunc func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
+
+func isAuthorized(r *http.Request, authToken string) bool {
+	if r.URL.Query().Get("authToken") == authToken {
+		return true
+	}
+	if r.Header.Get("Authorization") == "token "+authToken {
+		return true
+	}
+	return false
+}
+
+func newTransactionHandler(authToken string, handlers map[string]handlerFunc) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqErr *requestError
-		if r.Method != method {
-			reqErr = &requestError{Explanation: "Only POST method allowed", httpStatus: http.StatusMethodNotAllowed}
+		handler, ok := handlers[r.Method]
+		if !ok {
+			reqErr = &requestError{Explanation: "Method not allowed", httpStatus: http.StatusMethodNotAllowed}
+		} else if !isAuthorized(r, authToken) {
+			reqErr = &requestError{Explanation: "Auth token invalid", httpStatus: http.StatusUnauthorized}
 		} else {
 			body, err := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			if err != nil {
-				reqErr = internalServerError("Could not read request body")
+				reqErr = internalServerError("Could not read request body: ")
 			} else {
 				transaction, err := database.Begin()
 				if err != nil {
 					reqErr = internalServerError("Could not begin transaction")
 				} else {
 					var commit bool
-					commit, reqErr = f(w, r, body)
+					commit, reqErr = handler(w, r, body)
 					if commit {
 						transaction.Commit()
 					} else {
@@ -227,23 +389,57 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	portFlag := flag.Int("port", 8081, "port on which to listen")
+	portFlag := flag.Int("port", 0, "port on which to listen")
 	credentialsFlag := flag.String("credentials", "benchmarkerCredentials", "path of the credentials file")
+	keyFlag := flag.String("ssl-key", "", "path of the SSL key file")
+	certFlag := flag.String("ssl-certificate", "", "path of the SSL certificate file")
 	flag.Parse()
+
+	ssl := *certFlag != "" || *keyFlag != ""
+	port := *portFlag
+	if port == 0 {
+		if ssl {
+			port = 10443
+		} else {
+			port = 8081
+		}
+	}
+
+	if err := readCredentials(*credentialsFlag); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannot read credentials from file %s: %s\n", *credentialsFlag, err.Error())
+		os.Exit(1)
+	}
 
 	initGitHub()
 
-	if err := initDatabase(*credentialsFlag); err != nil {
+	if err := initDatabase(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannot init DB: %s\n", err.Error())
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/runset", newTransactionHandler("POST", runsetHandlerInTransaction))
-	http.HandleFunc("/runset/", newTransactionHandler("POST", specificRunsetHandlerInTransaction))
+	authToken, err := getCredentialString("httpAPITokens", "default")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannot get auth token: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	http.HandleFunc("/api/runset", newTransactionHandler(authToken, map[string]handlerFunc{"PUT": runSetPutHandler}))
+	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler, "DELETE": specificRunSetDeleteHandler}))
+	http.HandleFunc("/api/run/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunPostHandler}))
+	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
 	http.HandleFunc("/", notFoundHandler)
 
-	fmt.Printf("listening\n")
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", *portFlag), nil); err != nil {
+	addr := fmt.Sprintf(":%d", port)
+	fmt.Printf("listening at %s\n", addr)
+
+	if ssl {
+		// Instructions for generating a certificate: http://www.zytrax.com/tech/survival/ssl.html#self
+		err = http.ListenAndServeTLS(addr, *certFlag, *keyFlag, nil)
+	} else {
+		err = http.ListenAndServe(addr, nil)
+	}
+
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Listen failed: %s\n", err.Error())
 		os.Exit(1)
 	}

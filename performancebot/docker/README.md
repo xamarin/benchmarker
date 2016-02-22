@@ -1,6 +1,10 @@
-# Docker requirements
+# Deployment
 
-at least `docker=1.7.1` is required:
+We deploy on an EC2 instance via Docker and Docker Compose.
+
+## Docker requirements
+
+At least `docker=1.7.1` is required:
 
     $ echo deb http://get.docker.com/ubuntu docker main | sudo tee /etc/apt/sources.list.d/docker.list
     $ sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
@@ -8,55 +12,84 @@ at least `docker=1.7.1` is required:
     $ sudo apt-get install -y lxc-docker-1.7.1
     $ sudo usermod -G docker -a `whoami`
 
-# Master setup
+And we need [docker-compose](https://github.com/docker/compose/releases).
 
-* make sure an EBS volume is mounted to `/ebs`
-* make sure `/ebs` is owned by your user
+## Produce the Docker Compose config file
 
-`docker` should put its images on said EBS volume:
+On your machine:
 
-    $ mkdir /ebs/docker
-    $ echo 'DOCKER_OPTS="-g /ebs/docker"' | sudo tee -a $EDITOR /etc/defaults/docker
-    $ sudo service docker restart
+    ./accreditize.sh
 
+This produces `docker-compose.yml`.  Copy it to the deployment
+machine.
 
-`scp Dockerfile.master` from another machine:
+## Log in to Amazon Docker registry
 
-    $ docker build -f Dockerfile.master -t pbot-master .
-    $ docker run --name pbotmaster -p 9989:9989 -p 9999:9999 -v /ebs:/ebs -it pbot-master
+On your machine, run
 
-wait after initialization is done, if you see the shell prompt press `CTRL+P
-CTRL+Q` in order to detach from the container.
-You are required to deploy the master config from your machine, as it requires
-private files. Run this from the `benchmarker/performancebot` directory on your
-machine:
+    aws ecr get-login --region us-east-1
 
-    $ export EC2PBOTMASTERIP=ip.of.the.master.com
-    $ make ec2-deploy
+and run the command it outputs on the deployment machine.
 
-`scp nginx-ssl-reverse-proxy` from another machine and setup the HTTPS reverse proxy:
+The login will be valid for 10 hours.  Whenever you pull new images,
+you'll have to do this again.
 
-    $ cd nginx-ssl-reverse-proxy
-    $ ./setup_certs.sh
-    $ docker build -t nginx-ssl-reverse-proxy .
-    $ docker run -d -p 443:443 --link pbotmaster:lamp nginxsslproxy
+## EBS
 
-It will map port `8010` from buildbot to `443`.
+The EBS volume has to be mounted to `/ebs`.
 
-# Slave setup
-`scp Dockerfile.ec2slave run_ec2slave.sh` from another machine. Note that you
-need to configure the master configuration accordingly with
-`$WANTED_SLAVE_NAME` and `$SECRET_SLAVE_PASSWORD`:
+## Start the containers
 
-    $ docker build -f Dockerfile.ec2slave -t pbot-slave .
-    $ docker run -h $WANTED_SLAVE_NAME -it pbot-slave ip.of.the.master.com $SECRET_SLAVE_PASSWORD $BUILDBOT_SLAVE_HOSTNAME
+On the deployment machine, in the directory where you put
+`docker-compose.yml`:
 
-after machine setup you are supposed to see output by the `buildslave`, press
-`CTRL+P  CTRL+Q` in order to detach from the container.
+    docker-compose up
+
+# Redeployment
+
+## Build and push the image to the registry
+
+Each Docker image source directory (see below) has a `build.sh`
+script, which builds the image and pushes it onto the Amazon Docker
+registry, provided you're logged in (see above).
+
+## Pull the images
+
+On the deployment machine, in the directory with `docker-compose.yml`,
+do
+
+    docker-compose pull
+
+## Restart the containers
+
+Restart the containers you updated with
+
+    docker-compose restart NAME
+
+where `NAME` is the name of the container as given in
+`docker-compose.yml`.
+
+# List of all the images
+
+## reloadcache
+
+    https://github.com/schani/reloadcache
+
+## http-api
+
+    benchmarker/http-api
+
+## pbot-master and pbot-slave
+
+    benchmarker/performancebot/docker
+
+## nginx
+
+    benchmarker/performancebot/docker/nginx-ssl-reverse-proxy
 
 # Cleanup docker images
 
-playing garbage collector.
+Playing garbage collector.
 
     $ docker info # check device mapper status
     $ docker rm $(docker ps -a -q)  # delete stopped containers

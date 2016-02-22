@@ -35,5 +35,4 @@ EXPOSE 9999
 CMD (test -d /ebs || (echo "/ebs must be mounted" && exit 1)) && \
     (test -d /ebs/pbot-master || git clone https://github.com/xamarin/benchmarker/ /ebs/pbot-master) && \
     (test -f /ebs/pbot-master/performancebot/buildbot.tac || buildbot create-master /ebs/pbot-master/performancebot) && \
-    (buildbot start /ebs/pbot-master/performancebot || echo "WARNING!!! for first deployment 'make ec2-deploy' is required to run on your machine") && \
-    /bin/bash
+    (buildbot start --nodaemon /ebs/pbot-master/performancebot || echo "WARNING!!! for first deployment 'make ec2-deploy' is required to run on your machine")

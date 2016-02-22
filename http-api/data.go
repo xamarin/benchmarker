@@ -11,9 +11,11 @@ type Config struct {
 	MonoOptions              []string
 }
 
+type Results map[string]interface{}
+
 type Run struct {
 	Benchmark string
-	Results   map[string]interface{}
+	Results   Results
 }
 
 type Machine struct {
@@ -22,8 +24,15 @@ type Machine struct {
 }
 
 type Product struct {
-	Name   string
-	Commit string
+	Name          string
+	Commit        string
+	MergeBaseHash *string
+	CommitDate    *time.Time
+}
+
+type PullRequest struct {
+	BaselineRunSetID int32
+	URL              string
 }
 
 type RunSet struct {
@@ -31,6 +40,7 @@ type RunSet struct {
 	SecondaryProducts  []Product
 	Machine            Machine
 	Config             Config
+	PullRequest        *PullRequest
 	StartedAt          time.Time
 	FinishedAt         time.Time
 	BuildURL           string
@@ -38,6 +48,15 @@ type RunSet struct {
 	TimedOutBenchmarks []string
 	CrashedBenchmarks  []string
 	Runs               []Run
+}
+
+type ProductSummary struct {
+	Commit string
+}
+
+type RunSetSummary struct {
+	ID          int32
+	MainProduct ProductSummary
 }
 
 func stringSlicesSetEqual(a []string, b []string) bool {
@@ -71,6 +90,14 @@ func productSetsEqual(a []Product, b []Product) bool {
 	return stringSlicesSetEqual(as, bs)
 }
 
+func (product *Product) isSameAs(other *Product) bool {
+	if product.Name != other.Name || product.Commit != other.Commit {
+		return false
+	}
+	// ignore mergebase and datetime.
+	return true
+}
+
 func (config *Config) isSameAs(other *Config) bool {
 	if config.Name != other.Name {
 		return false
@@ -94,7 +121,7 @@ func (config *Config) isSameAs(other *Config) bool {
 }
 
 func metricIsArray(metric string) bool {
-	return metric == "cachegrind" || metric == "pause-times"
+	return metric == "cachegrind" || metric == "pause-times" || metric == "pause-starts"
 }
 
 func metricIsAllowed(metric string, value interface{}) bool {
@@ -129,6 +156,9 @@ func githubRepoForProduct(name string) (string, string) {
 	}
 	if name == "benchmarker" {
 		return "xamarin", "benchmarker"
+	}
+	if name == "monodroid" {
+		return "xamarin", "monodroid"
 	}
 	return "", ""
 }

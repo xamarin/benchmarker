@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Be
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libdbmodel", "libdbmodel\libdbmodel.shproj", "{5A8CD6DA-AA95-46D0-9710-752E7C91C62F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parse2Postgres", "Parse2Postgres\Parse2Postgres.csproj", "{489C560B-9F7C-4520-A791-DDD817BCEF19}"
-EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libaccredit", "libaccredit\libaccredit.shproj", "{08D02AC3-7F08-49F9-9D63-0493AF099B61}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Accreditize", "Accreditize\Accreditize.csproj", "{6819955F-90F7-46EB-9F30-53EEB658ACD1}"
@@ -24,8 +22,6 @@ EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libgithub", "libgithub\libgithub.shproj", "{87899E9B-1405-4AFF-8C9E-336694B4CAF2}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "libpostgres", "libpostgres\libpostgres.shproj", "{F17EC432-3C62-4453-8B71-16F97C2D2977}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xtcloghelper", "xtcloghelper\xtcloghelper.csproj", "{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,22 +39,6 @@ Global
 		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x64.Build.0 = Debug|x86
 		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x86.ActiveCfg = Release|x86
 		{13565BEF-4FE2-44EB-9882-F1FBC339E723}.Release|x86.Build.0 = Release|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x64.ActiveCfg = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x64.Build.0 = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x86.ActiveCfg = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x86.Build.0 = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x64.ActiveCfg = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x64.Build.0 = Debug|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x86.ActiveCfg = Release|x86
-		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x86.Build.0 = Release|x86
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Debug|x64.ActiveCfg = Debug|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Debug|x64.Build.0 = Debug|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Debug|x86.ActiveCfg = Debug|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Debug|x86.Build.0 = Debug|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Release|x64.ActiveCfg = Release|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Release|x64.Build.0 = Release|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Release|x86.ActiveCfg = Release|x64
-		{4EBB6583-D2EB-4CE1-8B62-1A8504D9D43E}.Release|x86.Build.0 = Release|x64
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.ActiveCfg = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x64.Build.0 = Debug|x86
 		{57E76AF7-A299-4B39-8F41-44673084DEE3}.Debug|x86.ActiveCfg = Debug|x86
@@ -99,6 +79,14 @@ Global
 		{9D1009D0-41C8-4CC7-8FF2-AAF3B06FB33F}.Release|x64.Build.0 = Release|Any CPU
 		{9D1009D0-41C8-4CC7-8FF2-AAF3B06FB33F}.Release|x86.ActiveCfg = Release|Any CPU
 		{9D1009D0-41C8-4CC7-8FF2-AAF3B06FB33F}.Release|x86.Build.0 = Release|Any CPU
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x64.ActiveCfg = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x64.Build.0 = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x86.ActiveCfg = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Debug|x86.Build.0 = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x64.ActiveCfg = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x64.Build.0 = Debug|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x86.ActiveCfg = Release|x86
+		{489C560B-9F7C-4520-A791-DDD817BCEF19}.Release|x86.Build.0 = Release|x86
 		{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}.Debug|x64.Build.0 = Debug|Any CPU
 		{31A5FF9F-B98D-4DF4-B1E7-518FA7E3B841}.Debug|x86.ActiveCfg = Debug|Any CPU

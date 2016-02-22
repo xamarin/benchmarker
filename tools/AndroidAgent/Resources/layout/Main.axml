@@ -13,6 +13,16 @@
         android:layout_height="wrap_content"
         android:id="@+id/githubAPIKey"
         android:text="github API Key" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/httpAPITokens"
+        android:hint="httpAPITokens" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/runSetId"
+        android:hint="RunSetID" />
     <Button
         android:id="@+id/myButton"
         android:layout_width="match_parent"
