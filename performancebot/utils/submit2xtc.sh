@@ -28,6 +28,21 @@ if [ ! -f $PARAMSJSON ]; then
     exit 3
 fi
 
+if [ ! -f ./jq ]; then
+	wget -O ./jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64
+	chmod +x ./jq
+fi
+
+function checkjsonfield()
+{
+    (cat "$PARAMSJSON" | ./jq -e '.'$1 > /dev/null) || (echo "file $PARAMSJSON must contain field $1" && exit 4)
+}
+
+# check if the json file has the required fields
+checkjsonfield 'githubAPIKey'
+checkjsonfield 'httpAPITokens'
+checkjsonfield 'runSetId'
+
 submitjob () {
 	DEVICENAME=$1
 	DEVICEID=$2
@@ -49,6 +64,11 @@ submitjob () {
 		| grep runSetId | grep -o -E '\d+')
 
 	echo "runSetId: $RUNSETID"
+	# insert new runSetId into JSON file
+	PARAMTMP=$(mktemp /tmp/param_template.json.XXXXXX)
+	mv "$PARAMSJSON" "$PARAMTMP"
+	cat "$PARAMTMP" | ./jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
+	rm -f "$PARAMTMP"
 
 	# build app + uitests
 	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
@@ -90,6 +110,7 @@ xbuild /p:Configuration=Release /target:compare
 
 OLDIFS=$IFS
 IFS=','
+# for i in "SM-N910F_4.4.4",df355e99,"--test-chunk","1"; do
 for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2"; do
 	set $i
 	DEVICENAME=$1
