@@ -1,5 +1,3 @@
-/* @flow */
-
 "use strict";
 
 import * as xp_utils from './utils.ts';

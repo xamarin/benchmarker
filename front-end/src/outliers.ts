@@ -1,5 +1,3 @@
-/* @flow */
-
 "use strict";
 
 function minBy (f: (x: number) => number, x: number, y: number) : number {

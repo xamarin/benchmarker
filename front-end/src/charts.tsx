@@ -1,10 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/amcharts/AmCharts.d.ts"/>
 
-/* @flow */
-
-/* global AmCharts, AmChart */
-
 "use strict";
 
 import * as xp_common from './common.tsx';

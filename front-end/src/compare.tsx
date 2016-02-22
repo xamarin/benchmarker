@@ -1,8 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/react-dom/react-dom.d.ts"/>
 
-/* @flow */
-
 "use strict";
 
 import * as xp_utils from './utils.ts';
