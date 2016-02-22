@@ -63,6 +63,9 @@ def slave_xtcapikey():
     pass
 slave_xtcapikey.accredit_key = 'xtcapikey'
 
+def slave_httpAPITokens():
+    pass
+slave_httpAPITokens.accredit_key = 'httpAPITokens'
 
 
 
