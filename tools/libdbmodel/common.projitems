@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)RunSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Product.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HttpApi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ApiObject.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)packages.config" />

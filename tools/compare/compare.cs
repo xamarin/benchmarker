@@ -105,19 +105,14 @@ class Compare
 		var hostarch = compare.Utils.LocalHostnameAndArch ();
 		var machine = new Machine { Name = hostarch.Item1, Architecture = hostarch.Item2 };
 
-		var args = new Dictionary<string, string> {
-			{ "machine", machine.Name },
-			{ "config", config.Name }
-		};
-		var response = await HttpApi.Get ("/runsets", args);
-		if (response == null) {
+		JArray runsets = await HttpApi.GetRunsets (machine.Name, config.Name);
+		if (runsets == null) {
 			Console.Error.WriteLine ("Error: Could not get run sets.");
 			Environment.Exit (1);
 		}
-		Console.WriteLine ("Response is: {0}", response);
 
 		var runSetIdsByCommits = new Dictionary<string, long> ();
-		foreach (var rs in JArray.Parse (response)) {
+		foreach (var rs in runsets) {
 			var id = rs ["ID"].ToObject<long> ();
 			var commit = rs ["MainProduct"] ["Commit"].ToObject<string> ();
 			runSetIdsByCommits [commit] = id;
@@ -681,7 +676,7 @@ class Compare
 		runSet.FinishDateTime = DateTime.Now;
 		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime, runSet.FinishDateTime);
 
-		Console.WriteLine (JsonConvert.SerializeObject (runSet.ApiObject));
+		Console.WriteLine (JsonConvert.SerializeObject (runSet.AsDict ()));
 
 		var uploadResult = AsyncContext.Run (() => Utils.RunWithRetry (() => runSet.Upload ()));
 		if (uploadResult == null) {

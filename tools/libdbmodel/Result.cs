@@ -7,8 +7,10 @@ using Newtonsoft.Json;
 
 namespace Benchmarker.Models
 {
-	public class RunMetric {
-		public enum MetricType {
+	public class RunMetric
+	{
+		public enum MetricType
+		{
 			Time,
 			MemoryIntegral,
 			Instructions,
@@ -20,6 +22,7 @@ namespace Benchmarker.Models
 		};
 
 		public MetricType Metric { get; set; }
+
 		public object Value { get; set; }
 
 		public string MetricName {
@@ -69,33 +72,37 @@ namespace Benchmarker.Models
 		}
 	}
 
-	public class Run {
+	public class Run : ApiObject
+	{
 		public Benchmark Benchmark { get; set; }
+
 		List<RunMetric> runMetrics;
+
 		public List<RunMetric> RunMetrics { get { return runMetrics; } }
+
 		public string BinaryProtocolFilename { get; set; }
 
-		public Run () {
+		public Run ()
+		{
 			runMetrics = new List<RunMetric> ();
 		}
 
-		public IDictionary<string, object> ApiObject {
-			get {
-				var dict = new Dictionary<string, object> ();
-				if (Benchmark != null)
-					dict ["Benchmark"] = Benchmark.Name;
-				var results = new Dictionary<string, object> ();
-				foreach (var runMetric in RunMetrics) {
-					results [runMetric.MetricName] = runMetric.ApiValue;
-				}
-				dict ["Results"] = results;
-				return dict;
+		public IDictionary<string, object> AsDict ()
+		{
+			var dict = new Dictionary<string, object> ();
+			if (Benchmark != null)
+				dict ["Benchmark"] = Benchmark.Name;
+			var results = new Dictionary<string, object> ();
+			foreach (var runMetric in RunMetrics) {
+				results [runMetric.MetricName] = runMetric.ApiValue;
 			}
+			dict ["Results"] = results;
+			return dict;
 		}
 
-		public async Task<bool> UploadForAmend (long id) {
-			var path = String.Format ("/run/{0}", id);
-			var responseBody = await HttpApi.Post (path, null, ApiObject);
+		public async Task<bool> UploadForAmend (long id)
+		{
+			var responseBody = await HttpApi.PostRun (id, this);
 			return responseBody != null;
 		}
 	}

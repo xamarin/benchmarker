@@ -11,18 +11,25 @@ using Benchmarker;
 
 namespace Benchmarker.Models
 {
-    public class Config
+	public class Config : ApiObject
 	{
 		const string rootVarString = "$ROOT";
 		const string binaryProtocolString = "$BINPROT";
 
 		public string Name { get; set; }
+
 		public int Count { get; set; }
-		public bool NoMono {get; set; }
+
+		public bool NoMono { get; set; }
+
 		public string Mono { get; set; }
+
 		public string[] MonoOptions { get; set; }
+
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
+
 		public Dictionary<string, string> UnsavedMonoEnvironmentVariables { get; set; }
+
 		public List<string> Benchmarks { get; set; }
 
 		private string monoRoot;
@@ -41,7 +48,7 @@ namespace Benchmarker.Models
 		}
 
 		static void ExpandInEnvironmentVariables (Dictionary<string, string> processedEnvVars, Dictionary<string, string> unexpandedEnvVars,
-			string variableString, string variableValue)
+		                                          string variableString, string variableValue)
 		{
 			var keys = unexpandedEnvVars.Keys.ToArray ();
 			foreach (var key in keys) {
@@ -57,7 +64,8 @@ namespace Benchmarker.Models
 			}
 		}
 
-		public Dictionary<string, string> ProcessMonoEnvironmentVariables (string binaryProtocolFile) {
+		public Dictionary<string, string> ProcessMonoEnvironmentVariables (string binaryProtocolFile)
+		{
 			var hasBinProt = ProducesBinaryProtocol;
 			if (hasBinProt && binaryProtocolFile == null)
 				throw new Exception ("Configuration requires binary protocol file, but none is given");
@@ -119,7 +127,7 @@ namespace Benchmarker.Models
 
 			return config;
 		}
-			
+
 		public override bool Equals (object other)
 		{
 			if (other == null)
@@ -151,31 +159,31 @@ namespace Benchmarker.Models
 			return true;
 		}
 
-		static bool OptionsEqual (IList<string> native, JToken json) {
+		static bool OptionsEqual (IList<string> native, JToken json)
+		{
 			if (native.Count != json.Count ())
 				return false;
 			return native.All (opt => json.Any (j => opt == j.ToObject<string> ()));
 		}
 
-		public IDictionary<string, object> ApiObject
+		public IDictionary<string, object> AsDict ()
 		{
-			get {
-				var dict = new Dictionary<string, object> ();
+			var dict = new Dictionary<string, object> ();
 
-				dict ["Name"] = Name;
-				dict ["MonoExecutable"] = MonoExecutable;
-				dict ["MonoEnvironmentVariables"] = new Dictionary<string, string> (MonoEnvironmentVariables);
-				dict ["MonoOptions"] = new List<string> (MonoOptions);
+			dict ["Name"] = Name;
+			dict ["MonoExecutable"] = MonoExecutable;
+			dict ["MonoEnvironmentVariables"] = new Dictionary<string, string> (MonoEnvironmentVariables);
+			dict ["MonoOptions"] = new List<string> (MonoOptions);
 
-				return dict;
-			}
+			return dict;
 		}
 
-		public bool EqualsApiObject (JToken other) {
+		public bool EqualsApiObject (JToken other)
+		{
 			return Name == other ["Name"].ToObject<string> () &&
-				MonoExecutable == other ["MonoExecutable"].ToObject<string> () &&
-				EnvironmentVariablesEqual (MonoEnvironmentVariables, other ["MonoEnvironmentVariables"]) &&
-				OptionsEqual (MonoOptions, other ["MonoOptions"]);
+			MonoExecutable == other ["MonoExecutable"].ToObject<string> () &&
+			EnvironmentVariablesEqual (MonoEnvironmentVariables, other ["MonoEnvironmentVariables"]) &&
+			OptionsEqual (MonoOptions, other ["MonoOptions"]);
 		}
 	}
 }

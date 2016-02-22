@@ -10,24 +10,38 @@ using System.Threading.Tasks;
 
 namespace Benchmarker.Models
 {
-	public class RunSet
+	public class RunSet : ApiObject
 	{
 		public static string DATETIME_FORMAT = "yyyy-MM-ddTHH:mm:sszzz";
 
 		public long? Id { get; set; }
+
 		List<Run> runs;
+
 		public List<Run> Runs { get { return runs; } }
+
 		public DateTime StartDateTime { get; set; }
+
 		public DateTime FinishDateTime { get; set; }
+
 		public Machine Machine { get; set; }
+
 		public Config Config { get; set; }
+
 		public Commit Commit { get; set; }
+
 		public List<Commit> SecondaryCommits { get; set; }
+
 		public string BuildURL { get; set; }
+
 		public string LogURL { get; set; }
+
 		public string PullRequestURL { get; set; }
+
 		public long? PullRequestBaselineRunSetId { get; set; }
+
 		public List<string> TimedOutBenchmarks { get; set; }
+
 		public List<string> CrashedBenchmarks { get; set; }
 
 		public RunSet ()
@@ -40,10 +54,10 @@ namespace Benchmarker.Models
 		public static async Task<RunSet> FromId (Machine machine, long id, Config config, Commit mainCommit, List<Commit> secondaryCommits, string buildURL, string logURL)
 		{
 			using (var client = new HttpClient ()) {
-				var body = await HttpApi.Get (String.Format ("/runset/{0}", id), null);
-				if (body == null)
+				JObject result = await HttpApi.GetRunset (id);
+				if (result == null) {
 					return null;
-				var result = JObject.Parse (body);
+				}
 
 				var runSet = new RunSet {
 					Id = id,
@@ -85,7 +99,7 @@ namespace Benchmarker.Models
 				var machineName = result ["Machine"] ["Name"].ToObject<string> ();
 				// The `StartsWith` case here is a weird exception we need for TestCloud devices,
 				// which have a common prefix, and we treat them as the same machine.
-				if ((machine.Name != machineName && !machineName.StartsWith (machine.Name)) || machine.Architecture != result ["Machine"]["Architecture"].ToObject<string> ())
+				if ((machine.Name != machineName && !machineName.StartsWith (machine.Name)) || machine.Architecture != result ["Machine"] ["Architecture"].ToObject<string> ())
 					throw new Exception ("Machine does not match the one in the database.");
 
 				if (!config.EqualsApiObject (result ["Config"]))
@@ -95,44 +109,43 @@ namespace Benchmarker.Models
 			}
 		}
 
-		public Dictionary<string, object> ApiObject
+		public IDictionary<string, object> AsDict ()
 		{
-			get {
-				var logURLs = new Dictionary<string, string> ();
-				if (LogURL != null) {
-					string defaultURL;
-					logURLs.TryGetValue ("*", out defaultURL);
-					if (defaultURL == null) {
-						logURLs ["*"] = LogURL;
-					} else if (defaultURL != LogURL) {
-						foreach (var run in Runs)
-							logURLs [run.Benchmark.Name] = LogURL;
-					}
+			var logURLs = new Dictionary<string, string> ();
+			if (LogURL != null) {
+				string defaultURL;
+				logURLs.TryGetValue ("*", out defaultURL);
+				if (defaultURL == null) {
+					logURLs ["*"] = LogURL;
+				} else if (defaultURL != LogURL) {
+					foreach (var run in Runs)
+						logURLs [run.Benchmark.Name] = LogURL;
 				}
-
-				var dict = new Dictionary<string, object> ();
-				dict ["MainProduct"] = Commit.ApiObject;
-				dict ["SecondaryProducts"] = SecondaryCommits.Select(c => c.ApiObject).ToList ();
-				dict ["Machine"] = Machine.ApiObject;
-				dict ["Config"] = Config.ApiObject;
-				dict ["TimedOutBenchmarks"] = new List<string> (TimedOutBenchmarks);
-				dict ["CrashedBenchmarks"] = new List<string> (CrashedBenchmarks);
-				dict ["StartedAt"] = StartDateTime.ToString (DATETIME_FORMAT);
-				dict ["FinishedAt"] = FinishDateTime.ToString (DATETIME_FORMAT);
-				dict ["BuildURL"] = BuildURL;
-				dict ["LogURLs"] = logURLs;
-				dict ["Runs"] = Runs.Select (r => r.ApiObject).ToList ();
-				if (PullRequestBaselineRunSetId != null) {
-					var prDict = new Dictionary<string, object> ();
-					prDict ["BaselineRunSetID"] = PullRequestBaselineRunSetId.Value;
-					prDict ["URL"] = PullRequestURL;
-					dict ["PullRequest"] = prDict;
-				}
-				return dict;
 			}
+
+			var dict = new Dictionary<string, object> ();
+			dict ["MainProduct"] = Commit.AsDict ();
+			dict ["SecondaryProducts"] = SecondaryCommits.Select (c => c.AsDict ()).ToList ();
+			dict ["Machine"] = Machine.AsDict ();
+			dict ["Config"] = Config.AsDict ();
+			dict ["TimedOutBenchmarks"] = new List<string> (TimedOutBenchmarks);
+			dict ["CrashedBenchmarks"] = new List<string> (CrashedBenchmarks);
+			dict ["StartedAt"] = StartDateTime.ToString (DATETIME_FORMAT);
+			dict ["FinishedAt"] = FinishDateTime.ToString (DATETIME_FORMAT);
+			dict ["BuildURL"] = BuildURL;
+			dict ["LogURLs"] = logURLs;
+			dict ["Runs"] = Runs.Select (r => r.AsDict ()).ToList ();
+			if (PullRequestBaselineRunSetId != null) {
+				var prDict = new Dictionary<string, object> ();
+				prDict ["BaselineRunSetID"] = PullRequestBaselineRunSetId.Value;
+				prDict ["URL"] = PullRequestURL;
+				dict ["PullRequest"] = prDict;
+			}
+			return dict;
 		}
 
-		public class UploadResult {
+		public class UploadResult
+		{
 			[JsonProperty ("RunSetID")]
 			public long RunSetId { get; set; }
 
@@ -142,15 +155,18 @@ namespace Benchmarker.Models
 			[JsonProperty ("PullRequestID")]
 			public long? PullRequestId { get; set; }
 
-			public UploadResult () { }
+			public UploadResult ()
+			{
+			}
 		}
 
-		public async Task<UploadResult> Upload () {
+		public async Task<UploadResult> Upload ()
+		{
 			string responseBody;
 			if (Id == null) {
-				responseBody = await HttpApi.Put ("/runset", null, ApiObject);
+				responseBody = await HttpApi.PutRunset (this);
 			} else {
-				responseBody = await HttpApi.Post (String.Format ("/runset/{0}", Id.Value), null, ApiObject);
+				responseBody = await HttpApi.AmendRunset (Id.Value, this);
 			}
 			if (responseBody == null)
 				return null;
