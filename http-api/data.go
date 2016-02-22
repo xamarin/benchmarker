@@ -90,6 +90,14 @@ func productSetsEqual(a []Product, b []Product) bool {
 	return stringSlicesSetEqual(as, bs)
 }
 
+func (product *Product) isSameAs(other *Product) bool {
+	if product.Name != other.Name || product.Commit != other.Commit {
+		return false;
+	}
+	// ignore mergebase and datetime.
+	return true
+}
+
 func (config *Config) isSameAs(other *Config) bool {
 	if config.Name != other.Name {
 		return false

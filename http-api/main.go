@@ -250,7 +250,7 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 		return false, reqErr
 	}
 
-	if params.MainProduct != rs.MainProduct ||
+	if !params.MainProduct.isSameAs(&rs.MainProduct) ||
 		!productSetsEqual(params.SecondaryProducts, rs.SecondaryProducts) ||
 		params.Machine != rs.Machine ||
 		!params.Config.isSameAs(&rs.Config) {
