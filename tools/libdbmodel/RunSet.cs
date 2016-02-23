@@ -90,8 +90,12 @@ namespace Benchmarker.Models
 						if (!local_secondaryCommits.Any (c => c.Hash == sc.Hash && c.Product.Name == sc.Product.Name))
 							throw new Exception ("Secondary commits don't match the database.");
 					}
+					// local commits have more information (e.g. datetime)
+					runSet.SecondaryCommits = local_secondaryCommits;
+				} else {
+					runSet.SecondaryCommits = db_secondaryCommits;
 				}
-				runSet.SecondaryCommits = local_secondaryCommits;
+
 
 				if (local_buildURL != null && local_buildURL != runSet.BuildURL)
 					throw new Exception ("Build URL does not match the one in the database.");
