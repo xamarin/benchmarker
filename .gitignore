@@ -11,6 +11,11 @@ tests/MSBiology/TestData/PerfTestData/SAMBAMTestData/*.isc
 tests/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll
 tests/fsharp/src/fsharp/FSharp.Compiler-proto/obj/proto/FSharp.Compiler-proto.dll.mdb
 
+*.dll.dylib
+*.dll.dylib.dSYM/
+*.exe.dylib
+*.exe.dylib.dSYM/
+
 tools/packages
 tools/Components
 tools/*.exe
