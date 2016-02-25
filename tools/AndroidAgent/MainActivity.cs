@@ -248,8 +248,12 @@ namespace AndroidAgent
 							runSet.Runs.Add (run);
 						}
 					}
-					AsyncContext.Run (() => runSet.Upload ());
-					RunOnUiThread (() => SetStartButtonText ("start"));
+					var result = AsyncContext.Run (() => runSet.Upload ());
+					if (result == null) {
+						RunOnUiThread (() => SetStartButtonText ("failed"));
+					} else {
+						RunOnUiThread (() => SetStartButtonText ("start"));
+					}
 				} catch (Exception e) {
 					RunOnUiThread (() => SetStartButtonText ("failed"));
 					Logging.GetLogging ().Error (e);
