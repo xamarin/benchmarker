@@ -513,6 +513,13 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
     }
 }
 
+type GCPauseTimesEntry = {
+    id: string;
+    benchmark: string;
+    starts: Array<number>;
+    times: Array<number>;
+};
+
 type RunSetDescriptionProps = {
 	runSet: Database.DBRunSet;
 };
@@ -639,11 +646,11 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				metricsDict [metric] = {};
 			}
             if (this.state.resultArrays !== undefined) {
-                const runs: {[id: string]: { benchmark: string, starts: Array<number>, times: Array<number> }} = {};
+                const runs: {[id: string]: GCPauseTimesEntry} = {};
                 for (let i = 0; i < this.state.resultArrays.length; ++i) {
                     const row = this.state.resultArrays [i];
                     const id = row ['r_id'].toString ();
-                    const entry = runs [id] || { benchmark: row ['benchmark'], starts: undefined, times: undefined };
+                    const entry = runs [id] || { id: id, benchmark: row ['benchmark'], starts: undefined, times: undefined };
                     const metric = row ['metric'];
                     if (metric === 'pause-starts') {
                         entry.starts = row ['resultarray'];
@@ -654,9 +661,9 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     }
                     runs [id] = entry;
                 }
+                const entries = Object.keys (runs).map ((id: string) => runs [id]);
                 const timeSlicesByBenchmark: {[benchmark: string]: TimeSliceCount} = {};
-                Object.keys (runs).forEach ((id: string) => {
-                    const entry = runs [id];
+                entries.forEach ((entry: GCPauseTimesEntry) => {
                     if (entry.starts === undefined || entry.times === undefined) {
                         return;
                     }
@@ -676,7 +683,9 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     metricsDict ['acceptable-time-slices'] = {};
                 });
 
-                if (Object.keys (runs).length > 0) {
+                if (entries.length > 0) {
+                    const benchmarks = Object.keys (timeSlicesByBenchmark);
+                    benchmarks.sort ();
                     pausesTable = <table>
                         <thead>
                             <tr>
@@ -685,12 +694,18 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.keys (runs).map ((id: string) => {
-                                const entry = runs [id];
-                                return <tr key={"run" + id}>
-                                    <td><code>{entry.benchmark}</code></td>
-                                    <td><PauseTimeline starts={entry.starts} times={entry.times} /></td>
-                                </tr>;
+                            {benchmarks.map ((benchmark: string) => {
+                                const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
+                                return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
+                                    let benchmarkElement: JSX.Element;
+                                    if (i === 0) {
+                                        benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
+                                    }
+                                    return <tr key={"run" + e.id}>
+                                        {benchmarkElement}
+                                        <td><PauseTimeline starts={e.starts} times={e.times} /></td>
+                                    </tr>;
+                                });
                             })}
                         </tbody>
                     </table>;
