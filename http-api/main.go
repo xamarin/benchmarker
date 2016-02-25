@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/jackc/pgx"
 )
 
 type runsetPostResponse struct {
@@ -55,65 +57,38 @@ func (r *Run) ensureBenchmarksAndMetricsExist(benchmarks map[string]bool) *reque
 	return nil
 }
 
-func (rs *RunSet) ensureBenchmarksAndMetricsExist() *requestError {
-	benchmarks, reqErr := fetchBenchmarks()
-	if reqErr != nil {
-		return reqErr
-	}
-
-	for _, run := range rs.Runs {
-		reqErr = run.ensureBenchmarksAndMetricsExist(benchmarks)
-		if reqErr != nil {
-			return reqErr
-		}
-	}
-
-	for _, b := range rs.TimedOutBenchmarks {
-		if !benchmarks[b] {
-			return badRequestError("Benchmark does not exist: " + b)
-		}
-	}
-	for _, b := range rs.CrashedBenchmarks {
-		if !benchmarks[b] {
-			return badRequestError("Benchmark does not exist: " + b)
-		}
-	}
-
-	return nil
-}
-
-func runSetPutHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func runSetPutHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
 		fmt.Printf("Unmarshal error: %s\n", err.Error())
 		return false, badRequestError("Could not parse request body")
 	}
 
-	reqErr := ensureMachineExists(params.Machine)
+	reqErr := ensureMachineExists(database, params.Machine)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	mainCommit, reqErr := ensureProductExists(params.MainProduct)
+	mainCommit, reqErr := ensureProductExists(database, params.MainProduct)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
 	var secondaryCommits []string
 	for _, p := range params.SecondaryProducts {
-		commit, reqErr := ensureProductExists(p)
+		commit, reqErr := ensureProductExists(database, p)
 		if reqErr != nil {
 			return false, reqErr
 		}
 		secondaryCommits = append(secondaryCommits, commit)
 	}
 
-	reqErr = params.ensureBenchmarksAndMetricsExist()
+	reqErr = params.ensureBenchmarksAndMetricsExist(database)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	reqErr = ensureConfigExists(params.Config)
+	reqErr = ensureConfigExists(database, params.Config)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -143,7 +118,7 @@ func runSetPutHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool
 		return false, internalServerError("Could not insert run set")
 	}
 
-	runIDs, reqErr := insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(database, runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -176,13 +151,13 @@ func parseIDFromPath(path string, numComponents int, index int) (int32, *request
 	return int32(id64), nil
 }
 
-func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func specificRunSetGetHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	rs, reqErr := fetchRunSet(runSetID, true)
+	rs, reqErr := fetchRunSet(database, runSetID, true)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -199,12 +174,12 @@ func specificRunSetGetHandler(w http.ResponseWriter, r *http.Request, body []byt
 	return false, nil
 }
 
-func specificRunSetDeleteHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func specificRunSetDeleteHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
 	}
-	numRuns, numMetrics, err := deleteRunSet(runSetID)
+	numRuns, numMetrics, err := deleteRunSet(database, runSetID)
 	if err != nil {
 		return false, err
 	}
@@ -224,7 +199,7 @@ func specificRunSetDeleteHandler(w http.ResponseWriter, r *http.Request, body []
 	return true, nil
 }
 
-func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func specificRunSetPostHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	runSetID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
@@ -240,12 +215,12 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 		return false, badRequestError("PullRequest is not allowed for amending")
 	}
 
-	reqErr = params.ensureBenchmarksAndMetricsExist()
+	reqErr = params.ensureBenchmarksAndMetricsExist(database)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	rs, reqErr := fetchRunSet(runSetID, false)
+	rs, reqErr := fetchRunSet(database, runSetID, false)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -259,12 +234,12 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 
 	rs.amendWithDataFrom(&params)
 
-	runIDs, reqErr := insertRuns(runSetID, params.Runs)
+	runIDs, reqErr := insertRuns(database, runSetID, params.Runs)
 	if reqErr != nil {
 		return false, reqErr
 	}
 
-	reqErr = updateRunSet(runSetID, rs)
+	reqErr = updateRunSet(database, runSetID, rs)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -282,7 +257,7 @@ func specificRunSetPostHandler(w http.ResponseWriter, r *http.Request, body []by
 	return true, nil
 }
 
-func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func specificRunPostHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	runID, reqErr := parseIDFromPath(r.URL.Path, 4, 3)
 	if reqErr != nil {
 		return false, reqErr
@@ -299,7 +274,7 @@ func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte)
 		return false, reqErr
 	}
 
-	reqErr = insertResults(runID, params.Results, true)
+	reqErr = insertResults(database, runID, params.Results, true)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -311,13 +286,13 @@ func specificRunPostHandler(w http.ResponseWriter, r *http.Request, body []byte)
 	return true, nil
 }
 
-func runSetsGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
+func runSetsGetHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	machine := r.URL.Query().Get("machine")
 	config := r.URL.Query().Get("config")
 	if machine == "" || config == "" {
 		return false, badRequestError("Missing machine or config")
 	}
-	summaries, reqErr := fetchRunSetSummaries(machine, config)
+	summaries, reqErr := fetchRunSetSummaries(database, machine, config)
 	if reqErr != nil {
 		return false, reqErr
 	}
@@ -337,7 +312,7 @@ func runSetsGetHandler(w http.ResponseWriter, r *http.Request, body []byte) (boo
 	return false, nil
 }
 
-type handlerFunc func(w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
+type handlerFunc func(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
 
 func isAuthorized(r *http.Request, authToken string) bool {
 	if r.URL.Query().Get("authToken") == authToken {
@@ -363,12 +338,12 @@ func newTransactionHandler(authToken string, handlers map[string]handlerFunc) fu
 			if err != nil {
 				reqErr = internalServerError("Could not read request body: ")
 			} else {
-				transaction, err := database.Begin()
+				transaction, err := connPool.Begin()
 				if err != nil {
 					reqErr = internalServerError("Could not begin transaction")
 				} else {
 					var commit bool
-					commit, reqErr = handler(w, r, body)
+					commit, reqErr = handler(transaction, w, r, body)
 					if commit {
 						transaction.Commit()
 					} else {

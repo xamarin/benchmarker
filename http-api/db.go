@@ -11,9 +11,9 @@ import (
 
 var githubClient *github.Client
 
-var database *pgx.Conn
+var connPool *pgx.ConnPool
 
-func ensureProductExists(product Product) (string, *requestError) {
+func ensureProductExists(database *pgx.Tx, product Product) (string, *requestError) {
 	var commitDate time.Time
 	// FIXME: check and update mergeBaseHash
 	err := database.QueryRow("queryCommitWithProduct", product.Commit, product.Name).Scan(&commitDate)
@@ -55,7 +55,7 @@ func ensureProductExists(product Product) (string, *requestError) {
 	return "", internalServerError("Database query error")
 }
 
-func fetchConfig(name string) (*Config, *requestError) {
+func fetchConfig(database *pgx.Tx, name string) (*Config, *requestError) {
 	dbConfig := Config{Name: name}
 	err := database.QueryRow("queryConfig", name).Scan(&dbConfig.MonoExecutable, &dbConfig.MonoEnvironmentVariables, &dbConfig.MonoOptions)
 	if err == pgx.ErrNoRows {
@@ -68,8 +68,8 @@ func fetchConfig(name string) (*Config, *requestError) {
 	return &dbConfig, nil
 }
 
-func ensureConfigExists(config Config) *requestError {
-	dbConfig, reqErr := fetchConfig(config.Name)
+func ensureConfigExists(database *pgx.Tx, config Config) *requestError {
+	dbConfig, reqErr := fetchConfig(database, config.Name)
 	if reqErr != nil {
 		return reqErr
 	}
@@ -95,7 +95,7 @@ func ensureConfigExists(config Config) *requestError {
 	return nil
 }
 
-func ensureMachineExists(machine Machine) *requestError {
+func ensureMachineExists(database *pgx.Tx, machine Machine) *requestError {
 	var architecture string
 	err := database.QueryRow("queryMachine", machine.Name).Scan(&architecture)
 	if err == nil {
@@ -117,7 +117,7 @@ func ensureMachineExists(machine Machine) *requestError {
 	return internalServerError("Database query error")
 }
 
-func fetchBenchmarks() (map[string]bool, *requestError) {
+func fetchBenchmarks(database *pgx.Tx) (map[string]bool, *requestError) {
 	rows, err := database.Query("queryBenchmarks")
 	if err != nil {
 		return nil, internalServerError("Could not get benchmarks")
@@ -136,7 +136,34 @@ func fetchBenchmarks() (map[string]bool, *requestError) {
 	return names, nil
 }
 
-func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
+func (rs *RunSet) ensureBenchmarksAndMetricsExist(database *pgx.Tx) *requestError {
+	benchmarks, reqErr := fetchBenchmarks(database)
+	if reqErr != nil {
+		return reqErr
+	}
+
+	for _, run := range rs.Runs {
+		reqErr = run.ensureBenchmarksAndMetricsExist(benchmarks)
+		if reqErr != nil {
+			return reqErr
+		}
+	}
+
+	for _, b := range rs.TimedOutBenchmarks {
+		if !benchmarks[b] {
+			return badRequestError("Benchmark does not exist: " + b)
+		}
+	}
+	for _, b := range rs.CrashedBenchmarks {
+		if !benchmarks[b] {
+			return badRequestError("Benchmark does not exist: " + b)
+		}
+	}
+
+	return nil
+}
+
+func fetchRunSet(database *pgx.Tx, id int32, withRuns bool) (*RunSet, *requestError) {
 	var rs RunSet
 	var secondaryCommits []string
 	var pullRequestID *int32
@@ -174,7 +201,7 @@ func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 		return nil, internalServerError("Could not get machine")
 	}
 
-	config, reqErr := fetchConfig(rs.Config.Name)
+	config, reqErr := fetchConfig(database, rs.Config.Name)
 	if reqErr != nil {
 		return nil, nil
 	}
@@ -227,7 +254,7 @@ func fetchRunSet(id int32, withRuns bool) (*RunSet, *requestError) {
 	return &rs, nil
 }
 
-func insertResults(runID int32, results Results, update bool) *requestError {
+func insertResults(database *pgx.Tx, runID int32, results Results, update bool) *requestError {
 	idByMetric := make(map[string]int32)
 	if update {
 		rows, err := database.Query("queryRunMetricsForRun", runID)
@@ -273,7 +300,7 @@ func insertResults(runID int32, results Results, update bool) *requestError {
 	return nil
 }
 
-func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
+func insertRuns(database *pgx.Tx, runSetID int32, runs []Run) ([]int32, *requestError) {
 	var runIDs []int32
 	for _, run := range runs {
 		var runID int32
@@ -284,7 +311,7 @@ func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
 		}
 		runIDs = append(runIDs, runID)
 
-		reqErr := insertResults(runID, run.Results, false)
+		reqErr := insertResults(database, runID, run.Results, false)
 		if reqErr != nil {
 			return nil, reqErr
 		}
@@ -292,7 +319,7 @@ func insertRuns(runSetID int32, runs []Run) ([]int32, *requestError) {
 	return runIDs, nil
 }
 
-func updateRunSet(runSetID int32, rs *RunSet) *requestError {
+func updateRunSet(database *pgx.Tx, runSetID int32, rs *RunSet) *requestError {
 	_, err := database.Exec("updateRunSet", runSetID, rs.LogURLs, rs.TimedOutBenchmarks, rs.CrashedBenchmarks)
 	if err != nil {
 		fmt.Printf("update run set error: %s\n", err)
@@ -301,7 +328,7 @@ func updateRunSet(runSetID int32, rs *RunSet) *requestError {
 	return nil
 }
 
-func deleteRunSet(runSetID int32) (int64, int64, *requestError) {
+func deleteRunSet(database *pgx.Tx, runSetID int32) (int64, int64, *requestError) {
 	res, err := database.Exec("deleteRunMetricByRunSetId", runSetID)
 	if err != nil {
 		fmt.Printf("delete runmetric by runsetid: %s\n", err)
@@ -325,7 +352,7 @@ func deleteRunSet(runSetID int32) (int64, int64, *requestError) {
 	return numMetrics, numRuns, nil
 }
 
-func fetchRunSetSummaries(machine string, config string) ([]RunSetSummary, *requestError) {
+func fetchRunSetSummaries(database *pgx.Tx, machine string, config string) ([]RunSetSummary, *requestError) {
 	rows, err := database.Query("queryRunSetSummaries", machine, config)
 	if err != nil {
 		return nil, internalServerError("Could not fetch run set summaries")
@@ -345,42 +372,8 @@ func initGitHub() {
 	githubClient = github.NewClient(nil)
 }
 
-func initDatabase() error {
-	host, err := getCredentialString("benchmarkerPostgres", "host")
-	if err != nil {
-		return err
-	}
-	portFloat, err := getCredentialNumber("benchmarkerPostgres", "port")
-	if err != nil {
-		return err
-	}
-	port := uint16(portFloat)
-	dbName, err := getCredentialString("benchmarkerPostgres", "database")
-	if err != nil {
-		return err
-	}
-	user, err := getCredentialString("benchmarkerPostgres", "user")
-	if err != nil {
-		return err
-	}
-	password, err := getCredentialString("benchmarkerPostgres", "password")
-	if err != nil {
-		return err
-	}
-
-	config := pgx.ConnConfig{
-		Host:     host,
-		Port:     port,
-		Database: dbName,
-		User:     user,
-		Password: password,
-	}
-	db, err := pgx.Connect(config)
-	database = db
-
-	if err != nil {
-		return err
-	}
+func prepareStatements(database *pgx.Conn) error {
+	var err error
 
 	_, err = database.Prepare("queryCommit", "select product from commit where hash = $1")
 	if err != nil {
@@ -494,6 +487,49 @@ func initDatabase() error {
 	}
 
 	_, err = database.Prepare("insertPullRequest", "insert into pullRequest (baselineRunSet, url) values ($1, $2) returning id")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initDatabase() error {
+	host, err := getCredentialString("benchmarkerPostgres", "host")
+	if err != nil {
+		return err
+	}
+	portFloat, err := getCredentialNumber("benchmarkerPostgres", "port")
+	if err != nil {
+		return err
+	}
+	port := uint16(portFloat)
+	dbName, err := getCredentialString("benchmarkerPostgres", "database")
+	if err != nil {
+		return err
+	}
+	user, err := getCredentialString("benchmarkerPostgres", "user")
+	if err != nil {
+		return err
+	}
+	password, err := getCredentialString("benchmarkerPostgres", "password")
+	if err != nil {
+		return err
+	}
+
+	connConfig := pgx.ConnConfig{
+		Host:     host,
+		Port:     port,
+		Database: dbName,
+		User:     user,
+		Password: password,
+	}
+	poolConfig := pgx.ConnPoolConfig{
+		ConnConfig:     connConfig,
+		MaxConnections: 3,
+		AfterConnect:   prepareStatements,
+	}
+	connPool, err = pgx.NewConnPool(poolConfig)
 	if err != nil {
 		return err
 	}
