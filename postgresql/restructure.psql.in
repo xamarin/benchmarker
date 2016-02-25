@@ -62,7 +62,7 @@ alter table PullRequest drop column objectId;
 create table RunMetric (
        id serial primary key,
        run integer references Run(id),
-       metric varchar(32),
+       metric text,
        result double precision,
        resultArray double precision[]
 );
