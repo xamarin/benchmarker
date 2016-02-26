@@ -6,11 +6,31 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Benchmarker.Models
 {
 	public class HttpApi
 	{
+		public class TrustAllCertificatePolicy : System.Net.ICertificatePolicy
+		{
+			public TrustAllCertificatePolicy ()
+			{
+			}
+
+			public bool CheckValidationResult (ServicePoint sp, X509Certificate cert, WebRequest req, int problem)
+			{
+				return true;
+			}
+		}
+
+
+		static HttpApi ()
+		{
+			// remove when we have a valid SSL cert
+			System.Net.ServicePointManager.CertificatePolicy = new TrustAllCertificatePolicy ();
+		}
+
 		public static string AuthToken { get; set; }
 
 		private static string ApiUrl (string path, IDictionary<string, string> args)
