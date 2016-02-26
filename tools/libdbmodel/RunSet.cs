@@ -101,9 +101,8 @@ namespace Benchmarker.Models
 					throw new Exception ("Build URL does not match the one in the database.");
 				
 				var db_machineName = db_result ["Machine"] ["Name"].ToObject<string> ();
-				// The `StartsWith` case here is a weird exception we need for TestCloud devices,
-				// which have a common prefix, and we treat them as the same machine.
-				if ((local_machine.Name != db_machineName && !db_machineName.StartsWith (local_machine.Name)) || local_machine.Architecture != db_result ["Machine"] ["Architecture"].ToObject<string> ())
+				var db_machineArchitecture = db_result ["Machine"] ["Architecture"].ToObject<string> ();
+				if (local_machine.Name != db_machineName || local_machine.Architecture != db_machineArchitecture)
 					throw new Exception ("Machine does not match the one in the database. \"" + db_machineName + "\" vs. \"" + local_machine.Name + "\"");
 
 				if (!local_config.EqualsApiObject (db_result ["Config"]))

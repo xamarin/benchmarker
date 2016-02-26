@@ -189,6 +189,7 @@ namespace AndroidAgent.UITests
 					dynamic json = JsonConvert.DeserializeObject (reader.ReadToEnd ());
 					string githubAPIKey = json.githubAPIKey;
 					string httpAPITokens = json.httpAPITokens;
+					string machineName = json.machineName;
 					string runSetId = json.runSetId;
 
 					app.Screenshot ("init");
@@ -196,6 +197,7 @@ namespace AndroidAgent.UITests
 					clearAndSetTextField ("benchmark", benchmark);
 					clearAndSetTextField ("githubAPIKey", githubAPIKey);
 					clearAndSetTextField ("httpAPITokens", httpAPITokens);
+					clearAndSetTextField ("machineName", machineName);
 					clearAndSetTextField ("runSetId", runSetId);
 
 					app.Tap (c => c.Marked ("myButton"));

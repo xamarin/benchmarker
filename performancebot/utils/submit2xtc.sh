@@ -41,6 +41,7 @@ function checkjsonfield()
 # check if the json file has the required fields
 checkjsonfield 'githubAPIKey'
 checkjsonfield 'httpAPITokens'
+checkjsonfield 'machineName'
 checkjsonfield 'runSetId'
 
 submitjob () {
@@ -67,7 +68,8 @@ submitjob () {
 	# insert new runSetId into JSON file
 	PARAMTMP=$(mktemp /tmp/param_template.json.XXXXXX)
 	mv "$PARAMSJSON" "$PARAMTMP"
-	cat "$PARAMTMP" | ./jq 'to_entries | map(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | from_entries ' > $PARAMSJSON
+	pwd
+	cat "$PARAMTMP" | ./jq 'with_entries(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | with_entries(if .key == "machineName" then . + {"value":"'$DEVICENAME'"} else . end)' > $PARAMSJSON
 	rm -f "$PARAMTMP"
 
 	# build app + uitests

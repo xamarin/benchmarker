@@ -218,17 +218,17 @@ namespace AndroidAgent
 
 		AndroidCPUManagment CpuManager;
 
-		void RunBenchmark (long runSetId, string benchmarkName, string hostname, string architecture)
+		void RunBenchmark (long runSetId, string benchmarkName, string machineName, string architecture)
 		{
 			const int DRY_RUNS = 3;
 			const int ITERATIONS = 10;
 
 
-			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", hostname, architecture);
+			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", machineName, architecture);
 			Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"", "default");
 
 			models.Commit mainCommit = DetermineCommit ();
-			models.Machine machine = new models.Machine { Name = hostname, Architecture = architecture };
+			models.Machine machine = new models.Machine { Name = machineName, Architecture = architecture };
 			models.Config config = new models.Config { Name = "default", Mono = String.Empty,		
 				MonoOptions = new string[0],		
 				MonoEnvironmentVariables = new Dictionary<string, string> (),		
@@ -274,7 +274,7 @@ namespace AndroidAgent
 		protected override void OnCreate (Bundle savedInstanceState)
 		{
 			string architecture = Android.OS.Build.CpuAbi;
-			string hostname = Android.OS.Build.Model + "_" + Android.OS.Build.VERSION.Release;
+			string machineName = null;
 			base.OnCreate (savedInstanceState);
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
@@ -282,15 +282,16 @@ namespace AndroidAgent
 				string benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
 				string githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
 				string httpAPITokens = FindViewById<TextView> (Resource.Id.httpAPITokens).Text;
+				machineName = FindViewById<TextView> (Resource.Id.machineName).Text;
 				long runSetId = Int64.Parse (FindViewById<TextView> (Resource.Id.runSetId).Text);
 				InitCommons (githubAPIKey, httpAPITokens);
 				SetStartButtonText ("running");
-				RunBenchmark (runSetId, benchmarkName, hostname, architecture);
+				RunBenchmark (runSetId, benchmarkName, machineName, architecture);
 			};
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();
 			v += "\nArchitecture: " + architecture;
-			v += "\nHostname: " + hostname;
+			v += "\nMachineName: " + machineName;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
 			Logging.GetLogging ().Info (v);
 
