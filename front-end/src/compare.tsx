@@ -1,5 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/react-dom/react-dom.d.ts"/>
+///<reference path="../typings/require.d.ts"/>
 
 "use strict";
 
@@ -9,6 +10,10 @@ import * as xp_charts from './charts.tsx';
 import * as Database from './database.ts';
 import React = require ('react');
 import ReactDOM = require ('react-dom');
+
+/* tslint:disable: no-var-requires */
+require ('!style!css!less!./compare.less');
+/* tslint:enable: no-var-requires */
 
 class Controller {
 	private startupRunSetIds: Array<number>;
