@@ -54,6 +54,7 @@ namespace compare
 			}
 			return allPaths
 				.Select (f => LoadBenchmarkFromFile (f))
+				.Where (b => !b.OnlyExplicit || (names != null && names.Contains (b.Name)))
 				.ToList ();
 		}
 
