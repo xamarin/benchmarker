@@ -40,7 +40,11 @@ export function fetch (query: string, success: (results: Array<Object>) => void,
 
 const serverUrl = 'http://performancebot.mono-project.com:81/';
 
-export function fetchWithHeaders (query: string, headers: Object, success: (results: Array<Object>) => void, error: ErrorFunc) : void {
+export function fetchWithHeaders (
+        query: string,
+        headers: Object, success: (results: Array<Object>) => void,
+        error: ErrorFunc,
+        timeout: number = 1000) : void {
 	const request = new XMLHttpRequest();
 	const url = serverUrl + query;
 
@@ -49,7 +53,8 @@ export function fetchWithHeaders (query: string, headers: Object, success: (resu
 			return;
 
 		if (!(this.status >= 200 && this.status < 300)) {
-			error ("database fetch failed (" + this.status.toString () + ")");
+			console.log ("database fetch failed (" + this.status.toString () + ") - retrying after " + timeout + "ms");
+            setTimeout(() => fetchWithHeaders (query, headers, success, error, timeout * 2), timeout);
 			return;
 		}
 
