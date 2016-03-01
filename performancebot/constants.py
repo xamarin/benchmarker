@@ -41,10 +41,11 @@ BOSTON_NAS_URL = r'http://storage.bos.internalx.com'
 class Lane(object):
     Master, PullRequest = range(2)
 
-class Valgrind(object):
-    Disabled = ""
-    Massif = "valgrind_" # should be '-massif', but we would loose logs if we rename the builder... *sigh*
+class BenchmarkKind(object):
+    Default = ""
+    Massif = "valgrind_" # should be 'valgrind-massif', but we would lose logs if we rename the builder... *sigh*
     Cachegrind = "valgrind-cachegrind_"
+    CompileTime = "compile-time_"
 
 
 def _lifo_queue(_, requests):

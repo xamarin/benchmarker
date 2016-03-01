@@ -45,18 +45,6 @@ func internalServerError(explanation string) *requestError {
 	return &requestError{Explanation: explanation, httpStatus: http.StatusInternalServerError}
 }
 
-func (r *Run) ensureBenchmarksAndMetricsExist(benchmarks map[string]bool) *requestError {
-	if benchmarks != nil && !benchmarks[r.Benchmark] {
-		return badRequestError("Benchmark does not exist: " + r.Benchmark)
-	}
-	for m, v := range r.Results {
-		if !metricIsAllowed(m, v) {
-			return badRequestError("Metric not supported or results of wrong type: " + m)
-		}
-	}
-	return nil
-}
-
 func runSetPutHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError) {
 	var params RunSet
 	if err := json.Unmarshal(body, &params); err != nil {
@@ -269,7 +257,7 @@ func specificRunPostHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Req
 		return false, badRequestError("Could not parse request body")
 	}
 
-	reqErr = params.ensureBenchmarksAndMetricsExist(nil)
+	reqErr = params.ensureBenchmarksAndMetricsExist(database, nil)
 	if reqErr != nil {
 		return false, reqErr
 	}
