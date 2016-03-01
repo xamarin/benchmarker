@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 )
 
@@ -143,7 +144,8 @@ func metricIsAllowed(metric string, value interface{}) bool {
 		metric == "instructions" ||
 		metric == "memory-integral" ||
 		metric == "branch-mispred" ||
-		metric == "cache-miss" {
+		metric == "cache-miss" ||
+		strings.HasPrefix(metric, "jit-") {
 		_, ok := value.(float64)
 		return ok
 	}
