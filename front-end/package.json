@@ -1,0 +1,35 @@
+{
+  "name": "front-end",
+  "version": "0.1.0",
+  "description": "The front-end for the benchmarker",
+  "scripts": {
+      "start": "DEV_SERVER=true node node_modules/webpack-dev-server/bin/webpack-dev-server.js --devtool=inline-source-map"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xamarin/benchmarker.git"
+  },
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/xamarin/benchmarker/issues"
+  },
+  "dependencies": {
+    "react": "0.14.2",
+    "react-dom": "0.14.2",
+    "github-api": "0.10.6"
+  },
+  "devDependencies": {
+    "less": "2.5.3",
+    "less-loader": "2.2.2",
+    "css-loader": "0.9.1",
+    "style-loader": "0.13.0",
+    "file-loader": "0.8.5",
+    "url-loader": "0.5.7",
+    "ts-loader": "0.6.0",
+	"tslint": "2.5.1",
+	"extract-text-webpack-plugin": "1.0.1",
+    "typescript": "1.6.2",
+    "webpack": "1.12.14",
+    "webpack-dev-server": "1.14.1"
+  }
+}
