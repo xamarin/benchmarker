@@ -18,12 +18,15 @@ namespace Benchmarker.Models
 			BranchMispredictionRate,
 			CachegrindResults,
 			PauseTimes,
-			PauseStarts
+			PauseStarts,
+			JitPhase
 		};
 
 		public MetricType Metric { get; set; }
 
 		public object Value { get; set; }
+
+		public string PhaseName { get; set; }
 
 		public string MetricName {
 			get {
@@ -44,6 +47,8 @@ namespace Benchmarker.Models
 					return "pause-times";
 				case MetricType.PauseStarts:
 					return "pause-starts";
+				case MetricType.JitPhase:
+					return "jit-" + PhaseName.Replace ('_', '-');
 				default:
 					throw new Exception ("unknown metric type");
 				}
@@ -54,6 +59,7 @@ namespace Benchmarker.Models
 			get {
 				switch (Metric) {
 				case MetricType.Time:
+				case MetricType.JitPhase:
 					return ((TimeSpan)Value).TotalMilliseconds;
 				case MetricType.MemoryIntegral:
 				case MetricType.CacheMissRate:

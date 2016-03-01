@@ -52,6 +52,8 @@ class Compare
 		Console.Error.WriteLine ("                                Upload the pause times from the specified binary protocol file");
 		Console.Error.WriteLine ("        --sgen-grep-binprot PATH");
 		Console.Error.WriteLine ("                                Specify the path to the sgen-grep-binprot tool");
+		Console.Error.WriteLine ("        --jit-stats");
+		Console.Error.WriteLine ("                                Parse JIT times for each phase printed by --stats");
 		Console.Error.WriteLine ("        --run-id ID             the database ID of the run to upload to");
 
 		Environment.Exit (exitcode);
@@ -282,6 +284,37 @@ class Compare
 		return await run.UploadForAmend (runId);
 	}
 
+	private static Regex JIT_PHASE_REGEX = new Regex ("JIT/(\\w+)\\s*\\(sec\\)\\s*: (\\d+.\\d+)");
+	private static Regex JIT_ALL_REGEX = new Regex ("JITting \\(sec\\)\\s*: (\\d+.\\d+)");
+
+	// TODO: obtain values from log profiler output, not via --stats.
+	private static List<RunMetric> ParseJITPhases (string stdout) {
+		List<RunMetric> l = new List<RunMetric> ();
+		foreach (string line in stdout.Split ('\n')) {
+			var match = JIT_PHASE_REGEX.Match (line);
+			if (match.Success) {
+				double time = Double.Parse (match.Groups [2].Value);
+				l.Add (new RunMetric {
+					Metric = RunMetric.MetricType.JitPhase,
+					PhaseName = match.Groups [1].Value,
+					Value = TimeSpan.FromMilliseconds (time * 1000)
+				});
+				continue;
+			}
+
+			match = JIT_ALL_REGEX.Match (line);
+			if (match.Success) {
+				double time = Double.Parse (match.Groups [1].Value);
+				l.Add (new RunMetric {
+					Metric = RunMetric.MetricType.JitPhase,
+					PhaseName = "all",
+					Value = TimeSpan.FromMilliseconds (time * 1000)
+				});
+			}
+		}
+		return l;
+	}
+
 	enum ValgrindTool {
 		Massif,
 		Cachegrind
@@ -308,6 +341,7 @@ class Compare
 		string valgrindOutputFilename = null;
 		string grepBinprotPath = null;
 		string binprotFilePath = null;
+		bool jitStats = false;
 		Commit mainCommit = null;
 		List<Commit> secondaryCommits = new List<Commit> ();
 
@@ -397,6 +431,8 @@ class Compare
 				grepBinprotPath = args [++optindex];
 			} else if (args [optindex] == "--upload-pause-times") {
 				binprotFilePath = args [++optindex];
+			} else if (args [optindex] == "--jit-stats") {
+				jitStats = true;
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -585,6 +621,7 @@ class Compare
 
 				for (var i = 0; i < count; ++i) {
 					bool timedOut;
+					string stdoutOutput;
 
 					if (valgrindBinary == null)
 						Console.Out.Write ("\t\t-> {0} ", i == 0 ? "[dry run]" : String.Format ("({0}/{1})", i, config.Count));
@@ -598,7 +635,7 @@ class Compare
 						} while (File.Exists (binaryProtocolFile));
 					}
 	
-					var elapsedMilliseconds = runner.Run (binaryProtocolFile, out timedOut);
+					var elapsedMilliseconds = runner.Run (binaryProtocolFile, out timedOut, out stdoutOutput);
 
 					// if running for time, the first one is the dry run
 					if (valgrindBinary == null && i == 0)
@@ -615,6 +652,11 @@ class Compare
 								Metric = RunMetric.MetricType.Time,
 								Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
 							});
+							if (jitStats) {
+								foreach (var phase in ParseJITPhases (stdoutOutput)) {
+									run.RunMetrics.Add (phase);
+								}
+							}
 						} else {
 							switch (valgrindTool) {
 							case ValgrindTool.Massif:

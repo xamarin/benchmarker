@@ -60,11 +60,12 @@ namespace compare
 				arguments = "--stats " + arguments;
 		}
 
-		public long? Run (string profilesDirectory, string profileFilename, string binaryProtocolFilename, out bool timedOut)
+		public long? Run (string profilesDirectory, string profileFilename, string binaryProtocolFilename, out bool timedOut, out string stdoutOutput)
 		{
 			Utils.SetProcessStartEnvironmentVariables (info, config, binaryProtocolFilename);
 
 			timedOut = false;
+			stdoutOutput = null;
 
 			try {
 				if (profilesDirectory != null) {
@@ -141,6 +142,7 @@ namespace compare
 						}
 
 						Console.Out.WriteLine ("stdout:\n{0}", stdout.Result);
+						stdoutOutput = stdout.Result;
 						Console.Out.WriteLine ("stderr:\n{0}", stderr.Result);
 
 						if (success)
@@ -155,9 +157,9 @@ namespace compare
 			}
 		}
 
-		public long? Run (string binaryProtocolFilename, out bool timedOut)
+		public long? Run (string binaryProtocolFilename, out bool timedOut, out string stdoutOutput)
 		{
-			return Run (null, null, binaryProtocolFilename, out timedOut);
+			return Run (null, null, binaryProtocolFilename, out timedOut, out stdoutOutput);
 		}
 	}
 }
