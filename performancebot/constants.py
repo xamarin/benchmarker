@@ -45,6 +45,7 @@ class BenchmarkKind(object):
     Default = ""
     Massif = "valgrind_" # should be 'valgrind-massif', but we would lose logs if we rename the builder... *sigh*
     Cachegrind = "valgrind-cachegrind_"
+    CompileTime = "compile-time_"
 
 
 def _lifo_queue(_, requests):
