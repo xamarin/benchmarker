@@ -13,6 +13,22 @@ var githubClient *github.Client
 
 var connPool *pgx.ConnPool
 
+func (r *Run) ensureBenchmarksAndMetricsExist(database *pgx.Tx, benchmarks map[string]bool) *requestError {
+	if benchmarks != nil && !benchmarks[r.Benchmark] {
+		_, err := database.Exec("insertBenchmark", r.Benchmark)
+		if err != nil {
+			return badRequestError("Couldn't insert Benchmark: " + r.Benchmark)
+		}
+		benchmarks[r.Benchmark] = true
+	}
+	for m, v := range r.Results {
+		if !metricIsAllowed(m, v) {
+			return badRequestError("Metric not supported or results of wrong type: " + m)
+		}
+	}
+	return nil
+}
+
 func ensureProductExists(database *pgx.Tx, product Product) (string, *requestError) {
 	var commitDate time.Time
 	// FIXME: check and update mergeBaseHash
@@ -143,7 +159,7 @@ func (rs *RunSet) ensureBenchmarksAndMetricsExist(database *pgx.Tx) *requestErro
 	}
 
 	for _, run := range rs.Runs {
-		reqErr = run.ensureBenchmarksAndMetricsExist(benchmarks)
+		reqErr = run.ensureBenchmarksAndMetricsExist(database, benchmarks)
 		if reqErr != nil {
 			return reqErr
 		}
@@ -391,6 +407,11 @@ func prepareStatements(database *pgx.Conn) error {
 	}
 
 	_, err = database.Prepare("queryBenchmarks", "select name from benchmark")
+	if err != nil {
+		return err
+	}
+
+	_, err = database.Prepare("insertBenchmark", "insert into benchmark (name, disabled) values ($1, NULL)")
 	if err != nil {
 		return err
 	}
