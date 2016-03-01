@@ -1,0 +1,6 @@
+{
+  "Name": "fsharp-aot",
+  "TestDirectory": "fsharp/lib/bootstrap/4.0/",
+  "OnlyExplicit": "true",
+  "CommandLine": ["FSharp.Compiler.dll"]
+}
