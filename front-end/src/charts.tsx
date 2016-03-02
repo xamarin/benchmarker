@@ -428,7 +428,7 @@ export class ComparisonAMChart extends React.Component<ComparisonAMChartProps, v
             "rotate": false,
             "startDuration": 0.3,
             "categoryAxis": {
-                "gridPosition": "start"
+                "gridPosition": "start",
             },
             "chartScrollbar": {
             },
@@ -562,7 +562,7 @@ class TimelineAMChart extends React.Component<TimelineAMChartProps, void> {
 							"tickLength": 0,
 						},
 						"chartScrollbar": {
-							"graph": this.props.parameters [0].midName
+							"graph": this.props.parameters [0].midName,
 						},
 						"trendLines": [],
 						"graphs": graphs,

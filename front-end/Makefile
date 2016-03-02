@@ -29,7 +29,7 @@ all : $(PAGE_TARGETS)
 lint :
 	@echo 'Linting...'
 	@npm install
-	@node ./node_modules/tslint/bin/tslint-cli.js src/*.ts src/*.tsx
+	@./node_modules/tslint/bin/tslint src/*.ts src/*.tsx
 
 .PHONY : clean
 clean :

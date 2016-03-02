@@ -11,10 +11,6 @@
             "member-variable-declaration",
             "call-signature"
         ],
-        "XXXtypedef": [
-            false,
-            "variable-declaration"
-        ],
         "typedef-whitespace": [
             true,
             {
@@ -92,7 +88,7 @@
         "quotemark": false,
         "radix": false,
         "semicolon": true,
-        "sort-object-literal-keys": false,
+        "object-literal-sort-keys": false,
         "switch-default": true,
         "trailing-comma": [
             true,
