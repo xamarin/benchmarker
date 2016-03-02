@@ -43,6 +43,10 @@ module.exports = {
             {
                 test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
                 loader: "file-loader?name=./build/[name].[ext]?[hash]"
+            },
+            {
+                test: /\.md$/,
+                loader: "html!markdown"
             }
         ]
     },
