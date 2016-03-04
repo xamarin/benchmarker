@@ -137,6 +137,7 @@ class Page extends React.Component<PageProps, PageState> {
 					} />
 				{chart}
 				<div style={{ clear: 'both' }}></div>
+                {runSets.map ((rs: Database.DBRunSet) => <xp_common.RunSetDescription runSet={rs} />)}
 			</article>
 		</div>;
 	}
