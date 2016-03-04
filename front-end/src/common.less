@@ -92,8 +92,11 @@ h1, h2, h3 {
     margin: 16px 0;
 }
 
+p, table {
+    margin: 0 0 8px 0;
+}
+
 p {
-	margin: 0 0 8px 0;
 	line-height: 140%;
 }
 
@@ -143,6 +146,14 @@ table > tbody > tr:last-child > td:first-child {
 
 table > tbody > tr:last-child > td:last-child {
 	 border-bottom-right-radius: 4px;
+}
+
+table > tbody > tr > td.FirstInList, table > tbody > tr > td.MiddleInList {
+    border-bottom: none;
+}
+
+table > tbody > tr > td.LastInList, table > tbody > tr > td.MiddleInList {
+    border-top: none;
 }
 
 table tr.disabled {

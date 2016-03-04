@@ -12,6 +12,10 @@ import React = require ('react');
 import ReactDOM = require ('react-dom');
 import GitHub = require ('github-api');
 
+/* tslint:disable: no-var-requires */
+const helpGCPauses = require ('html!markdown!../help/gcPauses.md') as string;
+/* tslint:enable: no-var-requires */
+
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
 	"blue": [ "#91E2F4", "#4FCAE6", "#1FAECE", "#3192B3", "#2C7797" ],
@@ -686,29 +690,33 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                 if (entries.length > 0) {
                     const benchmarks = Object.keys (timeSlicesByBenchmark);
                     benchmarks.sort ();
-                    pausesTable = <table>
-                        <thead>
-                            <tr>
-                                <th>Benchmark</th>
-                                <th>GC Pauses</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {benchmarks.map ((benchmark: string) => {
-                                const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
-                                return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
-                                    let benchmarkElement: JSX.Element;
-                                    if (i === 0) {
-                                        benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
-                                    }
-                                    return <tr key={"run" + e.id}>
-                                        {benchmarkElement}
-                                        <td><PauseTimeline starts={e.starts} times={e.times} /></td>
-                                    </tr>;
-                                });
-                            })}
-                        </tbody>
-                    </table>;
+                    pausesTable = <div>
+                        <div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Benchmark</th>
+                                    <th>GC Pauses</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {benchmarks.map ((benchmark: string) => {
+                                    const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
+                                    return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
+                                        const position = (i === 0) ? 'First' : (i === benchmarkEntries.length - 1) ? 'Last' : 'Middle';
+                                        let benchmarkElement: JSX.Element;
+                                        if (i === 0) {
+                                            benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
+                                        }
+                                        return <tr key={"run" + e.id}>
+                                            {benchmarkElement}
+                                            <td className={position + 'InList'}><PauseTimeline starts={e.starts} times={e.times} /></td>
+                                        </tr>;
+                                    });
+                                })}
+                            </tbody>
+                        </table>
+                    </div>;
                 }
             }
 
