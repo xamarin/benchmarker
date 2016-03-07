@@ -9,7 +9,12 @@ import * as xp_utils from './utils.ts';
 import * as Database from './database.ts';
 import * as Outliers from './outliers.ts';
 import React = require ('react');
+import ReactDOM = require ('react-dom');
 import GitHub = require ('github-api');
+
+/* tslint:disable: no-var-requires */
+const helpGCPauses = require ('html!markdown!../help/gcPauses.md') as string;
+/* tslint:enable: no-var-requires */
 
 export var xamarinColors = {
 	//        light2     light1     normal     dark1      dark2
@@ -439,6 +444,83 @@ function computeTimeSlices (starts: Array<number>, times: Array<number>) : TimeS
     return { total: slice, failed: failed };
 }
 
+function colorForPauseTime (time: number) : string {
+    const low = 50;
+    const high = 500;
+    if (time < low) {
+        return 'hsl(135, 100%, 50%)';
+    } else if (time > high) {
+        return '#F00';
+    }
+    const degree = 135 * (1 - (time - low) / (high - low));
+    return 'hsl(' + Math.round (degree) + ', 100%, 50%)';
+}
+
+type PauseTimelineProps = {
+    starts: Array<number>;
+    times: Array<number>;
+};
+
+class PauseTimeline extends React.Component<PauseTimelineProps, void> {
+    public componentDidMount () : void {
+        this.paint (this.getContext ());
+    }
+
+    public componentDidUpdate () : void {
+        const context = this.getContext ();
+        context.clearRect (0, 0, 500, 20);
+        this.paint (context);
+    }
+
+    public render () : JSX.Element {
+        return <canvas className='PauseTimeline' />;
+    }
+
+    private getContext () : CanvasRenderingContext2D {
+        return (ReactDOM.findDOMNode (this) as HTMLCanvasElement).getContext ('2d');
+    }
+
+    private paint (context: CanvasRenderingContext2D) : void {
+        context['webkitImageSmoothingEnabled'] = true;
+        context['imageSmoothingEnabled'] = true;
+
+        const element = ReactDOM.findDOMNode (this) as HTMLCanvasElement;
+        element.width = element.clientWidth;
+        element.height = element.clientHeight;
+
+        const width = element.width;
+        const height = element.height;
+
+        const n = this.props.starts.length;
+        if (n === 0) {
+            return;
+        }
+
+        const end = this.props.starts [n - 1] + this.props.times [n - 1];
+
+        context.fillStyle = '#FFF';
+        context.fillRect (0, 0, width, height);
+
+        context.fillStyle = '#F00';
+        for (let i = 0; i < n; i++) {
+            const start = this.props.starts [i];
+            const time = this.props.times [i];
+            const x = start / end * width;
+            const w = time / end * width;
+
+            context.fillStyle = colorForPauseTime (time);
+            context.fillRect (x, 0, w, height);
+        }
+    }
+}
+
+type GCPauseTimesEntry = {
+    id: string;
+    benchmark: string;
+    starts: Array<number>;
+    times: Array<number>;
+};
+
 type RunSetDescriptionProps = {
 	runSet: Database.DBRunSet;
 };
@@ -504,6 +586,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var logLinks = [];
 		var logLinkList: JSX.Element;
 		var table: JSX.Element;
+		let pausesTable: JSX.Element;
 		var secondaryProductsList: Array<JSX.Element>;
 		var crashedElem: JSX.Element;
 		var timedOutElem: JSX.Element;
@@ -564,11 +647,11 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				metricsDict [metric] = {};
 			}
             if (this.state.resultArrays !== undefined) {
-                const runs: {[id: string]: { benchmark: string, starts: Array<number>, times: Array<number> }} = {};
+                const runs: {[id: string]: GCPauseTimesEntry} = {};
                 for (let i = 0; i < this.state.resultArrays.length; ++i) {
                     const row = this.state.resultArrays [i];
                     const id = row ['r_id'].toString ();
-                    const entry = runs [id] || { benchmark: row ['benchmark'], starts: undefined, times: undefined };
+                    const entry = runs [id] || { id: id, benchmark: row ['benchmark'], starts: undefined, times: undefined };
                     const metric = row ['metric'];
                     if (metric === 'pause-starts') {
                         entry.starts = row ['resultarray'];
@@ -579,9 +662,9 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     }
                     runs [id] = entry;
                 }
+                const entries = Object.keys (runs).map ((id: string) => runs [id]);
                 const timeSlicesByBenchmark: {[benchmark: string]: TimeSliceCount} = {};
-                Object.keys (runs).forEach ((id: string) => {
-                    const entry = runs [id];
+                entries.forEach ((entry: GCPauseTimesEntry) => {
                     if (entry.starts === undefined || entry.times === undefined) {
                         return;
                     }
@@ -600,6 +683,38 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     resultsByBenchmark [benchmark] = entry;
                     metricsDict ['acceptable-time-slices'] = {};
                 });
+
+                if (entries.length > 0) {
+                    const benchmarks = Object.keys (timeSlicesByBenchmark);
+                    benchmarks.sort ();
+                    pausesTable = <div>
+                        <div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Benchmark</th>
+                                    <th>GC Pauses</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {benchmarks.map ((benchmark: string) => {
+                                    const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
+                                    return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
+                                        const position = (i === 0) ? 'First' : (i === benchmarkEntries.length - 1) ? 'Last' : 'Middle';
+                                        let benchmarkElement: JSX.Element;
+                                        if (i === 0) {
+                                            benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
+                                        }
+                                        return <tr key={"run" + e.id}>
+                                            {benchmarkElement}
+                                            <td className={position + 'InList'}><PauseTimeline starts={e.starts} times={e.times} /></td>
+                                        </tr>;
+                                    });
+                                })}
+                            </tbody>
+                        </table>
+                    </div>;
+                }
             }
 
 			var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
@@ -701,6 +816,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			{logLinkList}
 			{secondaryProductsList}
 			{table}
+            {pausesTable}
 		</div>;
 	}
 }
