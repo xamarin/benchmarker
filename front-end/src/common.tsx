@@ -473,7 +473,7 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
     }
 
     public render () : JSX.Element {
-        return <canvas style={{ width: "100%", height: 20 }} />;
+        return <canvas className='PauseTimeline' />;
     }
 
     private getContext () : CanvasRenderingContext2D {
@@ -511,9 +511,6 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
             context.fillStyle = colorForPauseTime (time);
             context.fillRect (x, 0, w, height);
         }
-
-        context.strokeStyle = '#000';
-        context.strokeRect (0, 0, width, height);
     }
 }
 
