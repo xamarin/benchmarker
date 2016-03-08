@@ -402,7 +402,8 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
                 description="parse " + benchmark_name,
                 doStepIf=gen_guard_benchmark_run(benchmark_name),
                 command=['echo', 'dummy'],
-                flunkOnFailure=True
+                flunkOnFailure=True,
+                haltOnFailure=False
             )
         )
 
