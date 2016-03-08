@@ -69,8 +69,10 @@ class Controller {
 					<div style={{ clear: 'both' }}></div>
 					<h2><a href={"runset.html#id=" + this.prRunSet.get ('id')}>Pull Request Run Set</a></h2>
 					<xp_common.RunSetDescription runSet={this.prRunSet} />
+                    <xp_common.RunSetMetricsTable runSet={this.prRunSet} />
 					<h2><a href={"runset.html#id=" + baselineRunSet.get ('id')}>Baseline Run Set</a></h2>
 					<xp_common.RunSetDescription runSet={baselineRunSet} />
+                    <xp_common.RunSetMetricsTable runSet={baselineRunSet} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')

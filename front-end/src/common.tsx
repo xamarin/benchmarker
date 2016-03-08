@@ -473,7 +473,7 @@ type RunSetMetricsTableState = {
 	runSetData: RunSets.Data;
 };
 
-class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps, RunSetMetricsTableState> {
+export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps, RunSetMetricsTableState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
 		this.state = { runSetData: this.makeRunSetData (props.runSet) };
@@ -743,7 +743,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
-            <RunSetMetricsTable runSet={runSet} />
 		</div>;
 	}
 }
