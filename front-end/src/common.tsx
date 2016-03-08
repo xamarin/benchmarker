@@ -522,7 +522,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var logLinks = [];
 		var logLinkList: JSX.Element;
 		var table: JSX.Element;
-		let pausesTable: JSX.Element;
 		var secondaryProductsList: Array<JSX.Element>;
 		var crashedElem: JSX.Element;
 		var timedOutElem: JSX.Element;
@@ -636,6 +635,23 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     }
                     metricRows.push (metricColumns);
                 });
+                const numPauseRows = results.gcPauses.length;
+                results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
+                    const position = (i === 0) ? 'First' : (i === numPauseRows - 1) ? 'Last' : 'Middle';
+                    let nameColumn: JSX.Element;
+                    let resultColumn: JSX.Element;
+                    if (i === 0) {
+                        nameColumn = <td
+                                key={"metricName" + benchmark + "gcPauses"}
+                                rowSpan={numPauseRows}>
+                                GC Pauses
+                            </td>;
+                    }
+                    if (pauses.length > 0) {
+                        resultColumn = <td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>;
+                    }
+                    metricRows.push ([nameColumn, resultColumn]);
+                });
 
                 metricRows.forEach ((columns: Array<JSX.Element>, i: number) => {
                     let benchmarkElements: Array<JSX.Element> = [undefined, undefined];
@@ -676,45 +692,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
                     {tableRows}
                 </tbody>
             </table>;
-
-			if (metrics.indexOf ('acceptable-time-slices') >= 0) {
-				const benchmarks = Object.keys (resultsByBenchmark);
-				benchmarks.sort ();
-				const pauseRows: Array<JSX.Element> = [];
-				benchmarks.forEach ((benchmark: string) => {
-					const results = resultsByBenchmark [benchmark];
-					const len = results.gcPauses.length;
-					if (len === 0) {
-						return;
-					}
-					results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
-						const position = (i === 0) ? 'First' : (i === len - 1) ? 'Last' : 'Middle';
-						let benchmarkElement: JSX.Element;
-						if (i === 0) {
-							benchmarkElement = <td rowSpan={len}><code>{benchmark}</code></td>;
-						}
-						pauseRows.push (<tr key={"run" + benchmark + i}>
-							{benchmarkElement}
-							<td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>
-						</tr>);
-					});
-				});
-
-				pausesTable = <div>
-					<div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
-					<table>
-						<thead>
-							<tr>
-								<th>Benchmark</th>
-								<th>GC Pauses</th>
-							</tr>
-						</thead>
-						<tbody>
-							{pauseRows}
-						</tbody>
-					</table>
-				</div>;
-			}
 		}
 
 		const product = runSet.commit ? runSet.commit.get ('product') : 'mono';
@@ -745,7 +722,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			{logLinkList}
 			{secondaryProductsList}
 			{table}
-            {pausesTable}
 		</div>;
 	}
 }
