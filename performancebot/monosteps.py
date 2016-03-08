@@ -179,10 +179,11 @@ class GithubPostPRStatus(LoggingBuildStep):
         data['context'] = 'perf/%s_%s/%s' % (platform, short_config_name, str(buildnumber))
         data['target_url'] = 'http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id=%s' % str(parse_pullrequest_id)
 
-        requests.post(
+        r = requests.post(
             'https://api.github.com/repos/%s/%s/statuses/%s' % (self.githubuser, self.githubrepo, str(pullrequest_commit_id)),
             headers=headers,
             data=json.dumps(data)
         )
+        log.msg("GithubPostPRStatus: status_code(" + str(r.status_code) + "), text: \"" + str(r.text) + "\"")
         self.finished(SUCCESS)
 
