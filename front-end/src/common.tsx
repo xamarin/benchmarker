@@ -8,6 +8,7 @@ declare var process: any;
 import * as xp_utils from './utils.ts';
 import * as Database from './database.ts';
 import * as Outliers from './outliers.ts';
+import * as RunSets from './runsets.ts';
 import React = require ('react');
 import ReactDOM = require ('react-dom');
 import GitHub = require ('github-api');
@@ -395,55 +396,6 @@ function descriptiveMetricName (metric: string) : string {
 	}
 }
 
-type TimeSliceCount = {
-    total: number;
-    failed: number;
-};
-
-// We define a time slice as failed if its mutator utilization is below
-// a certain threshold.  For now we've hard-coded a slice length of 100ms
-// and an acceptable fraction of 50%.
-function computeTimeSlices (starts: Array<number>, times: Array<number>) : TimeSliceCount {
-    const sliceLength = 100;
-    const acceptableFraction = 0.5;
-
-    if (starts.length !== times.length) {
-        console.log ("Error: starts and times have different lengths");
-        return { total: 0, failed: 0 };
-    }
-
-    let slice = 0;
-    let failed = 0;
-
-    let i = 0;
-    while (i < starts.length) {
-        const sliceStart = slice * sliceLength;
-        const sliceEnd = sliceStart + sliceLength;
-
-        slice++;
-
-        // FIXME: optimize
-        if (sliceEnd <= starts [i]) {
-            continue;
-        }
-
-        let pauseTime = 0;
-        while (i < starts.length && starts [i] < sliceEnd) {
-            const pauseEnd = starts [i] + times [i];
-            pauseTime += Math.min (sliceEnd, pauseEnd) - Math.max (sliceStart, starts [i]);
-            i++;
-        }
-
-        const mutatorTime = sliceLength - pauseTime;
-
-        if (mutatorTime < sliceLength * acceptableFraction) {
-            failed++;
-        }
-    }
-
-    return { total: slice, failed: failed };
-}
-
 function colorForPauseTime (time: number) : string {
     const low = 50;
     const high = 500;
@@ -457,8 +409,7 @@ function colorForPauseTime (time: number) : string {
 }
 
 type PauseTimelineProps = {
-    starts: Array<number>;
-    times: Array<number>;
+	pauses: Array<RunSets.GCPause>;
 };
 
 class PauseTimeline extends React.Component<PauseTimelineProps, void> {
@@ -491,20 +442,20 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
         const width = element.width;
         const height = element.height;
 
-        const n = this.props.starts.length;
+        const n = this.props.pauses.length;
         if (n === 0) {
             return;
         }
 
-        const end = this.props.starts [n - 1] + this.props.times [n - 1];
+        const end = this.props.pauses [n - 1].start + this.props.pauses [n - 1].duration;
 
         context.fillStyle = '#FFF';
         context.fillRect (0, 0, width, height);
 
         context.fillStyle = '#F00';
         for (let i = 0; i < n; i++) {
-            const start = this.props.starts [i];
-            const time = this.props.times [i];
+            const start = this.props.pauses [i].start;
+            const time = this.props.pauses [i].duration;
             const x = start / end * width;
             const w = time / end * width;
 
@@ -514,20 +465,12 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
     }
 }
 
-type GCPauseTimesEntry = {
-    id: string;
-    benchmark: string;
-    starts: Array<number>;
-    times: Array<number>;
-};
-
 type RunSetDescriptionProps = {
 	runSet: Database.DBRunSet;
 };
 
 type RunSetDescriptionState = {
-	results: Array<Object>;
-    resultArrays: Array<Object>;
+	runSetData: RunSets.Data;
 	secondaryCommits: Array<Object>;
 	commitInfo: Object;
 };
@@ -535,27 +478,19 @@ type RunSetDescriptionState = {
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = { results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined };
+		this.state = { runSetData: this.makeRunSetData (props.runSet), secondaryCommits: undefined, commitInfo: undefined };
 		this.fetchResults (props.runSet);
 	}
 
+	private makeRunSetData (runSet: Database.DBRunSet) : RunSets.Data {
+		return new RunSets.Data (runSet, (data: RunSets.Data) => {
+			this.forceUpdate ();
+		}, (error: Object) => {
+			alert ("Could not fetch run set data: " + error.toString ());
+		});
+	}
+
 	private fetchResults (runSet: Database.DBRunSet) : void {
-		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
-			(objs: Array<Object>) => {
-				if (runSet !== this.props.runSet)
-					return;
-				this.setState ({ results: objs } as any);
-			}, (error: Object) => {
-				alert ("error loading results: " + error.toString ());
-			});
-        Database.fetch ('resultarrays?rs_id=eq.' + runSet.get ('id'),
-            (objs: Array<Object>) => {
-                if (runSet !== this.props.runSet)
-                    return;
-                this.setState ({ resultArrays: objs } as any);
-            }, (error: Object) => {
-				alert ("error loading result arrays: " + error.toString ());
-            });
 		var secondaryCommits = runSet.get ('secondaryCommits');
 		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
 			Database.fetch ('commit?hash=in.' + secondaryCommits.join (','),
@@ -574,7 +509,8 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	}
 
 	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
-		this.setState ({ results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined });
+		this.state.runSetData.abortFetch ();
+		this.setState ({ runSetData: this.makeRunSetData (nextProps.runSet), secondaryCommits: undefined, commitInfo: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
@@ -631,92 +567,10 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			];
 		}
 
-		if (this.state.results === undefined) {
+		if (!this.state.runSetData.hasResults ()) {
 			table = <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
 		} else {
-			var resultsByBenchmark: {[benchmark: string]: { metrics: {[metric: string]: Array<number>}, disabled: boolean }} = {};
-			var metricsDict: {[metric: string]: Object} = {};
-			for (let i = 0; i < this.state.results.length; ++i) {
-				let result = this.state.results [i];
-				const benchmark = result ['benchmark'];
-				const metric = result ['metric'];
-				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] as boolean };
-				entry.metrics [metric] = result ['results'];
-				resultsByBenchmark [benchmark] = entry;
-
-				metricsDict [metric] = {};
-			}
-            if (this.state.resultArrays !== undefined) {
-                const runs: {[id: string]: GCPauseTimesEntry} = {};
-                for (let i = 0; i < this.state.resultArrays.length; ++i) {
-                    const row = this.state.resultArrays [i];
-                    const id = row ['r_id'].toString ();
-                    const entry = runs [id] || { id: id, benchmark: row ['benchmark'], starts: undefined, times: undefined };
-                    const metric = row ['metric'];
-                    if (metric === 'pause-starts') {
-                        entry.starts = row ['resultarray'];
-                    } else if (metric === 'pause-times') {
-                        entry.times = row ['resultarray'];
-                    } else {
-                        continue;
-                    }
-                    runs [id] = entry;
-                }
-                const entries = Object.keys (runs).map ((id: string) => runs [id]);
-                const timeSlicesByBenchmark: {[benchmark: string]: TimeSliceCount} = {};
-                entries.forEach ((entry: GCPauseTimesEntry) => {
-                    if (entry.starts === undefined || entry.times === undefined) {
-                        return;
-                    }
-                    const timeSlices = timeSlicesByBenchmark [entry.benchmark] || { total: 0, failed: 0 };
-                    const {total, failed} = computeTimeSlices (entry.starts, entry.times);
-                    timeSlices.total += total;
-                    timeSlices.failed += failed;
-                    timeSlicesByBenchmark [entry.benchmark] = timeSlices;
-                });
-                Object.keys (timeSlicesByBenchmark).forEach ((benchmark: string) => {
-                    const {total, failed} = timeSlicesByBenchmark [benchmark];
-                    const percentage = parseFloat (((total - failed) / total * 100).toPrecision (3));
-                    // FIXME: set disabled to proper value (it's not in the DB view yet)
-    				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: false };
-                    entry.metrics ['acceptable-time-slices'] = [percentage];
-                    resultsByBenchmark [benchmark] = entry;
-                    metricsDict ['acceptable-time-slices'] = {};
-                });
-
-                if (entries.length > 0) {
-                    const benchmarks = Object.keys (timeSlicesByBenchmark);
-                    benchmarks.sort ();
-                    pausesTable = <div>
-                        <div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Benchmark</th>
-                                    <th>GC Pauses</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {benchmarks.map ((benchmark: string) => {
-                                    const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
-                                    return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
-                                        const position = (i === 0) ? 'First' : (i === benchmarkEntries.length - 1) ? 'Last' : 'Middle';
-                                        let benchmarkElement: JSX.Element;
-                                        if (i === 0) {
-                                            benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
-                                        }
-                                        return <tr key={"run" + e.id}>
-                                            {benchmarkElement}
-                                            <td className={position + 'InList'}><PauseTimeline starts={e.starts} times={e.times} /></td>
-                                        </tr>;
-                                    });
-                                })}
-                            </tbody>
-                        </table>
-                    </div>;
-                }
-            }
-
+			const resultsByBenchmark = this.state.runSetData.resultsByBenchmark (this.props.runSet);
 			var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
 			var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
 			var reportedCrashed: {[name: string]: boolean} = {};
@@ -724,12 +578,13 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			var benchmarkNames = xp_utils.uniqStringArray
 				(Object.keys (resultsByBenchmark).concat (crashedBenchmarks).concat (timedOutBenchmarks));
 			benchmarkNames.sort ();
-			var metrics = Object.keys (metricsDict);
-			metrics.sort ();
+			var metrics = this.state.runSetData.metrics ();
 			var tableHeaders = [];
 			metrics.forEach ((m: string) => {
 				tableHeaders.push (<th key={"metricValues" + m}>{descriptiveMetricName (m)}</th>);
-				tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
+				if (!RunSets.metricIsAggregate (m)) {
+					tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
+				}
 			});
 			table = <table key="table">
 				<thead>
@@ -763,20 +618,29 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 
 					var metricColumns = [];
 					metrics.forEach ((m: string) => {
-						var dataPoints = result.metrics [m] || [];
-						dataPoints.sort ();
-						var dataPointsString = dataPoints.join (", ");
-						var variance = Outliers.outlierVariance (dataPoints);
-						var degree = variance < 0.01 ? 'none'
-							: variance < 0.10 ? 'slight'
-							: variance < 0.50 ? 'moderate'
-							: 'severe';
-						metricColumns.push (<td key={"metricValues" + m}>{dataPointsString}</td>);
-						metricColumns.push (<td key={"metricDegree" + m}>
+						let dataPointsString: string;
+						let degreeElement: JSX.Element;
+						if (RunSets.metricIsAggregate (m)) {
+							dataPointsString = result.aggregate [m].toString ();
+						} else {
+							var dataPoints = result.individual [m] || [];
+							dataPoints.sort ();
+							dataPointsString = dataPoints.join (", ");
+							var variance = Outliers.outlierVariance (dataPoints);
+							var degree = variance < 0.01 ? 'none'
+								: variance < 0.10 ? 'slight'
+								: variance < 0.50 ? 'moderate'
+								: 'severe';
+								degreeElement = <td key={"metricDegree" + m}>
 								<div className="degree" title={degree}>
 									<div className={degree}>&nbsp;</div>
 								</div>
-							</td>);
+							</td>;
+						}
+						metricColumns.push (<td key={"metricValues" + m}>{dataPointsString}</td>);
+						if (degreeElement !== undefined) {
+							metricColumns.push (degreeElement);
+						}
 					});
 
 					return <tr key={"benchmark" + name} className={disabled ? 'disabled' : ''}>
@@ -786,6 +650,45 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 					</tr>;
 				})}
 			</tbody></table>;
+
+			if (metrics.indexOf ('acceptable-time-slices') >= 0) {
+				const benchmarks = Object.keys (resultsByBenchmark);
+				benchmarks.sort ();
+				const pauseRows: Array<JSX.Element> = [];
+				benchmarks.forEach ((benchmark: string) => {
+					const results = resultsByBenchmark [benchmark];
+					const len = results.gcPauses.length;
+					if (len === 0) {
+						return;
+					}
+					results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
+						const position = (i === 0) ? 'First' : (i === len - 1) ? 'Last' : 'Middle';
+						let benchmarkElement: JSX.Element;
+						if (i === 0) {
+							benchmarkElement = <td rowSpan={len}><code>{benchmark}</code></td>;
+						}
+						pauseRows.push (<tr key={"run" + benchmark + i}>
+							{benchmarkElement}
+							<td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>
+						</tr>);
+					});
+				});
+
+				pausesTable = <div>
+					<div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
+					<table>
+						<thead>
+							<tr>
+								<th>Benchmark</th>
+								<th>GC Pauses</th>
+							</tr>
+						</thead>
+						<tbody>
+							{pauseRows}
+						</tbody>
+					</table>
+				</div>;
+			}
 		}
 
 		const product = runSet.commit ? runSet.commit.get ('product') : 'mono';
