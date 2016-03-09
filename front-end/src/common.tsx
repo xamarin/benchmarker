@@ -478,6 +478,20 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
     }
 }
 
+type LongestPausesProps = {
+	pauses: Array<RunSets.GCPause>;
+	n: number;
+};
+
+class LongestPauses extends React.Component<LongestPausesProps, void> {
+	public render () : JSX.Element {
+		const pauses = this.props.pauses.slice ();
+		pauses.sort ((a, b: RunSets.GCPause) => b.duration - a.duration);
+		const longest = pauses.slice (0, this.props.n);
+		return <span>{longest.map ((p: RunSets.GCPause) => p.duration.toPrecision (4)).join (", ")}</span>;
+	}
+}
+
 type RunSetMetricsTableProps = {
 	runSets: Array<Database.DBRunSet>;
 };
@@ -559,7 +573,10 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     </td>;
             }
             if (pauses.length > 0) {
-                resultColumn = <td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>;
+                resultColumn = <td className={position + 'InList'}>
+						<PauseTimeline pauses={pauses} />
+						Longest: <LongestPauses pauses={pauses} n={10} />
+					</td>;
             }
             metricRows.push ([nameColumn, resultColumn]);
         });
