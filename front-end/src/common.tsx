@@ -30,6 +30,11 @@ export var xamarinColors = {
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
+export function xamarinColorInSequence (i: number, brightness: number) : string {
+    // FIXME: check range of i
+    return xamarinColors [xamarinColorsOrder [i]][brightness];
+}
+
 export enum DescriptionFormat {
     Compact,
     Full
@@ -570,7 +575,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
         benchmarkNames.forEach ((benchmark: string) => {
             const benchmarkRows: Array<Array<JSX.Element>> = [];
 
-            this.props.runSets.forEach ((runSet: Database.DBRunSet) => {
+            this.props.runSets.forEach ((runSet: Database.DBRunSet, runSetIndex: number) => {
                 const crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
                 const timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
 
@@ -581,13 +586,14 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
                 if (statusIcons.length === 0)
                     statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
+                const statusStyle = { 'background-color': xamarinColorInSequence (runSetIndex, 0) };
 
                 const results = this.state.runSetData.resultsForRunSetAndBenchmark (runSet, benchmark);
 
                 if (results === undefined) {
                     benchmarkRows.push ([
                             // FIXME: don't duplicate this element (see below)
-                            <td key={"status" + benchmark + runSet.get ('id')} className="statusColumn">
+                            <td key={"status" + benchmark + runSet.get ('id')} style={statusStyle} className="statusColumn">
                                 {statusIcons}
                             </td>,
                             <td colSpan={3} className="diagnostic">All runs in this run set timed out or crashed.</td>,
@@ -602,6 +608,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     if (i === 0) {
                         statusElement = <td
                                 key={"status" + benchmark + runSet.get ('id')}
+                                style={statusStyle}
                                 rowSpan={metricRows.length}
                                 className="statusColumn">
                                 {statusIcons}{results.disabled ? ' (disabled)' : ''}
