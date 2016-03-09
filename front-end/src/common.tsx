@@ -1,5 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/github-api/github-api.d.ts"/>
+///<reference path="../typings/tinycolor/tinycolor.d.ts"/>
 
 "use strict";
 
@@ -12,6 +13,7 @@ import * as RunSets from './runsets.ts';
 import React = require ('react');
 import ReactDOM = require ('react-dom');
 import GitHub = require ('github-api');
+import Tinycolor = require ('tinycolor2');
 
 /* tslint:disable: no-var-requires */
 const helpGCPauses = require ('html!markdown!../help/gcPauses.md') as string;
@@ -586,7 +588,9 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
                 if (statusIcons.length === 0)
                     statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
-                const statusStyle = { 'background-color': xamarinColorInSequence (runSetIndex, 0) };
+                const color = Tinycolor (xamarinColorInSequence (runSetIndex, 0));
+                color.lighten (12);
+                const statusStyle = { 'backgroundColor': color.toHexString () };
 
                 const results = this.state.runSetData.resultsForRunSetAndBenchmark (runSet, benchmark);
 
