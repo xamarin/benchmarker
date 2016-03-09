@@ -67,11 +67,11 @@ class Controller {
                         runSetLabels={["Baseline", "Pull request"]}
 						selectedIndices={[]}/>
 					<div style={{ clear: 'both' }}></div>
-					<h2><a href={"runset.html#id=" + this.prRunSet.get ('id')}>Pull Request Run Set</a></h2>
-					<xp_common.RunSetDescription runSet={this.prRunSet} />
 					<h2><a href={"runset.html#id=" + baselineRunSet.get ('id')}>Baseline Run Set</a></h2>
-					<xp_common.RunSetDescription runSet={baselineRunSet} />
-                    <xp_common.RunSetMetricsTable runSets={[this.prRunSet, baselineRunSet]} />
+					<xp_common.RunSetDescription runSet={baselineRunSet} backgroundColor={xp_common.xamarinColorInSequence (0, 0, true)} />
+					<h2><a href={"runset.html#id=" + this.prRunSet.get ('id')}>Pull Request Run Set</a></h2>
+					<xp_common.RunSetDescription runSet={this.prRunSet} backgroundColor={xp_common.xamarinColorInSequence (1, 0, true)} />
+                    <xp_common.RunSetMetricsTable runSets={[baselineRunSet, this.prRunSet]} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')

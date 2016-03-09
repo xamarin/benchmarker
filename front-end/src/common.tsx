@@ -32,9 +32,15 @@ export var xamarinColors = {
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
 
-export function xamarinColorInSequence (i: number, brightness: number) : string {
+export function xamarinColorInSequence (i: number, brightness: number, lighten: boolean) : string {
     // FIXME: check range of i
-    return xamarinColors [xamarinColorsOrder [i]][brightness];
+    const original = xamarinColors [xamarinColorsOrder [i]][brightness];
+    if (!lighten) {
+        return original;
+    }
+    const color = Tinycolor (original);
+    color.lighten (12);
+    return color.toHexString ();
 }
 
 export enum DescriptionFormat {
@@ -588,9 +594,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
                 if (statusIcons.length === 0)
                     statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
-                const color = Tinycolor (xamarinColorInSequence (runSetIndex, 0));
-                color.lighten (12);
-                const statusStyle = { 'backgroundColor': color.toHexString () };
+                const statusStyle = { 'backgroundColor': xamarinColorInSequence (runSetIndex, 0, true) };
 
                 const results = this.state.runSetData.resultsForRunSetAndBenchmark (runSet, benchmark);
 
@@ -656,9 +660,10 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
     }
 }
 
-type RunSetDescriptionProps = {
+interface RunSetDescriptionProps extends React.Props<RunSetDescription> {
 	runSet: Database.DBRunSet;
-};
+    backgroundColor?: string;
+}
 
 type RunSetDescriptionState = {
 	secondaryCommits: Array<Object>;
@@ -769,13 +774,30 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		}
 
 		const commitElement = <p><strong><a href={commitLink}>{commitName}</a></strong> {buildIcon}</p>;
-		return <div className="Description">
+		return <div className="Description" style={{ 'backgroundColor': this.props.backgroundColor }} >
 			{commitElement}
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
 		</div>;
 	}
+}
+
+type RunSetDescriptionsProps = {
+	runSets: Array<Database.DBRunSet>;
+};
+
+export class RunSetDescriptions extends React.Component<RunSetDescriptionsProps, void> {
+    public render () : JSX.Element {
+        return <div>
+            {this.props.runSets.map ((runSet: Database.DBRunSet, i: number) => {
+                return <RunSetDescription
+					key={i.toString ()}
+					runSet={runSet}
+					backgroundColor={xamarinColorInSequence (i, 0, true)} />;
+            })}
+        </div>;
+    }
 }
 
 export interface RunSetSummaryProps extends React.Props<RunSetSummary> {
