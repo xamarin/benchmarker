@@ -30,6 +30,14 @@ export class DBRunSet extends DBObject {
 		this.config = config;
 		this.commit = commit;
 	}
+
+    public crashedBenchmarks () : Array<string> {
+        return (this.get ('crashedBenchmarks') || []) as Array<string>;
+    }
+
+    public timedOutBenchmarks () : Array<string> {
+        return (this.get ('timedOutBenchmarks') || []) as Array<string>;
+    }
 }
 
 type ErrorFunc = (err: any) => void;

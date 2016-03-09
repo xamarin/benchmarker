@@ -111,7 +111,7 @@ class Page extends React.Component<PageProps, PageState> {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
 		} else {
 			detail = <xp_common.RunSetDescription runSet={runSet} />;
-            table = <xp_common.RunSetMetricsTable runSet={runSet} />;
+            table = <xp_common.RunSetMetricsTable runSets={[runSet]} />;
 			runSetIds = [runSet.get ('id')];
 		}
 
@@ -130,6 +130,7 @@ class Page extends React.Component<PageProps, PageState> {
 						onChange={(s: xp_common.RunSetSelection) => this.handleChange (s)} />
 				</div>
 				{detail}
+                {table}
 			</article>
 		</div>;
 	}

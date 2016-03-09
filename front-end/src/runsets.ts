@@ -81,40 +81,47 @@ type GCPauseTimesEntry = {
     times: Array<number>;
 };
 
-export class Data {
-    private runSet: Database.DBRunSet;
+type RunSetResults = {
+    results: Array<Object>;
+    resultArrays: Array<Object>;
 
-    private results: Array<Object>;
-    private resultArrays: Array<Object>;
+    byBenchmark: ResultsByBenchmark;
+    needsRecompute: boolean;
+};
+
+export class Data {
+    private runSets: Array<Database.DBRunSet>;
+    private results: {[runSetId: string]: RunSetResults};
 
     private requests: Array<XMLHttpRequest>;
 
-    private byBenchmark: ResultsByBenchmark;
-    private metricsArray: Array<string>;
-    private needsRecompute: boolean;
+    private metricsDict: {[metric: string]: Object};
+    private benchmarksDict: {[benchmark: string]: Object};
 
-    constructor (runSet: Database.DBRunSet, update: (data: Data) => void, error: (error: Object) => void) {
-        this.runSet = runSet;
-
-        this.results = undefined;
-        this.resultArrays = undefined;
-
+    constructor (runSets: Array<Database.DBRunSet>, update: (data: Data) => void, error: (error: Object) => void) {
+        this.runSets = runSets;
+        this.results = {};
         this.requests = [];
+        this.metricsDict = {};
+        this.benchmarksDict = {};
 
-        this.needsRecompute = false;
+        runSets.forEach ((runSet: Database.DBRunSet) => {
+            const results: RunSetResults = { results: undefined, resultArrays: undefined, byBenchmark: {}, needsRecompute: false };
+            this.results [runSet.get ('id')] = results;
 
-        this.requests.push (Database.fetch ('results?runset=eq.' + runSet.get ('id'),
-			(objs: Array<Object>) => {
-                this.results = objs;
-                this.needsRecompute = true;
-                update (this);
-			}, error));
-        this.requests.push (Database.fetch ('resultarrays?rs_id=eq.' + runSet.get ('id'),
-            (objs: Array<Object>) => {
-                this.resultArrays = objs;
-                this.needsRecompute = true;
-                update (this);
-            }, error));
+            this.requests.push (Database.fetch ('results?runset=eq.' + runSet.get ('id'),
+                (objs: Array<Object>) => {
+                    results.results = objs;
+                    results.needsRecompute = true;
+                    update (this);
+                }, error));
+            this.requests.push (Database.fetch ('resultarrays?rs_id=eq.' + runSet.get ('id'),
+                (objs: Array<Object>) => {
+                    results.resultArrays = objs;
+                    results.needsRecompute = true;
+                    update (this);
+                }, error));
+        });
     }
 
     public abortFetch () : void {
@@ -122,32 +129,33 @@ export class Data {
     }
 
     public hasResults () : boolean {
-        return this.results !== undefined || this.resultArrays !== undefined;
+        this.recompute ();
+        return Object.keys (this.metricsDict).length !== 0;
     }
 
-    private recompute () : void {
-        if (!this.needsRecompute) {
+    private recomputeResults (rsr: RunSetResults) : void {
+        if (!rsr.needsRecompute) {
             return;
         }
-        this.needsRecompute = false;
+        rsr.needsRecompute = false;
 
         const resultsByBenchmark: ResultsByBenchmark = {};
 
-        var metricsDict: {[metric: string]: Object} = {};
-        for (let i = 0; i < this.results.length; ++i) {
-            let result = this.results [i];
+        for (let i = 0; i < rsr.results.length; ++i) {
+            let result = rsr.results [i];
             const benchmark = result ['benchmark'];
             const metric = result ['metric'];
             const results = resultsByBenchmark [benchmark] || newBenchmarkResults (result ['disabled'] as boolean);
             results.individual [metric] = result ['results'];
             resultsByBenchmark [benchmark] = results;
 
-            metricsDict [metric] = {};
+            this.metricsDict [metric] = {};
+            this.benchmarksDict [benchmark] = {};
         }
-        if (this.resultArrays !== undefined) {
+        if (rsr.resultArrays !== undefined) {
             const runs: {[id: string]: GCPauseTimesEntry} = {};
-            for (let i = 0; i < this.resultArrays.length; ++i) {
-                const row = this.resultArrays [i];
+            for (let i = 0; i < rsr.resultArrays.length; ++i) {
+                const row = rsr.resultArrays [i];
                 const id = row ['r_id'].toString ();
                 const entry = runs [id] || { id: id, benchmark: row ['benchmark'], starts: undefined, times: undefined };
                 const metric = row ['metric'];
@@ -174,6 +182,7 @@ export class Data {
                 const results = resultsByBenchmark [entry.benchmark] || newBenchmarkResults (false);
                 results.gcPauses.push (entry.starts.map ((s: number, i: number) => { return { start: s, duration: entry.times [i] }; }));
                 resultsByBenchmark [entry.benchmark] = results;
+                this.benchmarksDict [entry.benchmark] = {};
 
                 const timeSlices = timeSlicesByBenchmark [entry.benchmark] || { total: 0, failed: 0 };
                 const {total, failed} = computeTimeSlices (entry.starts, entry.times);
@@ -185,22 +194,35 @@ export class Data {
                 const {total, failed} = timeSlicesByBenchmark [benchmark];
                 const percentage = parseFloat (((total - failed) / total * 100).toPrecision (3));
                 resultsByBenchmark [benchmark].aggregate ['acceptable-time-slices'] = percentage;
-                metricsDict ['acceptable-time-slices'] = {};
+                this.metricsDict ['acceptable-time-slices'] = {};
             });
         }
 
-        this.byBenchmark = resultsByBenchmark;
-        this.metricsArray = Object.keys (metricsDict);
-        this.metricsArray.sort ();
+        rsr.byBenchmark = resultsByBenchmark;
     }
 
-    public resultsByBenchmark (runSet: Database.DBRunSet) : ResultsByBenchmark {
+    private recompute () : void {
+        this.runSets.forEach ((runSet: Database.DBRunSet) => {
+            this.recomputeResults (this.results [runSet.get ('id')]);
+        });
+    }
+
+    public resultsForRunSetAndBenchmark (runSet: Database.DBRunSet, benchmark: string) : BenchmarkResults {
         this.recompute ();
-        return this.byBenchmark;
+        return this.results [runSet.get ('id')].byBenchmark [benchmark];
+    }
+
+    public benchmarks () : Array<string> {
+        this.recompute ();
+        const benchmarksArray = Object.keys (this.benchmarksDict);
+        benchmarksArray.sort ();
+        return benchmarksArray;
     }
 
     public metrics () : Array<string> {
         this.recompute ();
-        return this.metricsArray;
+        const metricsArray = Object.keys (this.metricsDict);
+        metricsArray.sort ();
+        return metricsArray;
     }
 }

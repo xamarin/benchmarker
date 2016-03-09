@@ -466,7 +466,7 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
 }
 
 type RunSetMetricsTableProps = {
-	runSet: Database.DBRunSet;
+	runSets: Array<Database.DBRunSet>;
 };
 
 type RunSetMetricsTableState = {
@@ -474,22 +474,83 @@ type RunSetMetricsTableState = {
 };
 
 export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps, RunSetMetricsTableState> {
-	constructor (props: RunSetDescriptionProps) {
+	constructor (props: RunSetMetricsTableProps) {
 		super (props);
-		this.state = { runSetData: this.makeRunSetData (props.runSet) };
+		this.state = { runSetData: this.makeRunSetData (props.runSets) };
 	}
 
-	private makeRunSetData (runSet: Database.DBRunSet) : RunSets.Data {
-		return new RunSets.Data (runSet, (data: RunSets.Data) => {
+	private makeRunSetData (runSets: Array<Database.DBRunSet>) : RunSets.Data {
+		return new RunSets.Data (runSets, (data: RunSets.Data) => {
 			this.forceUpdate ();
 		}, (error: Object) => {
 			alert ("Could not fetch run set data: " + error.toString ());
 		});
 	}
 
-	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
+	public componentWillReceiveProps (nextProps: RunSetMetricsTableProps) : void {
 		this.state.runSetData.abortFetch ();
-		this.setState ({ runSetData: this.makeRunSetData (nextProps.runSet) });
+		this.setState ({ runSetData: this.makeRunSetData (nextProps.runSets) });
+    }
+
+    private rowsForRunSetAndBenchmark (
+            benchmark: string,
+            results: RunSets.BenchmarkResults,
+            metrics: Array<string>
+        ) : Array<Array<JSX.Element>> {
+        const metricRows: Array<Array<JSX.Element>> = [];
+        metrics.forEach ((m: string) => {
+            let dataPointsString: string;
+            let degreeElement: JSX.Element;
+            if (RunSets.metricIsAggregate (m)) {
+                const value = results.aggregate [m];
+                if (value === undefined) {
+                    return;
+                }
+                dataPointsString = value.toString ();
+            } else {
+                const dataPoints = results.individual [m];
+                if (dataPoints === undefined) {
+                    return;
+                }
+                dataPoints.sort ();
+                dataPointsString = dataPoints.join (", ");
+                var variance = Outliers.outlierVariance (dataPoints);
+                var degree = variance < 0.01 ? 'none'
+                    : variance < 0.10 ? 'slight'
+                    : variance < 0.50 ? 'moderate'
+                    : 'severe';
+                    degreeElement = <td key={"metricDegree" + benchmark + m}>
+                        <div className="degree" title={degree}>
+                            <div className={degree}>&nbsp;</div>
+                        </div>
+                    </td>;
+            }
+            const metricColumns: Array<JSX.Element> = [];
+            metricColumns.push (<td key={"metricNames" + benchmark + m}>{descriptiveMetricName (m)}</td>);
+            metricColumns.push (<td key={"metricValues" + benchmark + m}>{dataPointsString}</td>);
+            if (degreeElement !== undefined) {
+                metricColumns.push (degreeElement);
+            }
+            metricRows.push (metricColumns);
+        });
+        const numPauseRows = results.gcPauses.length;
+        results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
+            const position = (i === 0) ? 'First' : (i === numPauseRows - 1) ? 'Last' : 'Middle';
+            let nameColumn: JSX.Element;
+            let resultColumn: JSX.Element;
+            if (i === 0) {
+                nameColumn = <td
+                        key={"metricName" + benchmark + "gcPauses"}
+                        rowSpan={numPauseRows}>
+                        GC Pauses
+                    </td>;
+            }
+            if (pauses.length > 0) {
+                resultColumn = <td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>;
+            }
+            metricRows.push ([nameColumn, resultColumn]);
+        });
+        return metricRows;
     }
 
 	public render () : JSX.Element  {
@@ -497,113 +558,72 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
 			return <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
         }
 
-		const runSet = this.props.runSet;
-
-        const resultsByBenchmark = this.state.runSetData.resultsByBenchmark (this.props.runSet);
-        var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
-        var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
-        var reportedCrashed: {[name: string]: boolean} = {};
-        var reportedTimedOut: {[name: string]: boolean} = {};
-        var benchmarkNames = xp_utils.uniqStringArray
-            (Object.keys (resultsByBenchmark).concat (crashedBenchmarks).concat (timedOutBenchmarks));
+        let benchmarkNames = this.state.runSetData.benchmarks ();
+        this.props.runSets.forEach ((runSet: Database.DBRunSet) => {
+            benchmarkNames = benchmarkNames.concat (runSet.crashedBenchmarks ()).concat (runSet.timedOutBenchmarks ());
+        });
+        benchmarkNames = xp_utils.uniqStringArray (benchmarkNames);
         benchmarkNames.sort ();
-        var metrics = this.state.runSetData.metrics ();
+
+        const metrics = this.state.runSetData.metrics ();
         const tableRows: Array<JSX.Element> = [];
         benchmarkNames.forEach ((benchmark: string) => {
-            const results = resultsByBenchmark [benchmark];
+            const benchmarkRows: Array<Array<JSX.Element>> = [];
 
-            const statusIcons: Array<JSX.Element> = [];
-            if (crashedBenchmarks.indexOf (benchmark) !== -1)
-                statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-            if (timedOutBenchmarks.indexOf (benchmark) !== -1)
-                statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
-            if (statusIcons.length === 0)
-                statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
+            this.props.runSets.forEach ((runSet: Database.DBRunSet) => {
+                const crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
+                const timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
 
-            if (results === undefined) {
-                tableRows.push (<tr key={"benchmark" + benchmark} className="broken">
-                    <td key="name"><code>{benchmark}</code></td>
-                    <td key="status" className="statusColumn">{statusIcons}</td>
-                    <td colSpan={3} className="diagnostic">All runs in this run set timed out or crashed.</td>
-                </tr>);
-                return;
-            }
+                const statusIcons: Array<JSX.Element> = [];
+                if (crashedBenchmarks.indexOf (benchmark) !== -1)
+                    statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
+                if (timedOutBenchmarks.indexOf (benchmark) !== -1)
+                    statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
+                if (statusIcons.length === 0)
+                    statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
 
-            const metricRows: Array<Array<JSX.Element>> = [];
-            metrics.forEach ((m: string) => {
-                let dataPointsString: string;
-                let degreeElement: JSX.Element;
-                if (RunSets.metricIsAggregate (m)) {
-                    const value = results.aggregate [m];
-                    if (value === undefined) {
-                        return;
+                const results = this.state.runSetData.resultsForRunSetAndBenchmark (runSet, benchmark);
+
+                if (results === undefined) {
+                    benchmarkRows.push ([
+                            // FIXME: don't duplicate this element (see below)
+                            <td key={"status" + benchmark + runSet.get ('id')} className="statusColumn">
+                                {statusIcons}
+                            </td>,
+                            <td colSpan={3} className="diagnostic">All runs in this run set timed out or crashed.</td>,
+                        ]);
+                    return;
+                }
+
+                const metricRows = this.rowsForRunSetAndBenchmark (benchmark, results, metrics);
+
+                metricRows.forEach ((row: Array<JSX.Element>, i: number) => {
+                    let statusElement: JSX.Element;
+                    if (i === 0) {
+                        statusElement = <td
+                                key={"status" + benchmark + runSet.get ('id')}
+                                rowSpan={metricRows.length}
+                                className="statusColumn">
+                                {statusIcons}{results.disabled ? ' (disabled)' : ''}
+                            </td>;
                     }
-                    dataPointsString = value.toString ();
-                } else {
-                    const dataPoints = results.individual [m];
-                    if (dataPoints === undefined) {
-                        return;
-                    }
-                    dataPoints.sort ();
-                    dataPointsString = dataPoints.join (", ");
-                    var variance = Outliers.outlierVariance (dataPoints);
-                    var degree = variance < 0.01 ? 'none'
-                        : variance < 0.10 ? 'slight'
-                        : variance < 0.50 ? 'moderate'
-                        : 'severe';
-                        degreeElement = <td key={"metricDegree" + benchmark + m}>
-                            <div className="degree" title={degree}>
-                                <div className={degree}>&nbsp;</div>
-                            </div>
-                        </td>;
-                }
-                const metricColumns: Array<JSX.Element> = [];
-                metricColumns.push (<td key={"metricNames" + benchmark + m}>{descriptiveMetricName (m)}</td>);
-                metricColumns.push (<td key={"metricValues" + benchmark + m}>{dataPointsString}</td>);
-                if (degreeElement !== undefined) {
-                    metricColumns.push (degreeElement);
-                }
-                metricRows.push (metricColumns);
-            });
-            const numPauseRows = results.gcPauses.length;
-            results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
-                const position = (i === 0) ? 'First' : (i === numPauseRows - 1) ? 'Last' : 'Middle';
-                let nameColumn: JSX.Element;
-                let resultColumn: JSX.Element;
-                if (i === 0) {
-                    nameColumn = <td
-                            key={"metricName" + benchmark + "gcPauses"}
-                            rowSpan={numPauseRows}>
-                            GC Pauses
-                        </td>;
-                }
-                if (pauses.length > 0) {
-                    resultColumn = <td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>;
-                }
-                metricRows.push ([nameColumn, resultColumn]);
+                    benchmarkRows.push ([statusElement].concat (row));
+                });
             });
 
-            metricRows.forEach ((columns: Array<JSX.Element>, i: number) => {
-                let benchmarkElements: Array<JSX.Element> = [undefined, undefined];
-                var disabled = results.disabled;
+            benchmarkRows.forEach ((row: Array<JSX.Element>, i: number) => {
+                let benchmarkElement: JSX.Element;
                 if (i === 0) {
-                    benchmarkElements = [
-                        <td
+                    benchmarkElement = <td
                             key={"name" + benchmark}
-                            rowSpan={metricRows.length}>
-                            <code>{benchmark}</code>{disabled ? ' (disabled)' : ''}
-                        </td>,
-                        <td
-                            key={"status" + benchmark}
-                            rowSpan={metricRows.length}
-                            className="statusColumn">
-                            {statusIcons}
-                        </td>,
-                    ];
+                            rowSpan={benchmarkRows.length}>
+                            <code>{benchmark}</code>
+                        </td>;
                 }
-                tableRows.push (<tr key={"benchmark" + benchmark + i} className={disabled ? 'disabled' : ''}>
-                    {benchmarkElements}
-                    {columns}
+                // FIXME: This key is wrong.  The key should come from the metric row. 
+                tableRows.push (<tr key={"benchmark" + benchmark + i}>
+                    {benchmarkElement}
+                    {row}
                 </tr>);
             });
         });

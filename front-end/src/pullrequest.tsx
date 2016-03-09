@@ -39,11 +39,11 @@ class Controller {
 		if (this.dbRow === undefined)
 			return;
 
-        this.prRunSet = new Database.DBObject (this.dbRow, 'prrs_') as Database.DBRunSet;
-        const pullRequest = new Database.DBObject (this.dbRow, 'pr_');
-        const baselineRunSet = new Database.DBObject (this.dbRow, 'blrs_') as Database.DBRunSet;
 		const machine = new Database.DBObject (this.dbRow, 'm_');
 		const config = new Database.DBObject (this.dbRow, 'cfg_');
+        this.prRunSet = new Database.DBRunSet (this.dbRow, 'prrs_', machine, config, undefined);
+        const pullRequest = new Database.DBObject (this.dbRow, 'pr_');
+        const baselineRunSet = new Database.DBRunSet (this.dbRow, 'blrs_', machine, config, undefined);
 
         var runSets = [baselineRunSet, this.prRunSet];
 
@@ -69,10 +69,9 @@ class Controller {
 					<div style={{ clear: 'both' }}></div>
 					<h2><a href={"runset.html#id=" + this.prRunSet.get ('id')}>Pull Request Run Set</a></h2>
 					<xp_common.RunSetDescription runSet={this.prRunSet} />
-                    <xp_common.RunSetMetricsTable runSet={this.prRunSet} />
 					<h2><a href={"runset.html#id=" + baselineRunSet.get ('id')}>Baseline Run Set</a></h2>
 					<xp_common.RunSetDescription runSet={baselineRunSet} />
-                    <xp_common.RunSetMetricsTable runSet={baselineRunSet} />
+                    <xp_common.RunSetMetricsTable runSets={[this.prRunSet, baselineRunSet]} />
                 </article>
 			</div>,
 			document.getElementById ('pullRequestPage')
