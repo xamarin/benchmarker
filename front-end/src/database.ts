@@ -30,11 +30,19 @@ export class DBRunSet extends DBObject {
 		this.config = config;
 		this.commit = commit;
 	}
+
+    public crashedBenchmarks () : Array<string> {
+        return (this.get ('crashedBenchmarks') || []) as Array<string>;
+    }
+
+    public timedOutBenchmarks () : Array<string> {
+        return (this.get ('timedOutBenchmarks') || []) as Array<string>;
+    }
 }
 
 type ErrorFunc = (err: any) => void;
 
-export function fetch (query: string, success: (results: Array<Object>) => void, error: ErrorFunc) : void {
+export function fetch (query: string, success: (results: Array<Object>) => void, error: ErrorFunc) : XMLHttpRequest {
 	return fetchWithHeaders (query, {}, success, error);
 }
 
@@ -44,7 +52,7 @@ export function fetchWithHeaders (
         query: string,
         headers: Object, success: (results: Array<Object>) => void,
         error: ErrorFunc,
-        timeout: number = 1000) : void {
+        timeout: number = 1000) : XMLHttpRequest {
 	const request = new XMLHttpRequest();
 	const url = serverUrl + query;
 
@@ -64,10 +72,11 @@ export function fetchWithHeaders (
 	request.open('GET', url, true);
 	Object.keys (headers).forEach ((header: string) => request.setRequestHeader (header, headers [header]));
 	request.send();
+	return request;
 }
 
-export function fetchAndWrap (query: string, success: (results: Array<DBObject>) => void, error: ErrorFunc) : void {
-	fetch (query, (results: Array<Object>) => {
+export function fetchAndWrap (query: string, success: (results: Array<DBObject>) => void, error: ErrorFunc) : XMLHttpRequest {
+	return fetch (query, (results: Array<Object>) => {
 		var objs = results.map ((data: Object) => new DBObject (data));
 		success (objs);
 	}, error);
@@ -81,8 +90,8 @@ export interface RunSetCount {
 	count: number;
 }
 
-export function fetchRunSetCounts (success: (results: Array<RunSetCount>) => void , error: ErrorFunc) : void {
-	fetch ('runsetcount',
+export function fetchRunSetCounts (success: (results: Array<RunSetCount>) => void , error: ErrorFunc) : XMLHttpRequest {
+	return fetch ('runsetcount',
 		(objs: Array<Object>) => {
 			var results = objs.map ((r: Object) => {
 				var machine = new DBObject (r, 'm_');
@@ -133,10 +142,10 @@ export function fetchSummaries (
 		config: DBObject,
 		metric: string,
 		success: (results: Array<Summary>) => void,
-		error: ErrorFunc) : void {
+		error: ErrorFunc) : XMLHttpRequest {
 	const machineName = machine.get ('name');
 	const configName = config.get ('name');
-	fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machineName + '&rs_config=eq.' + configName,
+	return fetch ('summary?metric=eq.' + metric + '&rs_pullrequest=is.null&rs_machine=eq.' + machineName + '&rs_config=eq.' + configName,
 		(objs: Array<Object>) => {
 			var results = [];
 			objs.forEach ((r: Object) => {
@@ -170,8 +179,8 @@ export function fetchRunSetsForMachineAndConfig (
 		machine: DBObject,
 		config: DBObject,
 		success: (results: Array<DBRunSet>) => void,
-		error: ErrorFunc) : void {
-	fetch ('runset?order=c_commitdate.desc&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
+		error: ErrorFunc) : XMLHttpRequest {
+	return fetch ('runset?order=c_commitdate.desc&rs_machine=eq.' + machine.get ('name') + '&rs_config=eq.' + config.get ('name'),
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }
 
@@ -179,8 +188,8 @@ export function findRunSet (runSets: Array<DBRunSet>, id: number) : DBRunSet {
 	return xp_utils.find (runSets, (rs: DBRunSet) => rs.get ('id') === id);
 }
 
-export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) : void {
-	fetch ('runset?rs_id=eq.' + id,
+export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error: ErrorFunc) : XMLHttpRequest {
+	return fetch ('runset?rs_id=eq.' + id,
 		(objs: Array<Object>) => {
 			if (objs.length === 0) {
 				success (undefined);
@@ -190,13 +199,17 @@ export function fetchRunSet (id: number, success: (rs: DBRunSet) => void, error:
 		}, error);
 }
 
-export function fetchRunSets (ids: Array<number>, success: (results: Array<DBRunSet>) => void, error: ErrorFunc) : void {
-	fetch ('runset?rs_id=in.' + ids.join (','),
+export function fetchRunSets (ids: Array<number>, success: (results: Array<DBRunSet>) => void, error: ErrorFunc) : XMLHttpRequest {
+	return fetch ('runset?rs_id=in.' + ids.join (','),
 		(objs: Array<Object>) => success (processRunSetEntries (objs)), error);
 }
 
-export function fetchParseObjectIds (parseIds: Array<string>, success: (results: Array<number | string>) => void, error: ErrorFunc) : void {
-	fetch ('parseobjectid?parseid=in.' + parseIds.join (','),
+export function fetchParseObjectIds (
+		parseIds: Array<string>,
+		success: (results: Array<number | string>) => void,
+		error: ErrorFunc
+	) : XMLHttpRequest {
+	return fetch ('parseobjectid?parseid=in.' + parseIds.join (','),
 		(objs: Array<Object>) => {
 			var ids = [];
 			var i;
@@ -215,8 +228,8 @@ export function fetchParseObjectIds (parseIds: Array<string>, success: (results:
 		}, error);
 }
 
-export function fetchFeaturedTimelines (success: (results: Array<DBObject>) => void, error: ErrorFunc) : void {
-	fetchAndWrap ('featuredtimelines?order=name', success, error);
+export function fetchFeaturedTimelines (success: (results: Array<DBObject>) => void, error: ErrorFunc) : XMLHttpRequest {
+	return fetchAndWrap ('featuredtimelines?order=name', success, error);
 }
 
 export interface ArrayResults {
@@ -231,12 +244,12 @@ export function fetchResultArrays (
 		metric: string,
 		success: (result: Array<ArrayResults>) => void,
 		error: ErrorFunc
-	) : void {
+	) : XMLHttpRequest {
 	const query = 'resultarrays?rs_machine=eq.' + machineName +
 		'&rs_config=eq.' + configName +
 		'&benchmark=eq.' + benchmarkName +
 		'&metric=eq.' + metric;
-	fetch (query,
+	return fetch (query,
 		(objs: Array<Object>) => {
 			const partitions = xp_utils.partitionArrayByString (objs, (o: Object) => o ['rs_id'].toString ());
 			const results: Array<ArrayResults> = [];
@@ -257,9 +270,9 @@ export function fetchResultArrayBenchmarks (
 		metric: string,
 		success: (result: Array<string>) => void,
 		error: ErrorFunc
-	) : void {
+	) : XMLHttpRequest {
 	const query = 'resultarraybenchmarks?metric=eq.' + metric + '&machine=eq.' + machineName + '&config=eq.' + configName;
-	fetch (query,
+	return fetch (query,
 		(objs: Array<Object>) => {
 			const benchmarks: Array<string> = objs.map ((o: Object) => o ['benchmark']);
 			benchmarks.sort ();

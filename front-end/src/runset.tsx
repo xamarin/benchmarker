@@ -104,13 +104,14 @@ class Page extends React.Component<PageProps, PageState> {
 
 	public render () : JSX.Element {
 		let detail: JSX.Element;
+        let table: JSX.Element;
 		const runSet = this.state.selection.runSets [0];
 		let runSetIds: Array<number> = undefined;
 		if (runSet === undefined) {
 			detail = <div className='diagnostic'>Please select a run set.</div>;
 		} else {
-			detail = <xp_common.RunSetDescription
-				runSet={runSet} />;
+			detail = <xp_common.RunSetDescription runSet={runSet} />;
+            table = <xp_common.RunSetMetricsTable runSets={[runSet]} />;
 			runSetIds = [runSet.get ('id')];
 		}
 
@@ -129,6 +130,7 @@ class Page extends React.Component<PageProps, PageState> {
 						onChange={(s: xp_common.RunSetSelection) => this.handleChange (s)} />
 				</div>
 				{detail}
+                {table}
 			</article>
 		</div>;
 	}

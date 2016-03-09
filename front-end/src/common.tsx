@@ -1,5 +1,6 @@
 ///<reference path="../typings/react/react.d.ts"/>
 ///<reference path="../typings/github-api/github-api.d.ts"/>
+///<reference path="../typings/tinycolor/tinycolor.d.ts"/>
 
 "use strict";
 
@@ -8,9 +9,11 @@ declare var process: any;
 import * as xp_utils from './utils.ts';
 import * as Database from './database.ts';
 import * as Outliers from './outliers.ts';
+import * as RunSets from './runsets.ts';
 import React = require ('react');
 import ReactDOM = require ('react-dom');
 import GitHub = require ('github-api');
+import Tinycolor = require ('tinycolor2');
 
 /* tslint:disable: no-var-requires */
 const helpGCPauses = require ('html!markdown!../help/gcPauses.md') as string;
@@ -28,6 +31,17 @@ export var xamarinColors = {
 	"asphalt": [ "#889DB5", "#66819E", "#365271", "#2B3E50", "#1C2B39" ],
 };
 export var xamarinColorsOrder = [ "blue", "green", "violet", "red", "asphalt", "amber", "gray", "teal" ];
+
+export function xamarinColorInSequence (i: number, brightness: number, lighten: boolean) : string {
+    // FIXME: check range of i
+    const original = xamarinColors [xamarinColorsOrder [i]][brightness];
+    if (!lighten) {
+        return original;
+    }
+    const color = Tinycolor (original);
+    color.lighten (12);
+    return color.toHexString ();
+}
 
 export enum DescriptionFormat {
     Compact,
@@ -395,55 +409,6 @@ function descriptiveMetricName (metric: string) : string {
 	}
 }
 
-type TimeSliceCount = {
-    total: number;
-    failed: number;
-};
-
-// We define a time slice as failed if its mutator utilization is below
-// a certain threshold.  For now we've hard-coded a slice length of 100ms
-// and an acceptable fraction of 50%.
-function computeTimeSlices (starts: Array<number>, times: Array<number>) : TimeSliceCount {
-    const sliceLength = 100;
-    const acceptableFraction = 0.5;
-
-    if (starts.length !== times.length) {
-        console.log ("Error: starts and times have different lengths");
-        return { total: 0, failed: 0 };
-    }
-
-    let slice = 0;
-    let failed = 0;
-
-    let i = 0;
-    while (i < starts.length) {
-        const sliceStart = slice * sliceLength;
-        const sliceEnd = sliceStart + sliceLength;
-
-        slice++;
-
-        // FIXME: optimize
-        if (sliceEnd <= starts [i]) {
-            continue;
-        }
-
-        let pauseTime = 0;
-        while (i < starts.length && starts [i] < sliceEnd) {
-            const pauseEnd = starts [i] + times [i];
-            pauseTime += Math.min (sliceEnd, pauseEnd) - Math.max (sliceStart, starts [i]);
-            i++;
-        }
-
-        const mutatorTime = sliceLength - pauseTime;
-
-        if (mutatorTime < sliceLength * acceptableFraction) {
-            failed++;
-        }
-    }
-
-    return { total: slice, failed: failed };
-}
-
 function colorForPauseTime (time: number) : string {
     const low = 50;
     const high = 500;
@@ -457,8 +422,7 @@ function colorForPauseTime (time: number) : string {
 }
 
 type PauseTimelineProps = {
-    starts: Array<number>;
-    times: Array<number>;
+	pauses: Array<RunSets.GCPause>;
 };
 
 class PauseTimeline extends React.Component<PauseTimelineProps, void> {
@@ -491,20 +455,20 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
         const width = element.width;
         const height = element.height;
 
-        const n = this.props.starts.length;
+        const n = this.props.pauses.length;
         if (n === 0) {
             return;
         }
 
-        const end = this.props.starts [n - 1] + this.props.times [n - 1];
+        const end = this.props.pauses [n - 1].start + this.props.pauses [n - 1].duration;
 
         context.fillStyle = '#FFF';
         context.fillRect (0, 0, width, height);
 
         context.fillStyle = '#F00';
         for (let i = 0; i < n; i++) {
-            const start = this.props.starts [i];
-            const time = this.props.times [i];
+            const start = this.props.pauses [i].start;
+            const time = this.props.pauses [i].duration;
             const x = start / end * width;
             const w = time / end * width;
 
@@ -514,20 +478,194 @@ class PauseTimeline extends React.Component<PauseTimelineProps, void> {
     }
 }
 
-type GCPauseTimesEntry = {
-    id: string;
-    benchmark: string;
-    starts: Array<number>;
-    times: Array<number>;
+type RunSetMetricsTableProps = {
+	runSets: Array<Database.DBRunSet>;
 };
 
-type RunSetDescriptionProps = {
-	runSet: Database.DBRunSet;
+type RunSetMetricsTableState = {
+	runSetData: RunSets.Data;
 };
+
+export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps, RunSetMetricsTableState> {
+	constructor (props: RunSetMetricsTableProps) {
+		super (props);
+		this.state = { runSetData: this.makeRunSetData (props.runSets) };
+	}
+
+	private makeRunSetData (runSets: Array<Database.DBRunSet>) : RunSets.Data {
+		return new RunSets.Data (runSets, (data: RunSets.Data) => {
+			this.forceUpdate ();
+		}, (error: Object) => {
+			alert ("Could not fetch run set data: " + error.toString ());
+		});
+	}
+
+	public componentWillReceiveProps (nextProps: RunSetMetricsTableProps) : void {
+		this.state.runSetData.abortFetch ();
+		this.setState ({ runSetData: this.makeRunSetData (nextProps.runSets) });
+    }
+
+    private rowsForRunSetAndBenchmark (
+            benchmark: string,
+            results: RunSets.BenchmarkResults,
+            metrics: Array<string>
+        ) : Array<Array<JSX.Element>> {
+        const metricRows: Array<Array<JSX.Element>> = [];
+        metrics.forEach ((m: string) => {
+            let dataPointsString: string;
+            let degreeElement: JSX.Element;
+            if (RunSets.metricIsAggregate (m)) {
+                const value = results.aggregate [m];
+                if (value === undefined) {
+                    return;
+                }
+                dataPointsString = value.toString ();
+            } else {
+                const dataPoints = results.individual [m];
+                if (dataPoints === undefined) {
+                    return;
+                }
+                dataPoints.sort ();
+                dataPointsString = dataPoints.join (", ");
+                var variance = Outliers.outlierVariance (dataPoints);
+                var degree = variance < 0.01 ? 'none'
+                    : variance < 0.10 ? 'slight'
+                    : variance < 0.50 ? 'moderate'
+                    : 'severe';
+                    degreeElement = <td key={"metricDegree" + benchmark + m}>
+                        <div className="degree" title={degree}>
+                            <div className={degree}>&nbsp;</div>
+                        </div>
+                    </td>;
+            }
+            const metricColumns: Array<JSX.Element> = [];
+            metricColumns.push (<td key={"metricNames" + benchmark + m}>{descriptiveMetricName (m)}</td>);
+            metricColumns.push (<td key={"metricValues" + benchmark + m}>{dataPointsString}</td>);
+            if (degreeElement !== undefined) {
+                metricColumns.push (degreeElement);
+            }
+            metricRows.push (metricColumns);
+        });
+        const numPauseRows = results.gcPauses.length;
+        results.gcPauses.forEach ((pauses: Array<RunSets.GCPause>, i: number) => {
+            const position = (i === 0) ? 'First' : (i === numPauseRows - 1) ? 'Last' : 'Middle';
+            let nameColumn: JSX.Element;
+            let resultColumn: JSX.Element;
+            if (i === 0) {
+                nameColumn = <td
+                        key={"metricName" + benchmark + "gcPauses"}
+                        rowSpan={numPauseRows}>
+                        GC Pauses
+                    </td>;
+            }
+            if (pauses.length > 0) {
+                resultColumn = <td className={position + 'InList'}><PauseTimeline pauses={pauses} /></td>;
+            }
+            metricRows.push ([nameColumn, resultColumn]);
+        });
+        return metricRows;
+    }
+
+	public render () : JSX.Element  {
+		if (!this.state.runSetData.hasResults ()) {
+			return <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
+        }
+
+        let benchmarkNames = this.state.runSetData.benchmarks ();
+        this.props.runSets.forEach ((runSet: Database.DBRunSet) => {
+            benchmarkNames = benchmarkNames.concat (runSet.crashedBenchmarks ()).concat (runSet.timedOutBenchmarks ());
+        });
+        benchmarkNames = xp_utils.uniqStringArray (benchmarkNames);
+        benchmarkNames.sort ();
+
+        const metrics = this.state.runSetData.metrics ();
+        const tableRows: Array<JSX.Element> = [];
+        benchmarkNames.forEach ((benchmark: string) => {
+            const benchmarkRows: Array<Array<JSX.Element>> = [];
+
+            this.props.runSets.forEach ((runSet: Database.DBRunSet, runSetIndex: number) => {
+                const crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
+                const timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
+
+                const statusIcons: Array<JSX.Element> = [];
+                if (crashedBenchmarks.indexOf (benchmark) !== -1)
+                    statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
+                if (timedOutBenchmarks.indexOf (benchmark) !== -1)
+                    statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
+                if (statusIcons.length === 0)
+                    statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
+                const statusStyle = { 'backgroundColor': xamarinColorInSequence (runSetIndex, 0, true) };
+
+                const results = this.state.runSetData.resultsForRunSetAndBenchmark (runSet, benchmark);
+
+                if (results === undefined) {
+                    benchmarkRows.push ([
+                            // FIXME: don't duplicate this element (see below)
+                            <td key={"status" + benchmark + runSet.get ('id')} style={statusStyle} className="statusColumn">
+                                {statusIcons}
+                            </td>,
+                            <td colSpan={3} className="diagnostic">All runs in this run set timed out or crashed.</td>,
+                        ]);
+                    return;
+                }
+
+                const metricRows = this.rowsForRunSetAndBenchmark (benchmark, results, metrics);
+
+                metricRows.forEach ((row: Array<JSX.Element>, i: number) => {
+                    let statusElement: JSX.Element;
+                    if (i === 0) {
+                        statusElement = <td
+                                key={"status" + benchmark + runSet.get ('id')}
+                                style={statusStyle}
+                                rowSpan={metricRows.length}
+                                className="statusColumn">
+                                {statusIcons}{results.disabled ? ' (disabled)' : ''}
+                            </td>;
+                    }
+                    benchmarkRows.push ([statusElement].concat (row));
+                });
+            });
+
+            benchmarkRows.forEach ((row: Array<JSX.Element>, i: number) => {
+                let benchmarkElement: JSX.Element;
+                if (i === 0) {
+                    benchmarkElement = <td
+                            key={"name" + benchmark}
+                            rowSpan={benchmarkRows.length}>
+                            <code>{benchmark}</code>
+                        </td>;
+                }
+                // FIXME: This key is wrong.  The key should come from the metric row. 
+                tableRows.push (<tr key={"benchmark" + benchmark + i}>
+                    {benchmarkElement}
+                    {row}
+                </tr>);
+            });
+        });
+
+        return <table>
+            <thead>
+            <tr key="header">
+                <th key="name">Benchmark</th>
+                <th key="status">Status</th>
+                <th key="metric">Metric</th>
+                <th key="results">Results</th>
+                <th key="bias">Bias due to Outliers</th>
+            </tr>
+            </thead>
+            <tbody>
+                {tableRows}
+            </tbody>
+        </table>;
+    }
+}
+
+interface RunSetDescriptionProps extends React.Props<RunSetDescription> {
+	runSet: Database.DBRunSet;
+    backgroundColor?: string;
+}
 
 type RunSetDescriptionState = {
-	results: Array<Object>;
-    resultArrays: Array<Object>;
 	secondaryCommits: Array<Object>;
 	commitInfo: Object;
 };
@@ -535,27 +673,11 @@ type RunSetDescriptionState = {
 export class RunSetDescription extends React.Component<RunSetDescriptionProps, RunSetDescriptionState> {
 	constructor (props: RunSetDescriptionProps) {
 		super (props);
-		this.state = { results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined };
+		this.state = { secondaryCommits: undefined, commitInfo: undefined };
 		this.fetchResults (props.runSet);
 	}
 
 	private fetchResults (runSet: Database.DBRunSet) : void {
-		Database.fetch ('results?runset=eq.' + runSet.get ('id'),
-			(objs: Array<Object>) => {
-				if (runSet !== this.props.runSet)
-					return;
-				this.setState ({ results: objs } as any);
-			}, (error: Object) => {
-				alert ("error loading results: " + error.toString ());
-			});
-        Database.fetch ('resultarrays?rs_id=eq.' + runSet.get ('id'),
-            (objs: Array<Object>) => {
-                if (runSet !== this.props.runSet)
-                    return;
-                this.setState ({ resultArrays: objs } as any);
-            }, (error: Object) => {
-				alert ("error loading result arrays: " + error.toString ());
-            });
 		var secondaryCommits = runSet.get ('secondaryCommits');
 		if (secondaryCommits !== undefined && secondaryCommits.length > 0) {
 			Database.fetch ('commit?hash=in.' + secondaryCommits.join (','),
@@ -574,7 +696,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 	}
 
 	public componentWillReceiveProps (nextProps: RunSetDescriptionProps) : void {
-		this.setState ({ results: undefined, resultArrays: undefined, secondaryCommits: undefined, commitInfo: undefined });
+		this.setState ({ secondaryCommits: undefined, commitInfo: undefined });
 		this.fetchResults (nextProps.runSet);
 	}
 
@@ -586,7 +708,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		var logLinks = [];
 		var logLinkList: JSX.Element;
 		var table: JSX.Element;
-		let pausesTable: JSX.Element;
 		var secondaryProductsList: Array<JSX.Element>;
 		var crashedElem: JSX.Element;
 		var timedOutElem: JSX.Element;
@@ -631,163 +752,6 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 			];
 		}
 
-		if (this.state.results === undefined) {
-			table = <div key="table" className='DiagnosticBlock'>Loading run data&hellip;</div>;
-		} else {
-			var resultsByBenchmark: {[benchmark: string]: { metrics: {[metric: string]: Array<number>}, disabled: boolean }} = {};
-			var metricsDict: {[metric: string]: Object} = {};
-			for (let i = 0; i < this.state.results.length; ++i) {
-				let result = this.state.results [i];
-				const benchmark = result ['benchmark'];
-				const metric = result ['metric'];
-				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: result ['disabled'] as boolean };
-				entry.metrics [metric] = result ['results'];
-				resultsByBenchmark [benchmark] = entry;
-
-				metricsDict [metric] = {};
-			}
-            if (this.state.resultArrays !== undefined) {
-                const runs: {[id: string]: GCPauseTimesEntry} = {};
-                for (let i = 0; i < this.state.resultArrays.length; ++i) {
-                    const row = this.state.resultArrays [i];
-                    const id = row ['r_id'].toString ();
-                    const entry = runs [id] || { id: id, benchmark: row ['benchmark'], starts: undefined, times: undefined };
-                    const metric = row ['metric'];
-                    if (metric === 'pause-starts') {
-                        entry.starts = row ['resultarray'];
-                    } else if (metric === 'pause-times') {
-                        entry.times = row ['resultarray'];
-                    } else {
-                        continue;
-                    }
-                    runs [id] = entry;
-                }
-                const entries = Object.keys (runs).map ((id: string) => runs [id]);
-                const timeSlicesByBenchmark: {[benchmark: string]: TimeSliceCount} = {};
-                entries.forEach ((entry: GCPauseTimesEntry) => {
-                    if (entry.starts === undefined || entry.times === undefined) {
-                        return;
-                    }
-                    const timeSlices = timeSlicesByBenchmark [entry.benchmark] || { total: 0, failed: 0 };
-                    const {total, failed} = computeTimeSlices (entry.starts, entry.times);
-                    timeSlices.total += total;
-                    timeSlices.failed += failed;
-                    timeSlicesByBenchmark [entry.benchmark] = timeSlices;
-                });
-                Object.keys (timeSlicesByBenchmark).forEach ((benchmark: string) => {
-                    const {total, failed} = timeSlicesByBenchmark [benchmark];
-                    const percentage = parseFloat (((total - failed) / total * 100).toPrecision (3));
-                    // FIXME: set disabled to proper value (it's not in the DB view yet)
-    				const entry = resultsByBenchmark [benchmark] || { metrics: {}, disabled: false };
-                    entry.metrics ['acceptable-time-slices'] = [percentage];
-                    resultsByBenchmark [benchmark] = entry;
-                    metricsDict ['acceptable-time-slices'] = {};
-                });
-
-                if (entries.length > 0) {
-                    const benchmarks = Object.keys (timeSlicesByBenchmark);
-                    benchmarks.sort ();
-                    pausesTable = <div>
-                        <div dangerouslySetInnerHTML={{__html: helpGCPauses}} className="TextBlock" />
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Benchmark</th>
-                                    <th>GC Pauses</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {benchmarks.map ((benchmark: string) => {
-                                    const benchmarkEntries = entries.filter ((e: GCPauseTimesEntry) => e.benchmark === benchmark);
-                                    return benchmarkEntries.map ((e: GCPauseTimesEntry, i: number) => {
-                                        const position = (i === 0) ? 'First' : (i === benchmarkEntries.length - 1) ? 'Last' : 'Middle';
-                                        let benchmarkElement: JSX.Element;
-                                        if (i === 0) {
-                                            benchmarkElement = <td rowSpan={benchmarkEntries.length}><code>{e.benchmark}</code></td>;
-                                        }
-                                        return <tr key={"run" + e.id}>
-                                            {benchmarkElement}
-                                            <td className={position + 'InList'}><PauseTimeline starts={e.starts} times={e.times} /></td>
-                                        </tr>;
-                                    });
-                                })}
-                            </tbody>
-                        </table>
-                    </div>;
-                }
-            }
-
-			var crashedBenchmarks = (runSet.get ('crashedBenchmarks') || []) as Array<string>;
-			var timedOutBenchmarks = (runSet.get ('timedOutBenchmarks') || []) as Array<string>;
-			var reportedCrashed: {[name: string]: boolean} = {};
-			var reportedTimedOut: {[name: string]: boolean} = {};
-			var benchmarkNames = xp_utils.uniqStringArray
-				(Object.keys (resultsByBenchmark).concat (crashedBenchmarks).concat (timedOutBenchmarks));
-			benchmarkNames.sort ();
-			var metrics = Object.keys (metricsDict);
-			metrics.sort ();
-			var tableHeaders = [];
-			metrics.forEach ((m: string) => {
-				tableHeaders.push (<th key={"metricValues" + m}>{descriptiveMetricName (m)}</th>);
-				tableHeaders.push (<th key={"metricDegree" + m}>Bias due to Outliers</th>);
-			});
-			table = <table key="table">
-				<thead>
-				<tr key="header">
-					<th key="name">Benchmark</th>
-					<th key="status">Status</th>
-					{tableHeaders}
-				</tr>
-				</thead>
-				<tbody>
-				{benchmarkNames.map ((name: string) => {
-					var result = resultsByBenchmark [name];
-
-					var statusIcons = [];
-					if (crashedBenchmarks.indexOf (name) !== -1)
-						statusIcons.push (<span key="crashed" className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span>);
-					if (timedOutBenchmarks.indexOf (name) !== -1)
-						statusIcons.push (<span key="timedOut" className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span>);
-					if (statusIcons.length === 0)
-						statusIcons.push (<span key="good" className="statusIcon good fa fa-check" title="Good"></span>);
-
-					if (result === undefined) {
-						return <tr key={"benchmark" + name} className="broken">
-							<td key="name"><code>{name}</code></td>
-							<td key="status" className="statusColumn">{statusIcons}</td>
-							<td colSpan={metrics.length * 2} className="diagnostic">All runs in this run set timed out or crashed.</td>
-						</tr>;
-					}
-
-					var disabled = result.disabled;
-
-					var metricColumns = [];
-					metrics.forEach ((m: string) => {
-						var dataPoints = result.metrics [m] || [];
-						dataPoints.sort ();
-						var dataPointsString = dataPoints.join (", ");
-						var variance = Outliers.outlierVariance (dataPoints);
-						var degree = variance < 0.01 ? 'none'
-							: variance < 0.10 ? 'slight'
-							: variance < 0.50 ? 'moderate'
-							: 'severe';
-						metricColumns.push (<td key={"metricValues" + m}>{dataPointsString}</td>);
-						metricColumns.push (<td key={"metricDegree" + m}>
-								<div className="degree" title={degree}>
-									<div className={degree}>&nbsp;</div>
-								</div>
-							</td>);
-					});
-
-					return <tr key={"benchmark" + name} className={disabled ? 'disabled' : ''}>
-						<td key="name"><code>{name}</code>{disabled ? ' (disabled)' : ''}</td>
-						<td key="status" className="statusColumn">{statusIcons}</td>
-						{metricColumns}
-					</tr>;
-				})}
-			</tbody></table>;
-		}
-
 		const product = runSet.commit ? runSet.commit.get ('product') : 'mono';
 		const commitHash = runSet.get ('commit');
 		const commitLink = githubCommitLink (product, commitHash);
@@ -810,15 +774,30 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 		}
 
 		const commitElement = <p><strong><a href={commitLink}>{commitName}</a></strong> {buildIcon}</p>;
-		return <div className="Description">
+		return <div className="Description" style={{ 'backgroundColor': this.props.backgroundColor }} >
 			{commitElement}
 			{commitInfo}
 			{logLinkList}
 			{secondaryProductsList}
-			{table}
-            {pausesTable}
 		</div>;
 	}
+}
+
+type RunSetDescriptionsProps = {
+	runSets: Array<Database.DBRunSet>;
+};
+
+export class RunSetDescriptions extends React.Component<RunSetDescriptionsProps, void> {
+    public render () : JSX.Element {
+        return <div>
+            {this.props.runSets.map ((runSet: Database.DBRunSet, i: number) => {
+                return <RunSetDescription
+					key={i.toString ()}
+					runSet={runSet}
+					backgroundColor={xamarinColorInSequence (i, 0, true)} />;
+            })}
+        </div>;
+    }
 }
 
 export interface RunSetSummaryProps extends React.Props<RunSetSummary> {
