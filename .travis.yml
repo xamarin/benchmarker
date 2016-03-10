@@ -2,19 +2,32 @@ env:
   global:
     - secure: "ir41AQtkicWViYb3j6QLwX9QkSJZA6/ufi/5r3PCAOzMm9tL6krQp5OQeOePS7vDtbSWVhuH2U8yiPUnWL8mfILeGsV7+sWW9mKRwPeFqgT8y6VheEvLM75firNx4siKpSR8rh+htrSSNl61hMe7n5RnNqwHHYntDrR9GcYYyO8="
 
-language: csharp
-sudo: required
+addons:
+    apt:
+        sources:
+            - mono
+            - mono-libtiff-compat
+        packages:
+            - mono-complete
+            - nuget
+
+language: python
+python:
+    - "2.7"
+
+sudo: false
+
 before_script:
     - curl -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz
-    - sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    - (mkdir -p /tmp/goinstall; tar -C /tmp/goinstall -xzf /tmp/go.tar.gz)
     - mkdir $HOME/go
-    - GOPATH=$HOME/go GOROOT=/usr/local/go /usr/local/go/bin/go get github.com/google/go-github/github github.com/jackc/pgx
-    - ( GOPATH=$HOME/go GOROOT=/usr/local/go cd http-api ; GOPATH=$HOME/go GOROOT=/usr/local/go /usr/local/go/bin/go build credentials.go data.go db.go main.go )
-    - sudo pip2 install --upgrade pip
-    - sudo pip2 install astroid==1.3.8
-    - sudo pip2 install pylint==1.4.4
-    - sudo pip2 install buildbot==0.8.12
-    - sudo pip2 install requests
+    - GOPATH=$HOME/go GOROOT=/tmp/goinstall/go /tmp/goinstall/go/bin/go get github.com/google/go-github/github github.com/jackc/pgx
+    - ( GOPATH=$HOME/go GOROOT=/tmp/goinstall/go cd http-api ; GOPATH=$HOME/go GOROOT=/tmp/goinstall/go /tmp/goinstall/go/bin/go build credentials.go data.go db.go main.go )
+    - pip2 install --upgrade pip
+    - pip2 install astroid==1.3.8
+    - pip2 install pylint==1.4.4
+    - pip2 install buildbot==0.8.12
+    - pip2 install requests
     - EC2PBOTMASTERIP=dummy make -C performancebot pylint
     - npm i -g eslint@1.1.0     # we need this for linting Accredit
     - make -C front-end
@@ -22,7 +35,6 @@ before_script:
     - make -C accredit/cloud-code lint
     - bash ./deploy-github-pages.sh
 
-solution: tools/tools.sln
 install:
     - (cd tools && bash ../performancebot/utils/nugethack.sh)
 script:
