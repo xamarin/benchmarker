@@ -274,7 +274,6 @@ namespace AndroidAgent
 		protected override void OnCreate (Bundle savedInstanceState)
 		{
 			string architecture = Android.OS.Build.CpuAbi;
-			string machineName = null;
 			base.OnCreate (savedInstanceState);
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
@@ -282,7 +281,7 @@ namespace AndroidAgent
 				string benchmarkName = FindViewById<TextView> (Resource.Id.benchmark).Text;
 				string githubAPIKey = FindViewById<TextView> (Resource.Id.githubAPIKey).Text;
 				string httpAPITokens = FindViewById<TextView> (Resource.Id.httpAPITokens).Text;
-				machineName = FindViewById<TextView> (Resource.Id.machineName).Text;
+				string machineName = FindViewById<TextView> (Resource.Id.machineName).Text;
 				long runSetId = Int64.Parse (FindViewById<TextView> (Resource.Id.runSetId).Text);
 				InitCommons (githubAPIKey, httpAPITokens);
 				SetStartButtonText ("running");
@@ -291,7 +290,6 @@ namespace AndroidAgent
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();
 			v += "\nArchitecture: " + architecture;
-			v += "\nMachineName: " + machineName;
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
 			Logging.GetLogging ().Info (v);
 
