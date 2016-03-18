@@ -1,0 +1,33 @@
+{
+    "apiVersion": "v1",
+    "kind": "ReplicationController",
+    "metadata": {
+	"name": "nginx",
+	"labels": {
+	    "app": "nginx"
+	}
+    },
+    "spec": {
+	"replicas": 1,
+	"template": {
+	    "metadata": {
+		"labels": {
+		    "app": "nginx"
+		}
+	    },
+	    "spec": {
+		"containers": [
+		    {
+			"name": "reloadcache",
+			"image": "633007691302.dkr.ecr.us-east-1.amazonaws.com/nginx:kubernetes"
+		    }
+		],
+		"imagePullSecrets": [
+		    {
+			"name": "registry"
+		    }
+		]
+	    }
+	}
+    }
+}

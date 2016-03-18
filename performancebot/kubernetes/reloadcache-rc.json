@@ -1,0 +1,44 @@
+{
+    "apiVersion": "v1",
+    "kind": "ReplicationController",
+    "metadata": {
+	"name": "reloadcache",
+	"labels": {
+	    "app": "reloadcache"
+	}
+    },
+    "spec": {
+	"replicas": 1,
+	"template": {
+	    "metadata": {
+		"labels": {
+		    "app": "reloadcache"
+		}
+	    },
+	    "spec": {
+		"containers": [
+		    {
+			"name": "reloadcache",
+			"image": "633007691302.dkr.ecr.us-east-1.amazonaws.com/reloadcache:latest",
+			"command": [
+			    "/bin/sh",
+			    "-c",
+			    "RELOADCACHE_SERVER=http://$POSTGREST_SERVICE_HOST:$POSTGREST_SERVICE_PORT /bin/sh /app/run.sh"
+			],
+			"env": [
+			    {
+				"name": "RELOADCACHE_SERVER",
+				"value": "http://postgrest:3000"
+			    }
+			]
+		    }
+		],
+		"imagePullSecrets": [
+		    {
+			"name": "registry"
+		    }
+		]
+	    }
+	}
+    }
+}

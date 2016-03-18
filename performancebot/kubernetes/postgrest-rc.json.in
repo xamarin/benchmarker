@@ -1,0 +1,63 @@
+{
+  "apiVersion": "v1",
+  "kind": "ReplicationController",
+  "metadata": {
+    "name": "postgrest",
+    "labels": {
+      "app": "postgrest"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "postgrest"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "postgrest",
+            "image": "motiz88/postgrest",
+            "command": [
+              "/bin/sh",
+              "-c",
+              "DBHOST=$POSTGRESQL_SERVICE_HOST DBPORT=$POSTGRESQL_SERVICE_PORT /entrypoint.sh"
+            ],
+            "env": [
+              {
+                "name": "DBNAME",
+                "value": "$DBNAME"
+              },
+              {
+                "name": "DBUSER",
+                "value": "$DBUSER"
+              },
+              {
+                "name": "DBPASS",
+                "value": "$DBPASS"
+              },
+              {
+                "name": "ANONUSER",
+                "value": "$DBUSER"
+              },
+              {
+                "name": "DBPOOL",
+                "value": "10"
+              },
+              {
+                "name": "SCHEMA",
+                "value": "1"
+              },
+              {
+                "name": "SLEEP",
+                "value": "0"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
