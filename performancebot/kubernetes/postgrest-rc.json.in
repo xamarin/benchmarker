@@ -20,12 +20,15 @@
           {
             "name": "postgrest",
             "image": "motiz88/postgrest",
-            "command": [
-              "/bin/sh",
-              "-c",
-              "DBHOST=$POSTGRESQL_SERVICE_HOST DBPORT=$POSTGRESQL_SERVICE_PORT /entrypoint.sh"
-            ],
             "env": [
+              {
+                "name": "DBHOST",
+                "value": "$DBHOST"
+              },
+              {
+                "name": "DBPORT",
+                "value": "$DBPORT"
+              },
               {
                 "name": "DBNAME",
                 "value": "$DBNAME"
