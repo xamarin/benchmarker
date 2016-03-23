@@ -11,12 +11,10 @@
 	"type": "NodePort",
 	"ports": [
 	    {
+		"nodePort": 81,
 		"targetPort": 8081,
-		"port": 81
+		"port": 1234
 	    }
-	],
-	"externalIPs": [
-	    "192.168.99.100"
 	],
 	"selector": {
 	    "app": "reloadcache"
