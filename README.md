@@ -1,6 +1,7 @@
 # Mono Benchmarker
 
 [![Build Status](https://travis-ci.org/xamarin/benchmarker.svg?branch=master)](https://travis-ci.org/xamarin/benchmarker)
+[![Go Report Card](https://goreportcard.com/badge/github.com/xamarin/benchmarker)](https://goreportcard.com/report/github.com/xamarin/benchmarker)
 
 ## Running benchmarks locally
 
