@@ -56,4 +56,5 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-cat docker-compose.yml-TEMPLATE | sed "s/\$DBHOST/$DBHOST/g" | sed "s/\$DBPORT/$DBPORT/g" | sed "s/\$DBNAME/$DBNAME/g" | sed "s/\$DBUSER/$DBUSER/g" | sed "s/\$DBPASS/$DBPASS/g" | sed "s/\$EC2_SLAVE1/$EC2_SLAVE1/g" | sed "s/\$EC2_SLAVE2/$EC2_SLAVE2/g" >docker-compose.yml
+cat postgrest.yml-TEMPLATE | sed "s/\$DBHOST/$DBHOST/g" | sed "s/\$DBPORT/$DBPORT/g" | sed "s/\$DBNAME/$DBNAME/g" | sed "s/\$DBUSER/$DBUSER/g" | sed "s/\$DBPASS/$DBPASS/g" >postgrest.yml
+cat behind-nginx.yml-TEMPLATE | sed "s/\$EC2_SLAVE1/$EC2_SLAVE1/g" | sed "s/\$EC2_SLAVE2/$EC2_SLAVE2/g" >behind-nginx.yml

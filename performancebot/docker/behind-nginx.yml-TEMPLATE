@@ -1,22 +1,3 @@
-postgrest:
-  image: ubergesundheit/docker-postgrest
-  environment:
-    DBHOST: $DBHOST
-    DBPORT: $DBPORT
-    DBNAME: $DBNAME
-    DBUSER: $DBUSER
-    DBPASS: $DBPASS
-    ANONUSER: $DBUSER
-
-reloadcache:
-  image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/reloadcache:latest
-  ports:
-    - 81:8081
-  links:
-    - postgrest
-  environment:
-    RELOADCACHE_SERVER: http://postgrest:3000
-
 http-api:
   image: 633007691302.dkr.ecr.us-east-1.amazonaws.com/http-api:latest
 
