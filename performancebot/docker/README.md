@@ -4,15 +4,15 @@ We deploy on an EC2 instance via Docker and Docker Compose.
 
 ## Docker requirements
 
-At least `docker=1.7.1` is required:
+At least `docker=1.10.3` is required:
 
-    $ echo deb http://get.docker.com/ubuntu docker main | sudo tee /etc/apt/sources.list.d/docker.list
-    $ sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+    $ echo deb https://apt.dockerproject.org/repo ubuntu-trusty main | sudo tee /etc/apt/sources.list.d/docker.list
+	$ sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
     $ sudo apt-get update
-    $ sudo apt-get install -y lxc-docker-1.7.1
+    $ sudo apt-get install -y docker-engine
     $ sudo usermod -G docker -a `whoami`
 
-And we need [docker-compose](https://github.com/docker/compose/releases).
+And we need [docker-compose](https://github.com/docker/compose/releases), at least version 1.6.2.
 
 ## Produce the Docker Compose config file
 
@@ -60,11 +60,15 @@ do
 
     docker-compose pull
 
-## Restart the containers
+## Stop the updated container
+
+    docker-compose kill NAME
+
+## Restart the container
 
 Restart the containers you updated with
 
-    docker-compose restart NAME
+    docker-compose up --force-recreate -d NAME
 
 where `NAME` is the name of the container as given in
 `docker-compose.yml`.
