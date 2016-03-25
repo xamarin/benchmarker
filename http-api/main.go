@@ -19,6 +19,10 @@ type runsetPostResponse struct {
 	PullRequestID *int32 `json:",omitempty"`
 }
 
+type healthGetResponse struct {
+	DatabaseResponds bool
+}
+
 type requestError struct {
 	Explanation string
 	httpStatus  int
@@ -300,6 +304,40 @@ func runSetsGetHandler(database *pgx.Tx, w http.ResponseWriter, r *http.Request,
 	return false, nil
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		reqErr := &requestError{Explanation: "Method not allowed", httpStatus: http.StatusMethodNotAllowed}
+		reqErr.httpError(w)
+		return
+	}
+
+	var response healthGetResponse
+
+	database, err := connPool.Begin()
+	if err != nil {
+		response.DatabaseResponds = false
+	} else {
+		_, reqErr := fetchBenchmarks(database)
+		database.Rollback()
+
+		response.DatabaseResponds = reqErr == nil
+	}
+
+	respBytes, err := json.Marshal(response)
+	if err != nil {
+		internalServerError("Could not produce JSON for response").httpError(w)
+		return
+	}
+
+	if response.DatabaseResponds {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Write([]byte(respBytes))
+}
+
 type handlerFunc func(database *pgx.Tx, w http.ResponseWriter, r *http.Request, body []byte) (bool, *requestError)
 
 func isAuthorized(r *http.Request, authToken string) bool {
@@ -390,6 +428,7 @@ func main() {
 	http.HandleFunc("/api/runset/", newTransactionHandler(authToken, map[string]handlerFunc{"GET": specificRunSetGetHandler, "POST": specificRunSetPostHandler, "DELETE": specificRunSetDeleteHandler}))
 	http.HandleFunc("/api/run/", newTransactionHandler(authToken, map[string]handlerFunc{"POST": specificRunPostHandler}))
 	http.HandleFunc("/api/runsets", newTransactionHandler(authToken, map[string]handlerFunc{"GET": runSetsGetHandler}))
+	http.HandleFunc("/api/health", healthHandler)
 	http.HandleFunc("/", notFoundHandler)
 
 	addr := fmt.Sprintf(":%d", port)
