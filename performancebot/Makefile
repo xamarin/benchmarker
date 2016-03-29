@@ -42,7 +42,7 @@ ec2-follow-log:
 	ssh $(REMOTEHOST) "tail -f $(PBOTMASTERROOT)/twistd.log | stdbuf -i0 -o0 -e0 grep -v -E 'HTTP.*ClientFactory'"
 
 benchmarkerCredentials: credentials.py FORCE
-	(cd ../tools/Accreditize && xbuild /p:Configuration=Debug)
+	(cd ../tools/Accreditize && nuget restore ../tools.sln && xbuild /p:Configuration=Debug)
 	python $< ../tools/Accreditize/bin/Debug/Accreditize.exe
 FORCE:
 
