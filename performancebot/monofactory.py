@@ -121,7 +121,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     name="list_benchmarks_%s-%s" % (machine, config_name),
                     command=[
                         'bash', '-c', Interpolate(
-                            'mono %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s --config-file %s/benchmarker/configs/%s.conf | ' % (MASTERWORKDIR, machine, MASTERWORKDIR, config_name) +
+                            'mono --debug %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s --config-file %s/benchmarker/configs/%s.conf | ' % (MASTERWORKDIR, machine, MASTERWORKDIR, config_name) +
                             'tee benchmarks-%s-%s.list' % (machine, config_name))
                     ]
                 )
@@ -362,6 +362,7 @@ def gen_guard_benchmark_run(benchmark):
 def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, timeout=3600, attach_files=None, grab_binary_files=False):
     steps = []
     cmd = ['mono',
+           '--debug',
            'tools/compare.exe',
            '--benchmarks', benchmark_name,
            '--log-url', Interpolate(BUILDBOT_URL + '/builders/%(prop:buildername)s/builds/%(prop:buildnumber)s'),
