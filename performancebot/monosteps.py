@@ -164,10 +164,8 @@ class GithubPostPRStatus(LoggingBuildStep):
 
     def start(self):
         parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
-        config_name = self.getProperty('config_name')
-        short_config_name = ''.join(map(lambda x: x[0], config_name.split('-')))
-        kind = self.getProperty('kind')
-        short_kind = ''.join(map(lambda x: x[0], config_name.split('-')))
+        short_config_name = ''.join(map(lambda x: x[0], self.getProperty('config_name').split('-')))
+        short_kind = ''.join(map(lambda x: x[0], self.getProperty('kind').split('-')))
         platform = self.getProperty('platform')
         buildnumber = self.getProperty('buildnumber')
         pullrequest_commit_id = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
