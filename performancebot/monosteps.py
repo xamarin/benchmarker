@@ -163,9 +163,15 @@ class GithubPostPRStatus(LoggingBuildStep):
         LoggingBuildStep.__init__(self, *args, **kwargs)
 
     def start(self):
+        def _splitter (prop_name):
+            prop_value = self.getProperty(prop_name)
+            def _f(s):
+                return s[0] if len(s) > 0 else '';
+            return ''.join(map(_f, prop_value.split('-')))
+
         parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
-        short_config_name = ''.join(map(lambda x: x[0] if len(x) > 0 else '', self.getProperty('config_name').split('-')))
-        short_kind = ''.join(map(lambda x: x[0] if len(x) > 0 else '', self.getProperty('kind').split('-')))
+        short_config_name = _splitter('config_name')
+        short_kind = _splitter('kind')
         platform = self.getProperty('platform')
         buildnumber = self.getProperty('buildnumber')
         pullrequest_commit_id = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
