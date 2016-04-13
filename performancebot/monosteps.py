@@ -166,7 +166,7 @@ class GithubPostPRStatus(LoggingBuildStep):
         def _splitter(prop_name):
             prop_value = self.getProperty(prop_name)
             def _f(s):
-                return s[0] if len(s) > 0 else '';
+                return s[0] if len(s) > 0 else ''
             return ''.join(map(_f, prop_value.split('-')))
 
         parse_pullrequest_id = self.getProperty(PROPERTYNAME_PULLREQUESTID)
