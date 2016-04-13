@@ -163,7 +163,7 @@ class GithubPostPRStatus(LoggingBuildStep):
         LoggingBuildStep.__init__(self, *args, **kwargs)
 
     def start(self):
-        def _splitter (prop_name):
+        def _splitter(prop_name):
             prop_value = self.getProperty(prop_name)
             def _f(s):
                 return s[0] if len(s) > 0 else '';
