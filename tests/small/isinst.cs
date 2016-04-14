@@ -19,7 +19,7 @@ public class MyTypes {
 		}
 	}
 
-	static bool bench (long iterations, object[] objs) {
+	static long bench (long iterations, object[] objs) {
 		long checksum = 0;
 		for (long i = 0; i < iterations; ++i) {
 			foreach (object o in objs) {
@@ -34,7 +34,7 @@ public class MyTypes {
 				}
 			}
 		}
-		return checksum == (4 * iterations);
+		return checksum;
 	}
 
 	public static void Main (string []args) {
@@ -46,6 +46,9 @@ public class MyTypes {
 		objs [3] = new C ();
 		if (args.Length > 0)
 			n = Int64.Parse (args[0]);
-		System.Environment.Exit (bench (n, objs) ? 0 : 1);
+		long checksum = bench (n, objs);
+		Console.WriteLine ("iterations: " + n);
+		Console.WriteLine ("checksum:   " + checksum);
+		System.Environment.Exit (checksum == (11 * n) ? 0 : 1);
 	}
 }
