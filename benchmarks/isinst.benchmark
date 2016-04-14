@@ -1,0 +1,5 @@
+{
+  "Name": "isinst",
+  "TestDirectory": "small",
+  "CommandLine": ["isinst.exe", "25000000"]
+}
