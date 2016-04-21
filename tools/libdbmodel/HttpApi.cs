@@ -90,7 +90,7 @@ namespace Benchmarker.Models
 
 		private static async Task<string> Get (string path, IDictionary<string, string> args)
 		{
-			return await Send ("GET", path, args, null);
+			return await Helper.RunWithRetry (() => Send ("GET", path, args, null));
 		}
 
 		// new runset
@@ -101,7 +101,7 @@ namespace Benchmarker.Models
 
 		private static async Task<string> Put (string path, IDictionary<string, string> args, ApiObject contentObject)
 		{
-			return await Send ("PUT", path, args, contentObject);
+			return await Helper.RunWithRetry (() => Send ("PUT", path, args, contentObject));
 		}
 
 		// amend existing runset
@@ -117,7 +117,7 @@ namespace Benchmarker.Models
 
 		private static async Task<string> Post (string path, IDictionary<string, string> args, ApiObject contentObject)
 		{
-			return await Send ("POST", path, args, contentObject);
+			return await Helper.RunWithRetry (() => Send ("POST", path, args, contentObject));
 		}
 
 		public static async Task<string> DeleteRunset (long runSetId)
@@ -127,7 +127,7 @@ namespace Benchmarker.Models
 
 		private static async Task<string> Delete (string path, IDictionary<string, string> args, ApiObject contentObject)
 		{
-			return await Send ("DELETE", path, args, contentObject);
+			return await Helper.RunWithRetry (() => Send ("DELETE", path, args, contentObject));
 		}
 	}
 }
