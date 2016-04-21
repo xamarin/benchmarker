@@ -720,7 +720,7 @@ class Compare
 
 		Console.WriteLine (JsonConvert.SerializeObject (runSet.AsDict ()));
 
-		var uploadResult = AsyncContext.Run (() => Utils.RunWithRetry (() => runSet.Upload ()));
+		var uploadResult = AsyncContext.Run (() => runSet.Upload ());
 		if (uploadResult == null) {
 			Console.Error.WriteLine ("Error: Could not upload run set.");
 			Environment.Exit (1);
