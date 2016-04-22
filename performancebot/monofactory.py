@@ -74,7 +74,7 @@ class DebianMonoBuildFactory(BuildFactory):
                     'cd benchmarker/tools && (/usr/bin/cli --version || true) && ' +
                     'bash ../performancebot/utils/nugethack.sh && ' +
                     'xbuild /t:compare && ' +
-                    'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
+                    'cd ../.. && tar cvfz benchmarker.tar.gz benchmarker/tools/{*.dll,*.exe,*.mdb} && (md5 benchmarker.tar.gz || md5sum benchmarker.tar.gz)'
                 )
             ]
         )
