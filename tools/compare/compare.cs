@@ -286,6 +286,7 @@ class Compare
 
 	private static Regex JIT_PHASE_REGEX = new Regex ("JIT/(\\w+)\\s*\\(sec\\)\\s*: (\\d+.\\d+)");
 	private static Regex JIT_ALL_REGEX = new Regex ("JITting \\(sec\\)\\s*: (\\d+.\\d+)");
+	private static Regex NATIVE_CODE_SIZE_REGEX = new Regex ("Native code size\\s*:\\s*(\\d+)");
 
 	// TODO: obtain values from log profiler output, not via --stats.
 	private static List<RunMetric> ParseJITPhases (string stdout) {
@@ -310,6 +311,16 @@ class Compare
 					PhaseName = "all",
 					Value = TimeSpan.FromMilliseconds (time * 1000)
 				});
+				continue;
+			}
+
+			match = NATIVE_CODE_SIZE_REGEX.Match (line);
+			if (match.Success) {
+				l.Add (new RunMetric {
+					Metric = RunMetric.MetricType.CodeSize,
+					Value = long.Parse (match.Groups [1].Value)
+				});
+				continue;
 			}
 		}
 		return l;

@@ -19,6 +19,7 @@ namespace Benchmarker.Models
 			CachegrindResults,
 			PauseTimes,
 			PauseStarts,
+			CodeSize,
 			JitPhase
 		};
 
@@ -47,6 +48,8 @@ namespace Benchmarker.Models
 					return "pause-times";
 				case MetricType.PauseStarts:
 					return "pause-starts";
+				case MetricType.CodeSize:
+					return "code-size";
 				case MetricType.JitPhase:
 					return "jit-" + PhaseName.Replace ('_', '-');
 				default:
