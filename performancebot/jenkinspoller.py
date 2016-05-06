@@ -355,7 +355,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        results = yield _do_fetch_build('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
+        results = yield _do_fetch_build('https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
@@ -372,7 +372,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1541/'
+        build_url = 'https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1541/'
         results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
         results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'debian-amd64', _logger)))
         for key, value in results.items():
@@ -391,7 +391,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=debian-amd64/4/'
+        build_url = 'https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=debian-amd64/4/'
         results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
         results.update((yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'debian-amd64', _logger)))
         for key, value in results.items():
@@ -422,10 +422,10 @@ if __name__ == '__main__':
         # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
-        # _ = yield test_fetch_build_debamd64()
+        _ = yield test_fetch_build_debamd64()
         # _ = yield test_get_pr_changes_debamd64()
         # _ = yield test_fetch_pr_build_debamd64()
-        _ = yield test_postgrest()
+        # _ = yield test_postgrest()
         stop_me()
 
     run_tests()

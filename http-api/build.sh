@@ -4,6 +4,9 @@ set -e
 
 # FIXME: get credentials `benchmarkerPostgres` and `httpAPITokens`
 
+go get "github.com/google/go-github/github"
+go get "github.com/jackc/pgx"
+
 env GOOS=linux GOARCH=amd64 go build -o http-api *.go
 docker build -t http-api .
 rm http-api
