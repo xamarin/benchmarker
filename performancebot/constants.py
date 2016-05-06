@@ -19,7 +19,7 @@ PROPERTYNAME_BINARY_PROTOCOL_FILES = 'binary-protocol-files'
 
 FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 
-JENKINS_URL = 'https://jenkins.mono-project.com'
+JENKINS_URL = 'https://jenkinsold.mono-project.com'
 
 MONO_SGEN_GREP_BINPROT_GITREV = '469cf0e8b138e7df81c42b271ad8c6e3f6a40b85'
 MONO_SGEN_GREP_BINPROT_FILENAME = 'sgen-grep-binprot-%s' % MONO_SGEN_GREP_BINPROT_GITREV
