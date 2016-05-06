@@ -69,6 +69,7 @@ namespace Benchmarker.Models
 				case MetricType.BranchMispredictionRate:
 					return (double)Value;
 				case MetricType.Instructions:
+				case MetricType.CodeSize:
 					return (double)(long)Value;
 				case MetricType.CachegrindResults:
 				case MetricType.PauseTimes:
