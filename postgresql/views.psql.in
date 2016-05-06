@@ -36,10 +36,12 @@ runset rs, commit c, machine m, config cfg
 where results.runset = rs.id and rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
 create or replace view "1".runset as
-select c.hash as c_hash, c.commitdate as c_commitdate, c.product as c_product,
-       rs.id as rs_id, rs.startedat as rs_startedat, rs.finishedat as rs_finishedat, rs.buildurl as rs_buildurl, rs.logurls as rs_logurls, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedoutbenchmarks as rs_timedoutbenchmarks, rs.crashedbenchmarks as rs_crashedbenchmarks, rs.secondarycommits as rs_secondarycommits,
+select c.hash as c_hash, c.commitdate as c_commitdate,
+       rs.id as rs_id, rs.startedat as rs_startedat, rs.finishedat as rs_finishedat, rs.buildurl as rs_buildurl, rs.logurls as rs_logurls, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedoutbenchmarks as rs_timedoutbenchmarks, rs.crashedbenchmarks as rs_crashedbenchmarks,
        m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
+       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
+        rs.secondarycommits as rs_secondarycommits,
+        c.product as c_product, rs.pullrequest as rs_pullrequest
 from runset rs, commit c, machine m, config cfg
 where rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
 
