@@ -145,6 +145,7 @@ func metricIsAllowed(metric string, value interface{}) bool {
 		metric == "memory-integral" ||
 		metric == "branch-mispred" ||
 		metric == "cache-miss" ||
+		metric == "code-size" ||
 		strings.HasPrefix(metric, "jit-") {
 		_, ok := value.(float64)
 		return ok
