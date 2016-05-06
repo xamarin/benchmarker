@@ -316,53 +316,6 @@ function runSetIsBroken (runSet: Database.DBObject, averages: Database.Benchmark
 	return false;
 }
 
-interface AxisLabels {
-	name: string;
-	lowest: string;
-	highest: string;
-}
-
-function axisNameForMetric (metric: string, relative: boolean) : AxisLabels {
-	switch (metric) {
-		case 'time':
-			return {
-				name: relative ? "Relative wall clock time" : "Wall clock time",
-				lowest: "Fastest",
-				highest: "Slowest",
-			};
-		case 'memory-integral':
-			return {
-				name: relative ? "Relative memory usage" : "MB * Giga Instructions",
-				lowest: "Least memory",
-				highest: "Most memory",
-			};
-		case 'instructions':
-			return {
-				name: relative ? "Relative # of instructions" : "Number of instructions",
-				lowest: "Fewest instructions",
-				highest: "Most instructions",
-			};
-		case 'cache-miss':
-			return {
-				name: relative ? "Relative cache miss rate" : "Cache miss rate",
-				lowest: "Fewest cache misses",
-				highest: "Most cache misses",
-			};
-		case 'branch-mispred':
-			return {
-				name: relative ? "Relative branch misprediction rate" : "Branch misprediction rate",
-				lowest: "Fewest branch mispredictions",
-				highest: "Most branch mispredictions",
-			};
-		default:
-			return {
-				name: "Unknown metric",
-				lowest: "Lowest value",
-				highest: "Highest value",
-			};
-	}
-}
-
 interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
 	metric: string;
 	sortedResults: Array<Database.Summary>;
@@ -372,7 +325,7 @@ interface AllBenchmarksChartProps extends xp_charts.TimelineChartProps {
 
 class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps> {
 	public valueAxisTitle () : string {
-		return axisNameForMetric (this.props.metric, true).name;
+		return xp_common.namesForMetric (this.props.metric, true).name;
 	}
 
 	public computeTable (nextProps: AllBenchmarksChartProps) : Array<Object> {
@@ -449,7 +402,7 @@ class AllBenchmarksChart extends xp_charts.TimelineChart<AllBenchmarksChartProps
 			var broken = runSetIsBroken (runSet, results [j].averages);
 			var runSetIndex = xp_utils.findIndex (results, (r: Database.Summary) => r.runSet === runSet);
 			var selected = nextProps.selectedIndices.indexOf (runSetIndex) >= 0;
-			const { lowest: lowestLabel, highest: highestLabel } = axisNameForMetric (this.props.metric, true);
+			const { lowest: lowestLabel, highest: highestLabel } = xp_common.namesForMetric (this.props.metric, true);
 			table.push ({
 				dataItem: runSet,
 				low: min,
@@ -485,7 +438,7 @@ interface BenchmarkChartProps extends xp_charts.TimelineChartProps {
 
 class BenchmarkChart extends xp_charts.TimelineChart<BenchmarkChartProps> {
 	public valueAxisTitle () : string {
-		return axisNameForMetric (this.props.metric, false).name;
+		return xp_common.namesForMetric (this.props.metric, false).name;
 	}
 
 	public computeTable (nextProps: BenchmarkChartProps) : Array<Object> {

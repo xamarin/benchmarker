@@ -356,7 +356,7 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 		const renderRunSet = (runSet: Database.DBRunSet) => {
 			const id = runSet.get ('id');
 			const isPR = !!runSet.get ('pullrequest');
-			const prString = isPR ? " - PR" : ""; 
+			const prString = isPR ? " - PR" : "";
 			return <option value={id} key={id} onDoubleClick={() => openRunSetDescription (id)}>
 				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}{prString}
 			</option>;
@@ -396,18 +396,81 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 	}
 }
 
-function descriptiveMetricName (metric: string) : string {
+export interface MetricNames {
+	name: string;
+	shortName: string;
+	lowest: string;
+	highest: string;
+}
+
+export function namesForMetric (metric: string, relative: boolean) : MetricNames {
 	switch (metric) {
-	case 'time':
-		return "Elapsed Times (ms)";
-	case 'instructions':
-		return "Instruction count";
-	case 'memory-integral':
-		return "Memory usage (MB * Giga Instructions)";
-    case 'acceptable-time-slices':
-        return "Percent acceptable time slices";
-	default:
-		return "Unknown metric";
+		case 'time':
+			return {
+				name: relative ? "Relative wall clock time" : "Wall clock time",
+				shortName: "Elapsed Times (ms)",
+				lowest: "Fastest",
+				highest: "Slowest",
+			};
+		case 'memory-integral':
+			return {
+				name: relative ? "Relative memory usage" : "MB * Giga Instructions",
+				shortName: "Memory usage (MB * Giga Instructions)",
+				lowest: "Least memory",
+				highest: "Most memory",
+			};
+		case 'instructions':
+			return {
+				name: relative ? "Relative # of instructions" : "Number of instructions",
+				shortName: "Instruction count",
+				lowest: "Fewest instructions",
+				highest: "Most instructions",
+			};
+		case 'cache-miss':
+			return {
+				name: relative ? "Relative cache miss rate" : "Cache miss rate",
+				shortName: "Cache miss rate",
+				lowest: "Fewest cache misses",
+				highest: "Most cache misses",
+			};
+		case 'branch-mispred':
+			return {
+				name: relative ? "Relative branch misprediction rate" : "Branch misprediction rate",
+				shortName: "Branch mispredictions",
+				lowest: "Fewest branch mispredictions",
+				highest: "Most branch mispredictions",
+			};
+		case 'acceptable-time-slices':
+			return {
+				name: relative ? "Relative acceptable time slices" : "Acceptable time slices",
+				shortName: "Acceptable time slices (%)",
+				lowest: "Fewest acceptable time slices",
+				highest: "Most acceptable time slices",
+			};
+		case 'code-size':
+			return {
+				name: relative ? "Relative code size" : "Code size in bytes",
+				shortName: "Code size (bytes)",
+				lowest: "Smallest code size",
+				highest: "Largest code size",
+			};
+		default:
+			if (metric.substr (0, 4) === "jit-") {
+				const name = "JIT " + metric.substr (4);
+				return {
+					name: name + " in ms",
+					shortName: name + " (ms)",
+					lowest: "Fastest " + name,
+					highest: "Slowest " + name,
+				};
+			} else {
+				return {
+					name: metric,
+					shortName: metric,
+					lowest: "Lowest value",
+					highest: "Highest value",
+				};
+			}
 	}
 }
 
@@ -555,7 +618,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
                     </td>;
             }
             const metricColumns: Array<JSX.Element> = [];
-            metricColumns.push (<td key={"metricNames" + benchmark + m}>{descriptiveMetricName (m)}</td>);
+            metricColumns.push (<td key={"metricNames" + benchmark + m}>{namesForMetric (m, false).shortName}</td>);
             metricColumns.push (<td key={"metricValues" + benchmark + m}>{dataPointsString}</td>);
             if (degreeElement !== undefined) {
                 metricColumns.push (degreeElement);
