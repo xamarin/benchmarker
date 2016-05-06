@@ -96,10 +96,12 @@ class Page extends React.Component<PageProps, PageState> {
 			var compareLink = <a href={'pullrequest.html#id=' + pullRequest ['pr_id']} className="pre">{title}</a>;
 			var relativeDate = xp_common.relativeDate (new Date (pullRequest ['blc_commitdate']));
 			var buildIcon = xp_common.makeBuildIcon (pullRequest ['blrs_buildurl']);
+			const configName = pullRequest ['cfg_name'];
 			return <tr key={pullRequest ['pr_id']}>
 				<td>{idLink}</td>
 				<td>{relativeDate}</td>
 				<td>{compareLink} {buildIcon}</td>
+				<td>{configName}</td>
 				<td>{crashed}</td>
 				<td>{timedOut}</td>
 			</tr>;
@@ -112,9 +114,10 @@ class Page extends React.Component<PageProps, PageState> {
 				<table>
 					<thead>
 						<tr>
-							<th>ID</th>
+							<th>PR ID</th>
 							<th>Date</th>
 							<th>Title</th>
+							<th>Config</th>
 							<th><span className="statusIcon crashed fa fa-exclamation-circle" title="Crashed"></span> Crashed</th>
 							<th><span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span> Timed Out</th>
 						</tr>
