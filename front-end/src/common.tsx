@@ -355,8 +355,10 @@ export class RunSetSelector extends React.Component<RunSetSelectorProps, RunSetS
 
 		const renderRunSet = (runSet: Database.DBRunSet) => {
 			const id = runSet.get ('id');
+			const isPR = !!runSet.get ('pullrequest');
+			const prString = isPR ? " - PR" : ""; 
 			return <option value={id} key={id} onDoubleClick={() => openRunSetDescription (id)}>
-				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}
+				{xp_utils.formatDate (runSet.commit.get ('commitDate'))} - {runSet.commit.get ('hash').substring (0, 10)}{prString}
 			</option>;
 		};
 
