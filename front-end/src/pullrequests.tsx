@@ -92,7 +92,7 @@ class Page extends React.Component<PageProps, PageState> {
 				', ',
 				pullRequest ['blrs_timedoutbenchmarks']
 					.map ((name: string) => <code key={'timed-out-' + name}>{name}</code>));
-			var idLink = <a href={pullRequest ['pr_url']}>#{xp_common.pullRequestIdFromUrl (pullRequest ['pr_url'])}</a>;
+			var idLink = <a href={pullRequest ['pr_url']}>#{xp_common.parsePullRequestUrl (pullRequest ['pr_url']) [2]}</a>;
 			var compareLink = <a href={'pullrequest.html#id=' + pullRequest ['pr_id']} className="pre">{title}</a>;
 			var relativeDate = xp_common.relativeDate (new Date (pullRequest ['blc_commitdate']));
 			var buildIcon = xp_common.makeBuildIcon (pullRequest ['blrs_buildurl']);

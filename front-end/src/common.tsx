@@ -772,7 +772,7 @@ export class RunSetDescription extends React.Component<RunSetDescriptionProps, R
 				});
 		}
 
-		getCommitInfo (runSet.get ('commit'), (info: Object) => {
+		getCommitInfo (runSet.commit.get ('product'), runSet.get ('commit'), (info: Object) => {
 			this.setState ({ commitInfo: info } as any);
 		});
 	}
@@ -891,14 +891,15 @@ export class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
 	public render () : JSX.Element {
 		var runSet = this.props.runSet;
 		var commitHash = runSet.commit.get ('hash');
-		var commitLink = githubCommitLink (runSet.commit.get ('product'), commitHash);
+		const product = runSet.commit.get ('product') as string;
+		var commitLink = githubCommitLink (product, commitHash);
 
 		var prev = this.props.previousRunSet;
 		var prevItems;
 		if (prev !== undefined) {
 			var prevHash = prev.commit.get ('hash');
 			var prevLink = githubCommitLink (prev.commit.get ('product'), prevHash);
-			var compareLink = githubCompareLink (prevHash, commitHash);
+			var compareLink = githubCompareLink (product, prevHash, commitHash);
 			prevItems = [
 				<dt key="previousName">Previous</dt>,
 				<dd key="previousValue"><a href={prevLink}>{prevHash.substring (0, 10)}</a><br /><a href={compareLink}>Compare</a></dd>,
@@ -918,27 +919,37 @@ export class RunSetSummary extends React.Component<RunSetSummaryProps, void> {
 	}
 }
 
-export function githubCommitLink (product: string, commit: string) : string {
-	var repo = "";
+function githubRepoForProduct (product: string) : [string, string] {
 	switch (product) {
 		case 'mono':
-			repo = 'mono/mono';
-			break;
+			return ['mono', 'mono'];
 		case 'monodroid':
-			repo = 'xamarin/monodroid';
-			break;
+			return ['xamarin', 'monodroid'];
 		case 'benchmarker':
-			repo = 'xamarin/benchmarker';
-			break;
+			return ['xamarin', 'benchmarker'];
+		case 'coreclr':
+			return ['dotnet', 'coreclr'];
 		default:
-			alert("Unknown product " + product);
-			return "";
+			return undefined;
 	}
-	return "https://github.com/" + repo + "/commit/" + commit;
 }
 
-export function githubCompareLink (base: string, compare: string) : string {
-	return "https://github.com/mono/mono/compare/" + base + "..." + compare;
+export function githubCommitLink (product: string, commit: string) : string {
+	const userAndRepo = githubRepoForProduct (product);
+	if (userAndRepo === undefined) {
+		alert("Unknown product " + product);
+		return undefined;
+	}
+	return "https://github.com/" + userAndRepo [0] + "/" + userAndRepo [1] + "/commit/" + commit;
+}
+
+function githubCompareLink (product: string, base: string, compare: string) : string {
+	const userAndRepo = githubRepoForProduct (product);
+	if (userAndRepo === undefined) {
+		alert("Unknown product " + product);
+		return undefined;
+	}
+	return "https://github.com/" + userAndRepo [0] + "/" + userAndRepo [1] + "/compare/" + base + "..." + compare;
 }
 
 interface NavigationProps {
@@ -1091,36 +1102,45 @@ export function setLocationForArray (key: string, ids: Array<string>) : void {
 	window.location.hash = key + "=" + ids.join ("+");
 }
 
-export function pullRequestIdFromUrl (url: string) : number {
-	var match = url.match (/^https?:\/\/github\.com\/mono\/mono\/pull\/(\d+)\/?$/);
+export function parsePullRequestUrl (url: string) : [string, string, number] {
+	var match = url.match (/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/);
 	if (match === null)
 		return undefined;
-	return Number (match [1]);
+	return [match [1], match [2], Number (match [3])];
 }
 
-function getMonoRepo () : Repo {
+function getGitHubRepo (user: string, repo: string) : Repo {
 	const github = new GitHub ({
 		// HACK: A read-only access token to allow higher rate limits.
 		token: '319339f37f8f19b7b5ba92ebfcbdb965871440e0',
 		auth: 'oauth',
 	});
-	return github.getRepo ("mono", "mono");
+	return github.getRepo (user, repo);
+}
+
+function getProductRepo (product: string) : Repo {
+	const userAndRepo = githubRepoForProduct (product);
+	if (userAndRepo === undefined) {
+		alert ("unknown product " + product);
+		return getGitHubRepo ("mono", "mono");
+	}
+	return getGitHubRepo (userAndRepo [0], userAndRepo [1]);
 }
 
 export function getPullRequestInfo (url: string, success: (info: Object) => void) : void {
-	const id = pullRequestIdFromUrl (url);
-	if (id === undefined)
+	const prData = parsePullRequestUrl (url);
+	if (prData === undefined)
 		return;
-	const repo = getMonoRepo ();
-	repo.getPull (id, (err: Object, info: Object) => {
+	const repo = getGitHubRepo (prData [0], prData [1]);
+	repo.getPull (prData [2], (err: Object, info: Object) => {
 		if (info) {
 			success (info);
 		}
 	});
 }
 
-function getCommitInfo (hash: string, success: (info: Object) => void) : void {
-	const repo = getMonoRepo ();
+function getCommitInfo (product: string, hash: string, success: (info: Object) => void) : void {
+	const repo = getProductRepo (product);
 	repo.getCommit (undefined, hash, (err: Object, info: Object) => {
 		if (info) {
 			success (info);

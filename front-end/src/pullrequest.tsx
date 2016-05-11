@@ -112,6 +112,7 @@ class PullRequestDescription extends React.Component<PullRequestDescriptionProps
             title = info ['title'];
 
 		var description = undefined;
+		// FIXME: get the product from the pull request (not in the DB view yet)
 		var commit = <a href={xp_common.githubCommitLink ('mono', baselineHash)}>{baselineHash.substring (0, 10)}</a>;
 		var configAndMachine = <span>
 			<xp_common.ConfigDescription
