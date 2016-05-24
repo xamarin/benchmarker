@@ -186,7 +186,7 @@ class BuildURLToPropertyStep(LoggingBuildStep):
         LoggingBuildStep.__init__(self, name="buildURL2prop", haltOnFailure=True, *args, **kwargs)
 
     def start(self):
-        # label=debian-amd64/1348/
+        # label=ubuntu-1404-amd64/1348/
         platform = self.getProperty('platform')
         jenkins_source_base = None
         for i in self.build.sources:
@@ -289,8 +289,8 @@ def _do_fetch_build(build_url, platform, logger):
     assert parsermono.common_deb is not None, 'no common debian package found :-('
     result['deb_common_url'] = MONO_COMMON_SNAPSHOTS_URL + '/' + parsermono.common_deb
 
-    # get assemblies package always from debian-amd64 builder.
-    amd64build_url = build_url.replace(platform, 'debian-amd64')
+    # get assemblies package always from ubuntu-1404-amd64 builder.
+    amd64build_url = build_url.replace(platform, 'ubuntu-1404-amd64')
     def _get_assemblies(parser, path):
         if '-assemblies' in path:
             parser.result['deb_asm_url'] = parser.build_url + '/s3/' + path
@@ -355,7 +355,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        results = yield _do_fetch_build('https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-armhf/1403/', 'debian-armhf', _logger)
+        results = yield _do_fetch_build('https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-8-armhf/2612/', 'debian-8-armhf', _logger)
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
@@ -363,7 +363,7 @@ if __name__ == '__main__':
     def test_get_changes_debarm():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-armhf', 'utilite-desktop', 'auto-sgen'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-8-armhf', 'utilite-desktop', 'auto-sgen'))):
             print url
 
 
@@ -372,9 +372,9 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono/label=debian-amd64/1541/'
-        results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
-        results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'debian-amd64', _logger)))
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=ubuntu-1404-amd64/2612/'
+        results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'ubuntu-1404-amd64', _logger)))
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
@@ -382,7 +382,7 @@ if __name__ == '__main__':
     def test_get_changes_debamd64():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'ubuntu-1404-amd64', 'benchmarker', 'auto-sgen-noturbo-binary'))):
             print url
 
 
@@ -391,9 +391,9 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkinsold.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=debian-amd64/4/'
-        results = yield _do_fetch_build(build_url, 'debian-amd64', _logger)
-        results.update((yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'debian-amd64', _logger)))
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=ubuntu-1404-amd64/4/'
+        results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'ubuntu-1404-amd64', _logger)))
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
@@ -401,14 +401,14 @@ if __name__ == '__main__':
     def test_get_pr_changes_debamd64():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-amd64', 'bernhard-vbox-linux', 'auto-sgen-noturbo'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'ubuntu-1404-amd64', 'benchmarker', 'auto-sgen-noturbo-binary'))):
             print url
 
     @defer.inlineCallbacks
     def test_postgrest():
         def _logger(msg):
             print msg
-        postgrest = json.loads((yield _mk_request_postgrest('benchmarker', 'auto-sgen-noturbo', _logger)))
+        postgrest = json.loads((yield _mk_request_postgrest('benchmarker', 'auto-sgen-noturbo-binary', _logger)))
         def _filter_build_urls_postgrest(j):
             return sorted([i['rs_buildurl'].encode('ascii', 'ignore') for i in j if i.has_key('rs_buildurl') and i['rs_buildurl'] is not None])
         postgrestids = _filter_build_urls_postgrest(postgrest)
@@ -422,10 +422,11 @@ if __name__ == '__main__':
         # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
-        _ = yield test_fetch_build_debamd64()
-        # _ = yield test_get_pr_changes_debamd64()
-        # _ = yield test_fetch_pr_build_debamd64()
+        # _ = yield test_fetch_build_debamd64()
         # _ = yield test_postgrest()
+        # TODO
+        _ = yield test_get_pr_changes_debamd64()
+        # _ = yield test_fetch_pr_build_debamd64()
         stop_me()
 
     run_tests()
