@@ -1,8 +1,8 @@
 # Copyright (c) 2015, Patrick Uiterwijk <puiterwijk@redhat.com>
-# Copyright (c) 2015, Bernhard Urban <bernhard.urban@xamarin.com>
+# Copyright (c) 2016, Bernhard Urban <bernhard.urban@xamarin.com>
 # All rights reserved
 #
-# This file is part of Buildbot-GoogleOAuth2.  Buildbot-GoogleOAuth2 is free
+# This file is part of Buildbot-GithubOAuth2.  Buildbot-GithubOAuth2 is free
 # software: you can redistribute it and/or modify it under the terms of the GNU
 # General Public License as published by the Free Software Foundation, version
 # 2.
@@ -35,13 +35,12 @@ import requests
 # from openid_cla import cla
 # from openid_teams import teams
 
-COOKIE_KEY = "BuildBotGoogleOAuth2Session"
-AUTHURI = 'https://accounts.google.com/o/oauth2/auth'
-TOKENURI = 'https://accounts.google.com/o/oauth2/token'
-RESOURCEENDPOINT = 'https://www.googleapis.com/oauth2/v1'
-INFOSCOPE = " ".join(['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'])
+COOKIE_KEY = "BuildBotGithubOAuth2Session"
+AUTHURI = 'https://github.com/login/oauth/authorize'
+TOKENURI = 'https://github.com/login/oauth/access_token'
+RESOURCEENDPOINT = 'https://api.github.com'
 
-class GoogleOAuth2Handler(resource.Resource):
+class GithubOAuth2Handler(resource.Resource):
     def __init__(self, authz):
         self.authz = authz
         resource.Resource.__init__(self)
@@ -55,7 +54,7 @@ class GoogleOAuth2Handler(resource.Resource):
             return redirectTo(self.authz.getLoginURL(), request)
         else:
             details = self.verifyCode(code)
-            if not details['email'].split('@')[-1] == 'xamarin.com':
+            if 'xamarin' not in details['groups']:
                 return "no xamarin employee, no power"
             cookie, s = self.authz.sessions.new(details['userName'], details)
             request.addCookie(COOKIE_KEY, cookie, expires=s.getExpiration(), path="/")
@@ -63,12 +62,11 @@ class GoogleOAuth2Handler(resource.Resource):
             return redirectTo(self.authz.root_uri, request)
 
     def verifyCode(self, code):
-        data = {'redirect_uri': self.authz.root_uri + '_google_oauth2_handler',
+        data = {'redirect_uri': self.authz.root_uri + '_github_oauth2_handler',
                 'grant_type': 'authorization_code',
                 'code': code,
                 'client_id': self.authz.client_id,
-                'client_secret': self.authz.client_secret,
-                'scope': INFOSCOPE
+                'client_secret': self.authz.client_secret
                }
         response = requests.post(TOKENURI, data=data, auth=None)
         if isinstance(response.content, basestring):
@@ -93,16 +91,17 @@ def getUserInfo(session, path):
     return ret.json()
 
 def getUserInfoFromOAuthClient(c):
-    data = getUserInfo(c, '/userinfo')
+    user = getUserInfo(c, '/user')
+    orgs = getUserInfo(c, '/users/' + user['login'] + '/orgs')
     return dict(
-        fullName=data['name'],
-        userName=data['email'].split('@')[0],
-        email=data['email'],
-        avatar_url=data['picture']
+        fullName=user['name'],
+        userName=user['login'],
+        email=user['email'],
+        groups=[org['login'] for org in orgs]
     )
 
 
-class GoogleOAuth2AuthZ(object):
+class GithubOAuth2AuthZ(object):
     """Decide who can do what."""
     def __init__(self, url, client_id, client_secret, root_uri, **kwargs):
         unknown = []
@@ -125,7 +124,7 @@ class GoogleOAuth2AuthZ(object):
         self.auth = self
         # This makes the login form be a link
         self.useHttpHeader = True
-        self.httpLoginUrl = '/_google_oauth2_handler'
+        self.httpLoginUrl = '/_github_oauth2_handler'
 
         if unknown != []:
             raise ValueError('Unknown authorization action(s) ' +
@@ -174,7 +173,7 @@ class GoogleOAuth2AuthZ(object):
         #  to handling the very first request
         if not self.init_childs:
             self.init_childs = True
-            request.site.resource.putChild('_google_oauth2_handler', GoogleOAuth2Handler(self))
+            request.site.resource.putChild('_github_oauth2_handler', GithubOAuth2Handler(self))
 
     def shouldAllowAction(self, action, request):
         self.create_childs(request)
@@ -205,10 +204,9 @@ class GoogleOAuth2AuthZ(object):
             self.sessions.remove(cookie)
 
     def getLoginURL(self):
-        oauth_params = {'redirect_uri': self.root_uri + '_google_oauth2_handler',
+        oauth_params = {'redirect_uri': self.root_uri + '_github_oauth2_handler',
                         'client_id': self.client_id,
                         'response_type': 'code',
-                        'scope': INFOSCOPE,
                         'access_type': 'offline'
                        }
 

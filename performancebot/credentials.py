@@ -17,14 +17,14 @@ def get_slack_api_key():
 get_slack_api_key.accredit_key = 'pbotSlackAPI'
 
 
-def get_google_api_key_clientid():
-    return _cache_content()[_get_accredit_key(get_google_api_key_clientid)]['clientid']
-get_google_api_key_clientid.accredit_key = 'pbotGoogleOAuth'
+def get_github_api_key_clientid():
+    return _cache_content()[_get_accredit_key(get_github_api_key_clientid)]['clientid']
+get_github_api_key_clientid.accredit_key = 'pbotGithubOAuth'
 
 
-def get_google_api_key_clientsecret():
-    return _cache_content()[_get_accredit_key(get_google_api_key_clientsecret)]['clientsecret']
-get_google_api_key_clientsecret.accredit_key = 'pbotGoogleOAuth'
+def get_github_api_key_clientsecret():
+    return _cache_content()[_get_accredit_key(get_github_api_key_clientsecret)]['clientsecret']
+get_github_api_key_clientsecret.accredit_key = 'pbotGithubOAuth'
 
 
 def get_pb_user():
