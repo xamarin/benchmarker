@@ -292,14 +292,14 @@ def _do_fetch_build(build_url, platform, logger):
     # get assemblies package always from ubuntu-1404-amd64 builder.
     amd64build_url = build_url.replace(platform, 'ubuntu-1404-amd64')
     def _get_assemblies(parser, path):
-        if '-assemblies' in path:
+        if '-assemblies' in path and path.endswith('.deb'):
             parser.result['deb_asm_url'] = parser.build_url + '/s3/' + path
     parserassembly = HTMLParserS3Artifacts(result, amd64build_url, _get_assemblies)
     parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
 
     # get bin package from arch specific builder
     def _get_bin(parser, path):
-        if '-assemblies' not in path:
+        if '-assemblies' not in path and path.endswith('.deb'):
             parser.result['deb_bin_url'] = parser.build_url + '/s3/' + path
     parserassembly = HTMLParserS3Artifacts(result, build_url, _get_bin)
     parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
