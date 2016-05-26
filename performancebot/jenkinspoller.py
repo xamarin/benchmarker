@@ -167,7 +167,7 @@ def _get_new_jenkins_changes(jenkins_base_url, platform, hostname, config_name):
     postgrest_json = json.loads((yield _mk_request_postgrest(hostname, config_name, None)))
 
     def _filter_build_urls_jenkins(j):
-        return sorted([i['url'].encode('ascii', 'ignore') for i in j['allBuilds'] if i['result'] == 'SUCCESS'])
+        return sorted([i['url'].encode('ascii', 'ignore') for i in j['allBuilds'] if i['result'] == 'SUCCESS' and i['building'] is False])
 
     def _filter_build_urls_postgrest(j):
         return sorted([i['rs_buildurl'].encode('ascii', 'ignore') for i in j if i.has_key('rs_buildurl') and i['rs_buildurl'] is not None])
@@ -363,7 +363,7 @@ if __name__ == '__main__':
     def test_get_changes_debarm():
         print ""
         print "URLs to process:"
-        for url in sorted((yield _get_new_jenkins_changes(MONO_BASEURL, 'debian-8-armhf', 'utilite-desktop', 'auto-sgen'))):
+        for url in sorted((yield _get_new_jenkins_changes(MONO_PULLREQUEST_BASEURL, 'debian-8-armhf', 'utilite-desktop', 'auto-sgen'))):
             print url
 
 
@@ -419,13 +419,13 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def run_tests():
-        # _ = yield test_get_changes_debarm()
+        _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
         # _ = yield test_fetch_build_debamd64()
         # _ = yield test_postgrest()
         # _ = yield test_get_pr_changes_debamd64()
-        _ = yield test_fetch_pr_build_debamd64()
+        # _ = yield test_fetch_pr_build_debamd64()
         stop_me()
 
     run_tests()
