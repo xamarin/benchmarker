@@ -193,7 +193,7 @@ class GithubPostPRStatus(LoggingBuildStep):
         log.msg("GithubPostPRStatus: status_code(" + str(r.status_code) + "), text: \"" + str(r.text) + "\"")
 
         # post also a sensible default entry.
-        if platform == 'debian-amd64' and short_config_name == 'asnb' and short_kind == '':
+        if platform == 'ubuntu-1404-amd64' and short_config_name == 'asnb' and short_kind == '':
             data['context'] = 'perf/%s_default/%s' % (platform, str(buildnumber))
             r = requests.post(
                 'https://api.github.com/repos/%s/%s/statuses/%s' % (self.githubuser, self.githubrepo, str(pullrequest_commit_id)),
