@@ -28,6 +28,13 @@ namespace Benchmarker
 			return conn;
 		}
 
+		static private NpgsqlCommand CreateCommand (NpgsqlConnection connection) {
+			var cmd = connection.CreateCommand ();
+			// default is 30s, bump it to 1800s = 30min.
+			cmd.CommandTimeout = 1800;
+			return cmd;
+		}
+
 		static void AddParameters (NpgsqlCommand cmd, PostgresRow row) {
 			foreach (var column in row.Columns) {
 				var type = row.ColumnType (column);
@@ -88,7 +95,7 @@ namespace Benchmarker
 				string.Join (",", columns),
 				string.Join (",", columns.Select (c => ":" + c)),
 				keyColumn);
-			using (var cmd = conn.CreateCommand ()) {
+			using (var cmd = CreateCommand (conn)) {
 				cmd.CommandText = commandString;
 				AddParameters (cmd, row);
 
@@ -107,7 +114,7 @@ namespace Benchmarker
 				table,
 				string.Join (",", columns.Select (c => c + "=:" + c)),
 				keyColumn);
-			using (var cmd = conn.CreateCommand ()) {
+			using (var cmd = CreateCommand (conn)) {
 				cmd.CommandText = commandString;
 				AddParameters (cmd, row);
 				var numRows = cmd.ExecuteNonQuery ();
@@ -119,7 +126,7 @@ namespace Benchmarker
 		public static int Delete (NpgsqlConnection conn, string table, string whereClause, PostgresRow row) {
 			var columns = row.Columns;
 			var commandString = string.Format ("delete from {0} where {1}", table, whereClause);
-			using (var cmd = conn.CreateCommand ()) {
+			using (var cmd = CreateCommand (conn)) {
 				cmd.CommandText = commandString;
 				AddParameters (cmd, row);
 				return cmd.ExecuteNonQuery ();
