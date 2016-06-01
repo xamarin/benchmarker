@@ -131,7 +131,7 @@ class MonoJenkinsPoller(base.PollingChangeSource):
 
 
 def _mk_request_jenkins_all_builds(base_url, platform, logger):
-    url = '%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],artifacts[*],url,building,result]' % (base_url, platform)
+    url = '%s/label=%s/api/json?pretty=true&tree=allBuilds[fingerprint[original[*]],actions[parameters[*]],artifacts[*],url,building,result]' % (base_url, platform)
     if logger:
         logger("request: " + str(url))
     return getPage(url)
@@ -326,6 +326,7 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
     json_all = json.loads((yield _mk_request_jenkins_all_builds(base_url, platform, logger)))
     gitrev = None
     for i in [i for i in json_all['allBuilds'] if i['url'].encode('ascii', 'ignore') == build_url]:
+        # old style: retrieve git commit id via polling log from tarball step.
         for fingerprint in i['fingerprint']:
             fp_name = fingerprint['original']['name']
             if fp_name == 'build-source-tarball-mono':
@@ -347,6 +348,15 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                 assert match is not None
                 gitrev = match.group('gitrev')
                 result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
+        # new style: git commit id is passed via parameters
+        for action in i['actions']:
+            if not action.has_key('_class') or action['_class'] != "hudson.model.ParametersAction":
+                continue
+            for parameter in action['parameters']:
+                if parameter['name'] != 'TRIGGERED_COMMITID':
+                    continue
+                assert gitrev is None, "should set gitrev only once"
+                gitrev = parameter['value']
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
     defer.returnValue(result)
@@ -382,7 +392,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=ubuntu-1404-amd64/2653/'
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=ubuntu-1404-amd64/2660/'
         results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
         results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'ubuntu-1404-amd64', _logger)))
         for key, value in results.items():
