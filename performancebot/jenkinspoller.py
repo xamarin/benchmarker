@@ -142,8 +142,14 @@ def _mk_request_jenkins_build(build_url, logger):
         logger("request: " + str(url))
     return getPage(url)
 
+def _mk_request_jenkins_build_azure(build_url, logger):
+    return _mk_request_jenkins_build_prefix('/Azure', build_url, logger)
+
 def _mk_request_jenkins_build_s3(build_url, logger):
-    url = (build_url + "/s3").encode('ascii', 'ignore')
+    return _mk_request_jenkins_build_prefix('/s3', build_url, logger)
+
+def _mk_request_jenkins_build_prefix(prefix, build_url, logger):
+    url = (build_url + prefix).encode('ascii', 'ignore')
     if logger:
         logger("request: " + str(url))
     return getPage(url)
@@ -274,10 +280,6 @@ class HTMLParserS3Artifacts(HTMLParser):
         for name, path in attrs:
             if name != 'href':
                 continue
-            if not path.startswith('download'):
-                continue
-            if '.changes' in path or '-latest' in path:
-                continue
             self.get_path(self, path)
 
 @defer.inlineCallbacks
@@ -291,18 +293,26 @@ def _do_fetch_build(build_url, platform, logger):
 
     # get assemblies package always from ubuntu-1404-amd64 builder.
     amd64build_url = build_url.replace(platform, 'ubuntu-1404-amd64')
-    def _get_assemblies(parser, path):
+    def _get_assemblies(prefix, parser, path):
         if '-assemblies' in path and path.endswith('.deb'):
-            parser.result['deb_asm_url'] = parser.build_url + '/s3/' + path
-    parserassembly = HTMLParserS3Artifacts(result, amd64build_url, _get_assemblies)
-    parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
+            parser.result['deb_asm_url'] = parser.build_url + '/' + prefix + '/' + path
+    parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p,q: _get_assemblies ('s3', p, q))
+    try:
+        parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
+    except:
+        parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p,q: _get_assemblies('Azure', p, q))
+        parserassembly.feed((yield _mk_request_jenkins_build_azure(amd64build_url, logger)))
 
     # get bin package from arch specific builder
-    def _get_bin(parser, path):
-        if '-assemblies' not in path and path.endswith('.deb'):
-            parser.result['deb_bin_url'] = parser.build_url + '/s3/' + path
-    parserassembly = HTMLParserS3Artifacts(result, build_url, _get_bin)
-    parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
+    def _get_bin(prefix, parser, path):
+        if '-assemblies' not in path and '-latest' not in path and path.endswith('.deb'):
+            parser.result['deb_bin_url'] = parser.build_url + '/' + prefix+ '/' + path
+    parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p,q: _get_bin('s3', p, q))
+    try:
+        parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
+    except:
+        parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p,q: _get_bin('Azure', p, q))
+        parserassembly.feed((yield _mk_request_jenkins_build_azure(build_url, logger)))
 
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
     defer.returnValue(result)
@@ -368,7 +378,19 @@ if __name__ == '__main__':
 
 
     @defer.inlineCallbacks
-    def test_fetch_build_debamd64():
+    def test_fetch_build_debamd64_azure():
+        def _logger(msg):
+            print msg
+
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=ubuntu-1404-amd64/2653/'
+        results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'ubuntu-1404-amd64', _logger)))
+        for key, value in results.items():
+            print "%s: %s" % (key, value)
+
+
+    @defer.inlineCallbacks
+    def test_fetch_build_debamd64_s3():
         def _logger(msg):
             print msg
 
@@ -419,10 +441,11 @@ if __name__ == '__main__':
 
     @defer.inlineCallbacks
     def run_tests():
-        _ = yield test_get_changes_debarm()
+        # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
-        # _ = yield test_fetch_build_debamd64()
+        _ = yield test_fetch_build_debamd64_s3()
+        _ = yield test_fetch_build_debamd64_azure()
         # _ = yield test_postgrest()
         # _ = yield test_get_pr_changes_debamd64()
         # _ = yield test_fetch_pr_build_debamd64()
