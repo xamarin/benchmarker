@@ -725,7 +725,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
             });
         });
 
-        return <table>
+        return <div className="TableWrapper"><table>
             <thead>
             <tr key="header">
                 <th key="name">Benchmark</th>
@@ -738,7 +738,7 @@ export class RunSetMetricsTable extends React.Component<RunSetMetricsTableProps,
             <tbody>
                 {tableRows}
             </tbody>
-        </table>;
+        </table></div>;
     }
 }
 

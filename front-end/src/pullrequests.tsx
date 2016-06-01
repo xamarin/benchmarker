@@ -111,7 +111,7 @@ class Page extends React.Component<PageProps, PageState> {
 				<xp_common.Navigation currentPage="pullRequests" />
 			</header>
 			<article>
-				<table>
+				<div className="TableWrapper"><table>
 					<thead>
 						<tr>
 							<th>PR ID</th>
@@ -127,7 +127,7 @@ class Page extends React.Component<PageProps, PageState> {
 							.sort ((a: Object, b: Object) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
 							.map (renderRow) }
 					</tbody>
-				</table>
+				</table></div>
 				<div style={{ clear: 'both' }}></div>
 			</article>
 		</div>;

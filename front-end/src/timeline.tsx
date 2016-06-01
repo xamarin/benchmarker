@@ -537,7 +537,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 		});
 
 		return <div className="BenchmarkChartList">
-			<table>
+			<div className="TableWrapper"><table>
 				<tbody>
 					<tr><th>Benchmark</th><th className="grow">Timeline</th></tr>
 					<tr><td></td><td>
@@ -545,7 +545,7 @@ class BenchmarkChartList extends React.Component<BenchmarkChartListProps, Benchm
 					</td></tr>
 					{chartRows}
 				</tbody>
-			</table>
+			</table></div>
 		</div>;
 	}
 
