@@ -357,6 +357,14 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                     continue
                 assert gitrev is None, "should set gitrev only once"
                 gitrev = parameter['value']
+                regexgitrev = re.compile("GitHub pull request #(?P<prid>[0-9]+) of commit (?P<gitrev>[0-9a-fA-F]+)")
+                url = build_url.encode('ascii', 'ignore') + '/consoleText'
+                if logger:
+                    logger("request: " + str(url))
+                match = regexgitrev.search((yield getPage(url)))
+                if match is not None:
+                    result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
+                    assert gitrev == match.group('gitrev')
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
     defer.returnValue(result)
