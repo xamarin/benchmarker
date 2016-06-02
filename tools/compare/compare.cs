@@ -588,7 +588,7 @@ class Compare
 				PullRequestBaselineRunSetId = pullRequestBaselineRunSetId
 			};
 
-			Console.Error.WriteLine ("Set start time to {0}", runSet.StartDateTime);
+			Console.Error.WriteLine ("Set start time to {0}", runSet.StartDateTime.ToString (RunSet.DATETIME_PRETTY));
 		}
 
 		var reportFailure = false;
@@ -727,7 +727,7 @@ class Compare
 		}
 		
 		runSet.FinishDateTime = DateTime.Now;
-		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime, runSet.FinishDateTime);
+		Console.Error.WriteLine ("Start time is {0} - finish time is {1}", runSet.StartDateTime.ToString (RunSet.DATETIME_PRETTY), runSet.FinishDateTime.ToString (RunSet.DATETIME_PRETTY));
 
 		Console.WriteLine (JsonConvert.SerializeObject (runSet.AsDict ()));
 

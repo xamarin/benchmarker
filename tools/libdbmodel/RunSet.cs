@@ -12,7 +12,8 @@ namespace Benchmarker.Models
 {
 	public class RunSet : ApiObject
 	{
-		public static string DATETIME_FORMAT = "yyyy-MM-ddTHH:mm:sszzz";
+		public static string DATETIME_FORMAT = "yyyy-MM-ddTHH:mm:ssK";
+		public static string DATETIME_PRETTY = "yyyy-MM-dd HH:mm:ss \"GMT\"zzz";
 
 		public long? Id { get; set; }
 
@@ -61,8 +62,8 @@ namespace Benchmarker.Models
 
 				var runSet = new RunSet {
 					Id = local_runsetid,
-					StartDateTime = db_result ["StartedAt"].ToObject<DateTime> (),
-					FinishDateTime = db_result ["FinishedAt"].ToObject<DateTime> (),
+					StartDateTime = DateTime.ParseExact (db_result ["StartedAt"].ToObject<string> (), DATETIME_FORMAT, null),
+					FinishDateTime = DateTime.ParseExact (db_result ["FinishedAt"].ToObject<string> (), DATETIME_FORMAT, null),
 					BuildURL = db_result ["BuildURL"].ToObject<string> (),
 					Machine = local_machine,
 					LogURL = local_logURL,
