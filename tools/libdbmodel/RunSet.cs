@@ -60,10 +60,11 @@ namespace Benchmarker.Models
 					return null;
 				}
 
+				Console.Error.WriteLine ("trying to parse Start date: \"" + db_result ["StartedAt"].ToObject<DateTime> ().ToLocalTime ().ToString (DATETIME_PRETTY) + "\"");
 				var runSet = new RunSet {
 					Id = local_runsetid,
-					StartDateTime = DateTime.ParseExact (db_result ["StartedAt"].ToObject<string> (), DATETIME_FORMAT, null),
-					FinishDateTime = DateTime.ParseExact (db_result ["FinishedAt"].ToObject<string> (), DATETIME_FORMAT, null),
+					StartDateTime = db_result ["StartedAt"].ToObject<DateTime> ().ToLocalTime (),
+					FinishDateTime = db_result ["FinishedAt"].ToObject<DateTime> ().ToLocalTime (),
 					BuildURL = db_result ["BuildURL"].ToObject<string> (),
 					Machine = local_machine,
 					LogURL = local_logURL,
