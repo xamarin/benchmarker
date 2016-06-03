@@ -350,7 +350,7 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                 result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
         # new style: git commit id is passed via parameters
         for action in i['actions']:
-            if not action.has_key('_class') or action['_class'] != "hudson.model.ParametersAction":
+            if not action.has_key('_class') or (action['_class'] != "hudson.model.ParametersAction" and action['_class'] != "hudson.matrix.MatrixChildParametersAction"):
                 continue
             for parameter in action['parameters']:
                 if parameter['name'] != 'TRIGGERED_COMMITID':
@@ -396,7 +396,7 @@ if __name__ == '__main__':
 
 
     @defer.inlineCallbacks
-    def test_fetch_build_debamd64_azure():
+    def test_fetch_build_debamd64_azure_old():
         def _logger(msg):
             print msg
 
@@ -406,6 +406,16 @@ if __name__ == '__main__':
         for key, value in results.items():
             print "%s: %s" % (key, value)
 
+    @defer.inlineCallbacks
+    def test_fetch_build_debamd64_azure_new():
+        def _logger(msg):
+            print msg
+
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono/label=ubuntu-1404-amd64/2678/'
+        results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
+        results.update((yield _do_fetch_gitrev(build_url, MONO_BASEURL, MONO_SOURCETARBALL_URL, 'ubuntu-1404-amd64', _logger)))
+        for key, value in results.items():
+            print "%s: %s" % (key, value)
 
     @defer.inlineCallbacks
     def test_fetch_build_debamd64_s3():
@@ -463,7 +473,8 @@ if __name__ == '__main__':
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
         _ = yield test_fetch_build_debamd64_s3()
-        _ = yield test_fetch_build_debamd64_azure()
+        _ = yield test_fetch_build_debamd64_azure_old()
+        _ = yield test_fetch_build_debamd64_azure_new()
         # _ = yield test_postgrest()
         # _ = yield test_get_pr_changes_debamd64()
         # _ = yield test_fetch_pr_build_debamd64()
