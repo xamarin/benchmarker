@@ -68,6 +68,7 @@ class CreateRunSetIdStep(ParsingShellCommand):
         build_url = self.getProperty(PROPERTYNAME_JENKINSBUILDURL)
         mono_version = self.getProperty(PROPERTYNAME_MONOVERSION)
         git_commit = self.getProperty(PROPERTYNAME_JENKINSGITCOMMIT)
+        machine_name = self.getProperty('machine_name')
         config_name = self.getProperty('config_name')
         benchmarker_commit = self.getProperty('got_revision').get('benchmarker')
         assert benchmarker_commit is not None
@@ -84,6 +85,8 @@ class CreateRunSetIdStep(ParsingShellCommand):
             cmd.append('--main-product')
             cmd.append('mono')
             cmd.append(git_commit)
+        cmd.append('--machine')
+        cmd.append(machine_name)
         cmd.append('--config-file')
         cmd.append('configs/%s.conf' % (config_name))
         cmd.append('--root')

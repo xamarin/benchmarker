@@ -370,6 +370,7 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
            '--main-product', 'mono', commit_renderer(),
            '--secondary-product', 'benchmarker', DetermineProductRevision('benchmarker'),
            '--run-set-id', Interpolate('%(prop:' + PROPERTYNAME_RUNSETID + ')s'),
+           '--machine', Interpolate('%(prop:machine_name)s'),
            '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
           ]
     parsers = {
