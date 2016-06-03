@@ -239,7 +239,7 @@ namespace compare
 			} else {
 				commit.Hash = gitHubCommit.Sha;
 				if (commit.CommitDate == null)
-					commit.CommitDate = gitHubCommit.Committer.Date.DateTime;
+					commit.CommitDate = gitHubCommit.Committer.Date.DateTime.ToLocalTime ();
 				Console.WriteLine ("Got commit " + commit.Hash + " from GitHub");
 			}
 
