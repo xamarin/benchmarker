@@ -296,22 +296,22 @@ def _do_fetch_build(build_url, platform, logger):
     def _get_assemblies(prefix, parser, path):
         if '-assemblies' in path and path.endswith('.deb'):
             parser.result['deb_asm_url'] = parser.build_url + '/' + prefix + '/' + path
-    parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p,q: _get_assemblies ('s3', p, q))
+    parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p, q: _get_assemblies('s3', p, q))
     try:
         parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
     except:
-        parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p,q: _get_assemblies('Azure', p, q))
+        parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p, q: _get_assemblies('Azure', p, q))
         parserassembly.feed((yield _mk_request_jenkins_build_azure(amd64build_url, logger)))
 
     # get bin package from arch specific builder
     def _get_bin(prefix, parser, path):
         if '-assemblies' not in path and '-latest' not in path and path.endswith('.deb'):
             parser.result['deb_bin_url'] = parser.build_url + '/' + prefix+ '/' + path
-    parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p,q: _get_bin('s3', p, q))
+    parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p, q: _get_bin('s3', p, q))
     try:
         parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
     except:
-        parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p,q: _get_bin('Azure', p, q))
+        parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p, q: _get_bin('Azure', p, q))
         parserassembly.feed((yield _mk_request_jenkins_build_azure(build_url, logger)))
 
     assert len(result) == 3, 'should contain three elements, but contains: ' + str(result)
