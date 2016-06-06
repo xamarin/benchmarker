@@ -299,7 +299,7 @@ def _do_fetch_build(build_url, platform, logger):
     parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p, q: _get_assemblies('s3', p, q))
     try:
         parserassembly.feed((yield _mk_request_jenkins_build_s3(amd64build_url, logger)))
-    except:
+    except Exception:
         parserassembly = HTMLParserS3Artifacts(result, amd64build_url, lambda p, q: _get_assemblies('Azure', p, q))
         parserassembly.feed((yield _mk_request_jenkins_build_azure(amd64build_url, logger)))
 
@@ -310,7 +310,7 @@ def _do_fetch_build(build_url, platform, logger):
     parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p, q: _get_bin('s3', p, q))
     try:
         parserassembly.feed((yield _mk_request_jenkins_build_s3(build_url, logger)))
-    except:
+    except Exception:
         parserassembly = HTMLParserS3Artifacts(result, build_url, lambda p, q: _get_bin('Azure', p, q))
         parserassembly.feed((yield _mk_request_jenkins_build_azure(build_url, logger)))
 
