@@ -16,25 +16,13 @@ require ('!style!css!less!./pullrequests.less');
 
 class Controller {
 	private pullRequests: Array<Object>;
-	private limit: number;
-	private offset: number;
-
-	constructor () {
-		this.limit = 10;
-		this.offset = 0;
-	}
 
 	public loadAsync () : void {
-		Database.fetchWithHeaders (
+		Database.fetch (
 			'pullrequest',
-			{
-/*
-				'Range-Unit': 'items',
-				'Range': this.offset.toString () + '-' + (this.offset + this.limit).toString ()
-*/
-			},
-			(objs: Array<Database.DBObject>) => {
-				this.pullRequests = objs;
+			(objs: Array<Object>) => {
+				this.pullRequests = xp_utils.sortArrayNumericallyBy (
+					objs, (obj) => -new Date (obj ['blrs_startedat']).getTime ());
 				this.allDataLoaded ();
 			},
 			(error: Object) => {
@@ -57,7 +45,7 @@ type PageProps = {
 };
 
 type PageState = {
-	infos: Array<[number, Object]>;
+	infos: Array<[Object, any]>;
 };
 
 class Page extends React.Component<PageProps, PageState> {
@@ -65,25 +53,38 @@ class Page extends React.Component<PageProps, PageState> {
 	constructor (props: PageProps) {
 		super (props);
 		this.state = { infos: [] };
-		this.props.pullRequests.forEach (
+		this.loadMore ();
+		document.addEventListener('scroll', (e) => {
+			var bottom = document.body.scrollTop + window.innerHeight;
+			if (document.body.scrollHeight === bottom)
+				this.loadMore ();
+		});
+	}
+
+	private loadMore () : void {
+		const rowsPerPage = 20;
+
+		var infos = this.state.infos.length;
+		var prs = this.props.pullRequests.length;
+		if (infos === prs)
+			return;
+		var start = Math.min (infos, prs);
+		var count = Math.min (rowsPerPage, prs - infos);
+		this.props.pullRequests.slice (start, start + count).forEach (
 			(pullRequest: Object) =>
 				xp_common.getPullRequestInfo (
 					pullRequest ['pr_url'],
-					(info: Object) => this.setState ({ infos: this.state.infos.concat ([[pullRequest ['pr_id'], info]]) })));
+					(info: Object) => this.setState ({
+						infos: xp_utils.sortArrayNumericallyBy (
+							this.state.infos.concat ([[pullRequest, info]]),
+							(pair) => -new Date (pair [0] ['prrs_startedat']).getTime ()),
+					})));
 	}
 
 	public render () : JSX.Element {
-		const renderRow = (pullRequest: Object) => {
-			var info;
-			var infos = this.state.infos;
-			var id = pullRequest ['pr_id'];
-			for (var i = 0; i < infos.length; ++i) {
-				if (infos [i] [0] === id) {
-					info = infos [i] [1];
-					break;
-				}
-			}
-			var title = info === undefined ? <span>Loading&hellip;</span> : info.title;
+		const renderRow = (info: [Object, any]) => {
+			var pullRequest = info [0];
+			var title = info [1].title;
 			var crashed = xp_utils.intersperse (
 				', ',
 				pullRequest ['blrs_crashedbenchmarks']
@@ -122,11 +123,7 @@ class Page extends React.Component<PageProps, PageState> {
 							<th><span className="statusIcon timedOut fa fa-clock-o" title="Timed Out"></span> Timed Out</th>
 						</tr>
 					</thead>
-					<tbody>
-						{ this.props.pullRequests
-							.sort ((a: Object, b: Object) => (new Date (b ['prrs_startedat']) as any) - (new Date (a ['prrs_startedat']) as any))
-							.map (renderRow) }
-					</tbody>
+					<tbody>{ this.state.infos.map (renderRow) }</tbody>
 				</table></div>
 				<div style={{ clear: 'both' }}></div>
 			</article>
