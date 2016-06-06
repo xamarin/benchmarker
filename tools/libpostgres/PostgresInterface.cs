@@ -54,7 +54,7 @@ namespace Benchmarker
 
 		static IEnumerable<PostgresRow> Select (NpgsqlConnection conn, string queryString, IEnumerable<string> columnsEnumerable, PostgresRow whereValues) {
 			var columns = columnsEnumerable.ToArray ();
-			using (var cmd = conn.CreateCommand ()) {
+			using (var cmd = CreateCommand (conn)) {
 				cmd.CommandText = queryString;
 				if (whereValues != null)
 					AddParameters (cmd, whereValues);
