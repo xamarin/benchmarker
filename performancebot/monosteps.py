@@ -151,7 +151,7 @@ class ProcessBinaryProtocolFiles(MasterShellCommand):
             self.command = ['echo', 'nothing todo']
         else:
             masterworkdir = 'tmp/' + str(self.getProperty('buildername')) + '/' + str(self.getProperty('buildnumber'))
-            compare_cmd = lambda logfile, runid: 'mono --debug ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + ' || failed=1; rm -rf ' + logfile + '; '
+            compare_cmd = lambda logfile, runid: 'date; mono --debug ' + masterworkdir + '/benchmarker/tools/compare.exe --upload-pause-times ' + logfile + ' --sgen-grep-binprot ' + MONO_SGEN_GREP_BINPROT_FILENAME + ' --run-id ' + str(runid) + ' || failed=1; rm -rf ' + logfile + '; '
             self.command = ['timeout', '--signal=15', '360', 'bash', '-x', '-c', 'failed=0; ' + "".join([compare_cmd(log_full_path, runid) for (log_full_path, runid) in zip(logs_full_path, runids)]) + ' if [ "$failed" == "1" ]; then exit 1; fi ']
         MasterShellCommand.start(self)
 
