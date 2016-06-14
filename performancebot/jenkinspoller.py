@@ -364,7 +364,9 @@ def _do_fetch_gitrev(build_url, base_url, sourcetarball_url, platform, logger):
                 match = regexgitrev.search((yield getPage(url)))
                 if match is not None:
                     result[PROPERTYNAME_JENKINSGITHUBPULLREQUEST] = match.group('prid')
-                    assert gitrev == match.group('gitrev')
+                    # we would wish that this assert would always be true here:
+                    # > assert gitrev == match.group('gitrev')
+                    # however, jenkins doesn't update the commit id if the PR gets rebased.
     assert gitrev is not None, "parsing gitrev failed"
     result[PROPERTYNAME_JENKINSGITCOMMIT] = gitrev
     defer.returnValue(result)
@@ -441,7 +443,7 @@ if __name__ == '__main__':
         def _logger(msg):
             print msg
 
-        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=ubuntu-1404-amd64/84/'
+        build_url = 'https://jenkins.mono-project.com/view/All/job/build-package-dpkg-mono-pullrequest/label=ubuntu-1404-amd64/107/'
         results = yield _do_fetch_build(build_url, 'ubuntu-1404-amd64', _logger)
         results.update((yield _do_fetch_gitrev(build_url, MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, 'ubuntu-1404-amd64', _logger)))
         for key, value in results.items():
@@ -472,12 +474,12 @@ if __name__ == '__main__':
         # _ = yield test_get_changes_debarm()
         # _ = yield test_fetch_build_debarm()
         # _ = yield test_get_changes_debamd64()
-        _ = yield test_fetch_build_debamd64_s3()
-        _ = yield test_fetch_build_debamd64_azure_old()
-        _ = yield test_fetch_build_debamd64_azure_new()
+        # _ = yield test_fetch_build_debamd64_s3()
+        # _ = yield test_fetch_build_debamd64_azure_old()
+        # _ = yield test_fetch_build_debamd64_azure_new()
         # _ = yield test_postgrest()
         # _ = yield test_get_pr_changes_debamd64()
-        # _ = yield test_fetch_pr_build_debamd64()
+        _ = yield test_fetch_pr_build_debamd64()
         stop_me()
 
     run_tests()
