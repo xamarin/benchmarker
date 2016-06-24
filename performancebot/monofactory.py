@@ -115,7 +115,7 @@ class DebianMonoBuildFactory(BuildFactory):
         )
 
     def export_benchmark_list(self, slave_config_hooks):
-        for machine, config_name in slave_config_hooks:
+        for machine, config_name in sorted(slave_config_hooks):
             self.addStep(
                 MasterShellCommand(
                     name="list_benchmarks_%s-%s" % (machine, config_name),
