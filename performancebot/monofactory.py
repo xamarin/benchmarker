@@ -120,7 +120,7 @@ class DebianMonoBuildFactory(BuildFactory):
                 MasterShellCommand(
                     name="list_benchmarks_%s-%s" % (machine, config_name),
                     command=[
-                        'bash', '-c', Interpolate(
+                        'bash', '-c', '-o', 'pipefail', Interpolate(
                             'mono --debug %s/benchmarker/tools/compare.exe --list-benchmarks --machine %s --config-file %s/benchmarker/configs/%s.conf | ' % (MASTERWORKDIR, machine, MASTERWORKDIR, config_name) +
                             'tee benchmarks-%s-%s.list' % (machine, config_name))
                     ]
