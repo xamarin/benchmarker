@@ -192,7 +192,7 @@ export class CombinedConfigSelector extends React.Component<ConfigSelectorProps,
 					const config = ftl.get ('config');
 					const metric = ftl.get ('metric');
 					return Database.findRunSetCount (sortedRunSetCounts, machine, config, metric);
-				});
+				}).filter ((e: Database.RunSetCount) => !!e);
 				featuredRSCs.push ({ runSetCounts: rscs, displayString: name });
 			});
 		}
