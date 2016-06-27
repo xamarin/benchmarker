@@ -60,7 +60,7 @@ class Compare
 		return exitcode;
 	}
 
-	static async Task<Tuple<long, string>> GetPullRequestBaselineRunSetId (Product product, string pullRequestURL, compare.Repository repository, Config config)
+	static async Task<Tuple<long, string>> GetPullRequestBaselineRunSetId (Machine machine, Product product, string pullRequestURL, compare.Repository repository, Config config)
 	{
 		var gitHubClient = GitHubInterface.GitHubClient;
 		var match = Regex.Match (pullRequestURL, product.PullRequestRegexp);
@@ -102,10 +102,6 @@ class Compare
 			Environment.Exit (1);
 		}
 		Console.WriteLine ("{0} commits in rev-list", revList.Length);
-
-		// FIXME: also support `--machine`
-		var hostarch = compare.Utils.LocalHostnameAndArch ();
-		var machine = new Machine { Name = hostarch.Item1, Architecture = hostarch.Item2 };
 
 		JArray runsets = await HttpApi.GetRunsets (machine.Name, config.Name);
 		if (runsets == null) {
@@ -567,7 +563,7 @@ class Compare
 
 				var repo = new compare.Repository (monoRepositoryPath);
 
-				var baselineResult = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (mainCommit.Product, pullRequestURL, repo, config));
+				var baselineResult = AsyncContext.Run (() => GetPullRequestBaselineRunSetId (machine, mainCommit.Product, pullRequestURL, repo, config));
 				if (baselineResult == null) {
 					Console.Error.WriteLine ("Error: No appropriate baseline run set found.");
 					Environment.Exit (1);
