@@ -10,11 +10,9 @@ namespace compare
 {
 	public class UnixRunner
 	{
-		public ProcessStartInfo info { get; }
-
-		ProcessStartInfo clientInfo;
-
-		public ProcessStartInfo infoAOT { get ; }
+		public ProcessStartInfo Info { get; }
+		public ProcessStartInfo ClientInfo { get; }
+		public ProcessStartInfo InfoAot { get ; }
 
 		Config config;
 		Benchmark benchmark;
@@ -36,37 +34,37 @@ namespace compare
 			runToolArguments = _runToolArguments;
 
 			var binaryProtocolFile = _config.ProducesBinaryProtocol ? "binprot.dummy" : null;
-			info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+			Info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
 
-			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
+			Info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
 
 			if (config.AOTOptions != null) {
 				if (benchmark.AOTAssemblies == null) {
 					Console.Error.WriteLine("Error: benchmark {0} not configured to be executed in AOT mode.", benchmark.Name);
 					Environment.Exit(1);
 				}
-				infoAOT = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
-				infoAOT.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
-				infoAOT.Arguments = String.Join (" ", config.AOTOptions.Concat (benchmark.AOTAssemblies));
+				InfoAot = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+				InfoAot.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
+				InfoAot.Arguments = String.Join (" ", config.AOTOptions.Concat (benchmark.AOTAssemblies));
 			}
 
 			var commandLine = benchmark.CommandLine;
 
 			if (benchmark.ClientCommandLine != null) {
 				clientServer = true;
-				clientInfo = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
-				clientInfo.WorkingDirectory = info.WorkingDirectory;
-				clientInfo.Arguments = String.Join (" ", config.MonoOptions.Concat (benchmark.ClientCommandLine));
+				ClientInfo = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+				ClientInfo.WorkingDirectory = Info.WorkingDirectory;
+				ClientInfo.Arguments = String.Join (" ", config.MonoOptions.Concat (benchmark.ClientCommandLine));
 			} else {
 				clientServer = false;
 			}
 
 			if (config.NoMono) {
-				info.FileName = Path.Combine (info.WorkingDirectory, commandLine [0]);
+				Info.FileName = Path.Combine (Info.WorkingDirectory, commandLine [0]);
 				commandLine = commandLine.Skip (1).ToArray ();
 			}
 
-			fileName = info.FileName;
+			fileName = Info.FileName;
 
 			arguments = String.Join (" ", config.MonoOptions.Concat (commandLine));
 			/* Run with timing */
@@ -75,7 +73,7 @@ namespace compare
 		}
 
 		public Boolean IsAOT() {
-			return infoAOT != null;
+			return InfoAot != null;
 		}
 
 		private int GetTimeout() {
@@ -96,7 +94,7 @@ namespace compare
 		}
 
 		public long? RunAOT(out bool timedOut, out string stdoutOutput) {
-			if (infoAOT == null)
+			if (InfoAot == null)
 				throw new ArgumentException ("config/benchmark isn't configured to be run in AOT mode");
 
 			timedOut = false;
@@ -104,9 +102,9 @@ namespace compare
 
 			int timeout = GetTimeout ();
 
-			PrintCommandLine ("AOT command", infoAOT);
+			PrintCommandLine ("AOT command", InfoAot);
 			var sw = Stopwatch.StartNew ();
-			using (var aotProcess = Process.Start(infoAOT)) {
+			using (var aotProcess = Process.Start(InfoAot)) {
 				var stdout = Task.Factory.StartNew (() => new StreamReader (aotProcess.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 				var stderr = Task.Factory.StartNew (() => new StreamReader (aotProcess.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 				var success = aotProcess.WaitForExit(timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
@@ -142,7 +140,7 @@ namespace compare
 
 		public long? Run (string profilesDirectory, string profileFilename, string binaryProtocolFilename, out bool timedOut, out string stdoutOutput)
 		{
-			Utils.SetProcessStartEnvironmentVariables (info, config, binaryProtocolFilename);
+			Utils.SetProcessStartEnvironmentVariables (Info, config, binaryProtocolFilename);
 
 			timedOut = false;
 			stdoutOutput = null;
@@ -158,34 +156,34 @@ namespace compare
 					}
 				}
 				if (profilesDirectory == null) {
-					info.Arguments = arguments;
+					Info.Arguments = arguments;
 				} else {
-					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
+					Info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
 						profilesDirectory, profileFilename)) + arguments;
 				}
 
 				if (runTool == null) {
-					info.FileName = fileName;
+					Info.FileName = fileName;
 				} else {
-					info.FileName = runTool;
-					info.Arguments = runToolArguments + " " + fileName + " " + info.Arguments;
+					Info.FileName = runTool;
+					Info.Arguments = runToolArguments + " " + fileName + " " + Info.Arguments;
 				}
 
 				if (clientServer) {
-					PrintCommandLine ("Server command", info);
-					PrintCommandLine ("Client command", clientInfo);
+					PrintCommandLine ("Server command", Info);
+					PrintCommandLine ("Client command", ClientInfo);
 				} else {
-					PrintCommandLine ("Benchmark command", info);
+					PrintCommandLine ("Benchmark command", Info);
 				}
 
 				int timeout = GetTimeout ();
-				using (var serverProcess = clientServer ? Process.Start (info) : null) {
+				using (var serverProcess = clientServer ? Process.Start (Info) : null) {
 
 					if (clientServer)
 						System.Threading.Thread.Sleep (5000);
 
 					var sw = Stopwatch.StartNew ();
-					using (var mainProcess = clientServer ? Process.Start (clientInfo) : Process.Start (info)) {
+					using (var mainProcess = clientServer ? Process.Start (ClientInfo) : Process.Start (Info)) {
 						var stdout = Task.Factory.StartNew (() => new StreamReader (mainProcess.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 						var stderr = Task.Factory.StartNew (() => new StreamReader (mainProcess.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 
