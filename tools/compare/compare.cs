@@ -634,7 +634,7 @@ class Compare
 
 				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout, runTool, runToolArguments);
 
-				if (runner.IsAOT()) {
+				if (runner.IsAot) {
 					bool timedOut;
 					string stdoutOutput;
 					var elapsedMilliseconds = runner.RunAOT(out timedOut, out stdoutOutput);

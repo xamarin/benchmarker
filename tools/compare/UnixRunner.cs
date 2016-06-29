@@ -72,8 +72,10 @@ namespace compare
 				arguments = "--stats " + arguments;
 		}
 
-		public Boolean IsAOT() {
-			return InfoAot != null;
+		public bool IsAot {
+			get {
+				return InfoAot != null;
+			}
 		}
 
 		private int GetTimeout() {
