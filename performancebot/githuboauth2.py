@@ -55,7 +55,7 @@ class GithubOAuth2Handler(resource.Resource):
         else:
             details = self.verifyCode(code)
             if 'xamarin' not in details['groups']:
-                return "no xamarin employee, no power"
+                return "no xamarin employee, no power (make sure your membership is public: https://github.com/orgs/xamarin/people)"
             cookie, s = self.authz.sessions.new(details['userName'], details)
             request.addCookie(COOKIE_KEY, cookie, expires=s.getExpiration(), path="/")
             request.received_cookies = {COOKIE_KEY: cookie}
