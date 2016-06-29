@@ -506,6 +506,8 @@ class Compare
 					benchmarks = benchmarks.Where (b => !listMachine.ExcludeBenchmarks.Contains (b.Name)).ToList ();
 			}
 			foreach (var benchmark in benchmarks.OrderBy (b => b.Name)) {
+				if (config.AOTOptions != null && benchmark.AOTAssemblies == null)
+					continue;
 				Console.Out.WriteLine (benchmark.Name);
 			}
 			Environment.Exit (0);
@@ -631,6 +633,23 @@ class Compare
 				Console.Out.WriteLine ("Running benchmark \"{0}\" with config \"{1}\"", benchmark.Name, config.Name);
 
 				var runner = new compare.UnixRunner (testsDir, config, benchmark, machine, timeout, runTool, runToolArguments);
+
+				if (runner.IsAOT()) {
+					bool timedOut;
+					string stdoutOutput;
+					var elapsedMilliseconds = runner.RunAOT(out timedOut, out stdoutOutput);
+					if (elapsedMilliseconds != null) {
+						var run = new Run {
+							Benchmark = benchmark,
+							BinaryProtocolFilename = null
+						};
+						run.RunMetrics.Add(new RunMetric {
+							Metric = RunMetric.MetricType.AOTTime,
+							Value = TimeSpan.FromMilliseconds(elapsedMilliseconds.Value)
+						});
+						runSet.Runs.Add(run);
+					}
+				}
 
 				var haveTimedOut = false;
 				var haveCrashed = false;

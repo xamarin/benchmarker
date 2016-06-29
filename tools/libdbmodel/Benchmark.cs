@@ -14,6 +14,7 @@ namespace Benchmarker.Models
 		public bool OnlyExplicit {get; set; }
 		public string[] CommandLine { get; set; }
 		public string[] ClientCommandLine { get; set; }
+		public string[] AOTAssemblies { get; set; }
 
 		public Benchmark ()
 		{

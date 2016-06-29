@@ -20,7 +20,8 @@ namespace Benchmarker.Models
 			PauseTimes,
 			PauseStarts,
 			CodeSize,
-			JitPhase
+			JitPhase,
+			AOTTime
 		};
 
 		public MetricType Metric { get; set; }
@@ -34,6 +35,8 @@ namespace Benchmarker.Models
 				switch (Metric) {
 				case MetricType.Time:
 					return "time";
+				case MetricType.AOTTime:
+					return "aot-time";
 				case MetricType.MemoryIntegral:
 					return "memory-integral";
 				case MetricType.Instructions:
@@ -62,6 +65,7 @@ namespace Benchmarker.Models
 			get {
 				switch (Metric) {
 				case MetricType.Time:
+				case MetricType.AOTTime:
 				case MetricType.JitPhase:
 					return ((TimeSpan)Value).TotalMilliseconds;
 				case MetricType.MemoryIntegral:

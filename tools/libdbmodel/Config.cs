@@ -24,6 +24,8 @@ namespace Benchmarker.Models
 
 		public string Mono { get; set; }
 
+		public string[] AOTOptions { get; set; }
+
 		public string[] MonoOptions { get; set; }
 
 		public Dictionary<string, string> MonoEnvironmentVariables { get; set; }
