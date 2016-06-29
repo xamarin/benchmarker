@@ -79,16 +79,13 @@ namespace compare
 		}
 
 		private int GetTimeout() {
-			int timeout;
-			if (machine != null) {
-				if (machine.BenchmarkTimeouts != null && machine.BenchmarkTimeouts.ContainsKey(benchmark.Name))
-					timeout = machine.BenchmarkTimeouts[benchmark.Name];
-				else
-					timeout = machine.DefaultTimeout;
-			} else {
-				timeout = defaultTimeoutSeconds;
-			}
-			return timeout;
+			if (machine == null)
+				return defaultTimeoutSeconds;
+
+			if (machine.BenchmarkTimeouts == null || !machine.BenchmarkTimeouts.ContainsKey (benchmark.Name))
+				return machine.DefaultTimeout;
+
+			return machine.BenchmarkTimeouts[benchmark.Name];
 		}
 
 		private static void PrintCommandLine(String prefix, ProcessStartInfo info) {
