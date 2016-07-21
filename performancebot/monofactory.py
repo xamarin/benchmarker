@@ -393,14 +393,14 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
     if grab_binary_files:
         steps.append(
             GrabBinaryLogFilesStep(
-                name="binlogs " + benchmark_name,
+                name="binlogs_" + benchmark_name,
                 doStepIf=gen_guard_benchmark_run(benchmark_name),
                 description="binlogs " + benchmark_name
             )
         )
         steps.append(
             ProcessBinaryProtocolFiles(
-                name="parse " + benchmark_name,
+                name="parse_" + benchmark_name,
                 description="parse " + benchmark_name,
                 doStepIf=gen_guard_benchmark_run(benchmark_name),
                 command=['echo', 'dummy'],
