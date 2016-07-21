@@ -53,6 +53,11 @@ class BuilderTags(object):
     Infrastructure = "infrastructure"
     PullRequest = "pullrequest"
 
+    @staticmethod
+    def Deprecated(x=None):
+        # pylint: disable=W0612,W0613
+        return "deprecated"
+
 
 def _lifo_queue(_, requests):
     return requests[-1]
