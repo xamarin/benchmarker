@@ -65,3 +65,7 @@ def select_queue_type(queue_type):
         return _fifo_queue
     assert False, "shouldn't reach"
 
+
+LANE_MONO_MASTER = (MONO_BASEURL, MONO_SOURCETARBALL_URL, Lane.Master)
+LANE_MONO_PULLREQUEST = (MONO_PULLREQUEST_BASEURL, MONO_SOURCETARBALL_PULLREQUEST_URL, Lane.PullRequest)
+
