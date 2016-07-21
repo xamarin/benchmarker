@@ -47,6 +47,12 @@ class BenchmarkKind(object):
     Cachegrind = "valgrind-cachegrind_"
     CompileTime = "compile-time_"
 
+class BuilderTags(object):
+    Active = "active"
+    Experimental = "experimental"
+    Infrastructure = "infrastructure"
+    PullRequest = "pullrequest"
+
 
 def _lifo_queue(_, requests):
     return requests[-1]
