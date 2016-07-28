@@ -436,13 +436,14 @@ func prepareStatements(database *pgx.Conn) error {
 		return err
 	}
 
-	runSetColumns := "startedAt, finishedAt, buildURL, logURLs, commit, secondaryCommits, machine, config, timedOutBenchmarks, crashedBenchmarks, pullRequest"
-	_, err = database.Prepare("queryRunSet", "select "+runSetColumns+" from runset where id = $1")
+	runSetColumns := "r.startedAt, r.finishedAt, r.buildURL, r.logURLs, c.hash as commit, r.secondaryCommits, m.name as machine, cfg.name as config, timedOutBenchmarks, crashedBenchmarks, pullRequest"
+	_, err = database.Prepare("queryRunSet", "select "+runSetColumns+" from runset r, commit c, machine m, config cfg where r.id = $1 and r.commit = c.id and r.machine = m.id and r.config = cfg.id")
 	if err != nil {
 		return err
 	}
 
-	_, err = database.Prepare("insertRunSet", "insert into runSet ("+runSetColumns+") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id")
+	runSetColumnsInsert := "startedAt, finishedAt, buildURL, logURLs, commit, secondaryCommits, machine, config, timedOutBenchmarks, crashedBenchmarks, pullRequest"
+	_, err = database.Prepare("insertRunSet", "insert into runSet ("+runSetColumnsInsert+") select $1, $2, $3, $4, c.id, $6, m.id, cfg.id, $9, $10, $11 from machine m, config cfg, commit c where c.hash = $5 and m.name = $7 and cfg.name = $8 returning runset.id")
 	if err != nil {
 		return err
 	}
@@ -457,7 +458,7 @@ func prepareStatements(database *pgx.Conn) error {
 		return err
 	}
 
-	_, err = database.Prepare("insertRun", "insert into run (benchmark, runSet) values ($1, $2) returning id")
+	_, err = database.Prepare("insertRun", "insert into run (benchmark, runSet) select b.id, $2 from benchmark b where b.name = $1 returning id")
 	if err != nil {
 		return err
 	}
@@ -467,17 +468,17 @@ func prepareStatements(database *pgx.Conn) error {
 		return err
 	}
 
-	_, err = database.Prepare("queryRunMetrics", "select r.id, r.benchmark, rm.metric, rm.result, rm.resultArray from run r, runMetric rm where rm.run = r.id and r.runSet = $1")
+	_, err = database.Prepare("queryRunMetrics", "select r.id, b.name as benchmark, metric.name as metric, rm.result, rm.resultArray from run r, runMetric rm, benchmark b, metric where r.runSet = $1 and r.benchmark = b.id and rm.run = r.id and rm.metric = metric.id")
 	if err != nil {
 		return err
 	}
 
-	_, err = database.Prepare("queryRunMetricsForRun", "select rm.id, rm.metric from runMetric rm where rm.run = $1")
+	_, err = database.Prepare("queryRunMetricsForRun", "select rm.id, metric.name as metric from runMetric rm, metric where rm.run = $1 and rm.metric = metric.id")
 	if err != nil {
 		return err
 	}
 
-	_, err = database.Prepare("insertRunMetricNumber", "insert into runMetric (run, metric, result) values ($1, $2, $3)")
+	_, err = database.Prepare("insertRunMetricNumber", "insert into runMetric (run, metric, result) select $1, metric.id, $3 from metric where metric.name = $2")
 	if err != nil {
 		return err
 	}
@@ -487,7 +488,7 @@ func prepareStatements(database *pgx.Conn) error {
 		return err
 	}
 
-	_, err = database.Prepare("insertRunMetricArray", "insert into runMetric (run, metric, resultArray) values ($1, $2, $3)")
+	_, err = database.Prepare("insertRunMetricArray", "insert into runMetric (run, metric, resultArray) select $1, metric.id, $3 from metric where metric.name = $2")
 	if err != nil {
 		return err
 	}
@@ -502,7 +503,7 @@ func prepareStatements(database *pgx.Conn) error {
 		return err
 	}
 
-	_, err = database.Prepare("queryRunSetSummaries", "select id, commit from runSet where machine = $1 and config = $2")
+	_, err = database.Prepare("queryRunSetSummaries", "select rs.id, c.hash as commit from runSet rs, commit c, machine m, config cfg where rs.machine = m.id and rs.config = cfg.id and rs.commit = c.id and m.name = $1 and cfg.name = $2")
 	if err != nil {
 		return err
 	}
