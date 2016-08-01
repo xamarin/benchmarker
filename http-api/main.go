@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx"
 )
@@ -434,11 +435,17 @@ func main() {
 	addr := fmt.Sprintf(":%d", port)
 	fmt.Printf("listening at %s\n", addr)
 
+	srv := &http.Server{
+		Addr: addr,
+		ReadTimeout: 360 * time.Second,
+		WriteTimeout: 720 * time.Second,
+	}
+
 	if ssl {
 		// Instructions for generating a certificate: http://www.zytrax.com/tech/survival/ssl.html#self
-		err = http.ListenAndServeTLS(addr, *certFlag, *keyFlag, nil)
+		err = srv.ListenAndServeTLS(*certFlag, *keyFlag)
 	} else {
-		err = http.ListenAndServe(addr, nil)
+		err = srv.ListenAndServe()
 	}
 
 	if err != nil {
