@@ -727,7 +727,13 @@ class Compare
 
 		Console.WriteLine (JsonConvert.SerializeObject (runSet.AsDict ()));
 
-		var uploadResult = AsyncContext.Run (() => runSet.Upload ());
+		RunSet.UploadResult uploadResult = null;
+		for (var i = 0; i < 5 && uploadResult == null; i++) {
+			uploadResult = AsyncContext.Run(() => runSet.Upload());
+			if (uploadResult == null) {
+				Console.Error.WriteLine("retry upload: #{0}", i);
+			}
+		}
 		if (uploadResult == null) {
 			Console.Error.WriteLine ("Error: Could not upload run set.");
 			Environment.Exit (1);
