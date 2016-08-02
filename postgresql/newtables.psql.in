@@ -1,9 +1,0 @@
--- FeaturedTimelines
-
-create table FeaturedTimelines (
-       id serial primary key,
-       name varchar(128),
-       machine varchar(128) references Machine(name),
-       config varchar(128) references Config(name),
-       metric varchar(32)
-);

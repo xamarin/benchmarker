@@ -3,84 +3,157 @@
 create database $DATABASE;
 \c $DATABASE
 
-create table Benchmark (
-       objectId varchar(10),
-       name varchar(128) primary key,
-       disabled boolean
+CREATE TABLE benchmark (
+    id serial,
+    name character varying(128) NOT NULL,
+    disabled boolean,
+    CONSTRAINT benchmark_pkey PRIMARY KEY (id)
 );
 
-create table Machine (
-       objectId varchar(10),
-       name varchar(128) primary key,
-       architecture varchar(128),
-       isDedicated boolean,
-       check (name <> '')
+
+CREATE TABLE machine (
+    id serial,
+    name character varying(128) NOT NULL,
+    architecture character varying(128),
+    isdedicated boolean,
+    CONSTRAINT machine_pkey PRIMARY KEY (id),
+    CONSTRAINT machine_name_check CHECK (((name)::text <> ''::text))
 );
 
-create table Commit (
-       objectId varchar(10),
-       hash varchar(40) primary key,
-       product varchar(128),
-       commitDate timestamp with time zone,
-       branch varchar(128),
-       mergeBaseHash varchar(40),
-       check (hash <> '')
+
+CREATE TABLE commit (
+    id serial,
+    hash character varying(40) NOT NULL,
+    commitdate timestamp with time zone,
+    branch character varying(128),
+    mergebasehash character varying(40),
+    product character varying(128),
+    CONSTRAINT commit_pkey PRIMARY KEY (id),
+    CONSTRAINT commit_hash_check CHECK (((hash)::text <> ''::text))
 );
 
-create table Config (
-       objectId varchar(10),
-       name varchar(128) primary key,
-       monoExecutable varchar(128),
-       monoEnvironmentVariables jsonb,
-       monoOptions text[],
-       check (name <> '')
+CREATE TABLE config (
+    id serial,
+    name character varying(128) NOT NULL,
+    monoexecutable character varying(128),
+    monoenvironmentvariables jsonb,
+    monooptions text[],
+    CONSTRAINT config_pkey PRIMARY KEY (id),
+    CONSTRAINT config_name_check CHECK (((name)::text <> ''::text))
 );
 
-create table RunSet (
-       objectId varchar(10),
-       id serial primary key,
-       startedAt timestamp with time zone,
-       finishedAt timestamp with time zone,
-       buildURL varchar(256),
-       elapsedTimeAverages jsonb,
-       elapsedTimeVariances jsonb,
-       failed boolean,
-       logURLs jsonb,
-       commit varchar(40) references Commit(hash),
-       secondaryCommits varchar(40)[],
-       machine varchar(128) references Machine(name),
-       config varchar(128) references Config(name),
-       pullRequest integer,
-       timedOutBenchmarks varchar(128)[], -- element references Benchmark(name),
-       crashedBenchmarks varchar(128)[] -- element references Benchmark(name)
-       --       pullRequest integer references PullRequest(id)
+CREATE TABLE metric (
+    id serial,
+    name character varying(128) NOT NULL,
+    CONSTRAINT metric_pkey PRIMARY KEY (id)
 );
 
-create table Run (
-       objectId varchar(10),
-       id serial primary key,
-       elapsedMilliseconds integer,
-       benchmark varchar(128) references Benchmark(name),
-       runSet integer references RunSet(id)
+CREATE TABLE runset (
+    id serial,
+    startedat timestamp with time zone,
+    finishedat timestamp with time zone,
+    buildurl character varying(256),
+    logurls jsonb,
+    commit integer,
+    machine integer,
+    config integer,
+    pullrequest integer,
+    timedoutbenchmarks character varying(128)[],
+    crashedbenchmarks character varying(128)[],
+    secondarycommits character varying(40)[],
+    CONSTRAINT runset_pkey PRIMARY KEY (id),
+    CONSTRAINT runset_commit_fkey FOREIGN KEY (commit)
+        REFERENCES commit (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT runset_config_fkey FOREIGN KEY (config)
+        REFERENCES config (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT runset_machine_fkey FOREIGN KEY (machine)
+        REFERENCES machine (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-create table RegressionWarnings (
-       objectId varchar(10),
-       id serial primary key,
-       runSet integer references RunSet(id),
-       fasterBenchmarks varchar(128)[], -- element references Benchmark(name),
-       slowerBenchmarks varchar(128)[] -- element references Benchmark(name)
+CREATE INDEX runset_commit_index ON runset USING btree (commit);
+
+CREATE TABLE run (
+    id serial,
+    benchmark integer,
+    runset integer,
+    CONSTRAINT run_pkey PRIMARY KEY (id),
+    CONSTRAINT run_benchmark_fkey FOREIGN KEY (benchmark)
+        REFERENCES benchmark (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT run_runset_fkey FOREIGN KEY (runset)
+        REFERENCES runset (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-create table PullRequest (
-       objectId varchar(10),
-       id serial primary key,
-       URL varchar(256),
-       baselineRunSet integer references RunSet(id)
+CREATE INDEX run_runset_index ON run USING btree (runset);
+
+CREATE TABLE runmetric (
+    id serial,
+    run integer,
+    metric integer,
+    result double precision,
+    resultarray double precision[],
+    CONSTRAINT runmetric_pkey PRIMARY KEY (id),
+    CONSTRAINT runmetric_metric_fkey FOREIGN KEY (metric)
+        REFERENCES metric (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT runmetric_run_fkey FOREIGN KEY (run)
+        REFERENCES run (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-alter table RunSet add foreign key (pullRequest) references PullRequest(id);
+CREATE TABLE regressionswarned (
+    id serial,
+    runset integer,
+    benchmark integer,
+    faster boolean,
+    CONSTRAINT regressionswarned_pkey PRIMARY KEY (id),
+    CONSTRAINT regressionswarned_benchmark_fkey FOREIGN KEY (benchmark)
+        REFERENCES benchmark (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT regressionswarned_runset_fkey FOREIGN KEY (runset)
+        REFERENCES runset (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
+CREATE TABLE pullrequest (
+    id serial,
+    url character varying(256),
+    baselinerunset integer,
+    CONSTRAINT pullrequest_pkey PRIMARY KEY (id),
+    CONSTRAINT pullrequest_baselinerunset_fkey FOREIGN KEY (baselinerunset)
+        REFERENCES runset (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
+CREATE TABLE featuredtimelines (
+    id serial,
+    name character varying(128),
+    machine integer,
+    config integer,
+    metric integer,
+    CONSTRAINT featuredtimelines_pkey PRIMARY KEY (id),
+    CONSTRAINT featuredtimelines_config_fkey FOREIGN KEY (config)
+        REFERENCES config (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT featuredtimelines_machine_fkey FOREIGN KEY (machine)
+        REFERENCES machine (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT featuredtimelines_metric_fkey FOREIGN KEY (metric)
+        REFERENCES metric (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
+CREATE TABLE parseobjectid (
+    parseid character(10) NOT NULL,
+    tablename character varying(32),
+    integerkey integer,
+    varcharkey character varying(128)
+);
 
 create user $BENCHMARKER_USER login encrypted password '$BENCHMARKER_PASSWORD';
-grant select, insert, update, delete on table Benchmark, Commit, Config, Machine, PullRequest, RegressionWarnings, Run, RunSet to $BENCHMARKER_USER;
+grant select, insert, update, delete on table Benchmark, Commit, Config, Machine, PullRequest, RegressionWarnings, Run, RunSet, metric to $BENCHMARKER_USER;
 grant usage, select, update on sequence runset_id_seq, pullrequest_id_seq, run_id_seq, regressionwarnings_id_seq to $BENCHMARKER_USER;

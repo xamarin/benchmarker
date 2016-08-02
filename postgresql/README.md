@@ -1,6 +1,6 @@
 # Postgres hosting
 
-Our Postgres is currently hosted on Amazon's RDS.  The credentials are
+Our Postgres is currently hosted on an Azure instance.  The credentials are
 in [Accredit](../accredit/README.md):
 
   - `adminPostgres`: The administrator credentials.  Should only be

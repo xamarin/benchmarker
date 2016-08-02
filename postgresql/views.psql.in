@@ -2,93 +2,284 @@
 
 create schema "1";
 
-create view "1".benchmark as
-select * from benchmark;
+CREATE OR REPLACE VIEW "1".benchmark AS 
+ SELECT b.name,
+    b.disabled
+   FROM benchmark b;
 
-create view "1".config as
-select * from config;
+CREATE OR REPLACE VIEW "1".commit AS 
+ SELECT c.hash,
+    c.commitdate,
+    c.branch,
+    c.mergebasehash,
+    c.product
+   FROM commit c;
 
-create view "1".machine as
-select * from machine;
+CREATE OR REPLACE VIEW "1".config AS 
+ SELECT cfg.name,
+    cfg.monoexecutable,
+    cfg.monoenvironmentvariables,
+    cfg.monooptions
+   FROM config cfg;
 
-create view "1".parseobjectid as
-select * from parseobjectid;
+CREATE OR REPLACE VIEW "1".machine AS 
+ SELECT m.name,
+    m.architecture,
+    m.isdedicated
+   FROM machine m;
 
-create view "1".commit as
-select * from commit;
+CREATE OR REPLACE VIEW "1".featuredtimelines AS 
+ SELECT ft.id,
+    ft.name,
+    m.name AS machine,
+    cfg.name AS config,
+    metric.name AS metric
+   FROM featuredtimelines ft,
+    machine m,
+    config cfg,
+    metric
+  WHERE ft.machine = m.id AND ft.config = cfg.id AND metric.id = ft.metric;
 
-create view "1".summary as
-select results.runset as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
-       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product,
-       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
-       results.metric, results.averages, results.variances from (
-select x.runset, x.metric, json_object_agg(x.benchmark, x.avg) as averages, json_object_agg(x.benchmark, x.var_pop) as variances
-from (
-select r.runset, rm.metric, r.benchmark, avg(rm.result), var_pop(rm.result)
-from run r, runmetric rm, benchmark b
-where r.id = rm.run and r.benchmark = b.name and b.disabled is not true and rm.result is not null
-group by r.runset, r.benchmark, rm.metric
-) as x
-group by runset, metric
-) as results,
-runset rs, commit c, machine m, config cfg
-where results.runset = rs.id and rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
+CREATE OR REPLACE VIEW "1".parseobjectid AS 
+ SELECT parseobjectid.parseid,
+    parseobjectid.tablename,
+    parseobjectid.integerkey,
+    parseobjectid.varcharkey
+   FROM parseobjectid;
 
-create or replace view "1".runset as
-select c.hash as c_hash, c.commitdate as c_commitdate,
-       rs.id as rs_id, rs.startedat as rs_startedat, rs.finishedat as rs_finishedat, rs.buildurl as rs_buildurl, rs.logurls as rs_logurls, rs.commit as rs_commit, rs.machine as rs_machine, rs.config as rs_config, rs.timedoutbenchmarks as rs_timedoutbenchmarks, rs.crashedbenchmarks as rs_crashedbenchmarks,
-       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
-        rs.secondarycommits as rs_secondarycommits,
-        c.product as c_product, rs.pullrequest as rs_pullrequest
-from runset rs, commit c, machine m, config cfg
-where rs.commit = c.hash and rs.machine = m.name and rs.config = cfg.name;
+CREATE OR REPLACE VIEW "1".summary AS 
+ SELECT results.runset AS rs_id,
+    m.name AS rs_machine,
+    cfg.name AS rs_config,
+    rs.pullrequest AS rs_pullrequest,
+    rs.startedat AS rs_startedat,
+    rs.timedoutbenchmarks AS rs_timedoutbenchmarks,
+    rs.crashedbenchmarks AS rs_crashedbenchmarks,
+    c.hash AS c_hash,
+    c.commitdate AS c_commitdate,
+    m.name AS m_name,
+    m.architecture AS m_architecture,
+    m.isdedicated AS m_isdedicated,
+    cfg.name AS cfg_name,
+    cfg.monoexecutable AS cfg_monoexecutable,
+    cfg.monoenvironmentvariables AS cfg_monoenvironmentvariables,
+    cfg.monooptions AS cfg_monooptions,
+    metric.name AS metric,
+    results.averages,
+    results.variances,
+    c.product AS c_product
+   FROM ( SELECT x.runset,
+            x.metric,
+            json_object_agg(b.name, x.avg) AS averages,
+            json_object_agg(b.name, x.var_pop) AS variances
+           FROM ( SELECT r.runset,
+                    rm.metric,
+                    r.benchmark,
+                    avg(rm.result) AS avg,
+                    var_pop(rm.result) AS var_pop
+                   FROM run r,
+                    runmetric rm,
+                    benchmark b_1
+                  WHERE r.id = rm.run AND r.benchmark = b_1.id AND b_1.disabled IS NOT TRUE AND rm.result IS NOT NULL
+                  GROUP BY r.runset, r.benchmark, rm.metric) x,
+            benchmark b
+          WHERE x.benchmark = b.id
+          GROUP BY x.runset, x.metric) results,
+    runset rs,
+    commit c,
+    machine m,
+    config cfg,
+    metric
+  WHERE metric.id = results.metric AND results.runset = rs.id AND rs.commit = c.id AND rs.machine = m.id AND rs.config = cfg.id;
 
-create view "1".runsetcount as
-select array_agg(rs.id) as ids,
-       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions,
-       rs.metric
-from (select distinct irs.id, rm.metric, irs.machine, irs.config
-      from runset irs, run r, runmetric rm
-      where irs.pullrequest is null and rm.run = r.id and r.runset = irs.id) rs,
-     machine m, config cfg
-where rs.machine = m.name and rs.config = cfg.name
-group by rs.metric, m.name, m.architecture, m.isdedicated, cfg.name, cfg.monoexecutable, cfg.monoenvironmentvariables, cfg.monooptions;
 
-create view "1".results as
-select r.runset, r.benchmark, b.disabled, rm.metric, array_agg(rm.result) as results
-from run r, runmetric rm, benchmark b
-where rm.run = r.id and r.benchmark = b.name and rm.result is not null
-group by r.runset, r.benchmark, rm.metric, b.disabled;
+CREATE OR REPLACE VIEW "1".runset AS 
+ SELECT c.hash AS c_hash,
+    c.commitdate AS c_commitdate,
+    rs.id AS rs_id,
+    rs.startedat AS rs_startedat,
+    rs.finishedat AS rs_finishedat,
+    rs.buildurl AS rs_buildurl,
+    rs.logurls AS rs_logurls,
+    c.hash AS rs_commit,
+    m.name AS rs_machine,
+    cfg.name AS rs_config,
+    rs.timedoutbenchmarks AS rs_timedoutbenchmarks,
+    rs.crashedbenchmarks AS rs_crashedbenchmarks,
+    m.name AS m_name,
+    m.architecture AS m_architecture,
+    m.isdedicated AS m_isdedicated,
+    cfg.name AS cfg_name,
+    cfg.monoexecutable AS cfg_monoexecutable,
+    cfg.monoenvironmentvariables AS cfg_monoenvironmentvariables,
+    cfg.monooptions AS cfg_monooptions,
+    rs.secondarycommits AS rs_secondarycommits,
+    c.product AS c_product,
+    rs.pullrequest AS rs_pullrequest
+   FROM runset rs,
+    commit c,
+    machine m,
+    config cfg
+  WHERE rs.commit = c.id AND rs.machine = m.id AND rs.config = cfg.id;
 
-create view "1".resultarrays as
-select rs.id as rs_id, rs.machine as rs_machine, rs.config as rs_config, rs.pullrequest as rs_pullrequest, rs.startedAt as rs_startedAt, rs.timedOutBenchmarks as rs_timedoutBenchmarks, rs.crashedBenchmarks as rs_crashedBenchmarks,
-		r.benchmark, b.disabled, rm.metric, rm.resultarray,
-       c.hash as c_hash, c.commitDate as c_commitDate, c.product as c_product,
-       r.id as r_id
-from run r, runmetric rm, benchmark b, runset rs, commit c
-where rs.commit = c.hash and r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
+CREATE OR REPLACE VIEW "1".runsetcount AS 
+ SELECT array_agg(rs.id) AS ids,
+    m.name AS m_name,
+    m.architecture AS m_architecture,
+    m.isdedicated AS m_isdedicated,
+    cfg.name AS cfg_name,
+    cfg.monoexecutable AS cfg_monoexecutable,
+    cfg.monoenvironmentvariables AS cfg_monoenvironmentvariables,
+    cfg.monooptions AS cfg_monooptions,
+    metric.name AS metric
+   FROM ( SELECT DISTINCT irs.id,
+            rm.metric,
+            irs.machine,
+            irs.config
+           FROM ( SELECT DISTINCT iirs.id,
+                    iirs.machine,
+                    iirs.config
+                   FROM runset iirs
+                  WHERE iirs.pullrequest IS NULL) irs,
+            run r,
+            runmetric rm
+          WHERE rm.run = r.id AND r.runset = irs.id) rs,
+    machine m,
+    config cfg,
+    metric
+  WHERE rs.machine = m.id AND rs.config = cfg.id AND rs.metric = metric.id
+  GROUP BY metric.name, m.id, m.architecture, m.isdedicated, cfg.id, cfg.monoexecutable, cfg.monoenvironmentvariables, cfg.monooptions;
 
-create view "1".resultarraybenchmarks as
-select distinct r.benchmark, b.disabled, rm.metric, rs.machine, rs.config
-from run r, runmetric rm, benchmark b, runset rs
-where r.runset = rs.id and rm.run = r.id and r.benchmark = b.name and rm.resultarray is not null;
 
-create view "1".pullrequest as
-select pr.id as pr_id, pr.url as pr_url,
-       blrs.id as blrs_id, blrs.startedAt as blrs_startedAt, blrs.finishedAt as blrs_finishedAt, blrs.buildURL as blrs_buildURL, blrs.logURLs as blrs_logURLs, blrs.commit as blrs_commit, blrs.machine as blrs_machine, blrs.config as blrs_config, blrs.timedOutBenchmarks as blrs_timedOutBenchmarks, blrs.crashedBenchmarks as blrs_crashedBenchmarks,
-       prrs.id as prrs_id, prrs.startedAt as prrs_startedAt, prrs.finishedAt as prrs_finishedAt, prrs.buildURL as prrs_buildURL, prrs.logURLs as prrs_logURLs, prrs.commit as prrs_commit, prrs.machine as prrs_machine, prrs.config as prrs_config, prrs.timedOutBenchmarks as prrs_timedOutBenchmarks, prrs.crashedBenchmarks as prrs_crashedBenchmarks,
-       blc.hash as blc_hash, blc.commitDate as blc_commitDate,
-       prc.hash as prc_hash, prc.commitDate as prc_commitDate,
-       m.name as m_name, m.architecture as m_architecture, m.isdedicated as m_isdedicated,
-       cfg.name as cfg_name, cfg.monoexecutable as cfg_monoexecutable, cfg.monoenvironmentvariables as cfg_monoenvironmentvariables, cfg.monooptions as cfg_monooptions
-from pullrequest as pr, runset as blrs, runset as prrs, commit as blc, commit as prc, machine as m, config cfg
-where pr.baselinerunset = blrs.id and prrs.pullrequest = pr.id and blc.hash = blrs.commit and prc.hash = prrs.commit and blrs.machine = m.name and blrs.config = cfg.name;
+CREATE OR REPLACE VIEW "1".results AS 
+ SELECT res.runset,
+    b.name AS benchmark,
+    res.disabled,
+    metric.name AS metric,
+    res.results
+   FROM ( SELECT r.runset,
+            b_1.id,
+            b_1.disabled,
+            rm.metric,
+            array_agg(rm.result) AS results
+           FROM run r,
+            runmetric rm,
+            benchmark b_1
+          WHERE rm.run = r.id AND r.benchmark = b_1.id AND rm.result IS NOT NULL
+          GROUP BY r.runset, b_1.id, rm.metric, b_1.disabled) res,
+    benchmark b,
+    metric
+  WHERE res.id = b.id AND metric.id = res.metric;
 
-create view "1".featuredtimelines as
-select * from featuredtimelines;
+CREATE OR REPLACE VIEW "1".resultarrays AS 
+ SELECT res.rs_id,
+    m.name AS rs_machine,
+    cfg.name AS rs_config,
+    res.rs_pullrequest,
+    res.rs_startedat,
+    res.rs_timedoutbenchmarks,
+    res.rs_crashedbenchmarks,
+    res.benchmark,
+    res.disabled,
+    metric.name AS metric,
+    res.resultarray,
+    res.c_hash,
+    res.c_commitdate,
+    res.c_product,
+    res.r_id
+   FROM ( SELECT rs.id AS rs_id,
+            rs.machine AS trs_machine,
+            rs.config AS rs_config,
+            rs.pullrequest AS rs_pullrequest,
+            rs.startedat AS rs_startedat,
+            rs.timedoutbenchmarks AS rs_timedoutbenchmarks,
+            rs.crashedbenchmarks AS rs_crashedbenchmarks,
+            b.name AS benchmark,
+            b.disabled,
+            rm.metric,
+            rm.resultarray,
+            c.hash AS c_hash,
+            c.commitdate AS c_commitdate,
+            c.product AS c_product,
+            r.id AS r_id
+           FROM run r,
+            runmetric rm,
+            benchmark b,
+            runset rs,
+            commit c
+          WHERE rs.commit = c.id AND r.runset = rs.id AND rm.run = r.id AND r.benchmark = b.id AND rm.resultarray IS NOT NULL) res,
+    metric,
+    config cfg,
+    machine m
+  WHERE res.metric = metric.id AND res.rs_config = cfg.id AND res.trs_machine = m.id;
+
+CREATE OR REPLACE VIEW "1".resultarraybenchmarks AS 
+ SELECT benchmark.name AS benchmark,
+    benchmark.disabled,
+    metric.name AS metric,
+    machine.name AS machine,
+    config.name AS config
+   FROM benchmark benchmark,
+    metric,
+    machine machine,
+    config config,
+    ( SELECT DISTINCT r.benchmark,
+            b.disabled,
+            rm.metric,
+            rs.machine,
+            rs.config
+           FROM run r,
+            runmetric rm,
+            benchmark b,
+            runset rs
+          WHERE r.runset = rs.id AND rm.run = r.id AND r.benchmark = b.id AND rm.resultarray IS NOT NULL) res
+  WHERE res.benchmark = benchmark.id AND metric.id = res.metric AND res.machine = machine.id AND res.config = config.id;
+
+CREATE OR REPLACE VIEW "1".pullrequest AS 
+ SELECT pr.id AS pr_id,
+    pr.url AS pr_url,
+    blrs.id AS blrs_id,
+    blrs.startedat AS blrs_startedat,
+    blrs.finishedat AS blrs_finishedat,
+    blrs.buildurl AS blrs_buildurl,
+    blrs.logurls AS blrs_logurls,
+    blc.hash AS blrs_commit,
+    blm.name AS blrs_machine,
+    blcfg.name AS blrs_config,
+    blrs.timedoutbenchmarks AS blrs_timedoutbenchmarks,
+    blrs.crashedbenchmarks AS blrs_crashedbenchmarks,
+    prrs.id AS prrs_id,
+    prrs.startedat AS prrs_startedat,
+    prrs.finishedat AS prrs_finishedat,
+    prrs.buildurl AS prrs_buildurl,
+    prrs.logurls AS prrs_logurls,
+    prc.hash AS prrs_commit,
+    prm.name AS prrs_machine,
+    prcfg.name AS prrs_config,
+    prrs.timedoutbenchmarks AS prrs_timedoutbenchmarks,
+    prrs.crashedbenchmarks AS prrs_crashedbenchmarks,
+    blc.hash AS blc_hash,
+    blc.commitdate AS blc_commitdate,
+    prc.hash AS prc_hash,
+    prc.commitdate AS prc_commitdate,
+    blm.name AS m_name,
+    blm.architecture AS m_architecture,
+    blm.isdedicated AS m_isdedicated,
+    blcfg.name AS cfg_name,
+    blcfg.monoexecutable AS cfg_monoexecutable,
+    blcfg.monoenvironmentvariables AS cfg_monoenvironmentvariables,
+    blcfg.monooptions AS cfg_monooptions
+   FROM pullrequest pr,
+    runset blrs,
+    runset prrs,
+    commit blc,
+    commit prc,
+    machine blm,
+    machine prm,
+    config blcfg,
+    config prcfg
+  WHERE pr.baselinerunset = blrs.id AND prrs.pullrequest = pr.id AND blc.id = blrs.commit AND prc.id = prrs.commit AND blrs.machine = blm.id AND prrs.machine = prm.id AND blrs.config = blcfg.id AND prrs.config = prcfg.id;
+
 
 create user $POSTGREST_USER login encrypted password '$POSTGREST_PASSWORD';
 grant usage on schema "1" to $POSTGREST_USER;
