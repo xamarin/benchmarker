@@ -277,7 +277,12 @@ class Compare
 			Value = starts.ToArray ()
 		});
 
-		return await run.UploadForAmend (runId);
+		for (int i = 0; i < 5; i++) {
+			if (await run.UploadForAmend (runId))
+				return true;
+			Console.Error.WriteLine ("retry run upload: #{0}\n", i);
+		}
+		return false;
 	}
 
 	private static Regex JIT_PHASE_REGEX = new Regex ("JIT/(\\w+)\\s*\\(sec\\)\\s*: (\\d+.\\d+)");
@@ -541,13 +546,18 @@ class Compare
 			}
 		}
 
-		RunSet runSet;
+		RunSet runSet = null;
 		if (runSetId != null) {
 			if (pullRequestURL != null) {
 				Console.Error.WriteLine ("Error: Pull request URL cannot be specified for an existing run set.");
 				Environment.Exit (1);
 			}
-			runSet = AsyncContext.Run (() => RunSet.FromId (machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
+			for (var i = 0; i < 5 && runSet == null; i++) {
+				runSet = AsyncContext.Run(() => RunSet.FromId(machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
+				if (runSet == null) {
+					Console.Error.WriteLine ("retry runset fetch: #{0}", i);
+				}
+			}
 			if (runSet == null) {
 				Console.Error.WriteLine ("Error: Could not get run set.");
 				Environment.Exit (1);
@@ -729,9 +739,9 @@ class Compare
 
 		RunSet.UploadResult uploadResult = null;
 		for (var i = 0; i < 5 && uploadResult == null; i++) {
-			uploadResult = AsyncContext.Run(() => runSet.Upload());
+			uploadResult = AsyncContext.Run (() => runSet.Upload ());
 			if (uploadResult == null) {
-				Console.Error.WriteLine("retry upload: #{0}", i);
+				Console.Error.WriteLine ("retry runset upload: #{0}", i);
 			}
 		}
 		if (uploadResult == null) {
