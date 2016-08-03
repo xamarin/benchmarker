@@ -118,9 +118,14 @@ namespace DbTool
 
 		static void InsertWarned (NpgsqlConnection conn, long testRunSetId, string benchmark, bool faster)
 		{
-			PostgresRow row = new PostgresRow ();
+			var whereValues = new PostgresRow ();
+			whereValues.Set ("name" ,NpgsqlTypes.NpgsqlDbType.Varchar, benchmark);
+			var rows = PostgresInterface.Select (conn, "benchmark", new string[] {"id"}, "name = :name", whereValues);
+			long benchmarkId = rows.First ().GetValue<long> ("id").Value;
+
+			var row = new PostgresRow ();
 			row.Set ("runSet", NpgsqlTypes.NpgsqlDbType.Bigint, testRunSetId);
-			row.Set ("benchmark", NpgsqlTypes.NpgsqlDbType.Varchar, benchmark);
+			row.Set ("benchmark", NpgsqlTypes.NpgsqlDbType.Bigint, benchmarkId);
 			row.Set ("faster", NpgsqlTypes.NpgsqlDbType.Boolean, faster);
 			PostgresInterface.Insert<long> (conn, "RegressionsWarned", row, "id");
 		}
@@ -280,15 +285,14 @@ namespace DbTool
 					if (onlyNecessary) {
 						var warningValues = new PostgresRow ();
 						warningValues.Set ("runset", NpgsqlTypes.NpgsqlDbType.Bigint, testRunSetId);
-						var warnings = PostgresInterface.Select (conn, "RegressionsWarned",
+						var warnings = PostgresInterface.Select (conn, "RegressionsWarned, benchmark",
 							new string[] {
-								"benchmark",
+								"benchmark.name",
 								"faster"
-							},
-							"runSet = :runset", warningValues);
+							}, "benchmark.id = RegressionsWarned.benchmark and runSet = :runset", warningValues);
 
 						foreach (var row in warnings) {
-							var benchmark = row.GetReference<string> ("benchmark");
+							var benchmark = row.GetReference<string> ("benchmark.name");
 							if (row.GetValue<bool> ("faster").Value)
 								warnedFasterBenchmarks.Add (benchmark);
 							else
