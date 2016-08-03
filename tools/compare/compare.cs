@@ -281,6 +281,7 @@ class Compare
 			if (await run.UploadForAmend (runId))
 				return true;
 			Console.Error.WriteLine ("retry run upload: #{0}\n", i);
+			System.Threading.Thread.Sleep (i * 1000);
 		}
 		return false;
 	}
@@ -556,6 +557,7 @@ class Compare
 				runSet = AsyncContext.Run(() => RunSet.FromId(machine, runSetId.Value, config, mainCommit, secondaryCommits, buildURL, logURL));
 				if (runSet == null) {
 					Console.Error.WriteLine ("retry runset fetch: #{0}", i);
+					System.Threading.Thread.Sleep (i * 1000);
 				}
 			}
 			if (runSet == null) {
@@ -742,6 +744,7 @@ class Compare
 			uploadResult = AsyncContext.Run (() => runSet.Upload ());
 			if (uploadResult == null) {
 				Console.Error.WriteLine ("retry runset upload: #{0}", i);
+				System.Threading.Thread.Sleep (i * 1000);
 			}
 		}
 		if (uploadResult == null) {
