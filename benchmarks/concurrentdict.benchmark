@@ -1,5 +1,6 @@
 {
   "Name": "concurrentdict",
   "TestDirectory": "small",
+  "AOTAssemblies": ["concurrentdict.exe"],
   "CommandLine": ["concurrentdict.exe"]
 }
