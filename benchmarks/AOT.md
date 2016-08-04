@@ -2,8 +2,6 @@ Missing:
 * couchbase
 
 TODO:
-db.benchmark
-euler.benchmark
 eventstore2.benchmark
 except.benchmark
 fsharp-aot.benchmark

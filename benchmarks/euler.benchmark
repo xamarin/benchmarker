@@ -1,5 +1,6 @@
 {
   "Name": "euler",
   "TestDirectory": "csgrande/Euler/Euler/bin/Debug",
+  "AOTAssemblies": ["Euler.exe"],
   "CommandLine": ["Euler.exe"]
 }
