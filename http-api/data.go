@@ -141,6 +141,7 @@ func metricIsAllowed(metric string, value interface{}) bool {
 	}
 
 	if metric == "time" ||
+		metric == "aot-time" ||
 		metric == "instructions" ||
 		metric == "memory-integral" ||
 		metric == "branch-mispred" ||

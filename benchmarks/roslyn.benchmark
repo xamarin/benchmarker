@@ -1,6 +1,7 @@
 {
   "Name": "roslyn",
   "TestDirectory": "roslyn/corlib",
+  "AOTAssemblies": ["../roslyn/BoundTreeGenerator.exe", "../roslyn/CSharpErrorFactsGenerator.exe", "../roslyn/CSharpSyntaxGenerator.exe", "../roslyn/csc.exe", "../roslyn/Microsoft.CodeAnalysis.CSharp.Desktop.dll", "../roslyn/Microsoft.CodeAnalysis.CSharp.dll", "../roslyn/Microsoft.CodeAnalysis.Desktop.dll", "../roslyn/Microsoft.CodeAnalysis.dll", "../roslyn/System.Collections.Immutable.dll", "../roslyn/System.Reflection.Metadata.dll"],
   "CommandLine": [
     "../roslyn/csc.exe", "/codepage:65001", "-unsafe", "-nostdlib", "-nowarn:612,618", "-d:INSIDE_CORLIB", "-d:LIBC", "-d:NET_1_1", "-d:NET_2_0", "-d:NET_3_0", "-d:NET_3_5", "-d:NET_4_0", "-d:NET_4_5",
     "-nowarn:1699", "-nostdlib", "/noconfig", "-resource:resources/collation.core.bin", "-resource:resources/collation.tailoring.bin", "-resource:resources/collation.cjkCHS.bin", "-resource:resources/collation.cjkCHT.bin",

@@ -10,8 +10,10 @@ namespace compare
 {
 	public class UnixRunner
 	{
-		public ProcessStartInfo info { get; }
-		ProcessStartInfo clientInfo;
+		public ProcessStartInfo Info { get; }
+		public ProcessStartInfo ClientInfo { get; }
+		public ProcessStartInfo InfoAot { get ; }
+
 		Config config;
 		Benchmark benchmark;
 		Machine machine;
@@ -32,27 +34,37 @@ namespace compare
 			runToolArguments = _runToolArguments;
 
 			var binaryProtocolFile = _config.ProducesBinaryProtocol ? "binprot.dummy" : null;
-			info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+			Info = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
 
-			info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
+			Info.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
+
+			if (config.AOTOptions != null) {
+				if (benchmark.AOTAssemblies == null) {
+					Console.Error.WriteLine("Error: benchmark {0} not configured to be executed in AOT mode.", benchmark.Name);
+					Environment.Exit(1);
+				}
+				InfoAot = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+				InfoAot.WorkingDirectory = Path.Combine (testsDirectory, benchmark.TestDirectory);
+				InfoAot.Arguments = String.Join (" ", config.AOTOptions.Concat (benchmark.AOTAssemblies));
+			}
 
 			var commandLine = benchmark.CommandLine;
 
 			if (benchmark.ClientCommandLine != null) {
 				clientServer = true;
-				clientInfo = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
-				clientInfo.WorkingDirectory = info.WorkingDirectory;
-				clientInfo.Arguments = String.Join (" ", config.MonoOptions.Concat (benchmark.ClientCommandLine));
+				ClientInfo = compare.Utils.NewProcessStartInfo (_config, binaryProtocolFile);
+				ClientInfo.WorkingDirectory = Info.WorkingDirectory;
+				ClientInfo.Arguments = String.Join (" ", config.MonoOptions.Concat (benchmark.ClientCommandLine));
 			} else {
 				clientServer = false;
 			}
 
 			if (config.NoMono) {
-				info.FileName = Path.Combine (info.WorkingDirectory, commandLine [0]);
+				Info.FileName = Path.Combine (Info.WorkingDirectory, commandLine [0]);
 				commandLine = commandLine.Skip (1).ToArray ();
 			}
 
-			fileName = info.FileName;
+			fileName = Info.FileName;
 
 			arguments = String.Join (" ", config.MonoOptions.Concat (commandLine));
 			/* Run with timing */
@@ -60,9 +72,74 @@ namespace compare
 				arguments = "--stats " + arguments;
 		}
 
+		public bool IsAot {
+			get {
+				return InfoAot != null;
+			}
+		}
+
+		private int GetTimeout() {
+			if (machine == null)
+				return defaultTimeoutSeconds;
+
+			if (machine.BenchmarkTimeouts == null || !machine.BenchmarkTimeouts.ContainsKey (benchmark.Name))
+				return machine.DefaultTimeout;
+
+			return machine.BenchmarkTimeouts[benchmark.Name];
+		}
+
+		private static void PrintCommandLine(String prefix, ProcessStartInfo info) {
+			Console.WriteLine("$> {0}: \"{1} {2}\" in \"{3}\" with {4}", prefix, info.FileName, info.Arguments, info.WorkingDirectory, compare.Utils.PrintableEnvironmentVariables(info));
+		}
+
+		public long? RunAOT(out bool timedOut, out string stdoutOutput) {
+			if (InfoAot == null)
+				throw new ArgumentException ("config/benchmark isn't configured to be run in AOT mode");
+
+			timedOut = false;
+			stdoutOutput = null;
+
+			int timeout = GetTimeout ();
+
+			PrintCommandLine ("AOT command", InfoAot);
+			var sw = Stopwatch.StartNew ();
+			using (var aotProcess = Process.Start(InfoAot)) {
+				var stdout = Task.Factory.StartNew (() => new StreamReader (aotProcess.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+				var stderr = Task.Factory.StartNew (() => new StreamReader (aotProcess.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
+				var success = aotProcess.WaitForExit(timeout < 0 ? -1 : (Math.Min (Int32.MaxValue / 1000, timeout) * 1000));
+
+				if (success) {
+					if (aotProcess.ExitCode != 0) {
+						Console.Out.WriteLine ("AOT failure!");
+						success = false;
+					}
+				} else {
+					Console.Out.WriteLine ("AOT timed out!");
+					timedOut = true;
+				}
+
+				if (!success) {
+					try {
+						aotProcess.Kill ();
+					} catch (InvalidOperationException) {
+						// The process might have finished already, so we need to catch this.
+					}
+				}
+
+				Console.Out.WriteLine ("aot-stdout:\n{0}", stdout.Result);
+				stdoutOutput = stdout.Result;
+				Console.Out.WriteLine ("aot-stderr:\n{0}", stderr.Result);
+
+				if (success)
+					return sw.ElapsedMilliseconds;
+				else
+					return null;
+			}
+		}
+
 		public long? Run (string profilesDirectory, string profileFilename, string binaryProtocolFilename, out bool timedOut, out string stdoutOutput)
 		{
-			Utils.SetProcessStartEnvironmentVariables (info, config, binaryProtocolFilename);
+			Utils.SetProcessStartEnvironmentVariables (Info, config, binaryProtocolFilename);
 
 			timedOut = false;
 			stdoutOutput = null;
@@ -78,39 +155,34 @@ namespace compare
 					}
 				}
 				if (profilesDirectory == null) {
-					info.Arguments = arguments;
+					Info.Arguments = arguments;
 				} else {
-					info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
+					Info.Arguments = String.Format ("--profile=log:counters,countersonly,nocalls,noalloc,output={0} ", Path.Combine (
 						profilesDirectory, profileFilename)) + arguments;
 				}
 
 				if (runTool == null) {
-					info.FileName = fileName;
+					Info.FileName = fileName;
 				} else {
-					info.FileName = runTool;
-					info.Arguments = runToolArguments + " " + fileName + " " + info.Arguments;
+					Info.FileName = runTool;
+					Info.Arguments = runToolArguments + " " + fileName + " " + Info.Arguments;
 				}
 
-				Console.Out.WriteLine ("\t$> {0} {1} {2}", compare.Utils.PrintableEnvironmentVariables (info), info.FileName, info.Arguments);
-
-				int timeout;
-				if (machine != null) {
-					if (machine.BenchmarkTimeouts != null && machine.BenchmarkTimeouts.ContainsKey (benchmark.Name))
-						timeout = machine.BenchmarkTimeouts [benchmark.Name];
-					else
-						timeout = machine.DefaultTimeout;
+				if (clientServer) {
+					PrintCommandLine ("Server command", Info);
+					PrintCommandLine ("Client command", ClientInfo);
 				} else {
-					timeout = defaultTimeoutSeconds;
+					PrintCommandLine ("Benchmark command", Info);
 				}
 
-				using (var serverProcess = clientServer ? Process.Start (info) : null) {
+				int timeout = GetTimeout ();
+				using (var serverProcess = clientServer ? Process.Start (Info) : null) {
 
 					if (clientServer)
 						System.Threading.Thread.Sleep (5000);
 
 					var sw = Stopwatch.StartNew ();
-
-					using (var mainProcess = clientServer ? Process.Start (clientInfo) : Process.Start (info)) {
+					using (var mainProcess = clientServer ? Process.Start (ClientInfo) : Process.Start (Info)) {
 						var stdout = Task.Factory.StartNew (() => new StreamReader (mainProcess.StandardOutput.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 						var stderr = Task.Factory.StartNew (() => new StreamReader (mainProcess.StandardError.BaseStream).ReadToEnd (), TaskCreationOptions.LongRunning);
 
@@ -131,7 +203,7 @@ namespace compare
 						}
 
 						if (clientServer)
-							serverProcess.Kill();
+							serverProcess.Kill ();
 
 						if (!success) {
 							try {
@@ -157,8 +229,7 @@ namespace compare
 			}
 		}
 
-		public long? Run (string binaryProtocolFilename, out bool timedOut, out string stdoutOutput)
-		{
+		public long? Run (string binaryProtocolFilename, out bool timedOut, out string stdoutOutput) {
 			return Run (null, null, binaryProtocolFilename, out timedOut, out stdoutOutput);
 		}
 	}
