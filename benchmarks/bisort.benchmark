@@ -1,5 +1,6 @@
 {
   "Name": "bisort",
   "TestDirectory": "csolden/BiSort/BiSort/bin/Debug",
+  "AOTAssemblies": ["BiSort.exe"],
   "CommandLine": ["BiSort.exe", "-s", "3000000"]
 }
