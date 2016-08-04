@@ -1,5 +1,6 @@
 {
   "Name": "db",
   "TestDirectory": "csspec/DB/DB/bin/Debug",
+  "AOTAssemblies": ["DB.exe"],
   "CommandLine": ["DB.exe", "../input/db6", "../input/scr6"]
 }
