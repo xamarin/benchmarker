@@ -1,5 +1,6 @@
 {
   "Name": "binarytree",
   "TestDirectory": "shootout",
+  "AOTAssemblies": ["binarytree.exe"],
   "CommandLine": ["binarytree.exe", "19"]
 }
