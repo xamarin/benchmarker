@@ -5,7 +5,6 @@ from buildbot.steps.shell import ShellCommand
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
-from buildbot.status.builder import SUCCESS
 
 from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME, MASTERWORKDIR
 from monosteps import CreateRunSetIdStep, GithubPostPRStatus, ParsingShellCommand, GrabBinaryLogFilesStep, ProcessBinaryProtocolFiles
