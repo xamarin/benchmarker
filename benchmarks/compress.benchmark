@@ -1,5 +1,6 @@
 {
   "Name": "compress",
   "TestDirectory": "compress",
+  "AOTAssemblies": ["Compress.exe"],
   "CommandLine": ["Compress.exe"]
 }
