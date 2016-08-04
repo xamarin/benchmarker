@@ -643,11 +643,14 @@ class Compare
 							Benchmark = benchmark,
 							BinaryProtocolFilename = null
 						};
-						run.RunMetrics.Add(new RunMetric {
+						run.RunMetrics.Add (new RunMetric {
 							Metric = RunMetric.MetricType.AOTTime,
-							Value = TimeSpan.FromMilliseconds(elapsedMilliseconds.Value)
+							Value = TimeSpan.FromMilliseconds (elapsedMilliseconds.Value)
 						});
-						runSet.Runs.Add(run);
+						runSet.Runs.Add (run);
+					} else {
+						Console.Error.WriteLine ("Error: AOT compilation failed.");
+						Environment.Exit (1);
 					}
 				}
 
