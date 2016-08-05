@@ -45,3 +45,5 @@ accredit/cloud-code/.parse.local
 accredit/cloud-code/.parse.project
 
 xtc-api-key
+
+binprot.*
