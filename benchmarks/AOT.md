@@ -6,8 +6,6 @@
 
 # TODO
 
-* lists.benchmark
-* mandelbrot.benchmark
 * msbiology.benchmark
 * n-body.benchmark
 * objinst.benchmark
