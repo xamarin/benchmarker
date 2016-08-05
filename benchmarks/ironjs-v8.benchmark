@@ -1,5 +1,6 @@
 {
   "Name": "ironjs-v8",
   "TestDirectory": "IronJS",
+  "AOTAssemblies": ["FSharp.Core.dll", "IronJS.Runtime.dll", "IronJS.dll", "ijs.exe"],
   "CommandLine": ["ijs.exe", ".", "v8"]
 }
