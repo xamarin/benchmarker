@@ -1,5 +1,6 @@
 {
   "Name": "raytracer3",
   "TestDirectory": "shootout",
+  "AOTAssemblies": ["raytracer.csharp-3.exe"],
   "CommandLine": ["raytracer.csharp-3.exe", "600"]
 }

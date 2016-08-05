@@ -7,8 +7,6 @@
 
 # TODO
 
-* raytracer2.benchmark
-* raytracer3.benchmark
 * scimark-fft.benchmark
 * scimark-lu.benchmark
 * scimark-mc.benchmark
