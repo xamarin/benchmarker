@@ -113,10 +113,11 @@ class GrabBinaryLogFilesStep(ShellCommand):
             run_ids = [i['id'] for i in j['runs']]
             self.setProperty(PROPERTYNAME_RUNIDS, run_ids)
 
-            bin_files = [i['binaryProtocolFile'].encode('ascii', 'ignore') for i in j['runs']]
-            for bin_file in bin_files:
-                self.addLogFile(os.path.basename(bin_file), bin_file)
-                cmd_touch.append(bin_file)
+            for i in j['runs']:
+                if i.has_key('binaryProtocolFile'):
+                    bin_file = i['binaryProtocolFile'].encode('ascii', 'ignore')
+                    self.addLogFile(os.path.basename(bin_file), bin_file)
+                    cmd_touch.append(bin_file)
 
             self.setCommand(['bash', '-c', "sleep 1; " + " ".join(cmd_touch) + "; sleep 1"])
 
