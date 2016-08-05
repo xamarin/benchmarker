@@ -7,7 +7,6 @@
 
 # TODO
 
-* objinst.benchmark
 * onelist.benchmark
 * perimeter.benchmark
 * raytracer2.benchmark
