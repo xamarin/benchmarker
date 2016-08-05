@@ -3,7 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-isinst.benchmark
 lcscbench.benchmark
 lists.benchmark
 mandelbrot.benchmark

@@ -1,5 +1,6 @@
 {
   "Name": "isinst",
   "TestDirectory": "small",
+  "AOTAssemblies": ["isinst.exe"],
   "CommandLine": ["isinst.exe", "25000000"]
 }
