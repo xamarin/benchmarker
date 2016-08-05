@@ -2,11 +2,11 @@
 
 * couchbase
 * eventstore2
+* MSBiology: two DLLs fail to compile, QUT.Bio.dll and WPFToolkit.dll
 
 
 # TODO
 
-* msbiology.benchmark
 * n-body.benchmark
 * objinst.benchmark
 * onelist.benchmark

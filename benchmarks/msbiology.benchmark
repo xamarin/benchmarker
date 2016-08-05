@@ -1,5 +1,6 @@
 {
   "Name": "msbiology",
   "TestDirectory": "MSBiology",
+  "AOTAssemblies": ["MBF.PAMSAM.dll", "MBF.PaDeNA.dll", "MBF.PerfTests.dll", "MBF.TestUtils.dll", "MBF.WebServiceHandlers.dll", "MBF.dll", "MumUtil.exe", "SAMUtils.exe", "TestRunner.exe"],
   "CommandLine": ["TestRunner.exe"]
 }
