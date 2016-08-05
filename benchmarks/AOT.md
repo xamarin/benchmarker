@@ -1,6 +1,8 @@
 # Missing
 
 * couchbase
-* eventstore2 (TODO: timeout?!)
-* MSBiology: two DLLs fail to compile, QUT.Bio.dll and WPFToolkit.dll
+
+# Issues
+
+* MSBiology: two DLLs fail to compile, QUT.Bio.dll and WPFToolkit.dll: missing PresentationFramework dependency.
 

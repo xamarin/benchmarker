@@ -1,6 +1,7 @@
 {
   "Name": "eventstore2",
   "TestDirectory": "Eventstore2",
+  "AOTAssemblies": ["EventStore.BufferManagement.dll", "EventStore.ClientAPI.dll", "EventStore.ClusterNode.Web.dll", "EventStore.ClusterNode.exe", "EventStore.Common.dll", "EventStore.Core.dll", "EventStore.Projections.Core.dll", "EventStore.TestClient.exe", "EventStore.Transport.Http.dll", "EventStore.Transport.Tcp.dll", "EventStore.Web.dll", "NLog.dll", "Newtonsoft.Json.dll", "protobuf-net.dll"],
   "CommandLine": ["EventStore.ClusterNode.exe --force --mem-db"],
   "ClientCommandLine": ["EventStore.TestClient.exe --force --command 'wrfl 10 500000'"]
 }
