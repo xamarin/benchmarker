@@ -1,5 +1,6 @@
 {
   "Name": "specraytracer",
   "TestDirectory": "csspec/SpecRaytracer/SpecRaytracer/bin/Debug",
+  "AOTAssemblies": ["SpecRaytracer.exe"],
   "CommandLine": ["SpecRaytracer.exe", "200", "20000", "../time-test.model"]
 }
