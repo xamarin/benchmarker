@@ -1,5 +1,6 @@
 {
   "Name": "perimeter",
   "TestDirectory": "csolden/Perimeter/Perimeter/bin/Debug",
+  "AOTAssemblies": ["Perimeter.exe"],
   "CommandLine": ["Perimeter.exe", "-l", "17"]
 }

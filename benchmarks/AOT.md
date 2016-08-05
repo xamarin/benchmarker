@@ -7,8 +7,6 @@
 
 # TODO
 
-* onelist.benchmark
-* perimeter.benchmark
 * raytracer2.benchmark
 * raytracer3.benchmark
 * scimark-fft.benchmark
