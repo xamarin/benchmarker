@@ -7,11 +7,6 @@
 
 # TODO
 
-* scimark-fft.benchmark
-* scimark-lu.benchmark
-* scimark-mc.benchmark
-* scimark-mm.benchmark
-* scimark-sor.benchmark
 * sharpchess.benchmark
 * sharpsatbench.benchmark
 * specraytracer.benchmark

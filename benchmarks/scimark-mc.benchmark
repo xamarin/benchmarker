@@ -1,5 +1,6 @@
 {
   "Name": "scimark-mc",
   "TestDirectory": "scimark",
+  "AOTAssemblies": ["scimark.exe"],
   "CommandLine": ["scimark.exe", "MC"]
 }

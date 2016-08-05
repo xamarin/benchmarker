@@ -1,5 +1,6 @@
 {
   "Name": "scimark-fft",
   "TestDirectory": "scimark",
+  "AOTAssemblies": ["scimark.exe"],
   "CommandLine": ["scimark.exe", "FFT"]
 }
