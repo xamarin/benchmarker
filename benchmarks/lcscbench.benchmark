@@ -1,5 +1,6 @@
 {
   "Name": "lcscbench",
   "TestDirectory": "zorn/lcscbench",
+  "AOTAssemblies": ["lcscbench.exe", "parser.dll", "base.dll"],
   "CommandLine": ["lcscbench.exe", "input3.cs"]
 }
