@@ -1,13 +1,12 @@
 # Missing
 
 * couchbase
-* eventstore2
+* eventstore2 (TODO: timeout?!)
 * MSBiology: two DLLs fail to compile, QUT.Bio.dll and WPFToolkit.dll
 
 
 # TODO
 
-* n-body.benchmark
 * objinst.benchmark
 * onelist.benchmark
 * perimeter.benchmark
