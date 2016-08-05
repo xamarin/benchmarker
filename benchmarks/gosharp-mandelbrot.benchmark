@@ -1,5 +1,6 @@
 {
   "Name": "gosharp-mandelbrot",
   "TestDirectory": "gosharp",
+  "AOTAssemblies": ["Mandelbrot200.exe"],
   "CommandLine": ["Mandelbrot200.exe"]
 }

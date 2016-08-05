@@ -1,5 +1,6 @@
 {
   "Name": "gosharp-fannkuch",
   "TestDirectory": "gosharp",
+  "AOTAssemblies": ["Fannkuch11.exe"],
   "CommandLine": ["Fannkuch11.exe"]
 }

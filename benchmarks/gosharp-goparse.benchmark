@@ -1,5 +1,6 @@
 {
   "Name": "gosharp-goparse",
   "TestDirectory": "gosharp",
+  "AOTAssemblies": ["GoParse.exe"],
   "CommandLine": ["GoParse.exe"]
 }

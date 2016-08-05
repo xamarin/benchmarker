@@ -3,7 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-gosharp-fannkuch.benchmark
 gosharp-goparse.benchmark
 gosharp-mandelbrot.benchmark
 gosharp-regexp.benchmark
