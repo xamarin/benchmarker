@@ -1,5 +1,6 @@
 {
   "Name": "sharpchess",
   "TestDirectory": "SharpChess",
+  "AOTAssemblies": ["Program.exe", "SharpChess.Model.dll"],
   "CommandLine": ["Program.exe", "TestPosition.sharpchess", "7"]
 }
