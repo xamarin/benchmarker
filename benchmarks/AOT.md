@@ -6,7 +6,6 @@
 
 # TODO
 
-* lcscbench.benchmark
 * lists.benchmark
 * mandelbrot.benchmark
 * msbiology.benchmark
