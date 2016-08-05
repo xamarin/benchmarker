@@ -1,5 +1,6 @@
 {
   "Name": "hash2",
   "TestDirectory": "shootout",
+  "AOTAssemblies": ["hash2.exe"],
   "CommandLine": ["hash2.exe", "1000000"]
 }

@@ -3,7 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-hash2.benchmark
 health.benchmark
 ipy.benchmark
 ironjs-sunspider.benchmark
