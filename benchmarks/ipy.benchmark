@@ -1,5 +1,6 @@
 {
   "Name": "ipy",
   "TestDirectory": "IronPython-2.7.4",
+  "AOTAssemblies": ["IronPython.Modules.dll", "IronPython.dll", "Microsoft.Dynamic.dll", "Microsoft.Scripting.AspNet.dll", "Microsoft.Scripting.Metadata.dll", "Microsoft.Scripting.dll", "ipy.exe"],
   "CommandLine": ["ipy.exe", "pystone.py", "500000"]
 }
