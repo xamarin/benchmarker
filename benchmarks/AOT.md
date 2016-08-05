@@ -3,11 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-gosharp-goparse.benchmark
-gosharp-mandelbrot.benchmark
-gosharp-regexp.benchmark
-grandetracer.benchmark
-grandetracer.md
 graph4.benchmark
 graph8.benchmark
 hash2.benchmark
