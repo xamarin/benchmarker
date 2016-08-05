@@ -7,6 +7,5 @@
 
 # TODO
 
-* sharpsatbench.benchmark
 * specraytracer.benchmark
 * strcat.benchmark

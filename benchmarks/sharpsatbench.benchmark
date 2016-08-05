@@ -1,5 +1,6 @@
 {
   "Name": "sharpsatbench",
   "TestDirectory": "zorn/SharpSATbench",
+  "AOTAssemblies": ["SharpSATbench.exe"],
   "CommandLine": ["SharpSATbench.exe", "input3.cnf"]
 }
