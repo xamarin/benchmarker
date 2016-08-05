@@ -3,8 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-graph4.benchmark
-graph8.benchmark
 hash2.benchmark
 health.benchmark
 ipy.benchmark

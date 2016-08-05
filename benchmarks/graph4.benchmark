@@ -1,5 +1,6 @@
 {
   "Name": "graph4",
   "TestDirectory": "graph",
+  "AOTAssemblies": ["graph4.exe"],
   "CommandLine": ["graph4.exe"]
 }
