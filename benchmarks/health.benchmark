@@ -1,5 +1,6 @@
 {
   "Name": "health",
   "TestDirectory": "csolden/Health/Health/bin/Debug",
+  "AOTAssemblies": ["Health.exe"],
   "CommandLine": ["Health.exe", "-l", "10", "-t", "40"]
 }
