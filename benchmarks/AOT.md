@@ -3,8 +3,6 @@ Missing:
 * eventstore2
 
 TODO:
-fsharp-aot.benchmark
-fsharp.benchmark
 gosharp-fannkuch.benchmark
 gosharp-goparse.benchmark
 gosharp-mandelbrot.benchmark
