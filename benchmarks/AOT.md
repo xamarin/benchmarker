@@ -1,9 +1,8 @@
 Missing:
 * couchbase
+* eventstore2
 
 TODO:
-eventstore2.benchmark
-except.benchmark
 fsharp-aot.benchmark
 fsharp.benchmark
 gosharp-fannkuch.benchmark
