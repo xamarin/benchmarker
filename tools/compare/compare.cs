@@ -540,6 +540,7 @@ class Compare
 			machine = new Machine ();
 			machine.Name = hostarch.Item1;
 			machine.Architecture = hostarch.Item2;
+			machine.DefaultTimeout = timeout;
 		}
 
 		foreach (var commit in new Commit[] { mainCommit }.Concat (secondaryCommits)) {
