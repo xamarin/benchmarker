@@ -51,6 +51,8 @@ namespace Benchmarker.Models
 				content = new StringContent (body, System.Text.UTF8Encoding.Default, "application/json");
 			}
 			using (var client = new HttpClient ()) {
+				client.Timeout = TimeSpan.FromSeconds (350);
+
 				var url = ApiUrl (path, args);
 				var message = new HttpRequestMessage (new HttpMethod (method), url);
 				if (content != null)
