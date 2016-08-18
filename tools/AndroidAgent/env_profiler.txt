@@ -1,0 +1,1 @@
+debug.mono.profile=log:sample,alloc,heapshot=1gc

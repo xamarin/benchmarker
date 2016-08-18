@@ -191,6 +191,7 @@ namespace AndroidAgent.UITests
 					string httpAPITokens = json.httpAPITokens;
 					string machineName = json.machineName;
 					string runSetId = json.runSetId;
+					string configName = json.configName;
 
 					app.Screenshot ("init");
 
@@ -199,6 +200,7 @@ namespace AndroidAgent.UITests
 					clearAndSetTextField ("httpAPITokens", httpAPITokens);
 					clearAndSetTextField ("machineName", machineName);
 					clearAndSetTextField ("runSetId", runSetId);
+					clearAndSetTextField ("configName" ,configName);
 
 					app.Tap (c => c.Marked ("myButton"));
 					app.Screenshot ("after tap");

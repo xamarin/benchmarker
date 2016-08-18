@@ -43,12 +43,15 @@ checkjsonfield 'githubAPIKey'
 checkjsonfield 'httpAPITokens'
 checkjsonfield 'machineName'
 checkjsonfield 'runSetId'
+checkjsonfield 'configName'
 
 submitjob () {
 	DEVICENAME=$1
 	DEVICEID=$2
 	XTCOPTS=$3
 	RANDOMMOD=$4
+	ENVFILE=$5
+	CONFIGNAME=$6
 
 	# on certain device groups we want to reduce pressure on the xtc queue
 	if [ $(($RANDOM % $RANDOMMOD)) -ne 0 ]; then
@@ -61,7 +64,7 @@ submitjob () {
 		--build-url $BUILDURL \
 		--create-run-set \
 		--machine $DEVICENAME \
-		--config-file ../configs/default.conf \
+		--config-file ../configs/$CONFIGNAME.conf \
 		| grep runSetId | grep -o -E '\d+')
 
 	echo "runSetId: $RUNSETID"
@@ -69,11 +72,16 @@ submitjob () {
 	PARAMTMP=$(mktemp /tmp/param_template.json.XXXXXX)
 	mv "$PARAMSJSON" "$PARAMTMP"
 	pwd
-	cat "$PARAMTMP" | ./jq 'with_entries(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | with_entries(if .key == "machineName" then . + {"value":"'$DEVICENAME'"} else . end)' > $PARAMSJSON
+	cat "$PARAMTMP" | ./jq 'with_entries(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | with_entries(if .key == "machineName" then . + {"value":"'$DEVICENAME'"} else . end) | with_entries(if .key == "configName" then . + {"value":"'$CONFIGNAME'"} else . end)' > $PARAMSJSON
 	rm -f "$PARAMTMP"
 
+	(cd AndroidAgent && cp $ENVFILE env.txt)
 	# build app + uitests
-	(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
+	if [ x$CONFIGNAME == xdefault-profiler ]; then
+		(cd AndroidAgent && $XBUILDANDROID /p:AndroidEmbedProfilers=log /p:Configuration=Release /target:SignAndroidPackage )
+	else
+		(cd AndroidAgent && $XBUILDANDROID /p:Configuration=Release /target:SignAndroidPackage )
+	fi
 	(cd AndroidAgent.UITests/ && $XBUILDANDROID /p:Configuration=Release )
 
 	XTCUPLOADLOG=$(mktemp /tmp/xtc-upload.XXXXXX)
@@ -113,15 +121,18 @@ xbuild /p:Configuration=Release /target:compare
 
 OLDIFS=$IFS
 IFS=','
-# for i in "SM-N910F_4.4.4",df355e99,"--test-chunk","1"; do
-for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1" "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2"; do
+
+# TODO, add this: "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_conc.txt,default-conc
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_default.txt,default "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_profiler.txt,default-profiler "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2",env_default.txt,default; do
 	set $i
 	DEVICENAME=$1
 	DEVICEID=$2
 	XTCOPTS=$3
 	RANDOMMOD=$4
+	ENVFILE=$5
+	CONFIGNAME=$6
 
-	submitjob "$DEVICENAME" "$DEVICEID" "$XTCOPTS" "$RANDOMMOD"
+	submitjob "$DEVICENAME" "$DEVICEID" "$XTCOPTS" "$RANDOMMOD" "$ENVFILE" "$CONFIGNAME"
 done
 
 IFS=$OLDIFS

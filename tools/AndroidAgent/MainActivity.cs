@@ -218,7 +218,7 @@ namespace AndroidAgent
 
 		AndroidCPUManagment CpuManager;
 
-		void RunBenchmark (long runSetId, string benchmarkName, string machineName, string architecture)
+		void RunBenchmark (long runSetId, string benchmarkName, string machineName, string architecture, string configName)
 		{
 			const int DRY_RUNS = 3;
 			const int ITERATIONS = 10;
@@ -229,7 +229,7 @@ namespace AndroidAgent
 
 			models.Commit mainCommit = DetermineCommit ();
 			models.Machine machine = new models.Machine { Name = machineName, Architecture = architecture };
-			models.Config config = new models.Config { Name = "default", Mono = String.Empty,		
+			models.Config config = new models.Config { Name = configName, Mono = String.Empty,		
 				MonoOptions = new string[0],		
 				MonoEnvironmentVariables = new Dictionary<string, string> (),		
 				Count = ITERATIONS
@@ -283,9 +283,10 @@ namespace AndroidAgent
 				string httpAPITokens = FindViewById<TextView> (Resource.Id.httpAPITokens).Text;
 				string machineName = FindViewById<TextView> (Resource.Id.machineName).Text;
 				long runSetId = Int64.Parse (FindViewById<TextView> (Resource.Id.runSetId).Text);
+				string configName = FindViewById<TextView> (Resource.Id.configName).Text;
 				InitCommons (githubAPIKey, httpAPITokens);
 				SetStartButtonText ("running");
-				RunBenchmark (runSetId, benchmarkName, machineName, architecture);
+				RunBenchmark (runSetId, benchmarkName, machineName, architecture, configName);
 			};
 			string v = ".NET version:\n" + System.Environment.Version.ToString ();
 			v += "\n\nMonoVersion:\n" + GetMonoVersion ();

@@ -110,4 +110,7 @@
       <Name>Benchmarks</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <AndroidEnvironment Include="env.txt" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,3 @@
+MONO_GC_PARAMS=major=marksweep-conc
+MONO_LOG_LEVEL=info
+MONO_LOG_MASK=gc
