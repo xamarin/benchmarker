@@ -75,7 +75,9 @@ submitjob () {
 	cat "$PARAMTMP" | ./jq 'with_entries(if .key == "runSetId" then . + {"value":'$RUNSETID'} else . end) | with_entries(if .key == "machineName" then . + {"value":"'$DEVICENAME'"} else . end) | with_entries(if .key == "configName" then . + {"value":"'$CONFIGNAME'"} else . end)' > $PARAMSJSON
 	rm -f "$PARAMTMP"
 
+	(cd AndroidAgent && git clean -xffd) # force clean
 	(cd AndroidAgent && cp $ENVFILE env.txt)
+
 	# build app + uitests
 	if [ x$CONFIGNAME == xdefault-profiler ]; then
 		(cd AndroidAgent && $XBUILDANDROID /p:AndroidEmbedProfilers=log /p:Configuration=Release /target:SignAndroidPackage )
