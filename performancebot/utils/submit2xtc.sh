@@ -125,7 +125,7 @@ OLDIFS=$IFS
 IFS=','
 
 # TODO, add this: "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_conc.txt,default-conc
-for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_default.txt,default "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_profiler.txt,default-profiler "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2",env_default.txt,default; do
+for i in "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_default.txt,default "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_conc.txt,default-conc "Nexus-5_4.4.4",aba2bb7e,"--test-chunk","1",env_profiler.txt,default-profiler "Nexus-5_4.4.4-f36cc9c33f1a",f36cc9c33f1a,"","2",env_default.txt,default; do
 	set $i
 	DEVICENAME=$1
 	DEVICEID=$2
