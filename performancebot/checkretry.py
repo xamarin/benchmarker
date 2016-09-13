@@ -45,7 +45,10 @@ def check_retry(base_url, buildername, buildernumber, build_url, gitcommit, logg
         request_url = base_url + "json/builders/" + buildername + "/builds/" + str(build_nr)
         logging("trying... " + str(request_url))
         log.msg("check-retry: requesting page for" + str(request_url))
-        response = yield getPage(request_url)
+        try:
+            response = yield getPage(request_url)
+        except:
+            continue
         log.msg("check-retry: got response for " + str(request_url))
         data = json.loads(response)
         if not data['text'] == ['retry', 'exception', 'slave', 'lost']:
