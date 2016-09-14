@@ -181,6 +181,48 @@ namespace AndroidAgent.UITests
 			RunBenchmarkHelper ("strcat");
 		}
 
+		[Test]
+		public void RunGcBridgeLinks ()
+		{
+			RunBenchmarkHelper ("gcbridge-links");
+		}
+
+		[Test]
+		public void RunGcBridgeLinkedFan ()
+		{
+			RunBenchmarkHelper ("gcbridge-linkedfan");
+		}
+
+		[Test]
+		public void RunGcBridgeInverseFan ()
+		{
+			RunBenchmarkHelper ("gcbridge-inversefan");
+		}
+
+		[Test]
+		public void RunGcBridgeDeadlist ()
+		{
+			RunBenchmarkHelper ("gcbridge-deadlist");
+		}
+
+		[Test]
+		public void RunGcBridgeSpider ()
+		{
+			RunBenchmarkHelper ("gcbridge-spider");
+		}
+
+		[Test]
+		public void RunGcBridgeDoublefan1000 ()
+		{
+			RunBenchmarkHelper ("gcbridge-doublefan-1000");
+		}
+
+		[Test]
+		public void RunGcBridgeDoublefan4000 ()
+		{
+			RunBenchmarkHelper ("gcbridge-doublefan-4000");
+		}
+
 		public void RunBenchmarkHelper (string benchmark)
 		{
 			var assembly = Assembly.GetExecutingAssembly ();
