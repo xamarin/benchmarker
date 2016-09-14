@@ -212,12 +212,6 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
-		public void RunGcBridgeLinks ()
-		{
-			RunBenchmarkHelper ("gcbridge-links");
-		}
-
-		[Test]
 		public void RunGcBridgeDoublefan1000 ()
 		{
 			RunBenchmarkHelper ("gcbridge-doublefan-1000");
