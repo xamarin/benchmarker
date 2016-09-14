@@ -165,6 +165,7 @@ namespace AndroidAgent
 
 		/*
 		 * Triggered a bug in the forwarding mechanic.
+		 * This is a functional test, not a performance test, so Tests.cs does not include it.
 		 */
 		static void SetupSelfLinks()
 		{

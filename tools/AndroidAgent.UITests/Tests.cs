@@ -206,12 +206,6 @@ namespace AndroidAgent.UITests
 		}
 
 		[Test]
-		public void RunGcBridgeSelfLinks ()
-		{
-			RunBenchmarkHelper ("gcbridge-selflinks");
-		}
-
-		[Test]
 		public void RunGcBridgeSpider ()
 		{
 			RunBenchmarkHelper ("gcbridge-spider");
