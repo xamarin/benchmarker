@@ -95,6 +95,30 @@ namespace AndroidAgent
 			case "except":
 				except.Main (new string[] { "500000" }, Logging.GetLogging ());
 				break;
+			case "gcbridge-links":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-linkedfan":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-inversefan":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-deadlist":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-selflinks":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-spider":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-doublefan-1000":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
+			case "gcbridge-doublefan-4000":
+				RayTracer.Main (new string[] { benchmark }, Logging.GetLogging ());
+				break;
 			case "grandetracer":
 				RayTracer.Main (new string[] { }, Logging.GetLogging ());
 				break;
