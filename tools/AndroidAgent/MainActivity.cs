@@ -318,6 +318,7 @@ namespace AndroidAgent
 			FindViewById<TextView> (Resource.Id.versionText).Text = v;
 			Logging.GetLogging ().Info (v);
 
+			#if false
 			if (AndroidCPUManagment.IsRooted ()) {
 				Logging.GetLogging ().Info ("Ohai: On a rooted device!");
 				CpuManager = new AndroidCPUManagment ();
@@ -325,6 +326,7 @@ namespace AndroidAgent
 			} else {
 				Logging.GetLogging ().Warn ("device not rooted, thus can't set CPU frequency: expect flaky results");
 			}
+			#endif
 			Logging.GetLogging ().Info ("OnCreate finished");
 		}
 	}

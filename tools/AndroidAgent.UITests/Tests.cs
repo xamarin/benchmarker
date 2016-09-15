@@ -20,12 +20,11 @@ namespace AndroidAgent.UITests
 		{
 			app = ConfigureApp.Android.StartApp ();
 			// wait for init, dropping root commands can take a while (TODO: better idea?)
-			System.Threading.Thread.Sleep (10000);
+			System.Threading.Thread.Sleep (100);
 		}
 
 		private void clearAndSetTextField (string id, string value)
 		{
-			app.ClearText (c => c.Marked (id));
 			app.ClearText (c => c.Marked (id));
 			app.EnterText (c => c.Marked (id), value);
 			app.Screenshot ("enter " + id);
