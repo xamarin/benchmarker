@@ -265,8 +265,6 @@ class Compare
 			return false;
 		}
 
-		Console.WriteLine ("Uploading pause times: {0}", string.Join (" ", times));
-
 		var run = new Run ();
 		run.RunMetrics.Add (new RunMetric {
 			Metric = RunMetric.MetricType.PauseTimes,
@@ -277,6 +275,7 @@ class Compare
 			Value = starts.ToArray ()
 		});
 
+		Console.WriteLine (JsonConvert.SerializeObject (run.AsDict ()));
 		for (int i = 0; i < 5; i++) {
 			if (await run.UploadForAmend (runId))
 				return true;
