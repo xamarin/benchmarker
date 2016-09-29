@@ -246,21 +246,33 @@ namespace AndroidAgent
 		{
 			const int DRY_RUNS = 3;
 			const int ITERATIONS = 10;
+			bool cheat = configName.Equals ("cheat");
+			models.RunSet runSet = null;
 
+			if (cheat) {
+				runSetId = 1;
+				if (benchmarkName.Equals ("benchmark")) {
+					benchmarkName = "onelist";
+				}
+			}
 
-			Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"", machineName, architecture);
-			Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"", "default");
+			if (!cheat) {
+				Logging.GetLogging ().InfoFormat ("Benchmarker | hostname \"{0}\" architecture \"{1}\"" ,machineName ,architecture);
+				Logging.GetLogging ().InfoFormat ("Benchmarker | configname \"{0}\"" ,"default");
 
-			models.Commit mainCommit = DetermineCommit ();
-			models.Machine machine = new models.Machine { Name = machineName, Architecture = architecture };
-			models.Config config = new models.Config { Name = configName, Mono = String.Empty,		
-				MonoOptions = new string[0],		
-				MonoEnvironmentVariables = new Dictionary<string, string> (),		
-				Count = ITERATIONS
-			};
-			models.RunSet runSet = AsyncContext.Run (() => models.RunSet.FromId (machine, runSetId, config, mainCommit, null, null, null /* TODO: logURL? */));
+				models.Commit mainCommit = DetermineCommit ();
+				models.Machine machine = new models.Machine { Name = machineName ,Architecture = architecture };
+				models.Config config = new models.Config {
+					Name = configName ,
+					Mono = String.Empty ,
+					MonoOptions = new string[0] ,
+					MonoEnvironmentVariables = new Dictionary<string ,string> () ,
+					Count = ITERATIONS
+				};
+				runSet = AsyncContext.Run (() => models.RunSet.FromId (machine ,runSetId ,config ,mainCommit ,null ,null ,null /* TODO: logURL? */));
+			}
 
-			if (runSet == null) {
+			if (runSet == null && !cheat) {
 				Logging.GetLogging ().Warn ("RunSetID " + runSetId + " not found");
 				return;
 			}
@@ -272,9 +284,9 @@ namespace AndroidAgent
 							runSet.Runs.Add (run);
 						}
 					}
-					var result = AsyncContext.Run (() => runSet.Upload ());
-					if (result == null) {
-						RunOnUiThread (() => SetStartButtonText ("failed"));
+					if (!cheat) {
+						var result = AsyncContext.Run (() => runSet.Upload ());
+						RunOnUiThread (() => SetStartButtonText (result == null ? "failed" : "start"));
 					} else {
 						RunOnUiThread (() => SetStartButtonText ("start"));
 					}
