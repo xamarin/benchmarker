@@ -45,10 +45,12 @@ def check_retry(base_url, buildername, buildernumber, build_url, gitcommit, logg
         request_url = base_url + "json/builders/" + buildername + "/builds/" + str(build_nr)
         logging("trying... " + str(request_url))
         log.msg("check-retry: requesting page for" + str(request_url))
+        #pylint: disable=W0702
         try:
             response = yield getPage(request_url)
         except:
             continue
+        #pylint: enable=W0702
         log.msg("check-retry: got response for " + str(request_url))
         data = json.loads(response)
         if not data['text'] == ['retry', 'exception', 'slave', 'lost']:
@@ -71,11 +73,7 @@ def check_retry(base_url, buildername, buildernumber, build_url, gitcommit, logg
         executed_benchmarks = []
         for step in data['steps']:
             texts = step['text']
-            if not texts:
-                continue
-            if not str(texts[0]).startswith('benchmark '):
-                continue
-            if all([e in texts for e in ['exception', 'slave', 'lost']]):
+            if (not texts) or (not str(texts[0]).startswith('benchmark ')) or (all([e in texts for e in ['exception', 'slave', 'lost']])):
                 continue
             executed_benchmarks.append(str(step['name']))
         if executed_benchmarks is not []:
