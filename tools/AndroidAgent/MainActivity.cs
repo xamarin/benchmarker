@@ -251,9 +251,6 @@ namespace AndroidAgent
 
 			if (cheat) {
 				runSetId = 1;
-				if (benchmarkName.Equals ("benchmark")) {
-					benchmarkName = "onelist";
-				}
 			}
 
 			if (!cheat) {
