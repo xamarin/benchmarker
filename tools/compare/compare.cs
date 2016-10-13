@@ -2,16 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Benchmarker;
 using Benchmarker.Models;
-using System.Threading.Tasks;
-using System.Text.RegularExpressions;
-using Nito.AsyncEx;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Common.Logging;
 using Common.Logging.Simple;
 using compare;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Nito.AsyncEx;
+using static Xamarin.Test.Performance.Utilities.BenchViewTools;
+using static Xamarin.Test.Performance.Utilities.TestUtilities;
 
 class Compare
 {
@@ -55,6 +57,14 @@ class Compare
 		Console.Error.WriteLine ("        --jit-stats");
 		Console.Error.WriteLine ("                                Parse JIT times for each phase printed by --stats");
 		Console.Error.WriteLine ("        --run-id ID             the database ID of the run to upload to");
+		Console.Error.WriteLine ("        --report-benchview      report the performance results to https://benchview.");
+		Console.Error.WriteLine ("        --benchview-submission-type BV_TYPE");
+		Console.Error.WriteLine ("                                submission type to use when uploading to benchview");
+		Console.Error.WriteLine($"                                  ({string.Join(", ", ValidSubmissionTypes)})");
+		Console.Error.WriteLine ("        --benchview-submission-name BV_NAME");
+		Console.Error.WriteLine ("                                submission name to use when uploading to benchview");
+		Console.Error.WriteLine ("                                  (required for private and local submissions)");
+		Console.Error.WriteLine ("        --branch GIT_BRANCH     name of the branch you are measuring on.");
 
 		Environment.Exit (exitcode);
 		return exitcode;
@@ -357,6 +367,11 @@ class Compare
 		Commit mainCommit = null;
 		List<Commit> secondaryCommits = new List<Commit> ();
 
+		bool shouldReportBenchview = false;
+		string submissionType = null;
+		string submissionName = null;
+		string branch = null;
+
 		var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
 		var exeName = Path.GetFileName (exeLocation);
 		var exeDir = Path.GetDirectoryName (exeLocation);
@@ -445,6 +460,14 @@ class Compare
 				binprotFilePath = args [++optindex];
 			} else if (args [optindex] == "--jit-stats") {
 				jitStats = true;
+			} else if (args[optindex] == "--report-benchview") {
+				shouldReportBenchview = true;
+			} else if (args[optindex] == "--benchview-submission-type") {
+				submissionType = args[++optindex];
+			} else if (args[optindex] == "--benchview-submission-name") {
+				submissionName = args[++optindex];
+			} else if (args[optindex] == "--branch") {
+				branch = args[++optindex];
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -457,6 +480,10 @@ class Compare
 				break;
 			}
 		}
+
+		if (shouldReportBenchview)
+			if (!CheckBenchViewOptions(submissionType, submissionName) || !CheckEnvironment())
+				Environment.Exit(1);
 
 		var configFileFromCommandLine = configFile != null;
 		if (!configFileFromCommandLine)
@@ -547,6 +574,14 @@ class Compare
 				Console.Error.WriteLine ("Error: Could not get commit for product {0}.", commit.Product.Name);
 				Environment.Exit (1);
 			}
+		}
+
+		if (shouldReportBenchview) {
+			branch = branch ?? mainCommit.Branch;
+			if (!DetermineBranch(ref branch))
+				Environment.Exit(1);
+			// TODO: Gather general information.
+			GatherBenchViewData(submissionType, submissionName, branch);
 		}
 
 		RunSet runSet = null;
@@ -797,7 +832,13 @@ class Compare
 		Console.Write (string.Join (", ", runStrings));
 
 		Console.Write (" ]");
-        Console.WriteLine (" }");
+		Console.WriteLine (" }");
+
+		// Upload to BenchView.
+		if (shouldReportBenchview) {
+			CreateBenchviewReport(submissionType, runSet);
+			UploadBenchviewData();
+		}
 
 		if (reportFailure) {
 			Console.Error.WriteLine ("Error: Some benchmarks timed out or failed completely.");
@@ -805,5 +846,47 @@ class Compare
 		}
 
 		return 0;
+	}
+
+	private static bool CheckBenchViewOptions(string submissionType, string submissionName)
+	{
+		if (string.IsNullOrWhiteSpace(submissionType)) {
+			Console.Error.WriteLine ("Parameter --benchview-submission-type is required when --report-benchview is specified");
+			return false;
+		}
+
+		if (!IsValidSubmissionType(submissionType)) {
+			Console.Error.WriteLine ($"Parameter --benchview-submission-type must be one of ({string.Join(",", ValidSubmissionTypes)})");
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(submissionName) && submissionType != "rolling") {
+			Console.Error.WriteLine ("Parameter --benchview-submission-name is required for \"private\" and \"local\" submissions");
+			return false;
+		}
+
+		return true;
+	}
+
+	private static bool DetermineBranch(ref string branch)
+	{
+		// 
+		if (branch != null) {
+			const string prefix = "origin/";
+			if (branch.StartsWith(prefix))
+				branch = branch.Substring(prefix.Length);
+		}
+
+		// If user did not specify branch, then attempt to determine branch name.
+		if (string.IsNullOrWhiteSpace(branch)) {
+			var result = ShellOut("git", "symbolic-ref --short HEAD");
+			if (result.Failed) {
+				Console.WriteLine ("Parameter --branch is required because we were unable to automatically determine the branch name (You may be in a detached head state).");
+				return false;
+			}
+			branch = result.StdOut.Trim();  // On Windows, the command above returns the string with \r\n.
+		}
+
+		return true;
 	}
 }

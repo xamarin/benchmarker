@@ -1,15 +1,15 @@
 ﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using Mono.Unix.Native;
-using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Text;
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Benchmarker;
 using Benchmarker.Models;
+using Mono.Unix.Native;
 
 namespace compare
 {
@@ -97,15 +97,17 @@ namespace compare
 
 		public static Tuple<string, string> LocalHostnameAndArch () {
 			Utsname utsname;
-			var res = Syscall.uname (out utsname);
-			string arch;
-			string hostname;
-			if (res != 0) {
-				arch = "unknown";
-				hostname = "unknown";
-			} else {
-				arch = utsname.machine;
-				hostname = utsname.nodename;
+			string arch = "unknown";
+			string hostname = "unknown";
+
+			try {
+				var res = Syscall.uname(out utsname);
+				if (res == 0) {
+					arch = utsname.machine;
+					hostname = utsname.nodename;
+				}
+			}
+			catch {
 			}
 
 			return Tuple.Create (hostname, arch);
