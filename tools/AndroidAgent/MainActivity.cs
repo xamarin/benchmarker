@@ -277,7 +277,7 @@ namespace AndroidAgent
 				try {
 					for (var i = 0; i < (ITERATIONS + DRY_RUNS); i++) {
 						var run = Iteration (benchmarkName, i, i < DRY_RUNS);
-						if (i >= DRY_RUNS) {
+						if (i >= DRY_RUNS && !cheat) {
 							runSet.Runs.Add (run);
 						}
 					}
