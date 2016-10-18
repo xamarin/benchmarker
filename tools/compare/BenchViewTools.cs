@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Benchmarker.Models;
 using Newtonsoft.Json;
+using static System.Environment;
 using static Xamarin.Test.Performance.Utilities.TestUtilities;
 
 namespace Xamarin.Test.Performance.Utilities
@@ -51,7 +51,7 @@ namespace Xamarin.Test.Performance.Utilities
         {
             Console.WriteLine ("Checking for valid environment for uploading to BenchView.");
 
-            var sasToken = Environment.GetEnvironmentVariable(s_sasEnvironmentVar);
+            var sasToken = GetEnvironmentVariable (s_sasEnvironmentVar);
             if (string.IsNullOrEmpty(sasToken))
             {
                 Console.Error.WriteLine ($"Error: {s_sasEnvironmentVar} was not defined");
@@ -167,9 +167,8 @@ namespace Xamarin.Test.Performance.Utilities
 
         private static bool IsWindows
         {
-            get
-            {
-                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+			get {
+				return OSVersion.Platform == PlatformID.Win32NT;
             }
         }
 
