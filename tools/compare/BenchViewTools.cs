@@ -144,8 +144,6 @@ namespace Xamarin.Test.Performance.Utilities
         {
             Console.WriteLine("Creating BenchView submission json");
 
-            // FIXME: What is the machine pool?
-            var machinePoolName = "Mono TBD";
             var arguments = new string[]
             {
                 $"\"{s_submissionPy}\"",
@@ -158,7 +156,7 @@ namespace Xamarin.Test.Performance.Utilities
                 $"--config-name=\"{runSet.Config.Name}\"",
                 $"--config MonoOptions \\\"{string.Join(" ", runSet.Config.MonoOptions)}\\\"",
                 $"--architecture=\"{runSet.Machine.Architecture}\"",
-                $"--machinepool=\"{machinePoolName}\"",
+				$"--machinepool=\"{runSet.Machine.Name}\"",
                 $"-o=\"{s_submissionJson}\""
             };
 
