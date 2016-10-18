@@ -58,16 +58,14 @@ namespace Xamarin.Test.Performance.Utilities
                 return false;
             }
 
-            // TODO: Is it good enough for non-Windows platforms?
-            var whereGit = ShellOut(s_locateCommand, "git");
+			var whereGit = ShellOut(s_locateCommand, "git");
             if (whereGit.Failed)
             {
                 Console.Error.WriteLine("Error: git was not found on the PATH");
                 return false;
             }
 
-            // TODO: Is it good enough for non-Windows platforms?
-            var wherePy = ShellOut(s_locateCommand, "py");
+            var wherePy = ShellOut(s_locateCommand, s_pythonProcessName);
             if (wherePy.Failed)
             {
                 Console.Error.WriteLine("Error: py was not found on the PATH");
@@ -83,7 +81,7 @@ namespace Xamarin.Test.Performance.Utilities
             return true;
         }
 
-        internal static void GatherBenchViewData(string submissionType, string submissionName, string branch)
+		internal static void GatherBenchViewData(string submissionType, string submissionName, Commit commit)
         {
             Console.WriteLine("Gathering BenchView data...");
 
@@ -92,17 +90,22 @@ namespace Xamarin.Test.Performance.Utilities
                 Directory.Delete(s_outputDirectory, true);
             Directory.CreateDirectory(s_outputDirectory);
 
-            var hash = StdoutFrom("git", "rev-parse HEAD");
             if (string.IsNullOrWhiteSpace(submissionName))
             {
                 if (submissionType == "rolling")
-                    submissionName = $"{s_group} {submissionType} {branch} {hash}";
+					submissionName = $"{s_group} {submissionType} {commit.Branch} {commit.Hash}";
                 else
                     throw new Exception($"submissionName was not provided, but submission type is {submissionType}");
             }
 
+			var giturl = commit.Product.GitRepositoryUrl;
+			string git_suffix = ".git";
+			if (giturl.EndsWith (git_suffix ,StringComparison.Ordinal)) {
+				giturl = giturl.Substring (0, giturl.Length - git_suffix.Length);
+			}
+
             ShellOutVital(s_pythonProcessName, $"\"{s_submissionMetadataPy}\" --name=\"{submissionName}\" --user-email={s_userEmail} -o=\"{s_submissionMetadataJson}\"");
-            ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" git --type={submissionType} --branch=\"{branch}\" -o=\"{s_buildJson}\"");
+			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" git --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" -o=\"{s_buildJson}\"");
             ShellOutVital(s_pythonProcessName, $"\"{s_machinedataPy}\" -o=\"{s_machinedataJson}\"");
         }
 

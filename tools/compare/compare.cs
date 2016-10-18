@@ -466,8 +466,6 @@ class Compare
 				submissionType = args[++optindex];
 			} else if (args[optindex] == "--benchview-submission-name") {
 				submissionName = args[++optindex];
-			} else if (args[optindex] == "--branch") {
-				branch = args[++optindex];
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -481,9 +479,10 @@ class Compare
 			}
 		}
 
-		if (shouldReportBenchview)
-			if (!CheckBenchViewOptions(submissionType, submissionName) || !CheckEnvironment())
-				Environment.Exit(1);
+		if (shouldReportBenchview) {
+			if (!CheckBenchViewOptions (submissionType ,submissionName) || !CheckEnvironment ())
+				Environment.Exit (1);
+		}
 
 		var configFileFromCommandLine = configFile != null;
 		if (!configFileFromCommandLine)
@@ -576,13 +575,7 @@ class Compare
 			}
 		}
 
-		if (shouldReportBenchview) {
-			branch = branch ?? mainCommit.Branch;
-			if (!DetermineBranch(ref branch))
-				Environment.Exit(1);
-			// TODO: Gather general information.
-			GatherBenchViewData(submissionType, submissionName, branch);
-		}
+
 
 		RunSet runSet = null;
 		if (runSetId != null) {
@@ -634,6 +627,10 @@ class Compare
 			};
 
 			Console.Error.WriteLine ("Set start time to {0}", runSet.StartDateTime.ToString (RunSet.DATETIME_PRETTY));
+		}
+
+		if (shouldReportBenchview) {
+			GatherBenchViewData (submissionType ,submissionName, runSet.Commit);
 		}
 
 		var reportFailure = false;
@@ -863,28 +860,6 @@ class Compare
 		if (string.IsNullOrWhiteSpace(submissionName) && submissionType != "rolling") {
 			Console.Error.WriteLine ("Parameter --benchview-submission-name is required for \"private\" and \"local\" submissions");
 			return false;
-		}
-
-		return true;
-	}
-
-	private static bool DetermineBranch(ref string branch)
-	{
-		// 
-		if (branch != null) {
-			const string prefix = "origin/";
-			if (branch.StartsWith(prefix))
-				branch = branch.Substring(prefix.Length);
-		}
-
-		// If user did not specify branch, then attempt to determine branch name.
-		if (string.IsNullOrWhiteSpace(branch)) {
-			var result = ShellOut("git", "symbolic-ref --short HEAD");
-			if (result.Failed) {
-				Console.WriteLine ("Parameter --branch is required because we were unable to automatically determine the branch name (You may be in a detached head state).");
-				return false;
-			}
-			branch = result.StdOut.Trim();  // On Windows, the command above returns the string with \r\n.
 		}
 
 		return true;
