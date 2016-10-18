@@ -58,13 +58,6 @@ namespace Xamarin.Test.Performance.Utilities
                 return false;
             }
 
-			var whereGit = ShellOut(s_locateCommand, "git");
-            if (whereGit.Failed)
-            {
-                Console.Error.WriteLine("Error: git was not found on the PATH");
-                return false;
-            }
-
             var wherePy = ShellOut(s_locateCommand, s_pythonProcessName);
             if (wherePy.Failed)
             {
