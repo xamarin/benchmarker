@@ -98,7 +98,7 @@ namespace Xamarin.Test.Performance.Utilities
 			}
 
             ShellOutVital(s_pythonProcessName, $"\"{s_submissionMetadataPy}\" --name=\"{submissionName}\" --user-email={s_userEmail} -o=\"{s_submissionMetadataJson}\"");
-			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" git --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" -o=\"{s_buildJson}\"");
+			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" --source-timestamp=\"{DateTime.SpecifyKind (commit.CommitDate.Value, DateTimeKind.Utc).ToString (RunSet.DATETIME_FORMAT)}\" -o=\"{s_buildJson}\"");
             ShellOutVital(s_pythonProcessName, $"\"{s_machinedataPy}\" -o=\"{s_machinedataJson}\"");
         }
 
