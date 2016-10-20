@@ -59,8 +59,9 @@ class PutPropertiesStep(LoggingBuildStep):
 
 
 class CreateRunSetIdStep(ParsingShellCommand):
-    def __init__(self, install_root, *args, **kwargs):
+    def __init__(self, install_root, benchview, *args, **kwargs):
         self.install_root = install_root
+        self.benchview = benchview
         ParsingShellCommand.__init__(self, *args, **kwargs)
 
     def start(self):
@@ -94,6 +95,13 @@ class CreateRunSetIdStep(ParsingShellCommand):
         cmd.append('--secondary-product')
         cmd.append('benchmarker')
         cmd.append(benchmarker_commit)
+        if self.benchview:
+            cmd.append('--report-benchview')
+            cmd.append('--benchview-submission-type')
+            cmd.append('rolling')
+            cmd.append('--benchview-submission-name')
+            cmd.append('mono')
+
         self.setCommand(cmd)
         ShellCommand.start(self)
 

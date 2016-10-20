@@ -75,7 +75,7 @@ namespace Xamarin.Test.Performance.Utilities
             return true;
         }
 
-		internal static void GatherBenchViewData(string submissionType, string submissionName, string cuid, Commit commit)
+		internal static string GatherBenchViewData(string submissionType, string submissionName, string cuid, Commit commit)
         {
             Console.WriteLine("Gathering BenchView data...");
 
@@ -111,6 +111,7 @@ namespace Xamarin.Test.Performance.Utilities
 			}
 			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" --source-timestamp=\"{DateTime.SpecifyKind (commit.CommitDate.Value, DateTimeKind.Utc).ToString (RunSet.DATETIME_FORMAT)}\" -o=\"{s_buildJson}\"");
             ShellOutVital(s_pythonProcessName, $"\"{s_machinedataPy}\" -o=\"{s_machinedataJson}\"");
+			return cuid;
         }
 
         internal static void CreateBenchviewReport(string submissionType, RunSet runSet)

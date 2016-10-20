@@ -629,7 +629,7 @@ class Compare
 		}
 
 		if (shouldReportBenchview) {
-			GatherBenchViewData (submissionType ,submissionName, cuid, runSet.Commit);
+			cuid = GatherBenchViewData (submissionType ,submissionName, cuid, runSet.Commit);
 		}
 
 		var reportFailure = false;
@@ -809,7 +809,8 @@ class Compare
 		if (pullRequestURL != null)
 			Console.WriteLine ("http://xamarin.github.io/benchmarker/front-end/pullrequest.html#id={0}", uploadResult.PullRequestId.Value);
 
-		Console.Write ("{{ \"runSetId\": \"{0}\"", uploadResult.RunSetId);
+		Console.Write ("{{ \"cuid\": \"{0}\"" ,cuid); 
+		Console.Write (", \"runSetId\": \"{0}\"", uploadResult.RunSetId);
 		if (pullRequestURL != null)
 			Console.Write (", \"pullRequestId\": \"{0}\"", uploadResult.PullRequestId.Value);
 		Console.Write (", \"runs\": [ ");
@@ -831,7 +832,7 @@ class Compare
 		Console.WriteLine (" }");
 
 		// Upload to BenchView.
-		if (shouldReportBenchview) {
+		if (shouldReportBenchview && !justCreateRunSet) {
 			CreateBenchviewReport(submissionType, runSet);
 			UploadBenchviewData();
 		}

@@ -6,7 +6,7 @@ from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.transfer import FileDownload
 from buildbot.steps.source import git
 
-from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME, MASTERWORKDIR
+from constants import BUILDBOT_URL, PROPERTYNAME_RUNSETID, PROPERTYNAME_CUID, PROPERTYNAME_PULLREQUESTID, PROPERTYNAME_SKIP_BENCHS, PROPERTYNAME_FILTER_BENCHS, PROPERTYNAME_JENKINSGITHUBPULLREQUEST, PROPERTYNAME_COMPARE_JSON, BENCHMARKER_BRANCH, MONO_SGEN_GREP_BINPROT_GITREV, MONO_SGEN_GREP_BINPROT_FILENAME, MASTERWORKDIR
 from monosteps import CreateRunSetIdStep, GithubPostPRStatus, ParsingShellCommand, GrabBinaryLogFilesStep, ProcessBinaryProtocolFiles
 
 import re
@@ -227,7 +227,7 @@ class DebianMonoBuildFactory(BuildFactory):
         )
         self.addStep(ShellCommand(name='ccache_stats', command=['ccache', '-s']))
 
-    def maybe_create_runsetid(self, install_root):
+    def maybe_create_runsetid(self, install_root, benchview=False):
 
         def _guard_runsetid_gen(step):
             if step.build.getProperties().has_key(PROPERTYNAME_RUNSETID):
@@ -242,9 +242,13 @@ class DebianMonoBuildFactory(BuildFactory):
             PROPERTYNAME_RUNSETID: re.compile(r'"runSetId"\s*:\s*"(?P<' + PROPERTYNAME_RUNSETID + r'>\w+)"'),
             PROPERTYNAME_PULLREQUESTID: re.compile(r'"pullRequestId"\s*:\s*"(?P<' + PROPERTYNAME_PULLREQUESTID + r'>\w+)"')
         }
+        if benchview:
+            parsers[PROPERTYNAME_CUID] = re.compile(r'"cuid"\s*:\s*"(?P<' + PROPERTYNAME_CUID + r'>\w+)"')
+
         self.addStep(
             CreateRunSetIdStep(
                 install_root=install_root,
+                benchview=benchview,
                 name='create_RunSetId',
                 parse_rules=parsers,
                 workdir='benchmarker',
@@ -262,7 +266,7 @@ class DebianMonoBuildFactory(BuildFactory):
         self.addStep(
             ShellCommand(
                 name='print_RunSetId',
-                command=['echo', Interpolate("%(prop:" + PROPERTYNAME_RUNSETID + ")s")]
+                command=['echo', Interpolate("%(prop:" + PROPERTYNAME_RUNSETID + ")s"), Interpolate("%(prop:" + PROPERTYNAME_CUID + ")s")]
             )
         )
 
@@ -300,7 +304,7 @@ def gen_guard_benchmark_run(benchmark):
     return lambda s: _benchmark_retry(benchmark, s) and _benchmark_filter(benchmark, s)
 
 
-def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, timeout=3600, attach_files=None, grab_binary_files=False):
+def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer, timeout=3600, attach_files=None, grab_binary_files=False, benchview=False):
     steps = []
     cmd = ['mono',
            '--debug',
@@ -314,6 +318,15 @@ def benchmark_step(benchmark_name, commit_renderer, compare_args, root_renderer,
            '--machine', Interpolate('%(prop:machine_name)s'),
            '--config-file', Interpolate('configs/%(prop:config_name)s.conf')
           ]
+    if benchview:
+        cmd.append('--cuid')
+        cmd.append(Interpolate('%(prop:' + PROPERTYNAME_CUID + ')s'))
+        cmd.append('--report-benchview')
+        cmd.append('--benchview-submission-type')
+        cmd.append('rolling')
+        cmd.append('--benchview-submission-name')
+        cmd.append('mono')
+
     parsers = {
         # assumption: compare.exe prints json in a single line
         PROPERTYNAME_COMPARE_JSON: re.compile(r'(?P<' + PROPERTYNAME_COMPARE_JSON + '>{.*runSetId.*})')

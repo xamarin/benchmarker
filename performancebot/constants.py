@@ -2,6 +2,7 @@ BENCHMARKER_BRANCH = 'master'
 
 PROPERTYNAME_MONOVERSION = 'monoversion'
 PROPERTYNAME_RUNSETID = 'parse_runsetid'
+PROPERTYNAME_CUID = 'benchview_cuid'
 PROPERTYNAME_RUNIDS = 'parse_runids'
 PROPERTYNAME_PULLREQUESTID = 'parse_pullrequestid'
 PROPERTYNAME_COMPARE_JSON = 'compare_json_result'
