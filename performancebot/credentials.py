@@ -67,6 +67,10 @@ def slave_httpAPITokens():
     pass
 slave_httpAPITokens.accredit_key = 'httpAPITokens'
 
+def slave_sasToken():
+    pass
+slave_sasToken.accredit_key = 'sas'
+
 
 
 

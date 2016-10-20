@@ -480,11 +480,6 @@ class Compare
 			}
 		}
 
-		if (shouldReportBenchview) {
-			if (!CheckBenchViewOptions (submissionType ,submissionName) || !CheckEnvironment ())
-				Environment.Exit (1);
-		}
-
 		var configFileFromCommandLine = configFile != null;
 		if (!configFileFromCommandLine)
 			configFile = Path.Combine (root, "configs", "default-sgen.conf");
@@ -540,6 +535,11 @@ class Compare
 		}
 
 		InitCommons ();
+
+		if (shouldReportBenchview) {
+			if (!CheckBenchViewOptions (submissionType ,submissionName) || !CheckEnvironment ())
+				Environment.Exit (1);
+		}
 
 		if (binprotFilePath != null) {
 			var success = AsyncContext.Run (() => UploadPauseTimes (binprotFilePath, grepBinprotPath, runId.Value));

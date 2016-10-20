@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using Benchmarker;
 using Benchmarker.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -52,12 +53,14 @@ namespace Xamarin.Test.Performance.Utilities
         {
             Console.WriteLine ("Checking for valid environment for uploading to BenchView.");
 
-            var sasToken = GetEnvironmentVariable (s_sasEnvironmentVar);
-            if (string.IsNullOrEmpty(sasToken))
+			string sastoken = Accredit.GetCredentials ("sas")["sas"].ToString ();
+			if (string.IsNullOrEmpty(sastoken))
             {
-                Console.Error.WriteLine ($"Error: {s_sasEnvironmentVar} was not defined");
+                Console.Error.WriteLine ($"Error: s_sastoken was not defined");
                 return false;
             }
+
+			SetEnvironmentVariable (s_sasEnvironmentVar, sastoken);
 
             var wherePy = ShellOut(s_locateCommand, s_pythonProcessName);
             if (wherePy.Failed)
@@ -178,7 +181,7 @@ namespace Xamarin.Test.Performance.Utilities
             }
         }
 
-        private const string s_group = "Xamarin";
+		private const string s_group = "Xamarin";
         private const string s_sasEnvironmentVar = "BV_UPLOAD_SAS_TOKEN";
         private const string s_userEmail = "mono-pbot@microsoft.com";  // TODO: Is it the right user email to be used?
 
