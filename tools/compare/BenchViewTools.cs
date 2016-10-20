@@ -112,7 +112,11 @@ namespace Xamarin.Test.Performance.Utilities
 				cuid = (string) jTokenCuid.ToObject (typeof (string));
 				Console.Error.WriteLine ("CUID: " + cuid);
 			}
-			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" --source-timestamp=\"{DateTime.SpecifyKind (commit.CommitDate.Value, DateTimeKind.Utc).ToString (RunSet.DATETIME_FORMAT)}\" -o=\"{s_buildJson}\"");
+			var branch = commit.Branch;
+			if (string.IsNullOrEmpty (branch)) {
+				branch = "master";
+			}
+			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{branch}\" --source-timestamp=\"{DateTime.SpecifyKind (commit.CommitDate.Value, DateTimeKind.Utc).ToString (RunSet.DATETIME_FORMAT)}\" -o=\"{s_buildJson}\"");
             ShellOutVital(s_pythonProcessName, $"\"{s_machinedataPy}\" -o=\"{s_machinedataJson}\"");
 			return cuid;
         }
