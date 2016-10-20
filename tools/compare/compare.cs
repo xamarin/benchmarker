@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Nito.AsyncEx;
 using static Xamarin.Test.Performance.Utilities.BenchViewTools;
-using static Xamarin.Test.Performance.Utilities.TestUtilities;
 
 class Compare
 {
@@ -64,7 +63,7 @@ class Compare
 		Console.Error.WriteLine ("        --benchview-submission-name BV_NAME");
 		Console.Error.WriteLine ("                                submission name to use when uploading to benchview");
 		Console.Error.WriteLine ("                                  (required for private and local submissions)");
-		Console.Error.WriteLine ("        --branch GIT_BRANCH     name of the branch you are measuring on.");
+		Console.Error.WriteLine ("        --cuid CUID             if not specified, it will be generated automatically");
 
 		Environment.Exit (exitcode);
 		return exitcode;
@@ -370,7 +369,7 @@ class Compare
 		bool shouldReportBenchview = false;
 		string submissionType = null;
 		string submissionName = null;
-		string branch = null;
+		string cuid = null;
 
 		var exeLocation = System.Reflection.Assembly.GetEntryAssembly ().Location;
 		var exeName = Path.GetFileName (exeLocation);
@@ -393,72 +392,72 @@ class Compare
 		var optindex = 0;
 
 		for (; optindex < args.Length; ++optindex) {
-			if (args [optindex] == "-b" || args [optindex] == "--benchmarks") {
-				var newNames = args [++optindex].Split (',').Select (s => s.Trim ());
+			if (args[optindex] == "-b" || args[optindex] == "--benchmarks") {
+				var newNames = args[++optindex].Split (',').Select (s => s.Trim ());
 				if (benchmarkNames == null)
 					benchmarkNames = newNames.ToArray ();
 				else
 					benchmarkNames = newNames.Union (benchmarkNames).ToArray ();
-			} else if (args [optindex] == "-c" || args [optindex] == "--config-file") {
-				configFile = args [++optindex];
-			} else if (args [optindex] == "-l" || args [optindex] == "--list-benchmarks") {
+			} else if (args[optindex] == "-c" || args[optindex] == "--config-file") {
+				configFile = args[++optindex];
+			} else if (args[optindex] == "-l" || args[optindex] == "--list-benchmarks") {
 				justListBenchmarks = true;
-			} else if (args [optindex] == "--machine") {
-				machineName = args [++optindex];
-			} else if (args [optindex] == "--build-url") {
-				buildURL = args [++optindex];
-			} else if (args [optindex] == "--log-url") {
-				logURL = args [++optindex];
-			} else if (args [optindex] == "--pull-request-url") {
-				pullRequestURL = args [++optindex];
-			} else if (args [optindex] == "--mono-repository") {
-				monoRepositoryPath = args [++optindex];
-			} else if (args [optindex] == "--create-run-set") {
+			} else if (args[optindex] == "--machine") {
+				machineName = args[++optindex];
+			} else if (args[optindex] == "--build-url") {
+				buildURL = args[++optindex];
+			} else if (args[optindex] == "--log-url") {
+				logURL = args[++optindex];
+			} else if (args[optindex] == "--pull-request-url") {
+				pullRequestURL = args[++optindex];
+			} else if (args[optindex] == "--mono-repository") {
+				monoRepositoryPath = args[++optindex];
+			} else if (args[optindex] == "--create-run-set") {
 				justCreateRunSet = true;
-			} else if (args [optindex] == "--run-set-id") {
-				runSetId = Int64.Parse (args [++optindex]);
-			} else if (args [optindex] == "--run-id") {
-				runId = Int64.Parse (args [++optindex]);
-			} else if (args [optindex] == "--root") {
-				rootFromCmdline = args [++optindex];
-			} else if (args [optindex] == "--main-product") {
-				var name = args [++optindex];
-				var hash = args [++optindex];
+			} else if (args[optindex] == "--run-set-id") {
+				runSetId = Int64.Parse (args[++optindex]);
+			} else if (args[optindex] == "--run-id") {
+				runId = Int64.Parse (args[++optindex]);
+			} else if (args[optindex] == "--root") {
+				rootFromCmdline = args[++optindex];
+			} else if (args[optindex] == "--main-product") {
+				var name = args[++optindex];
+				var hash = args[++optindex];
 				if (mainCommit != null) {
 					Console.Error.WriteLine ("Error: Only one --main-product is supported.");
 					UsageAndExit ();
 				}
-				var product = compare.Utils.LoadProductFromFile (name, productsDir);
-				mainCommit = new Commit { Product = product, Hash = hash };
-			} else if (args [optindex] == "--secondary-product") {
-				var name = args [++optindex];
-				var hash = args [++optindex];
-				var product = compare.Utils.LoadProductFromFile (name, productsDir);
-				secondaryCommits.Add (new Commit { Product = product, Hash = hash });
-			} else if (args [optindex] == "--valgrind-massif") {
+				var product = compare.Utils.LoadProductFromFile (name ,productsDir);
+				mainCommit = new Commit { Product = product ,Hash = hash };
+			} else if (args[optindex] == "--secondary-product") {
+				var name = args[++optindex];
+				var hash = args[++optindex];
+				var product = compare.Utils.LoadProductFromFile (name ,productsDir);
+				secondaryCommits.Add (new Commit { Product = product ,Hash = hash });
+			} else if (args[optindex] == "--valgrind-massif") {
 				if (valgrindBinary != null) {
 					Console.Error.WriteLine ("Error: More than one Valgrind option given.");
 					UsageAndExit ();
 				}
-				valgrindBinary = args [++optindex];
-				valgrindOutputFilename = args [++optindex];
+				valgrindBinary = args[++optindex];
+				valgrindOutputFilename = args[++optindex];
 				valgrindTool = ValgrindTool.Massif;
-			} else if (args [optindex] == "--valgrind-cachegrind") {
+			} else if (args[optindex] == "--valgrind-cachegrind") {
 				if (valgrindBinary != null) {
 					Console.Error.WriteLine ("Error: More than one Valgrind option given.");
 					UsageAndExit ();
 				}
-				valgrindBinary = args [++optindex];
-				valgrindOutputFilename = args [++optindex];
+				valgrindBinary = args[++optindex];
+				valgrindOutputFilename = args[++optindex];
 				valgrindTool = ValgrindTool.Cachegrind;
-			} else if (args [optindex] == "-t" || args [optindex] == "--timeout") {
-				timeout = Int32.Parse (args [++optindex]);
+			} else if (args[optindex] == "-t" || args[optindex] == "--timeout") {
+				timeout = Int32.Parse (args[++optindex]);
 				timeout = timeout <= 0 ? -1 : timeout;
-			} else if (args [optindex] == "--sgen-grep-binprot") {
-				grepBinprotPath = args [++optindex];
-			} else if (args [optindex] == "--upload-pause-times") {
-				binprotFilePath = args [++optindex];
-			} else if (args [optindex] == "--jit-stats") {
+			} else if (args[optindex] == "--sgen-grep-binprot") {
+				grepBinprotPath = args[++optindex];
+			} else if (args[optindex] == "--upload-pause-times") {
+				binprotFilePath = args[++optindex];
+			} else if (args[optindex] == "--jit-stats") {
 				jitStats = true;
 			} else if (args[optindex] == "--report-benchview") {
 				shouldReportBenchview = true;
@@ -466,6 +465,8 @@ class Compare
 				submissionType = args[++optindex];
 			} else if (args[optindex] == "--benchview-submission-name") {
 				submissionName = args[++optindex];
+			} else if (args[optindex] == "--cuid") {
+				cuid = args[++optindex];
 			} else if (args [optindex].StartsWith ("--help")) {
 				UsageAndExit ();
 			} else if (args [optindex] == "--") {
@@ -575,8 +576,6 @@ class Compare
 			}
 		}
 
-
-
 		RunSet runSet = null;
 		if (runSetId != null) {
 			if (pullRequestURL != null) {
@@ -630,7 +629,7 @@ class Compare
 		}
 
 		if (shouldReportBenchview) {
-			GatherBenchViewData (submissionType ,submissionName, runSet.Commit);
+			GatherBenchViewData (submissionType ,submissionName, cuid, runSet.Commit);
 		}
 
 		var reportFailure = false;

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Benchmarker.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using static System.Environment;
 using static Xamarin.Test.Performance.Utilities.TestUtilities;
 
@@ -74,7 +75,7 @@ namespace Xamarin.Test.Performance.Utilities
             return true;
         }
 
-		internal static void GatherBenchViewData(string submissionType, string submissionName, Commit commit)
+		internal static void GatherBenchViewData(string submissionType, string submissionName, string cuid, Commit commit)
         {
             Console.WriteLine("Gathering BenchView data...");
 
@@ -97,7 +98,17 @@ namespace Xamarin.Test.Performance.Utilities
 				giturl = giturl.Substring (0, giturl.Length - git_suffix.Length);
 			}
 
-            ShellOutVital(s_pythonProcessName, $"\"{s_submissionMetadataPy}\" --name=\"{submissionName}\" --user-email={s_userEmail} -o=\"{s_submissionMetadataJson}\"");
+			string metaargs = $"\"{s_submissionMetadataPy}\" --name=\"{submissionName}\" --user-email={s_userEmail} -o=\"{s_submissionMetadataJson}\"";
+			if (cuid != null) {
+				metaargs += " --cuid=" + cuid;
+			}
+			ShellOutVital(s_pythonProcessName, metaargs);
+			if (cuid == null) {
+				var jObject = JObject.Parse (File.ReadAllText (s_submissionMetadataJson));
+				var jTokenCuid = jObject.GetValue ("cuid");
+				cuid = (string) jTokenCuid.ToObject (typeof (string));
+				Console.Error.WriteLine ("CUID: " + cuid);
+			}
 			ShellOutVital(s_pythonProcessName, $"\"{s_buildPy}\" --type={submissionType} --repository=\"{giturl}\" --number=\"{commit.Hash}\" --branch=\"{commit.Branch}\" --source-timestamp=\"{DateTime.SpecifyKind (commit.CommitDate.Value, DateTimeKind.Utc).ToString (RunSet.DATETIME_FORMAT)}\" -o=\"{s_buildJson}\"");
             ShellOutVital(s_pythonProcessName, $"\"{s_machinedataPy}\" -o=\"{s_machinedataJson}\"");
         }
