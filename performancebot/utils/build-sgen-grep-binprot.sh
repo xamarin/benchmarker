@@ -21,7 +21,7 @@ fi
 WORKDIR=$(mktemp -d /tmp/mono-build.XXXXXX)
 cd $WORKDIR
 
-git clone https://github.com/mono/mono
+git clone -b binprot-par https://github.com/lewurm/mono
 cd mono
 git reset --hard $GITREV
 

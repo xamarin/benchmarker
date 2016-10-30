@@ -22,7 +22,7 @@ FORCE_PROPERTYNAME_JENKINS_BUILD = 'force-jenkins-build'
 
 JENKINS_URL = 'https://jenkins.mono-project.com'
 
-MONO_SGEN_GREP_BINPROT_GITREV = '9c3b78485af697e24d130f8518551b488e5c9f90'
+MONO_SGEN_GREP_BINPROT_GITREV = '5b8eed8d8692deb36d93ad4a5aebe45e732a21de'
 MONO_SGEN_GREP_BINPROT_FILENAME = 'sgen-grep-binprot-%s' % MONO_SGEN_GREP_BINPROT_GITREV
 
 MONO_BASEURL = JENKINS_URL + '/view/All/job/build-package-dpkg-mono'
