@@ -35,8 +35,7 @@ class Controller {
 		this.initialRunSetIds = selection;
 		if (machineName === undefined && configName === undefined && metric === undefined) {
 			this.initialSelectionNames = [
-				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo', metric: 'time' },
-				{ machineName: 'benchmarker', configName: 'auto-sgen-noturbo-binary', metric: 'time' },
+				{ machineName: 'poweredge1', configName: 'auto-sgen-conc-binary', metric: 'time' },
 			];
 			this.initialZoom = true;
 		} else {
