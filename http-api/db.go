@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -46,7 +47,7 @@ func ensureProductExists(database *pgx.Tx, product Product) (string, *requestErr
 			return "", badRequestError("Unknown product")
 		}
 
-		commit, _, err := githubClient.Git.GetCommit(owner, repo, product.Commit)
+		commit, _, err := githubClient.Git.GetCommit(context.Background(), owner, repo, product.Commit)
 		if err == nil {
 			sha = *commit.SHA
 			commitDate = *commit.Committer.Date
