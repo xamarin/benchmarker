@@ -18,7 +18,7 @@ python:
 sudo: false
 
 before_script:
-    - curl -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz
+    - curl -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.7.2.linux-amd64.tar.gz
     - (mkdir -p /tmp/goinstall; tar -C /tmp/goinstall -xzf /tmp/go.tar.gz)
     - mkdir $HOME/go
     - GOPATH=$HOME/go GOROOT=/tmp/goinstall/go /tmp/goinstall/go/bin/go get github.com/google/go-github/github github.com/jackc/pgx
