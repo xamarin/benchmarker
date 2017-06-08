@@ -24,7 +24,7 @@ RUN apt-get install -y \
         python-openssl \
         python-pip \
         gettext
-RUN pip install buildbot
+RUN pip install buildbot==0.8.9
 
 # web status of buildbot
 EXPOSE 8010

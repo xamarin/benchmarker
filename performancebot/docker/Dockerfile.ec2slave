@@ -22,9 +22,9 @@ RUN apt-get install -y \
         python-dev \
         python-openssl \
         python-pip
-RUN pip install buildbot
+RUN pip install buildbot==0.8.9
 
-RUN pip install buildbot-slave
+RUN pip install buildbot-slave==0.8.9
 
 RUN cd /tmp && \
 	curl -O http://valgrind.org/downloads/valgrind-3.11.0.tar.bz2 && \
