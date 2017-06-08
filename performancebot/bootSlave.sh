@@ -36,7 +36,7 @@ virtualenv $HOME/slave/env
 source $HOME/slave/env/bin/activate
 
 cd $HOME/slave
-pip install buildbot-slave
+pip install buildbot-slave==0.8.12
 
 buildslave create-slave --keepalive 45 slavedir $EC2PBOTMASTERIP $SLAVEHOSTNAME $BUILDBOTSLAVEPWD
 buildslave start --nodaemon slavedir
